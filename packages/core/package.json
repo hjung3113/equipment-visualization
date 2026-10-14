@@ -8,7 +8,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./layout.schema.json": "./schema/layout.schema.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -18,5 +19,8 @@
   "devDependencies": {
     "typescript": "5.9.3",
     "vitest": "3.2.7"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
   }
 }

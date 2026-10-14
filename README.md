@@ -24,7 +24,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 
 ```
 apps/studio/                   # Standalone web app (planned)
-packages/core/                # Semantic layout, ports, robot specs (present; layout schema in #6)
+packages/core/                # Layout schema + structural validator (present)
 packages/renderer/            # SVG-first rendering and interaction (planned)
 packages/editor/              # Semantic Top View editor (planned)
 packages/replay/              # Observations -> deterministic replay (planned)
@@ -62,6 +62,20 @@ Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 | React | 19.3.0 | added in S7/S8 (#12/#13) |
 | vite | 7.3.6 | added in S7/S8 (#12/#13) |
 
+
+### Layout schema changes
+
+The zod schema in `packages/core/src/layout/schema.ts` is the single source of truth.
+Regenerate the committed `packages/core/schema/layout.schema.json` snapshot with:
+
+```sh
+pnpm --filter @eqv/core exec vitest run -u test/layout.test.ts
+```
+
+An additive change (a new optional field) updates both files in the same PR. A breaking
+change (rename, removal, new required field, changed meaning, or enum value removal)
+bumps `schemaVersion` and requires an ADR in `docs/adr/` merged first or in the same PR
+(see `AGENTS.md`).
 
 ## Initial validation targets
 
