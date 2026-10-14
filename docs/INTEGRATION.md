@@ -14,40 +14,30 @@
 
 ## 단계별 실제 파일 계획(제안)
 
-### A. 기존 패키지 경계를 건드리지 않는 시작점
+[ADR-0001](adr/0001-standalone-packages-thin-platform-consumer.md): `core`/`renderer`/`editor`/`replay`는 이 저장소의 독립 패키지가 정본이고, 플랫폼은 **얇은 소비자**다. 모델·reducer·renderer 코드를 플랫폼 안에 다시 만들지 않는다.
+
+### 플랫폼 쪽 소비자 구조
 
 ```text
 menus/equipment/src/
-  components/topview/
-    model/               # domain layout/port/graph/evidence schema (순수 TS)
-    renderer/            # SVG React viewer, token styles
-    editor/              # edit commands; UI 별도 lazy chunk
-    replay/              # observational action timeline, deterministic reducer
-    registry/            # template catalog, revision
-    fixtures/            # synthetic/logless examples
-  pages/EquipmentTopView.tsx
+  pages/EquipmentTopView.tsx     # 이 저장소 renderer/replay 패키지 조립 (lazy)
   pages/EquipmentReplay.tsx
-  endpoints.ts            # equipment.topview.definition / equipment.topview.events
-  index.ts                # lazy manifest / capability / URL pageKeys
-  mock/                   # 선언된 조회 핸들러, 런타임 렌더 code import 금지
+  endpoints.ts                   # menuQuery 선언: equipment.topview.definition / .events / .metrics / .inventory
+  index.ts                       # lazy manifest / capability / URL pageKeys
+  mock/                          # 선언된 조회 핸들러용 synthetic 응답, 런타임 렌더 code import 금지
+
+packages/platform-adapter (이 저장소)
+  theme.ts                       # 플랫폼 토큰 → --eqv-* CSS 변수 매핑·주입
+  context.ts                     # URL/Scope/time/권한 → viewer/replay props
 
 menus/analytics/src/
-  pages/...               # Top View 이동은 `linkTo('equipment-topview', ..)` 사용
-
-apps/platform-web/src/
-  ...                     # 기존 Registry 조립. manual Shell 편집 불필요.
+  pages/...                      # Top View 이동은 `linkTo('equipment-topview', ..)` 사용
 ```
 
-- 초기에는 한 메뉴 도메인 Consumer 소유로 개발. 타 분석 메뉴는 `linkTo`를 통해 **같은 화면으로 이동**하고, 렌더러 코드에 import 하지 않음.
-- 이 방식은 현재 `menu-*` 상호 import 금지, `packages/components`의 범용성 원칙 모두 충족.
-- `equipment-detail`에 viewer tab을 추가하는 옵션이 가장 작은 UI 변경. 단, `replay`의 시각화 면적이 큰 만큼 `equipment-topview` 별도 페이지를 lazy로 추가할 수도 있음; IA 리뷰에서 확정.
-
-### B. 2개 이상 메뉴에서 렌더러를 직접 재사용해야 할 때
-
-- 공용 renderer를 `packages/components`에 domain-agnostic SVG viewport로 승격하거나, 별도 `packages/equipment-viz`라는 **독립 도메인 공유 패키지**를 ADR로 제안.
-- 후자는 현재 문서의 정식 패키지 목록에 없음. 즉시 파일 추가로 기존 경계 계약을 우회하지 말 것.
-- 첫 번째 후보가 domain-agnostic viewport API만 소유하고 장비 vocabulary는 `menus/equipment`가 유지하게 하는 방식이 제약이 적음.
-- 테스트 후 실제 2~3개 소비자가 독립적으로 쓸 때 승격; 현재 메뉴간 링크만으로 충분하면 공통화 불필요.
+- 타 분석 메뉴는 `linkTo`로 **같은 화면으로 이동**하고 렌더러 코드를 import하지 않는다. 현재 `menu-*` 상호 import 금지와 `packages/components` 범용성 원칙을 그대로 지킨다.
+- `equipment-detail`에 viewer tab을 추가하는 옵션이 가장 작은 UI 변경. `replay`의 시각화 면적이 크면 `equipment-topview` 별도 페이지를 lazy로 추가; IA 리뷰에서 확정.
+- 패키지 소비 방식은 submodule pin이며 private 저장소 접근 CI 게이트(analytics-platform #332) 결정 후 진행.
+- 원천 parser Result → Occurrence 변환은 플랫폼 **서버** read view(`equipment.topview.events`)의 책임이다([ADR-0002](adr/0002-occurrence-input-contract.md)). 클라이언트와 이 저장소에는 원천 parser 코드·어휘를 두지 않는다.
 
 ## UI / Information Architecture
 
@@ -55,15 +45,14 @@ apps/platform-web/src/
 Analytics Workspace
  └─ 생산성 드릴다운 (equipmentId, anchor, from/to, Lot ...)
        └─ linkTo() → Equipment Detail / Top View
-             ├─ [Overview] [Top View] [Log Replay] [Event List]
-             │     ├─ SVG (selection/highlight)
-             │     ├─ Timeline (cursor, zoom, playback speed)
-             │     └─ Event Grid (source/timestamp/provenance)
+             ├─ Focus (equipmentId + entityType/anchor) — Top View · Gantt · Occurrence 목록, 커서 공유
+             ├─ Aggregate (from/to + metric) — Component Metric 인코딩
+             ├─ Journey (wafer anchor) — 이산 hop
              └─ ReturnLink ← 원 분석 화면·드릴다운 문맥 복원
 
 Equipment Management
- └─ Equipment Master → Detail → Published Layout
-       └─ Edit(Layout revisions) [write permission 별도]
+ └─ Equipment Master → Onboarding (Fleet → Inventory → Template → Mapping Board → dry-run → Publish)
+       [onboarding:edit-rules / onboarding:publish-mapping / onboarding:edit-global-dictionary]
 ```
 
 - `EquipmentID`는 목적지 객체 식별자, 사용자 전역 Selection은 필터 집합. 둘을 섞지 않는다.
@@ -75,9 +64,13 @@ Equipment Management
 
 ## API/DTO 제안 (후보 필드, 기존 실데이터 스키마를 주장하지 않음)
 
-`equipment.topview.definition`: `{ equipmentId, templateId, layoutRevision, components, ports, physicalConnections, transferCapabilities, views, sourceEvidence, updatedAt }`.
+`equipment.topview.definition`: `{ equipmentId, binding: { layoutRevision, mappingVersion, effectiveFrom, effectiveTo }, layout, mapping, updatedAt }` — `layout`은 Component/Level/PhysicalInterface/TransferCapability/ProcessRoute를 포함한 Layout Revision 원본(ADR-0004).
 
-`equipment.topview.events`: `{ equipmentId, from, to, anchor?, parserContractVersion, ingestionGeneration, dataWatermark, observations, assessments, continuationToken? }`.
+`equipment.topview.metrics`: `VIEWS.md`의 `ComponentMetric[]` (원천 alias 기준; 지표 계산은 플랫폼 mart).
+
+`equipment.topview.inventory`: `ONBOARDING.md`의 `ObservedInventory` (긴 샘플 기간은 서버 집계).
+
+`equipment.topview.events`: `REPLAY-CONTRACT.md`의 `OccurrenceBatch` — `{ equipmentId, from, to, timeDomain, watermark, parserContractVersion, dataGeneration, occurrences, issues, continuationToken? }`. 조회는 구간과 **겹치는** Occurrence.
 
 `equipment.topview.saveDraft` / `publish`: **변경 API는 별도 설계 필요**. 현재 공개 `menuQuery`는 read contract에 최적화된 상태이므로 DB 쓰기를 조회 `menuQuery`로 위장하거나 generic kernel port에 슬쩍 섞지 않음. 쓰기/승인/감사는 후속 ADR 및 API 권한 경계 확정 후.
 
@@ -86,7 +79,7 @@ Equipment Management
 - Parser Postgres 원본 직접 join 금지: read-only 호환 view/mart/service 어댑터를 통해 관찰 이벤트를 normalize.
 - 액티브 replay 이벤트의 시간 범위·row cap/continuation; 무제한 full-day/full-site event fetch 금지.
 - 권한/Scope/time-domain 검증은 서버에서, 클라이언트 탭 숨기기로 대체하지 않음.
-- 데이터 보정/지연 완료/Parser 변경으로 과거 timeline이 바뀔 때 `ingestionGeneration`과 `parserContractVersion` 비교하여 결과 폐기·재조회.
+- 원천 logic 변경/재처리로 과거 timeline이 바뀔 때 `dataGeneration`과 `parserContractVersion`을 비교하여 결과 폐기·재조회. 늦은 데이터(새 segment)는 `watermark` 증가로만 반영.
 - 원본 Site 시간축 의미를 보존; 브라우저 사용자 로컬 시간으로 임의 변환 금지.
 
 ## 렌더러 라이브러리 검토

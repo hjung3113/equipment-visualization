@@ -14,14 +14,14 @@ that would cost a review or fix round; style and wording preferences are out of 
    makes the worker invent one. Docs marked **Proposed** are design, not code: the brief must say which part it
    implements.
 2. **Rules are copied, not remembered.** Field names, cardinalities, units and enum values (fidelity labels, event
-   kinds, levels) match `docs/DESIGN-v0.3.md`, `docs/REPLAY-CONTRACT.md` and the code, not the issue text.
+   kinds, levels) match `CONTEXT.md`, `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md` and the code, not the issue text.
 3. **Invariants are stated where they bite.** If the work touches geometry, ports, robots or replay, the brief
    repeats the relevant AGENTS.md constraint (no connectivity from adjacency; arm ≠ blade; unknown stays unknown;
    interpolation is never `observed`; no `@ap/*` outside the adapter) and names a test that would catch a breach.
 4. **Regression tests reach the bug.** Trace each prescribed test through the current code: it must enter the
    changed branch, so removing the fix turns it red.
-5. **Replay cases are enumerated.** A reducer change lists which of ties, out-of-order, late, unresolved Start-End,
-   invalid mapping, duplicate occupancy and carryover it covers, and says the others are out of scope.
+5. **Replay cases are enumerated.** A reducer change lists which of ties, open occurrence, Data Quality Issue, Time Anomaly,
+   Watermark/Binding boundary, invalid mapping and duplicate occupancy it covers, and says the others are out of scope.
 6. **Fixtures are synthetic and generalized.** No vendor-specific dimensions, real equipment IDs, hostnames or
    images; archetype fixtures are structural (`docs/ASSET-REVIEW.md`), not OEM-faithful.
 7. **Format changes carry an ADR.** A breaking change to a layout, catalog, mapping or observation format names

@@ -16,7 +16,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 
 1. Domain model and renderer **must not import** `@ap/*`, platform Kernel, or a company parser.
 2. Preserve structured `Layout + Component Catalog + Topology + Mapping Version + Observations` as authoritative data; SVG is a derived artifact.
-3. Motion fidelity must be explicit: observed positions vs reconstructed transitions vs illustrative animation vs unknown.
+3. Evidence must be explicit: observed vs derived vs illustrative animation vs unknown (see [ADR-0003](docs/adr/0003-facet-evidence-levels.md)).
 4. No confidential factory images/logs may be added here. Test with synthetic fixtures and public references only.
 5. Follow platform design tokens **only in the platform adapter**, using theme injection rather than copying platform UI components.
 
@@ -40,9 +40,9 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 
 ## Design and project tracking
 
-- [Design v0.3](docs/DESIGN-v0.3.md) · [Delivery plan](docs/DELIVERY-PLAN.md) · [Replay contract](docs/REPLAY-CONTRACT.md)
+- [Glossary](CONTEXT.md) · [Design v0.4](docs/DESIGN-v0.4.md) · [ADRs](docs/adr/) · [Delivery plan](docs/DELIVERY-PLAN.md) · [Replay contract](docs/REPLAY-CONTRACT.md)
 - [Analytics-platform integration](docs/INTEGRATION.md) · [Public research](docs/RESEARCH.md) · [Asset review](docs/ASSET-REVIEW.md)
-- [Reference-to-SVG skill](skills/reference-to-semantic-topview/SKILL.md) · [Agent rules](AGENTS.md)
+- [Onboarding](docs/ONBOARDING.md) · [Views](docs/VIEWS.md) · [Reference-to-SVG skill](skills/reference-to-semantic-topview/SKILL.md) · [Agent rules](AGENTS.md)
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 

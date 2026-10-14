@@ -41,7 +41,7 @@ load the `orca-dispatch-recipes` skill before the first launch. The user's sessi
 
 ## Slice start
 
-1. Read every candidate issue for the slice and the docs AGENTS.md requires (`README.md`, `docs/DESIGN-v0.3.md`,
+1. Read every candidate issue for the slice and the docs AGENTS.md requires (`README.md`, `CONTEXT.md`, `docs/DESIGN-v0.4.md`,
    `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`). Separate **Proposed** design from what is implemented.
 2. Collect every decision only the owner can make (format/ADR approval, `DELIVERY-PLAN.md` checklist items, scope,
    test deletion) and ask them in **one** `AskUserQuestion` round, each with a recommended option; record answers on

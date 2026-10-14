@@ -20,7 +20,7 @@ editor,replay,platform-adapter}`, `assets/`):
     `packages/core/`. Run the asset/schema gates; `schema_without_adr` is set when no `docs/adr/` file changed too
     (a breaking format change needs an ADR first);
   - `replay`: a non-test source under `packages/replay/`, or a changed line naming evidence fidelity
-    (`observed|reconstructed|illustrative|unknown` with `fidelity|evidence`). Run the replay gates;
+    (`observed|derived|illustrative|unknown` with `fidelity|evidence`). Run the replay gates;
   - `boundary`: a `package.json` changed, `packages/platform-adapter/` changed, or a changed line outside the adapter
     mentions `@ap/` or `analytics-platform`. Tell the code reviewer to check the package boundary first;
   - `instructions`: `.claude/**`, `skills/**`, an `AGENTS.md` or a `CLAUDE.md` changed. Reviewers read these from the
@@ -60,8 +60,8 @@ UI_SOURCE = re.compile(r'\.(tsx|jsx|vue|svelte|css|html)$')
 UX_OPTIONAL_ROOTS = UI_ROOTS + ('packages/platform-adapter/',)
 THEME = re.compile(r'(^|/)(theme|tokens?)(/|\.)', re.I)
 SCHEMA_PATH = re.compile(r'^assets/.*\.json$|\.schema\.json$|^packages/core/.*schema', re.I)
-FIDELITY_LINE = re.compile(r'\b(observed|reconstructed|illustrative|unknown)\b.*\b(fidelity|evidence)\b'
-                           r'|\b(fidelity|evidence)\b.*\b(observed|reconstructed|illustrative|unknown)\b', re.I)
+FIDELITY_LINE = re.compile(r'\b(observed|derived|illustrative|unknown)\b.*\b(fidelity|evidence)\b'
+                           r'|\b(fidelity|evidence)\b.*\b(observed|derived|illustrative|unknown)\b', re.I)
 PLATFORM_LINE = re.compile(r'@ap/|analytics-platform')
 
 

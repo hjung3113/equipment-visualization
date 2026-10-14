@@ -22,7 +22,7 @@ def plan(repo, *extra):
 
 
 BASE_FILES = {
-    'docs/DESIGN-v0.3.md': '# Design\n',
+    'docs/DESIGN-v0.4.md': '# Design\n',
     'apps/studio/src/App.tsx': 'export const App = () => null;\n',
     'apps/studio/src/state.ts': 'export const s = 1;\n',
     'packages/core/src/layout-schema.ts': 'export const v = 1;\n',
@@ -35,8 +35,8 @@ BASE_FILES = {
 
 CASES = [
     # name, {path: new text}, expected subset
-    ('docs only', {'docs/DESIGN-v0.3.md': '# Design\nmore\n'}, {'code': False, 'ux': False}),
-    ('docs + re-pinned test', {'docs/DESIGN-v0.3.md': '# Design\nx\n',
+    ('docs only', {'docs/DESIGN-v0.4.md': '# Design\nmore\n'}, {'code': False, 'ux': False}),
+    ('docs + re-pinned test', {'docs/DESIGN-v0.4.md': '# Design\nx\n',
                                'apps/studio/src/__tests__/App.test.tsx': "it('x', () => {});\n"},
      {'code': False, 'ux': False}),
     ('studio tsx', {'apps/studio/src/App.tsx': 'export const App = () => <div />;\n'},
@@ -45,7 +45,7 @@ CASES = [
     ('renderer .ts', {'packages/renderer/src/render.ts': 'export const r = 2;\n'}, {'ux': 'optional'}),
     ('asset svg', {'assets/templates/single-hub.svg': '<svg viewBox="0 0 1 1"/>\n'}, {'ux': 'required'}),
     ('visual baseline only', {'apps/studio/tests/visual/single-hub.png': 'png'}, {'code': True, 'ux': 'required'}),
-    ('docs + baseline', {'docs/DESIGN-v0.3.md': '# Design\ny\n', 'apps/studio/tests/visual/a.png': 'png'},
+    ('docs + baseline', {'docs/DESIGN-v0.4.md': '# Design\ny\n', 'apps/studio/tests/visual/a.png': 'png'},
      {'code': False, 'ux': False}),
     ('layout json without ADR', {'assets/templates/single-hub.layout.json': '{"v":2}\n'},
      {'code': True, 'flags.schema': True, 'flags.schema_without_adr': True}),
