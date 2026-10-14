@@ -17,7 +17,7 @@ Build a reusable semantic equipment Top View and explainable log replay framewor
 - **Per-issue branch** from `develop`: `feature/<issue-number>-<slug>`, `fix/<n>-<slug>`, or `chore/<slug>` for housekeeping. Never commit directly to `develop` or `main`.
 - **Issue complete → PR to `develop`.** PRs into `develop` do not auto-close issues; close them with `gh issue close`. Delete the branch on merge.
 - **Slice complete → release PR `develop` → `main`.** The user owns that merge and any tag. No agent push to `main`. `review-quality` runs once per slice before the release PR.
-- **Hooks.** Enable once per clone: `git config core.hooksPath .githooks`. `pre-commit` refuses commits on `develop`/`main` (README-only on `main` allowed); `pre-push` blocks direct non-README pushes to `main`. Client-side only; GitHub branch protection becomes the real gate once CI exists (#5).
+- **Hooks.** Enable once per clone: `git config core.hooksPath .githooks`. `pre-commit` refuses commits on `develop`/`main` (README-only on `main` allowed); `pre-push` blocks direct non-README pushes to `main`. Client-side only. The server-side gate is GitHub branch protection on `develop` and `main` (required check `Gate`, admins included, no force push or deletion) plus a ruleset that limits `main` to merge-commit PRs, so even a README-only change reaches `main` through a PR.
 
 ## Before implementation
 - Read `README.md`, `CONTEXT.md` (glossary), `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`.
