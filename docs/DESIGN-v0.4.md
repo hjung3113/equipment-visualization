@@ -200,7 +200,7 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 
 ## 11. 설계상 남겨둔 Open
 
-- 원천의 열린 Occurrence read view (context_recognized_parser에 별도 요청; 그 전까지 Watermark 이후 `unknown`).
+- 원천의 열린 Occurrence read view ([context_recognized_parser#157](https://github.com/hjung3113/context_recognized_parser/issues/157); 그 전까지 Watermark 이후 `unknown`).
 - 라우트 파라미터 `at`와 `anchor`의 경계/URL codec (기존 router 규칙 준수).
 - 자산/레이아웃의 플랫폼 메타 DB 소유권, 소규모 팀 동시 편집 전략, 모델별 Custom Template의 승인 정책.
 - 실시간 애니메이션(미결정; 로그 리플레이와는 다른 제품 요구). 기존 플랫폼의 5분 polling을 재생 clock으로 오해하지 않음.
