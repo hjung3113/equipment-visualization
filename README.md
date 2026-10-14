@@ -24,15 +24,44 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 
 ```
 apps/studio/                   # Standalone web app (planned)
-packages/core/                # Semantic layout, ports, robot specs (planned)
+packages/core/                # Semantic layout, ports, robot specs (present; layout schema in #6)
 packages/renderer/            # SVG-first rendering and interaction (planned)
 packages/editor/              # Semantic Top View editor (planned)
 packages/replay/              # Observations -> deterministic replay (planned)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
+tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # Reusable symbols & generalized layout fixtures (planned import)
 docs/                         # Design, decision records, research
 skills/                       # Reference image -> semantic SVG workflow
 ```
+
+## Development
+
+Prerequisites:
+
+- Node.js from [`.nvmrc`](.nvmrc) (26.7.0) — e.g. `nvm install` or `fnm use` in this directory.
+- pnpm 11.1.1, the version pinned by the `packageManager` field in `package.json` (e.g. `npm install -g pnpm`; `corepack enable pnpm` also works on Node versions that ship corepack).
+
+```sh
+pnpm install
+pnpm lint        # ESLint flat config across all packages (incl. the @ap/* boundary rule)
+pnpm typecheck   # turbo run typecheck
+pnpm test        # turbo run test
+pnpm build       # turbo run build
+git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
+```
+
+Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
+
+| Tool | Version | Note |
+| --- | --- | --- |
+| TypeScript | 5.9.3 | |
+| vitest | 3.2.7 | |
+| turbo | 2.11.4 | |
+| ESLint | 10.11.0 | |
+| React | 19.3.0 | added in S7/S8 (#12/#13) |
+| vite | 7.3.6 | added in S7/S8 (#12/#13) |
+
 
 ## Initial validation targets
 
