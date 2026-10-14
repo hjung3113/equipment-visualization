@@ -38,6 +38,16 @@ skills/                       # Reference image -> semantic SVG workflow
 
 Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, dual-stage lithography and vertical batch furnace. They serve as **structural conformance fixtures**, not exact AMAT/Lam/SEMES/ASML/Canon/ASM models.
 
+## Design and project tracking
+
+- [Design v0.3](docs/DESIGN-v0.3.md) · [Delivery plan](docs/DELIVERY-PLAN.md) · [Replay contract](docs/REPLAY-CONTRACT.md)
+- [Analytics-platform integration](docs/INTEGRATION.md) · [Public research](docs/RESEARCH.md) · [Asset review](docs/ASSET-REVIEW.md)
+- [Reference-to-SVG skill](skills/reference-to-semantic-topview/SKILL.md) · [Agent rules](AGENTS.md)
+- Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
+- Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
+
+**Repo status:** the v0.3 design documents are committed. The original generated SVG/JSON sample pack is **not yet imported** (tracked as M0 #1); there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **private**, while the parent analytics-platform is public; do not add the submodule to the parent until the access/CI gate (#332) is decided.
+
 ## Roadmap
 
 1. Import and review v0.3 research, normalized schemas, and generalized SVG prototypes.
