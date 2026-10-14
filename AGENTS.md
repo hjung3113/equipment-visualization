@@ -4,7 +4,7 @@
 Build a reusable semantic equipment Top View and explainable log replay framework. The repository must remain **standalone**; analytics-platform is an optional consumer, not a dependency.
 
 ## Before implementation
-- Read `README.md`, `CONTEXT.md` (glossary), `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`, `docs/adr/`.
+- Read `README.md`, `CONTEXT.md` (glossary), `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`.
 - Distinguish **Proposed** design from implemented/validated functionality.
 - Work from GitHub issues, record design decisions in an ADR before breaking format/API changes.
 - Prefer tests on 6 generalized equipment archetypes over OEM-faithful depiction claims.

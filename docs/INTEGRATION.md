@@ -22,7 +22,7 @@
 menus/equipment/src/
   pages/EquipmentTopView.tsx     # 이 저장소 renderer/replay 패키지 조립 (lazy)
   pages/EquipmentReplay.tsx
-  endpoints.ts                   # menuQuery 선언: equipment.topview.definition / equipment.topview.events
+  endpoints.ts                   # menuQuery 선언: equipment.topview.definition / .events / .metrics / .inventory
   index.ts                       # lazy manifest / capability / URL pageKeys
   mock/                          # 선언된 조회 핸들러용 synthetic 응답, 런타임 렌더 code import 금지
 
@@ -45,15 +45,14 @@ menus/analytics/src/
 Analytics Workspace
  └─ 생산성 드릴다운 (equipmentId, anchor, from/to, Lot ...)
        └─ linkTo() → Equipment Detail / Top View
-             ├─ [Overview] [Top View] [Log Replay] [Event List]
-             │     ├─ SVG (selection/highlight)
-             │     ├─ Timeline (cursor, zoom, playback speed)
-             │     └─ Event Grid (source/timestamp/provenance)
+             ├─ Focus (equipmentId + entityType/anchor) — Top View · Gantt · Occurrence 목록, 커서 공유
+             ├─ Aggregate (from/to + metric) — Component Metric 인코딩
+             ├─ Journey (wafer anchor) — 이산 hop
              └─ ReturnLink ← 원 분석 화면·드릴다운 문맥 복원
 
 Equipment Management
- └─ Equipment Master → Detail → Published Layout
-       └─ Edit(Layout revisions) [write permission 별도]
+ └─ Equipment Master → Onboarding (Fleet → Inventory → Template → Mapping Board → dry-run → Publish)
+       [onboarding:edit-rules / onboarding:publish-mapping / onboarding:edit-global-dictionary]
 ```
 
 - `EquipmentID`는 목적지 객체 식별자, 사용자 전역 Selection은 필터 집합. 둘을 섞지 않는다.
@@ -66,6 +65,10 @@ Equipment Management
 ## API/DTO 제안 (후보 필드, 기존 실데이터 스키마를 주장하지 않음)
 
 `equipment.topview.definition`: `{ equipmentId, binding: { layoutRevision, mappingVersion, effectiveFrom, effectiveTo }, layout, mapping, updatedAt }` — `layout`은 Component/Level/PhysicalInterface/TransferCapability/ProcessRoute를 포함한 Layout Revision 원본(ADR-0004).
+
+`equipment.topview.metrics`: `VIEWS.md`의 `ComponentMetric[]` (원천 alias 기준; 지표 계산은 플랫폼 mart).
+
+`equipment.topview.inventory`: `ONBOARDING.md`의 `ObservedInventory` (긴 샘플 기간은 서버 집계).
 
 `equipment.topview.events`: `REPLAY-CONTRACT.md`의 `OccurrenceBatch` — `{ equipmentId, from, to, timeDomain, watermark, parserContractVersion, dataGeneration, occurrences, issues, continuationToken? }`. 조회는 구간과 **겹치는** Occurrence.
 

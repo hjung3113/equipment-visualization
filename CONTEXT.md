@@ -84,6 +84,24 @@ _Avoid_: archetype(구조 분류 이름으로만), model(장비 모델)
 **Drift**:
 Publish 이후 처음 보는 alias·slot 또는 Transfer Capability 없는 이송이 관측된 상태.
 
+## Views
+
+**Focus**:
+Occurrence 한 건(`equipmentId`, `entityType`, `anchor`)을 중심으로 앞뒤 구간을 Top View·Gantt·목록으로 보는 화면 모드. 재생은 이 모드의 기능이다.
+_Avoid_: replay 화면, player
+
+**Aggregate**:
+기간 집계 지표(Component Metric)를 Top View 위에 인코딩하는 화면 모드.
+_Avoid_: dashboard, heatmap 모드
+
+**Journey**:
+wafer journey 하나의 경유지를 레이아웃 위 이산 hop으로 보는 화면 모드. 이동 궤적을 그리지 않는다.
+_Avoid_: path animation, trace
+
+**Component Metric**:
+원천 alias(또는 alias 쌍) 기준으로 외부에서 계산되어 들어오는 기간 지표 값과 표본 수·품질. Mapping Version으로 Component·Transfer Capability에 대응된다.
+_Avoid_: KPI, 지표(단독)
+
 ## Versioning
 
 **Layout Revision**:

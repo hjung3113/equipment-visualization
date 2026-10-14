@@ -52,6 +52,7 @@
 7. **Onboarding이 Studio의 MVP 핵심:** Observed Inventory → Template 제안 → Mapping Board → dry-run → Publish → Drift. 자유 편집은 형상 다듬기 보조 (`ONBOARDING.md`, ADR-0005).
 8. **v0.3 팩 이관 방식:** 변환 결과만 commit (§12).
 9. **실시간 모니터링 제외.** 사용자 우선순위는 Occurrence 맥락 확인 > 기간 집계 > wafer 경로 (§1).
+10. **화면 모드:** Focus(재생 포함) → Aggregate(Component Metric) → Journey, Compare는 2차 ([`VIEWS.md`](VIEWS.md)).
 
 ## 3. 도메인 모델
 
@@ -220,7 +221,6 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 - 원천의 열린 Occurrence read view ([context_recognized_parser#157](https://github.com/hjung3113/context_recognized_parser/issues/157); 그 전까지 Watermark 이후 `unknown`).
 - 라우트 파라미터 `at`와 `anchor`의 경계/URL codec (기존 router 규칙 준수).
 - 자산/레이아웃의 플랫폼 메타 DB 소유권, 소규모 팀 동시 편집 전략, 모델별 Custom Template의 승인 정책.
-- 분석 화면 모드 구성(Occurrence 중심 / 기간 집계 / wafer 경로 / 애니메이션 replay), 모듈×시간 Gantt 비중, 집계 지표 입력 계약, 비교 모드 — 다음 설계 라운드.
 
 ## 12. v0.3 팩 이관 결정
 

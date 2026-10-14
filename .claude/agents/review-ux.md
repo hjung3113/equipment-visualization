@@ -32,9 +32,9 @@ restart previews yourself; the conductor owns them.
 Read these before judging. Project authority beats generic taste.
 
 - Root `AGENTS.md` (evidence labels, geometry vs connectivity, unknowns) and `README.md` boundaries.
-- `docs/DESIGN-v0.4.md` → screen design (`Overview | Top View | Replay | Events`, viewer selection and detail slot,
-  replay timeline + event grid sync, editor catalog/canvas/properties) and `docs/DELIVERY-PLAN.md` acceptance tests.
-- `docs/REPLAY-CONTRACT.md` for what replay may and may not show at each log fidelity level (L0–L3).
+- `docs/VIEWS.md` → screen modes (Focus: Top View · Gantt · Occurrence list sharing one cursor; Aggregate; Journey),
+  `docs/ONBOARDING.md` → Mapping Board flow and keyboard model, and `docs/DELIVERY-PLAN.md` acceptance tests.
+- `docs/REPLAY-CONTRACT.md` for what replay may and may not show; `docs/DELIVERY-PLAN.md` Fidelity Tiers (F0–F3).
 - Visual style: semi-flat technical schematic, restrained outlines and fills, no fake 3D; theme tokens, not raw
   colours (platform tokens are injected only by the adapter).
 - Generic lenses, applied only where the project is silent: `.claude/skills/impeccable/reference/critique.md`

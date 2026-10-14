@@ -1,6 +1,6 @@
 # 구체 실행 계획 (WBS + 의사결정 게이트) v0.4
 
-**순서:** 설계 검증 → Core/Schema → Viewer → Editor → Log Replay → 플랫폼/운영 고도화.
+**순서:** 설계 검증 → Core/Schema → Viewer + Onboarding → Focus(Replay) → Aggregate → Journey → 플랫폼/운영 고도화. 화면 모드는 `VIEWS.md`.
 
 | WBS | 우선 | 산출물 | 필수 전제 | 완료/리뷰 기준 |
 |---|---|---|---|---|
@@ -11,7 +11,9 @@
 | T05 | P1 | SVG Viewer + interactive selection + level toggles | T01/T02 | JSON→SVG 일치, theme, keyboard/zoom/port selection |
 | T06 | P1 | Onboarding (Inventory → Template 제안 → Mapping Board → dry-run → Publish, `ONBOARDING.md`) | T05 | 커버리지·Mapping Conflict 계산, Publish 결정론, 키보드만으로 매핑 가능 |
 | T06b | P2 | 형상 다듬기 편집(move/rotate/snap) + Generic Layout → Template 승격 | T06 | undo/redo, key transform 불변 |
-| T07 | P1 | Replay MVP (cluster + wet + dual-stage) | T04/T05 | 실제 경로와 illustrative 경로가 명확히 구분됨 |
+| T07 | P1 | Focus 모드 (Top View · Gantt · 목록 커서 공유 + 재생; cluster + wet + dual-stage) | T04/T05 | 실제 경로와 illustrative 경로가 명확히 구분됨, Evidence를 색 외 패턴으로 구분 |
+| T07b | P1 | Aggregate 모드 (Component Metric → Component·Transfer Capability 인코딩) | T05/T06 | 미매핑 지표 패널, 저품질 값 빗금 |
+| T07c | P2 | Journey 모드 (이산 hop, 물리 경유/실행 이력 분리) | T07 | 궤적·애니메이션 없음 |
 | T08 | P1 | 플랫폼 equipment detail + analytics deep link | T05/T07 | 기존 Scope/권한/Context/returnTo + 기존 회귀검사 통과 |
 | T09 | P2 | Multi-level Track / Furnace/Boat playback | T07/T08 | level+batch 상태 모델 증거 연결 |
 | T10 | P2 | Reference→Semantic TopView Skill + 팀 QA workflow | T01/T05/T06 | 매 신규 장비의 도형 재사용·불확실성·라이선스 보고 |
@@ -39,12 +41,12 @@ F0도 유의미한 Replay MVP. 데이터가 부족하다고 F2 동작을 AI로 �
 
 ## 화면 디자인 (기존 플랫폼 UI 계약 준수)
 
-**Equipment Detail**: `Overview | Top View | Replay | Events` (최종 IA는 사용자 검토로 확정)
+**Equipment Detail**: `Overview | Focus | Aggregate | Journey` (모드 정의는 `VIEWS.md`; 최종 IA는 사용자 검토로 확정)
 
 - Viewer: 좌측 또는 전체폭 SVG, 선택된 Component → Right Detail Slot, 상태색/이름/불확실성.
-- Replay: 상단 동일 SVG, 하단 시간 Timeline(Play/Pause/Seek/Speed) + Event Grid(기간·도메인/alias/evidence), 클릭 시 두 화면 동기화.
-- Editor(별도 권한): Left Symbol Catalog, center SVG canvas, right Properties/Port/Level/Binding, top publish/change preview.
-- 분석 메뉴 → Top View: Equipment + selected time range/anchor를 URL 계약으로 전달해 열고 `ReturnLink`로 원 분석 드릴다운 복원.
+- Focus: 상단 Top View, 중단 Component lane × 시간 Gantt, 하단 Occurrence 목록/Data Quality/근거 상세. 커서 하나를 공유하고 재생은 이 안의 기능.
+- Onboarding(별도 권한): `ONBOARDING.md`의 Mapping Board — 좌 alias 목록, 중앙 Template Top View, 우 선택 상세, 상단 dry-run/Publish.
+- 분석 메뉴 → Focus: `equipmentId` + (`entityType`, `anchor`)를 URL 계약으로 전달해 열고 `ReturnLink`로 원 분석 드릴다운 복원.
 
 ## 데이터 소스/리비전 정책
 
