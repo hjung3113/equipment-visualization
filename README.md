@@ -24,7 +24,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 
 ```
 apps/studio/                   # Standalone web app (planned)
-packages/core/                # Semantic layout, ports, robot specs (present; layout schema in #6)
+packages/core/                # Layout schema + structural validator (present)
 packages/renderer/            # SVG-first rendering and interaction (planned)
 packages/editor/              # Semantic Top View editor (planned)
 packages/replay/              # Observations -> deterministic replay (planned)
@@ -63,6 +63,20 @@ Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 | vite | 7.3.6 | added in S7/S8 (#12/#13) |
 
 
+### Layout schema changes
+
+The zod schema in `packages/core/src/layout/schema.ts` is the single source of truth.
+Regenerate the committed `packages/core/schema/layout.schema.json` snapshot with:
+
+```sh
+pnpm --filter @eqv/core exec vitest run -u test/layout.test.ts
+```
+
+An additive change (a new optional field) updates both files in the same PR. A breaking
+change (rename, removal, new required field, changed meaning, or enum value removal)
+bumps `schemaVersion` and requires an ADR in `docs/adr/` merged first or in the same PR
+(see `AGENTS.md`).
+
 ## Initial validation targets
 
 Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, dual-stage lithography and vertical batch furnace. They serve as **structural conformance fixtures**, not exact AMAT/Lam/SEMES/ASML/Canon/ASM models.
@@ -75,7 +89,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. The original generated SVG/JSON sample pack is **not yet imported** (tracked as M0 #1); there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **private**, while the parent analytics-platform is public; do not add the submodule to the parent until the access/CI gate (#332) is decided.
+**Repo status:** the v0.3 design documents are committed. The original generated SVG/JSON sample pack is **not yet imported** (tracked as M0 #1); there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
 
 ## Roadmap
 
@@ -83,6 +97,6 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 2. Build standalone `apps/studio` with synthetic data and zero platform runtime imports.
 3. Validate semantic ports/kinematic constraints (where known) and SVG round-trip.
 4. Implement a deterministic observation reducer and playback timeline.
-5. Integrate through a **separate** analytics-platform PR after its integration issues and private-submodule CI access gate are resolved.
+5. Integrate through a **separate** analytics-platform PR after its integration issues and submodule/CI gate (#332) are resolved.
 
 Related: [analytics-platform](https://github.com/hjung3113/analytics-platform) and platform issue [#291](https://github.com/hjung3113/analytics-platform/issues/291) (broader visualization capability work; avoid overlap).
