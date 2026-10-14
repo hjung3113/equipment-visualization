@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""review-plan.py <checkout> [--base origin/main] [--head HEAD] — which reviewers an issue branch triggers.
+"""review-plan.py <checkout> [--base origin/develop] [--head HEAD] — which reviewers an issue branch triggers.
 
 Reads `git diff <base>...<head>` (file names plus added and removed lines) and prints one JSON line:
   {"ok": true, "code": bool, "ux": "required"|"optional"|false, "flags": {...}, "reasons": {...}}
@@ -68,7 +68,7 @@ PLATFORM_LINE = re.compile(r'@ap/|analytics-platform')
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument('checkout')
-    parser.add_argument('--base', default='origin/main')
+    parser.add_argument('--base', default='origin/develop')
     parser.add_argument('--head', default='HEAD')
     args = parser.parse_args()
 

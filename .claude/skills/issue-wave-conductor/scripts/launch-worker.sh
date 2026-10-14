@@ -1,5 +1,5 @@
 #!/bin/zsh
-# launch-worker.sh <issue> <slug> — Orca worktree from origin/main → branch feature/<issue>-<slug>, copy the brief
+# launch-worker.sh <issue> <slug> — Orca worktree from origin/develop → branch feature/<issue>-<slug>, copy the brief
 # ($WAVE_BRIEFS/<issue>-task.md) and the rules templates into .review/, install dependencies when a lockfile exists,
 # close setup shells, then delegate launch and worker state to the shared worker-launch.sh.
 # WORKER_ROLE defaults to impl; impl-mid, impl-complex and impl-fallback select the routing table rows of those names.
@@ -14,7 +14,7 @@ WAVE_BRIEFS=${WAVE_BRIEFS:A}; WAVE_STATE=${WAVE_STATE:A}
 [ -f "$WAVE_BRIEFS/$N-task.md" ] || { echo "Missing brief: $WAVE_BRIEFS/$N-task.md" >&2; exit 2; }
 SHARED_LAUNCH=$HOME/.claude/skills/orca-dispatch-recipes/scripts/worker-launch.sh
 [ -f "$SHARED_LAUNCH" ] || { echo "Missing shared launcher: $SHARED_LAUNCH (install orca-dispatch-recipes worker-ops scripts)" >&2; exit 2; }
-orca worktree create --repo path:"$EV_MAIN" --name "$N-$SLUG" --base-branch origin/main --issue "$N" --setup skip --json >/dev/null 2>&1 \
+orca worktree create --repo path:"$EV_MAIN" --name "$N-$SLUG" --base-branch origin/develop --issue "$N" --setup skip --json >/dev/null 2>&1 \
   || { echo "worktree create failed"; exit 1; }
 # Orca chooses the worktree location; find it by name instead of assuming a workspace path.
 W=$(git -C "$EV_MAIN" worktree list --porcelain | awk -v n="/$N-$SLUG" '/^worktree / { p = substr($0, 10); if (substr(p, length(p) - length(n) + 1) == n) print p }' | tail -1)

@@ -17,10 +17,10 @@ the fallback for direct use.
 
 ## Inputs
 
-You run in a disposable worktree detached at `origin/main`, never the owner's main checkout. Your task file
+You run in a disposable worktree detached at `origin/develop`, never the owner's main checkout. Your task file
 (`.review/SLICE-<m>-QUALITY-TASK.md`) names:
 
-- the commit range (the slice start commit `..origin/main`);
+- the commit range (the slice start commit `..origin/develop`, the tip the release PR will ship);
 - the slice milestone and its issues;
 - your report path and the sentinel.
 
