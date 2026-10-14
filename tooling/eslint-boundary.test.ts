@@ -1,0 +1,112 @@
+import { resolve } from 'node:path';
+import { ESLint } from 'eslint';
+import { expect, it } from 'vitest';
+
+const repoRoot = resolve(import.meta.dirname, '..');
+
+// ADR-0001 boundary: firing any of these in a restricted package is a defect.
+const BOUNDARY_RULES = [
+  'no-restricted-imports',
+  'no-restricted-syntax',
+  '@typescript-eslint/no-require-imports',
+] as const;
+
+type BoundaryRule = (typeof BOUNDARY_RULES)[number];
+
+interface Variant {
+  code: string;
+  filePath: string;
+  /** Expected firing boundary rule; null when none may fire. */
+  rule: BoundaryRule | null;
+}
+
+async function lint(filePath: string, code: string): Promise<(string | null)[]> {
+  const eslint = new ESLint({ cwd: repoRoot });
+  const [result] = await eslint.lintText(code, { filePath });
+  return result?.messages.map((message) => message.ruleId) ?? [];
+}
+
+it.each<Variant>([
+  {
+    code: "import x from '@ap/kernel';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "import x from 'analytics-platform/menus';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export { x } from '@ap/kernel';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export { x } from 'analytics-platform/menus';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export * from '@ap/kernel';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export * from 'analytics-platform/menus';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export const dep = await import('@ap/kernel');",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "export const dep = await import('analytics-platform/menus');",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "export type Dep = import('@ap/kernel').Dep;",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "export type Dep = import('analytics-platform/menus').Dep;",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "const x = require('@ap/kernel');",
+    filePath: 'packages/core/src/x.ts',
+    rule: '@typescript-eslint/no-require-imports',
+  },
+  {
+    code: "import x from '@ap/kernel';",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    code: "export const dep = await import('@ap/kernel');",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    code: "export type Dep = import('@ap/kernel').Dep;",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    // Negative control: the boundary pattern must not over-match.
+    code: "import x from 'apple'; import('@apx/kernel');",
+    filePath: 'packages/core/src/x.ts',
+    rule: null,
+  },
+])('boundary: $code in $filePath', async ({ code, filePath, rule }) => {
+  const messages = await lint(filePath, code);
+  const fired = messages.filter(
+    (id): id is BoundaryRule => id !== null && (BOUNDARY_RULES as readonly string[]).includes(id),
+  );
+  expect(fired).toEqual(rule === null ? [] : [rule]);
+});
