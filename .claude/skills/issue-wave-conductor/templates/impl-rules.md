@@ -4,7 +4,7 @@
 agents and do not ask who dispatches; if something is ambiguous, make the smallest reasonable call and record it
 in your report.
 
-1. **Read first:** root `AGENTS.md`, then the docs your task names (normally `docs/DESIGN-v0.3.md`,
+1. **Read first:** root `AGENTS.md`, then the docs your task names (normally `CONTEXT.md`, `docs/DESIGN-v0.4.md`,
    `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`) and any nested `AGENTS.md` on the paths you touch. A design
    marked **Proposed** is not implemented behaviour; build only what the task asks.
 2. **Run the narrowest checks yourself before you report:** the test files you touched or added
@@ -25,15 +25,15 @@ in your report.
      visual adjacency.
    - Arm count and blade count are independent; unknown kinematics stay `unknown`, never a plausible default.
    - Keep stable IDs, units (`abstract` is never promoted to `mm`), levels, ports, schema versions and provenance.
-   - Replay output carries `observed`, `reconstructed`, `illustrative` or `unknown`; interpolation is never
+   - Replay output carries `observed`, `derived`, `illustrative` or `unknown`; interpolation is never
      `observed`. The reducer is deterministic: same input order-independent where the contract says so, no clock,
      no randomness, no I/O.
    - Test data is synthetic. No confidential images, logs, hostnames or private addresses.
 4. **No suppressions:** no `biome-ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck`
    (`worker-hygiene.sh` fails on them). Touch only the lines you change; never reformat a whole file.
 5. **Test first.** Add or extend the failing test, then make the smallest change that passes it. One test per
-   acceptance criterion; `it.each` for variants. Replay changes cover the cases in AGENTS.md (ties, out-of-order
-   and late events, unresolved Start-End, invalid mappings, duplicate wafer occupancy, evidence fidelity) that the
+   acceptance criterion; `it.each` for variants. Replay changes cover the cases in AGENTS.md (ties, open
+   occurrences, Data Quality Issues, Time Anomalies, Watermark/Binding boundaries, invalid mappings, duplicate wafer occupancy, evidence fidelity) that the
    task touches. **Do not change the setup, fixtures or assertions of existing tests** unless the task says the
    behaviour they pin is being removed — then say which test and why in the report.
 6. Scope is exactly the task file, including any pre-existing items it lists as folds. No unrelated refactors.

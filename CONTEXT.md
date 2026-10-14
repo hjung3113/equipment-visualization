@@ -1,0 +1,134 @@
+# Equipment Visualization
+
+반도체 설비의 의미 기반 Top View와, 로그 근거를 잃지 않는 설명 가능한 Replay를 위한 도메인 언어.
+
+## Layout (구조)
+
+**Component**:
+레이아웃 안의 물리 객체 인스턴스(Chamber, TM, LoadPort, Robot, 그리고 PM 내부 station 등). 하위 Component를 가질 수 있다.
+_Avoid_: Station(별도 타입으로 쓰지 않음 — station은 하위 Component다), Module(로그 용어; Mapping으로만 연결)
+
+**Holding Site**:
+물질(wafer/carrier/batch)이 놓일 수 있는 이산 자리. 로봇 blade, PM station 자리, LL slot, boat slot 모두 Holding Site다.
+_Avoid_: Slot(로그 용어), Stage(별도 Component)
+
+**Location**:
+물질이 있는 곳을 `Component` + 선택적 `Holding Site`로 가리키는 값. Holding Site를 모르면 Component 단위로만 표현하며 자리를 임의 배정하지 않는다.
+
+**Handler**:
+물질을 옮기는 Component(로봇, rail robot, stage exchanger). 이송 중인 물질의 Location은 이 Handler다.
+_Avoid_: arm(Handler의 일부 Component일 뿐)
+
+**Level**:
+수직으로 겹친 Component를 나누는 층 식별자. Top View는 Level 필터로 다층 구조를 보여주며 높이 형상은 저장하지 않는다.
+_Avoid_: z-order(그리기 순서), floor
+
+**Physical Interface**:
+두 Component의 포트 간 물리 접점(gate, slit, docking, optical 등 `kind`로 구분).
+_Avoid_: connection(모호), adjacency
+
+**Transfer Capability**:
+두 Holding Site 사이에 어떤 handler로 이송이 *가능하다*는 사실. 실제 이송이 있었다는 근거가 아니다.
+_Avoid_: route, path
+
+**Process Route**:
+설명용 대표 공정 흐름 순서(FOUP→LL→PM→…). Replay 근거로 쓰지 않는다.
+_Avoid_: operation route, OptionalRouteDefinition
+
+**Certainty**:
+레이아웃 속성 하나가 레퍼런스로 뒷받침되는 정도: `verified | assumed | unknown`.
+_Avoid_: confidence
+
+**Source Evidence**:
+레이아웃 속성의 근거가 된 레퍼런스(출처, revision, 사용 허가)에 대한 참조.
+
+## Versioning
+
+**Layout Revision**:
+한 Equipment Template 레이아웃의 publish된 불변 버전.
+
+**Mapping Version**:
+로그의 Module/Slot alias를 Component/Holding Site로 해석하는 매핑의 불변 버전. 설비별로 관리한다.
+
+**Binding**:
+`(equipmentId, Layout Revision, Mapping Version, effectiveFrom, effectiveTo?)`. 특정 설비가 특정 기간에 어떤 구조·매핑을 썼는지를 말한다.
+
+**Ruleset Version**:
+Replay가 근거로부터 `derived` 상태를 계산하는 규칙 집합의 버전.
+
+**Parser Contract Version**:
+Adapter 입력 DTO 스키마의 버전.
+_Avoid_: parserRevision
+
+**Data Generation**:
+같은 설비·구간의 관측 데이터가 정정·재처리로 바뀔 때 올라가는 세대 값.
+_Avoid_: ingestionGeneration, eventGeneration, generation
+
+**Replay Key**:
+`(Layout Revision, Mapping Version, Ruleset Version, Data Generation, 관측 집합 해시, t)`. 같으면 Scene State가 같아야 한다.
+
+## Material
+
+**Material**:
+Location을 가지는 처리 대상 객체. MVP는 `wafer`와 `carrier`이며 `batch`, `boat`, `reticle`은 예약된 종류다.
+_Avoid_: substrate, item
+
+**Carrier**:
+wafer를 담아 LoadPort에 놓이는 용기(FOUP 등). Carrier 안의 wafer는 LoadPort의 Holding Site에 있는 것으로 표현한다.
+_Avoid_: FOUP(종류 이름), cassette
+
+**Lot / Job**:
+위치가 없는 Material 묶음 속성. 필터·강조에만 쓰며 화면 객체로 그리지 않는다.
+
+**Module Activity**:
+열린 Occurrence에서만 계산하는 Component의 활동 상태: `processing | post-processing | function | no recorded activity`.
+_Avoid_: idle(기록 부재는 idle의 근거가 아님), module status
+
+## Replay (입력)
+
+**Occurrence**:
+원천(parser)이 이미 Start/End를 짝지어 확정한 하나의 실행·이송·체류 구간. 끝이 아직 없으면 열린 Occurrence(`end=null`)다. Replay의 입력 단위다.
+_Avoid_: event(점 이벤트를 뜻할 때만 사용), Observation(입력 단위로서), interval
+
+**Data Quality Issue**:
+원천이 정상 Occurrence로 확정하지 못한 근거 결함(짝 없는 End, 시각 역전 등). 상태를 바꾸지 않고 타임라인에 표시된다.
+
+**Record Sequence**:
+원천이 부여한 설비별 전역 순서 번호. 상태 적용 순서의 유일한 기준이며 timestamp는 순서가 아니라 값이다.
+
+**Time Anomaly**:
+Record Sequence 순서와 timestamp 순서가 어긋난 경계. 영향 받은 객체는 그 구간에서 `unknown`이 된다.
+
+**Site Wall-clock**:
+설비 사이트 기준 timezone 없는 시각 값. 어떤 단계에서도 로컬 timezone이나 UTC로 변환하지 않는다.
+_Avoid_: timestamp(UTC instant로 오해될 때), local time
+
+**Watermark**:
+원천이 해당 설비에 대해 완료 Result를 확정한 마지막 지점. 이후 구간은 근거 부재로 취급한다.
+
+## Replay (근거)
+
+**Evidence Level**:
+Replay가 보여주는 모든 상태·동작의 근거 등급: `observed | derived | illustrative | unknown`. Occurrence 전체가 아니라 facet(location, material identity, start, end)마다 붙는다.
+_Avoid_: confidence, provenance level, reconstructed
+
+**observed**:
+로그 이벤트가 직접 말하는 사실(장비 센서 수준의 검증을 뜻하지는 않음).
+
+**derived**:
+observed 근거에 버전이 있는 규칙을 적용해 계산한 상태.
+_Avoid_: reconstructed, inferred
+
+**illustrative**:
+이해를 돕는 화면 연출(보간 이동 등). 근거가 아니며 기본으로 꺼져 있다.
+
+**unknown**:
+근거가 없거나, 매핑이 없거나, 해석이 여러 갈래인 상태. 다른 값으로 메우지 않는다.
+
+**Fidelity Tier**:
+설비 로그가 제공하는 근거 수준에 따라 Replay가 보여줄 수 있는 범위를 나눈 등급 `F0`(모듈 실행 구간)~`F3`(자세·축 엔코더). 원천 PRC 계층(L1–L4)과 다른 개념이다.
+_Avoid_: L0–L3, data level
+
+**Scene State**:
+특정 시점 t에 Replay가 결정론적으로 만든 객체별 상태(점유, 모듈 상태, 마커)와 그 Evidence Level.
+_Avoid_: TimeState, frame
