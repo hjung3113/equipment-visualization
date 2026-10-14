@@ -8,3 +8,10 @@ HANDOFF.md
 .claude/settings.local.json
 # local hookify rules (copied from FeedbackOps; per-clone)
 .claude/hookify.*.local.md
+
+# workspace
+node_modules/
+dist/
+.turbo/
+coverage/
+*.tsbuildinfo

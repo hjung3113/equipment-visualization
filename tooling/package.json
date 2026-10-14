@@ -1,0 +1,10 @@
+{
+  "name": "@eqv/tooling",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "eslint": "10.11.0",
+    "vitest": "3.2.7"
+  }
+}
