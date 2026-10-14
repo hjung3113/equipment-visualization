@@ -6,7 +6,7 @@ is fine.
 
 ## What you review
 
-The committed branch in this worktree vs `origin/main`: `git diff origin/main...HEAD`. The task the implementer
+The committed branch in this worktree vs `origin/develop`: `git diff origin/develop...HEAD`. The task the implementer
 received is `.review/W-<issue>-TASK.md`; their report is `.review/W-<issue>-REPORT.md`. The conductor already ran
 `verify.sh` (root lint/typecheck/test/build when defined, the package-boundary check, `asset-check.py`, worker
 hygiene); results and the `review-plan.py` output are in `.review/W-<issue>-VERIFY.md`.

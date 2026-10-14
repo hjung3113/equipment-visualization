@@ -5,14 +5,16 @@ agents and do not ask who dispatches; if something is ambiguous, make the smalle
 in your report.
 
 1. **Read first:** root `AGENTS.md`, then the docs your task names (normally `CONTEXT.md`, `docs/DESIGN-v0.4.md`,
-   `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`) and any nested `AGENTS.md` on the paths you touch. A design
+   `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`) and any nested `AGENTS.md` on the paths you touch. A design
    marked **Proposed** is not implemented behaviour; build only what the task asks.
 2. **Run the narrowest checks yourself before you report:** the test files you touched or added
    (`vitest run <files>`, never watch mode; the worker cap comes from the environment, so add no worker flags),
    plus the package's `typecheck` script when one exists. For assets, run
    `python3 .claude/skills/issue-wave-conductor/scripts/asset-check.py . <changed asset paths>`. Fix what fails and
    put the commands and results in your report. Test runs stay in the foreground and finish (no trailing `&`, no
-   `nohup`).
+   `nohup`): several workers share one machine, and a killed runner leaves its pool children orphaned.
+   In React lifecycle code, never write refs or read the DOM during render; use event handlers, effects, or
+   render-phase state adjustment.
    **Never** run git (commit, stash, reset, checkout, restore), anything that needs the network, or
    `pnpm install`/`add`/`update`; the conductor pre-installs dependencies. Leave all changes uncommitted — the
    conductor commits and runs the full gates.

@@ -6,9 +6,9 @@
 #      lines that differ only in whitespace. Re-indenting code under a new wrapper is legitimate, so the conductor
 #      reads the diff of each listed file before committing.
 # Only product sources (apps/, packages/) count. Compares the working tree (commits + uncommitted + untracked) with
-# the merge-base of HYGIENE_BASE (default origin/main).
+# the merge-base of HYGIENE_BASE (default origin/develop).
 wt=${1:?usage: worker-hygiene.sh <worktree>}; cd "$wt" || exit 2
-base=${HYGIENE_BASE:-origin/main}; limit=${HYGIENE_WS_LINES:-6}
+base=${HYGIENE_BASE:-origin/develop}; limit=${HYGIENE_WS_LINES:-6}
 mb=$(git merge-base "$base" HEAD) || exit 2
 pattern='biome-ignore|eslint-disable|@ts-ignore|@ts-nocheck'
 found=0
