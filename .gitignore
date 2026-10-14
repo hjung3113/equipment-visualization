@@ -1,0 +1,8 @@
+# issue-wave-conductor scratch: briefs, worker/reviewer reports, screenshots
+.review/
+# local session handoff (session-handoff skill)
+HANDOFF.md
+# impeccable engine binary (downloaded on first run)
+.claude/skills/impeccable/scripts/bin/
+# per-user Claude Code settings
+.claude/settings.local.json
