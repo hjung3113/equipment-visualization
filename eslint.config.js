@@ -14,12 +14,28 @@ export default defineConfig([
           patterns: ['@ap', '@ap/*', 'analytics-platform', 'analytics-platform/*'],
         },
       ],
+      // no-restricted-imports does not see dynamic imports (ImportExpression)
+      // or TS import types (TSImportType); these selectors close the gap.
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression[source.value=/^(@ap|analytics-platform)(\\/|$)/]',
+          message:
+            "ADR-0001: only packages/platform-adapter may import analytics-platform code ('@ap/*', 'analytics-platform/*').",
+        },
+        {
+          selector: 'TSImportType[source.value=/^(@ap|analytics-platform)(\\/|$)/]',
+          message:
+            "ADR-0001: only packages/platform-adapter may import analytics-platform code ('@ap/*', 'analytics-platform/*').",
+        },
+      ],
     },
   },
   {
     files: ['packages/platform-adapter/**'],
     rules: {
       'no-restricted-imports': 'off',
+      'no-restricted-syntax': 'off',
     },
   },
   globalIgnores([
