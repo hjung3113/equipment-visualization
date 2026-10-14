@@ -36,11 +36,53 @@ _Avoid_: route, path
 _Avoid_: operation route, OptionalRouteDefinition
 
 **Certainty**:
-레이아웃 속성 하나가 레퍼런스로 뒷받침되는 정도: `verified | assumed | unknown`.
+레이아웃 속성이나 매핑 항목 하나가 근거로 뒷받침되는 정도: `verified | assumed | unknown`. `assumed` 매핑을 거친 location은 Evidence Level이 최대 `derived`다.
 _Avoid_: confidence
 
 **Source Evidence**:
 레이아웃 속성의 근거가 된 레퍼런스(출처, revision, 사용 허가)에 대한 참조.
+
+## Onboarding
+
+**Onboarding**:
+로그에 관측된 구성으로부터 설비의 레이아웃과 Mapping Version을 만들고 유지하는 작업 흐름.
+_Avoid_: 등록, setup
+
+**Observed Inventory**:
+샘플 기간의 Occurrence에서 모은 설비별 alias 목록(ModuleType, Port/Robot 여부, slot 집합, 활동 종류, 건수, 처음/마지막 관측)과 관측된 이송 쌍.
+_Avoid_: module list, config(설비 설정 CFG와 다름)
+
+**Role**:
+제조사와 무관한 Component의 기능 분류(PM, LL, TM, LP, Robot, Aligner, Buffer 등). 템플릿 매칭의 공통 언어다.
+_Avoid_: ModuleType(제조사별 원천 문자열), ChamberType
+
+**Type Dictionary**:
+원천 `ModuleType` 문자열을 Role로 바꾸는 버전 관리되는 사전. Mapping Scope 계층을 따른다.
+
+**Alias Rule**:
+원천 Module/Slot alias를 Component/Holding Site로 해석하는 규칙(정확 일치, 패턴, 다대일, slot 분할, slot 변환, 로봇 arm 지정, 무시).
+
+**Mapping Scope**:
+Alias Rule과 Type Dictionary가 작성되는 범위: `Global → Maker → Model → Equipment`. 좁은 범위가 넓은 범위를 덮어쓴다. Publish 시 평탄화되어 불변 Mapping Version이 된다.
+
+**Ignored Alias**:
+의도적으로 표시하지 않기로 확정한 alias(가상·소프트웨어 모듈). 아직 해석되지 않은 미매핑 alias(`unknown`)와 다르다.
+
+**Mapping Conflict**:
+로그 관측과 레이아웃·매핑이 모순되는 지점(Transfer Capability 없는 관측 이송, Holding Site 수를 넘는 slot, Port/Role 불일치, 같은 수준 규칙 중첩). 자동으로 고치지 않는다.
+
+**Template**:
+한 구조 아키타입의 재사용 레이아웃. Role별 허용 개수(`roleCardinality`)를 가지며 매칭 후보가 된다. Component ID는 `pm-a`처럼 Role 기반이며 로그 alias와 같다는 사실은 매핑 근거가 아니다.
+_Avoid_: archetype(구조 분류 이름으로만), model(장비 모델)
+
+**Coverage**:
+샘플 기간 Occurrence의 alias 참조 중 매핑으로 해석된 비율(건수 가중). Ignored Alias는 분모에서 뺀다.
+
+**Generic Layout**:
+맞는 템플릿이 없을 때 Observed Inventory에서 자동 생성하는 Role별 박스 배치 레이아웃. 모든 형상 Certainty는 `assumed`.
+
+**Drift**:
+Publish 이후 처음 보는 alias·slot 또는 Transfer Capability 없는 이송이 관측된 상태.
 
 ## Versioning
 

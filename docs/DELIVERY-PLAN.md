@@ -9,7 +9,8 @@
 | T03 | P0 | Occurrence 입력 계약 + synthetic fixture (ADR-0002) | context_recognized_parser Result 구조 기준 | 열린 Occurrence·DataQuality·facet evidence 테스트 |
 | T04 | P0 | Occurrence → SceneState 결정론적 reducer | T03 | seek/tie/Time Anomaly/Watermark/Binding 경계/dup/conflict fixture 테스트 |
 | T05 | P1 | SVG Viewer + interactive selection + level toggles | T01/T02 | JSON→SVG 일치, theme, keyboard/zoom/port selection |
-| T06 | P1 | Layout Editor 기본(move/rotate/snap/port/groups) | T05 | undo/redo, publish revision rollback, key transform 불변 |
+| T06 | P1 | Onboarding (Inventory → Template 제안 → Mapping Board → dry-run → Publish, `ONBOARDING.md`) | T05 | 커버리지·Mapping Conflict 계산, Publish 결정론, 키보드만으로 매핑 가능 |
+| T06b | P2 | 형상 다듬기 편집(move/rotate/snap) + Generic Layout → Template 승격 | T06 | undo/redo, key transform 불변 |
 | T07 | P1 | Replay MVP (cluster + wet + dual-stage) | T04/T05 | 실제 경로와 illustrative 경로가 명확히 구분됨 |
 | T08 | P1 | 플랫폼 equipment detail + analytics deep link | T05/T07 | 기존 Scope/권한/Context/returnTo + 기존 회귀검사 통과 |
 | T09 | P2 | Multi-level Track / Furnace/Boat playback | T07/T08 | level+batch 상태 모델 증거 연결 |

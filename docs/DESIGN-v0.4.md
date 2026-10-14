@@ -11,6 +11,14 @@
 - 제조사 전체 SVG 복제 대신 구조 아키타입과 파라미터형 Assembly를 재사용.
 - 설비관리·분석 화면에서 선택, 상태 강조, 시점 이동, 로그 이벤트의 가시화.
 - 로그를 읽은 사람이 '어느 모듈에서 언제 무엇이 있었는지'를 역추적하도록 원문 근거를 제공.
+- 로그 관측 구성에서 레이아웃·매핑을 만드는 **Onboarding**으로 장비 수가 늘어도 온보딩 비용을 낮춤 ([`ONBOARDING.md`](ONBOARDING.md)).
+
+사용자와 과업 (우선순위 순):
+1. **공정·생산성 엔지니어** — 분석 화면의 Occurrence(`equipmentId`, `entityType`, `anchor`)에서 진입해 "그때 장비 안에서 무슨 일이 있었나"를 확인.
+2. **설비 엔지니어** — 기간 집계를 공간 위에서: 어느 챔버가 병목인지, 비Process 체류가 어디 쌓이는지.
+3. **수율 엔지니어** — wafer/lot 단위 경로 추적, 같은 경로를 탄 wafer 수.
+4. (2차) 같은 Template 장비끼리 비교 — 챔버 매칭, PM 전후.
+- 레이아웃·매핑 담당자는 Onboarding 사용자다.
 
 비목표 (MVP):
 - 실제 엔코더 위치, 로봇 기구학 보증, 충돌 판정, 공정 물리, 정확한 제조사 실측 형상.
@@ -19,6 +27,7 @@
 - 로그를 명령처럼 해석해 설비에 쓰기/제어하는 기능.
 - Side view·schematic inset (Top View + Level 필터만; §3).
 - Alarm/down 등 원천에 없는 모듈 상태, Material 중첩(wafer ⊂ carrier ⊂ …) 모델.
+- 실시간 모니터링. 화면의 최신 상태는 항상 마지막 Watermark 기준이다.
 
 ## 2. 변경 이력
 
@@ -40,6 +49,9 @@
 4. **Station 폐지:** station은 하위 Component. 특수 leaf는 Holding Site 하나. Location = Component + 선택적 Holding Site.
 5. **버전 축:** Layout Revision, Mapping Version, Binding(유효기간), Ruleset Version, Parser Contract Version, Data Generation. Replay Key에 Mapping/Ruleset 포함.
 6. **Studio 저장:** 파일 기반 (Layout JSON + 불변 revision 파일, git 이력).
+7. **Onboarding이 Studio의 MVP 핵심:** Observed Inventory → Template 제안 → Mapping Board → dry-run → Publish → Drift. 자유 편집은 형상 다듬기 보조 (`ONBOARDING.md`, ADR-0005).
+8. **v0.3 팩 이관 방식:** 변환 결과만 commit (§12).
+9. **실시간 모니터링 제외.** 사용자 우선순위는 Occurrence 맥락 확인 > 기간 집계 > wafer 경로 (§1).
 
 ## 3. 도메인 모델
 
@@ -61,7 +73,11 @@ EquipmentLayout (templateId + Layout Revision, publish 후 불변)
  ├─ TransferCapabilityEdge[]  (holdingSite ↔ holdingSite, handlerComponentId)
  └─ ProcessRoute[]            (설명용, Replay 근거 아님)
 
+Template (아키타입 재사용 레이아웃 + roleCardinality, 예: radial TM의 PM 2–6)
+ └─ Component ID는 Role 기반(`pm-a`, `ll-a`, `tm-1`); label(`PM1`)은 표시용. ID/label과 alias의 일치는 매핑 근거가 아님
+
 MappingVersion (설비별, 불변): 원천 Module/Slot alias → Component / Holding Site
+ └─ Mapping Scope(Global → Maker → Model → Equipment)의 Alias Rule을 Publish 시 평탄화 (ADR-0005)
 Binding: (equipmentId, Layout Revision, Mapping Version, effectiveFrom, effectiveTo?)
 
 Runtime: Occurrence[] + DataQualityIssue[] → (Binding, Ruleset) → SceneState(t) → SVG overlay
@@ -164,10 +180,11 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 - 클라이언트 렌더링 로직보다 모델/semantic 검증을 먼저 안정화.
 - **출구 조건:** 6개 유형 JSON 로딩, disconnected port / duplicate wafer occupancy / missing mapping 검출.
 
-### Phase 2 — SVG Viewer 및 기본 편집
-- React SVG viewer, selection/highlight, pan/zoom, drag component, snap, Level 필터, export; light/dark, virtual scale.
-- 파일 기반 Layout Revision publish, rollback, diff, evidence record.
-- **출구 조건:** round-trip(JSON→SVG→편집→JSON→SVG) 좌표/ID 보존. 임의 SVG 역분해는 제외.
+### Phase 2 — Viewer + Onboarding (M1)
+- React SVG viewer(selection/highlight, pan/zoom, Level 필터, light/dark)를 Onboarding 흐름 안에서 구현: synthetic cluster 1대의 Inventory → Template 제안 → Mapping Board → dry-run → Publish.
+- 파일 기반 Layout Revision·Mapping Version publish, diff.
+- 자유 편집(move/rotate/snap)은 Template 인스턴스·Generic Layout 형상 다듬기로 축소해 이후 슬라이스.
+- **출구 조건:** 커버리지·Mapping Conflict 계산, Publish 결과의 결정론, JSON→SVG 좌표/ID 보존.
 
 ### Phase 3 — 로그 기반 Replay MVP
 - 3개 대표 흐름: `FOUP→LL→TM→PM`, `rail robot→wet cell→dryer`, `dual stage align↔expose`.
@@ -203,4 +220,25 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 - 원천의 열린 Occurrence read view ([context_recognized_parser#157](https://github.com/hjung3113/context_recognized_parser/issues/157); 그 전까지 Watermark 이후 `unknown`).
 - 라우트 파라미터 `at`와 `anchor`의 경계/URL codec (기존 router 규칙 준수).
 - 자산/레이아웃의 플랫폼 메타 DB 소유권, 소규모 팀 동시 편집 전략, 모델별 Custom Template의 승인 정책.
-- 실시간 애니메이션(미결정; 로그 리플레이와는 다른 제품 요구). 기존 플랫폼의 5분 polling을 재생 clock으로 오해하지 않음.
+- 분석 화면 모드 구성(Occurrence 중심 / 기간 집계 / wafer 경로 / 애니메이션 replay), 모듈×시간 Gantt 비중, 집계 지표 입력 계약, 비교 모드 — 다음 설계 라운드.
+
+## 12. v0.3 팩 이관 결정
+
+원본: `equipment-visualization-design-v0.3.zip`(6 template, 25 primitive, schema 2, Python 생성기/validator, synthetic fixture). 저장소 밖 보관; 출처·hash는 `ASSET-REVIEW.md`.
+
+| 대상 | 처리 |
+|---|---|
+| 6종 layout JSON | v0.4 스키마로 변환해 commit |
+| primitive SVG 25개 | 하드코딩 색을 `--eqv-*` 토큰으로 치환해 commit |
+| 한국어 RESEARCH 표 | `docs/RESEARCH.md`에 병합 (roleCardinality 근거) |
+| template SVG/PNG, Python 생성기·validator, v0.3 fixture | 가져오지 않음 (SVG는 JSON에서 파생, QA 항목은 TS core validator로 이식, fixture는 Occurrence로 새로 작성) |
+
+변환 규칙:
+- `kind` → `role` + `assetRef` 분리 (`robot-dual`/`robot-single`/`handler` → role `robot`, 변형은 assetRef).
+- Component ID `PM1`/`LLA`/`TM1` → `pm-a`/`ll-a`/`tm-1`; 원래 값은 label.
+- Holding Site 추가(Certainty `assumed`): PM 1, LL 2, 로봇 blade 수만큼, LP carrier 자리 1 + wafer slot 파라미터, boat slot 파라미터.
+- `transferCapabilities`(port↔port) → Holding Site↔Holding Site + handler(해당 port가 속한 hub의 하위 로봇; 템플릿 부모-자식 구조 근거, `assumed`).
+- `opticalRelations` → Physical Interface `kind: optical`; `logicalRoutes` → Process Route.
+- 레이아웃 전체 `evidence.class` 폐기, port `verified:false` → Certainty `assumed`.
+- Level id `L0`/`L1` → `level-main`/`level-upper`.
+- 고정 인스턴스 유지 + `roleCardinality` 메타데이터 추가. TS 파라미터 생성기는 N이 다른 장비가 실제로 자주 나오는 것이 확인된 뒤 별도 슬라이스.
