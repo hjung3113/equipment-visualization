@@ -156,3 +156,44 @@ it.each(['identity', 'start'] as const)('reads illustrative %s evidence as unkno
   expect(state.materials[0]).toMatchObject({ identityEvidence: facet === 'identity' ? 'unknown' : 'observed', locationEvidence: 'observed' });
   expect(state.components.find((c) => c.componentId === 'pm-a')).toMatchObject({ activity: 'processing', activityEvidence: facet === 'start' ? 'unknown' : 'observed' });
 });
+
+it('selects the newest activity and evidence while sorting all open occurrence ids', () => {
+  const data = input();
+  const source = { equipmentId: data.batch.equipmentId, location: { moduleAlias: 'PM1' }, end: null, synthetic: false,
+    source: { parserContractVersion: data.batch.parserContractVersion, dataGeneration: data.batch.dataGeneration } };
+  data.batch = occurrenceBatchSchema.parse({ ...data.batch, issues: [], occurrences: [
+    { ...source, id: 'z-process', kind: 'PROCESS', start: { seq: 1, at: time('10:00:00'), evidence: 'observed' } },
+    { ...source, id: 'a-function', kind: 'FUNCTION', start: { seq: 2, at: time('10:00:10'), evidence: 'derived' } },
+  ] });
+  expect(seekSceneState(data, time('10:00:30')).components.find((c) => c.componentId === 'pm-a')).toEqual({
+    componentId: 'pm-a', activity: 'function', activityEvidence: 'derived', occurrenceIds: ['a-function', 'z-process'],
+  });
+});
+
+it('derives synthetic VISIT location evidence while preserving identity evidence', () => {
+  const data = input();
+  const source = data.batch.occurrences.find((o) => o.id === 'occ-lp-slot-one')!;
+  data.batch = occurrenceBatchSchema.parse({ ...data.batch, issues: [], occurrences: [
+    { ...source, synthetic: true, start: { ...source.start, seq: 1 }, end: null },
+  ] });
+  const state = seekSceneState(data, time('10:00:30'));
+  expect(state.materials).toEqual([expect.objectContaining({ occurrenceId: source.id,
+    location: { componentId: 'lp-a', holdingSiteId: 'slot-1' }, locationEvidence: 'derived', identityEvidence: 'observed' })]);
+  expect(state.markers).toEqual([]);
+});
+
+it('preserves open placement and activity evidence exactly at the watermark', () => {
+  const data = input();
+  const source = data.batch.occurrences.find((o) => o.kind === 'PROCESS' && o.material)!;
+  data.batch = occurrenceBatchSchema.parse({ ...data.batch, issues: [],
+    watermark: { seq: 1, at: time('10:00:30') }, occurrences: [
+      { ...source, start: { seq: 1, at: time('10:00:00'), evidence: 'observed' }, end: null },
+    ] });
+  const state = seekSceneState(data, data.batch.watermark.at);
+  expect(state.materials).toEqual([expect.objectContaining({ occurrenceId: source.id,
+    location: { componentId: 'pm-a' }, locationEvidence: 'observed', identityEvidence: source.material!.identityEvidence })]);
+  expect(state.components.find((c) => c.componentId === 'pm-a')).toMatchObject({
+    activity: 'processing', activityEvidence: 'observed', occurrenceIds: [source.id],
+  });
+  expect(state.markers).toEqual([]);
+});
