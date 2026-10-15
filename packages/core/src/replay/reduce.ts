@@ -2,6 +2,7 @@ import type { EquipmentLayoutDocument } from '../layout/schema.js';
 import { resolveLocation } from '../mapping/resolve.js';
 import type { BindingsFile, MappingVersion } from '../mapping/schema.js';
 import type { EvidenceLevel, Occurrence, OccurrenceBatch } from '../occurrence/schema.js';
+import { assertBatchRecords } from '../occurrence/validate.js';
 import type { SceneComponent, SceneMarker, SceneMaterial, SceneState } from '../scene/schema.js';
 import type { SiteWallClock } from '../site-wall-clock.js';
 
@@ -14,12 +15,11 @@ export function assertReplayInput(input: ReplayInput): void {
   if (input.bindings.equipmentId !== equipmentId) {
     throw new RangeError(`bindings.equipmentId (${input.bindings.equipmentId}) must match batch.equipmentId (${equipmentId})`);
   }
-  for (const field of ['occurrences', 'issues'] as const) {
-    for (const [i, record] of input.batch[field].entries()) {
-      if (record.equipmentId !== equipmentId) {
-        throw new RangeError(`${field}[${i}].equipmentId (record ${record.id}) (${record.equipmentId}) must match batch.equipmentId (${equipmentId})`);
-      }
-    }
+  assertBatchRecords(input.batch);
+  // An unfinished page can omit a record that would change a facet (e.g. a second occupant), so replay
+  // needs the complete batch; assembling pages is the caller's job.
+  if (input.batch.continuationToken !== undefined) {
+    throw new RangeError('batch.continuationToken is set: replay needs the complete OccurrenceBatch');
   }
 }
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
