@@ -1,6 +1,6 @@
 # Onboarding — 로그 관측으로 레이아웃·매핑 만들기 v0.4
 
-**상태:** Proposed (설계 grilling 확정, 2026-10-14). 용어는 [`CONTEXT.md`](../CONTEXT.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
+**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); UI·편집·Template 승격은 제안 단계다. 용어는 [`CONTEXT.md`](../CONTEXT.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
 Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다.
 
@@ -58,17 +58,32 @@ type InventoryAlias = {
 
 ## 3. Template 매칭
 
-결정론적·설명 가능한 점수만 사용한다(ML 없음). 제안은 자동 게시되지 않는다.
+`proposeTemplates({ inventory, dictionaries, templates })`는 결정론적·설명 가능한 규칙으로 상위 3개(후보가 적으면 그 수만큼)를 반환한다(ML 없음). **자동 게시 없음:** 제안만 반환하며 Mapping Version을 만들지 않는다.
 
-1. **Role 개수 적합도:** 정확히 일치, 또는 템플릿 `roleCardinality` 범위 안(예: radial TM의 PM 2–6).
-2. **이송 일관성:** 관측 이송 쌍 중 템플릿 Transfer Capability로 설명되는 비율.
-3. **감점:** 설명되지 않는 alias 수.
-4. **대칭 배정:** 같은 Role 여러 개(`PM1–4` → `pm-a–d`)는 관측 이송 이웃으로 먼저 구분, 안 되면 alias 자연 정렬 순서로 배정하고 Certainty `assumed`.
-5. **금지:** Component ID나 label이 alias와 같다는 사실을 매핑 근거로 쓰지 않는다.
+1. **Role 개수 적합도:** alias의 `moduleType`을 `resolveRole`과 Type Dictionary로 해석한다. 필드가 없거나 사전에서 해석되지 않으면 `unknown`이며 alias 문자열에서 Role을 추측하지 않는다. Inventory에서 관측된 Role 중 `unknown`을 제외한 Role만 code-unit 순으로 `roleFit` 행을 만든다. `drawn`은 Template의 해당 Role Component 수, `min`·`max`는 `roleCardinality` 값(항목이 없으면 모두 0)이다. 관측 수가 범위 밖인 Role 수가 `rolesOutOfRange`이며 0이면 `fits: true`다. 관측되지 않은 Template Role은 감점하지 않는다.
+2. **대칭 배정:** 먼저 관측 alias와 Template Component가 각각 하나인 Role을 `unique-role`로 배정한다. 다음은 Role code-unit 순, alias 자연 정렬 순으로 이미 배정된 관측 이송 이웃(양방향)을 검사한다. 같은 Role의 미배정 Component 중 모든 배정된 이웃과 명시적인 Transfer Capability로 연결된 후보가 정확히 하나이면 `transfer-neighbors`로 배정한다. 이 단계에서 앞서 배정한 이웃도 사용한다. 마지막으로 남은 alias 자연 정렬 순과 남은 Component ID code-unit 순을 짝지어 `natural-order`로 배정한다. 모든 배정은 근거 `basis`를 가지며 Certainty는 `assumed`다. Component가 부족한 alias와 모든 `unknown` alias는 `unexplainedAliases`에 자연 정렬 순으로 남긴다.
+3. **이송 일관성:** `total`은 Inventory 이송 쌍의 `count` 합, `explained`는 양쪽 alias가 배정되고 두 Component의 Holding Site 사이에 명시적인 Transfer Capability가 있는 쌍의 `count` 합이다. 양방향으로 검사하며 geometry·Physical Interface·Process Route는 근거가 아니다. `ratio = explained / total`, 이송이 없으면 null이다.
+4. **순위:** `rolesOutOfRange` 오름차순 → 이송 `ratio` 내림차순(null은 마지막) → 설명되지 않는 alias 수 오름차순 → `exactRoleMatches` 내림차순 → Template ID code-unit 오름차순의 사전식 비교다. `exactRoleMatches`는 범위 안이며 관측 수와 `drawn`이 같은 Role 수다. `rank`는 1부터 시작한다.
+5. **금지·정렬:** Component ID나 label이 alias와 같다는 사실을 매핑 근거로 쓰지 않는다. 자연 정렬은 최대 숫자·비숫자 run을 비교하고 숫자끼리는 정확한 `BigInt`, 나머지는 code-unit 순을 쓴다. run 목록이 접두사면 짧은 목록이 먼저며, 마지막 동률은 원문 code-unit 순이다(`PM2 < PM10`, `PM01 < PM1`). 배정 결과도 alias 자연 정렬 순이다.
+
+**근거 문장:** Role을 대문자로 표기한다. 범위 안이고 관측 수가 `drawn`과 같으면 `ROLE 관측/도형 ✓`, 범위 안이지만 다르면 `ROLE 관측 (최소–최대) ✓`, 범위 밖이면 `ROLE 관측 (최소–최대) ✗`다. 이어 `이송 explained/total ✓`(`explained < total`이면 `✗`), 이송이 없으면 `이송 없음`, 마지막은 `설명 안 되는 alias n`이다. 각 항목은 `, `로 잇고 범위에는 en dash(`–`)를 쓴다. synthetic cluster fixture의 `cluster-single` 제안:
+
+```text
+LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2
+```
+
+`fixtures/templates/`의 세 후보는 #11b의 synthetic Template이며 OEM 형상이나 기구학 검증을 주장하지 않는다. #7의 변환 아키타입은 후속 후보로 합류한다.
 
 ### Generic Layout
 
-맞는 템플릿이 없으면 Observed Inventory에서 자동 생성한다. 흐름 방향은 관측 이송 그래프를 Port 기점으로 위상 정렬한 열 배치(LP → EFEM 쪽 → LL → TM → PM), 같은 열 안은 alias 자연 정렬. 같은 Inventory면 항상 같은 배치. 모든 형상 Certainty는 `assumed`. 다듬은 뒤 "Template으로 승격"하면 다른 장비의 매칭 후보가 된다.
+맞는 Template이 없으면 `buildGenericLayout({ inventory, dictionaries })`로 Observed Inventory에서 생성한다. **alias가 하나 이상이어야 한다.** 빈 Inventory는 `RangeError('Cannot build Generic Layout from empty Inventory')`를 던진다.
+
+- `unknown`을 포함해 alias마다 Component 하나를 만든다. Role 해석은 위와 같고, 각 Role 안의 alias 자연 정렬 순번 `n`으로 ID는 `role-n`, label은 `ROLE n`, asset은 `generic-box`다. alias 이름을 label로 복사하지 않는다. 좌표 단위는 `abstract`다.
+- `isPort === true`인 모든 alias가 0열이다. 열은 **무방향 관측 이송 그래프의 Port 기점 최단 거리**다. 도달하지 못한 alias는 최대 도달 열 + 1인 마지막 열에 두며 Port가 하나도 없으면 모두 0열이다. 같은 열 안은 alias 자연 정렬 순으로 0부터 행을 매긴다. 좌표는 `(10 + 20·열, 10 + 20·행)`, 회전 0, scale 1이며 viewBox는 `(0, 0, 20·열 수, 20·최대 행 수)`다. 같은 Inventory는 입력 배열 순서와 무관하게 같은 결과다.
+- 관측 slot 중 정수 문자열(`/^[+-]?[0-9]+$/`)만 §2의 정렬 순으로 Holding Site를 만든다. 정확한 `BigInt` 값 `v`가 0 이상이면 `slot-v`, 음수면 `slot-neg-절댓값`이다. 같은 값의 문자열(`01`, `1`)은 첫 문자열이 만든 site 하나를 공유하고 둘 다 `assignments.sites`에 남긴다. 정수가 아닌 slot은 site·배정 항목을 만들지 않는다. `materialKinds`는 다섯 종류 전체(`wafer`, `carrier`, `batch`, `boat`, `reticle`)를 나열해 특정 종류를 단정하지 않는다.
+- 모든 생성 속성·Holding Site와 alias 배정의 Certainty는 `assumed`다. provenance는 `src-observed-inventory`를 참조한다. `ports`·Physical Interface·Transfer Capability·Process Route는 비어 있으며 관측 이송으로 연결 가능성을 만들지 않는다. 이송 경로는 사람이 추가한다. **자동 게시 없음.**
+
+형상을 다듬고 "Template으로 승격"하는 UI 흐름은 제안 단계다.
 
 ## 4. Mapping Board
 

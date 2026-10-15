@@ -1,5 +1,5 @@
 import type { ObservedInventory } from '../inventory/schema.js';
-import type { EquipmentLayoutDocument } from '../layout/schema.js';
+import type { EquipmentLayoutDocument, LayoutDocument } from '../layout/schema.js';
 import type { MappingVersion, TypeDictionaryFile } from '../mapping/schema.js';
 import { resolveRole } from '../mapping/validate.js';
 import { compareSlots, compareText, isIntegerSlot } from './order.js';
@@ -10,6 +10,17 @@ export type MappingConflict = TransferConflict
   | { kind: 'role-mismatch'; alias: string; moduleType: string; expectedRole: string; componentId: string; componentRole: string }
   | { kind: 'port-flag-mismatch'; alias: string; componentId: string; isPort: boolean }
   | { kind: 'robot-flag-mismatch'; alias: string; componentId: string; isRobot: boolean };
+
+export function componentsLinked(layout: LayoutDocument, aId: string, bId: string): boolean {
+  const a = layout.components.find(({ id }) => id === aId);
+  const b = layout.components.find(({ id }) => id === bId);
+  if (!a || !b) return false;
+  return layout.transferCapabilities.some((edge) => {
+    const connects = (left: typeof edge.a, right: typeof edge.b) => left.componentId === a.id && right.componentId === b.id &&
+      a.holdingSites.some((site) => site.id === left.holdingSiteId) && b.holdingSites.some((site) => site.id === right.holdingSiteId);
+    return connects(edge.a, edge.b) || connects(edge.b, edge.a);
+  });
+}
 
 type Input = { inventory: ObservedInventory; mapping: MappingVersion; layout: EquipmentLayoutDocument };
 export function transfersWithoutCapability({ inventory, mapping, layout }: Input): TransferConflict[] {
@@ -23,12 +34,7 @@ export function transfersWithoutCapability({ inventory, mapping, layout }: Input
     const a = components.get(from.componentId);
     const b = components.get(to.componentId);
     if (!a || !b) continue;
-    const linked = layout.transferCapabilities.some((edge) => {
-      const connects = (left: typeof edge.a, right: typeof edge.b) => left.componentId === a.id && right.componentId === b.id &&
-        a.holdingSites.some((site) => site.id === left.holdingSiteId) && b.holdingSites.some((site) => site.id === right.holdingSiteId);
-      return connects(edge.a, edge.b) || connects(edge.b, edge.a);
-    });
-    if (!linked) conflicts.push({ kind: 'transfer-without-capability', ...pair, fromComponentId: a.id, toComponentId: b.id });
+    if (!componentsLinked(layout, a.id, b.id)) conflicts.push({ kind: 'transfer-without-capability', ...pair, fromComponentId: a.id, toComponentId: b.id });
   }
   return conflicts.sort((a, b) => compareText(a.from, b.from) || compareText(a.to, b.to));
 }
