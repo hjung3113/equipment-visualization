@@ -27,11 +27,11 @@ exports[`preserves the reviewed template and primitive asset bytes 1`] = `
   "assets/primitives/stage.svg": "16456007e5c6e3a4d67220fd6ea3009b28065cef1a6a9992bc546611ca5836aa",
   "assets/primitives/stocker.svg": "f45b5a7813db54fb006147200a354ebbafb1215cae974572332f750471f4facb",
   "assets/primitives/tm.svg": "101085c58dadd300501d1d7fe967300545c8a0fd645c27866cc5fa117a4dbd0e",
-  "assets/templates/cluster-dual-hub.template.json": "c38730b3e186ef1a0627f2e98a6e9cb0a250a204b00a40eae2b2ed0ddf246a3e",
-  "assets/templates/cluster-single.template.json": "e7d9c1983f365586e82a9cc108c3bce8afb9d86ec0cefac47f3219842e87adb8",
-  "assets/templates/lithography-dual-stage.template.json": "f6049de958c5b09705b0e37c57b67dc66a2fd21a441ba75537af3ae0014effca",
-  "assets/templates/track-stacked.template.json": "ce3da036e6056abc1ee6ab5ef5e0a1bd2d30a79ea1f6144ec829026702928928",
-  "assets/templates/vertical-batch-furnace.template.json": "621b40eefa46663885be841fa35468c9d95b14eab9df5ade3e5f97943349a16b",
-  "assets/templates/wet-linear.template.json": "aea3917fe0ca0736ffb53ab9534b6d0805b7efa6d840fa6beb12a69de46e39f1",
+  "assets/templates/cluster-dual-hub.template.json": "e01e889d7ef629f0cf7cb6e45074021c814bf847e58a1555f483580efd5a09f1",
+  "assets/templates/cluster-single.template.json": "8f087bdf27b4546dce75755baf2b42c775bd9a4517c0ff1bea9866dd87dd25a5",
+  "assets/templates/lithography-dual-stage.template.json": "f368a8671989abb4720e9670e817dad6a5f15b9b771ae7145d9a82a4e679bd89",
+  "assets/templates/track-stacked.template.json": "45dca7c8fc5739af703f3c108780ebdec852eb83860c01a1853f19a825e25b31",
+  "assets/templates/vertical-batch-furnace.template.json": "3328d33ef120bb2c440833575fe076bbf8e99706ac454a57d64aefadd6fa7342",
+  "assets/templates/wet-linear.template.json": "8245930b3ab47faf79a39d53fc906c35b6e78edc23d71f083e6b0904aeaa4f37",
 }
 `;

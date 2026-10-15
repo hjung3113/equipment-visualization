@@ -27,6 +27,11 @@
       "title": "www.appliedmaterials.com/us/en/blog/blog-posts/a-new-equipment-platform-for-a-new-era-of-chipmaking.html",
       "uri": "https://www.appliedmaterials.com/us/en/blog/blog-posts/a-new-equipment-platform-for-a-new-era-of-chipmaking.html",
       "license": "reference-only"
+    },
+    {
+      "id": "src-geometry-2026-10",
+      "title": "Re-authored generic archetype geometry (owner-approved prototype, 2026-10-15)",
+      "license": "synthetic"
     }
   ],
   "levels": [
@@ -49,22 +54,22 @@
       "label": "Vacuum TM",
       "levelId": "level-main",
       "transform": {
-        "x": 475,
-        "y": 213,
+        "x": 480,
+        "y": 236,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 190,
-        "height": 180
+        "width": 173.2,
+        "height": 200
       },
       "ports": [
         {
           "id": "p-out-00",
           "label": "wafer-access",
           "position": {
-            "x": -87.4,
-            "y": -16.7
+            "x": -79.672,
+            "y": -18.556
           },
           "provenance": {
             "certainty": "assumed",
@@ -77,8 +82,8 @@
           "id": "p-out-01",
           "label": "wafer-access",
           "position": {
-            "x": -87.4,
-            "y": -63.99
+            "x": -79.672,
+            "y": -71.1
           },
           "provenance": {
             "certainty": "assumed",
@@ -91,8 +96,8 @@
           "id": "p-out-02",
           "label": "wafer-access",
           "position": {
-            "x": 87.4,
-            "y": -55.13
+            "x": 79.672,
+            "y": -61.256
           },
           "provenance": {
             "certainty": "assumed",
@@ -105,8 +110,8 @@
           "id": "p-out-03",
           "label": "wafer-access",
           "position": {
-            "x": 87.4,
-            "y": -15.03
+            "x": 79.672,
+            "y": -16.7
           },
           "provenance": {
             "certainty": "assumed",
@@ -119,8 +124,8 @@
           "id": "p-out-04",
           "label": "wafer-access",
           "position": {
-            "x": -35.58,
-            "y": 82.8
+            "x": -32.434,
+            "y": 92
           },
           "provenance": {
             "certainty": "assumed",
@@ -133,8 +138,8 @@
           "id": "p-out-05",
           "label": "wafer-access",
           "position": {
-            "x": 41.74,
-            "y": 82.8
+            "x": 38.049,
+            "y": 92
           },
           "provenance": {
             "certainty": "assumed",
@@ -173,13 +178,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -191,22 +198,22 @@
       "label": "PM1",
       "levelId": "level-main",
       "transform": {
-        "x": 250,
-        "y": 170,
-        "rotation": 0,
+        "x": 331.4,
+        "y": 236,
+        "rotation": 90,
         "scale": 1
       },
       "size": {
-        "width": 126,
-        "height": 104
+        "width": 96,
+        "height": 100
       },
       "ports": [
         {
           "id": "p-in-00",
           "label": "wafer-access",
           "position": {
-            "x": 57.96,
-            "y": 11.08
+            "x": 44.16,
+            "y": 10.654
           },
           "provenance": {
             "certainty": "assumed",
@@ -258,13 +265,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -276,22 +285,22 @@
       "label": "PM2",
       "levelId": "level-main",
       "transform": {
-        "x": 363,
-        "y": 131,
-        "rotation": 0,
+        "x": 405.7,
+        "y": 107.309,
+        "rotation": 150,
         "scale": 1
       },
       "size": {
-        "width": 122,
-        "height": 104
+        "width": 96,
+        "height": 100
       },
       "ports": [
         {
           "id": "p-in-01",
           "label": "wafer-access",
           "position": {
-            "x": 56.12,
-            "y": 41.09
+            "x": 44.16,
+            "y": 39.51
           },
           "provenance": {
             "certainty": "assumed",
@@ -343,13 +352,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -361,22 +372,22 @@
       "label": "PM3",
       "levelId": "level-main",
       "transform": {
-        "x": 605,
-        "y": 131,
-        "rotation": 0,
+        "x": 554.3,
+        "y": 107.309,
+        "rotation": -150,
         "scale": 1
       },
       "size": {
-        "width": 122,
-        "height": 104
+        "width": 96,
+        "height": 100
       },
       "ports": [
         {
           "id": "p-in-02",
           "label": "wafer-access",
           "position": {
-            "x": -56.12,
-            "y": 35.4
+            "x": -44.16,
+            "y": 34.038
           },
           "provenance": {
             "certainty": "assumed",
@@ -428,13 +439,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -446,22 +459,22 @@
       "label": "PM4",
       "levelId": "level-main",
       "transform": {
-        "x": 725,
-        "y": 170,
-        "rotation": 0,
+        "x": 628.6,
+        "y": 236,
+        "rotation": -90,
         "scale": 1
       },
       "size": {
-        "width": 126,
-        "height": 104
+        "width": 96,
+        "height": 100
       },
       "ports": [
         {
           "id": "p-in-03",
           "label": "wafer-access",
           "position": {
-            "x": -57.96,
-            "y": 9.97
+            "x": -44.16,
+            "y": 9.587
           },
           "provenance": {
             "certainty": "assumed",
@@ -513,13 +526,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -531,22 +546,22 @@
       "label": "LL-A",
       "levelId": "level-main",
       "transform": {
-        "x": 423,
-        "y": 334,
-        "rotation": 0,
+        "x": 412.7,
+        "y": 352.567,
+        "rotation": 30,
         "scale": 1
       },
       "size": {
-        "width": 94,
-        "height": 76
+        "width": 84,
+        "height": 72
       },
       "ports": [
         {
           "id": "p-in-04",
           "label": "wafer-access",
           "position": {
-            "x": 15.02,
-            "y": -34.96
+            "x": 13.422,
+            "y": -33.12
           },
           "provenance": {
             "certainty": "assumed",
@@ -559,8 +574,8 @@
           "id": "p-out-06",
           "label": "interface",
           "position": {
-            "x": 18,
-            "y": 34.96
+            "x": 16.085,
+            "y": 33.12
           },
           "provenance": {
             "certainty": "assumed",
@@ -624,13 +639,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -642,22 +659,22 @@
       "label": "LL-B",
       "levelId": "level-main",
       "transform": {
-        "x": 536,
-        "y": 334,
-        "rotation": 0,
+        "x": 547.3,
+        "y": 352.567,
+        "rotation": -30,
         "scale": 1
       },
       "size": {
-        "width": 94,
-        "height": 76
+        "width": 84,
+        "height": 72
       },
       "ports": [
         {
           "id": "p-in-05",
           "label": "wafer-access",
           "position": {
-            "x": -17.62,
-            "y": -34.96
+            "x": -15.746,
+            "y": -33.12
           },
           "provenance": {
             "certainty": "assumed",
@@ -670,8 +687,8 @@
           "id": "p-out-07",
           "label": "interface",
           "position": {
-            "x": -21.11,
-            "y": 34.96
+            "x": -18.864,
+            "y": 33.12
           },
           "provenance": {
             "certainty": "assumed",
@@ -735,13 +752,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -753,22 +772,22 @@
       "label": "EFEM",
       "levelId": "level-main",
       "transform": {
-        "x": 475,
-        "y": 435,
+        "x": 480,
+        "y": 467,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 420,
-        "height": 92
+        "width": 450,
+        "height": 100
       },
       "ports": [
         {
           "id": "p-in-06",
           "label": "interface",
           "position": {
-            "x": -21.79,
-            "y": -42.32
+            "x": -23.346,
+            "y": -46
           },
           "provenance": {
             "certainty": "assumed",
@@ -781,8 +800,8 @@
           "id": "p-in-07",
           "label": "interface",
           "position": {
-            "x": 25.56,
-            "y": -42.32
+            "x": 27.386,
+            "y": -46
           },
           "provenance": {
             "certainty": "assumed",
@@ -795,8 +814,8 @@
           "id": "p-out-08",
           "label": "interface",
           "position": {
-            "x": -65.07,
-            "y": 42.32
+            "x": -69.718,
+            "y": 46
           },
           "provenance": {
             "certainty": "assumed",
@@ -809,8 +828,8 @@
           "id": "p-out-09",
           "label": "interface",
           "position": {
-            "x": -1.06,
-            "y": 42.32
+            "x": -1.136,
+            "y": 46
           },
           "provenance": {
             "certainty": "assumed",
@@ -823,8 +842,8 @@
           "id": "p-out-10",
           "label": "interface",
           "position": {
-            "x": 62.95,
-            "y": 42.32
+            "x": 67.446,
+            "y": 46
           },
           "provenance": {
             "certainty": "assumed",
@@ -863,13 +882,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -882,14 +903,14 @@
       "parentId": "efem-1",
       "levelId": "level-main",
       "transform": {
-        "x": -90,
+        "x": 0,
         "y": 0,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 78,
-        "height": 70
+        "width": 80,
+        "height": 80
       },
       "ports": [],
       "holdingSites": [
@@ -946,7 +967,8 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "parentId": {
@@ -958,7 +980,8 @@
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -971,14 +994,14 @@
       "parentId": "efem-1",
       "levelId": "level-main",
       "transform": {
-        "x": 125,
+        "x": 168,
         "y": 0,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 76,
-        "height": 66
+        "width": 84,
+        "height": 72
       },
       "ports": [],
       "holdingSites": [
@@ -1023,7 +1046,8 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "parentId": {
@@ -1035,7 +1059,8 @@
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1054,8 +1079,8 @@
         "scale": 1
       },
       "size": {
-        "width": 88,
-        "height": 82
+        "width": 84,
+        "height": 84
       },
       "ports": [],
       "holdingSites": [
@@ -1100,7 +1125,8 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "parentId": {
@@ -1112,7 +1138,8 @@
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1124,8 +1151,8 @@
       "label": "LP1",
       "levelId": "level-main",
       "transform": {
-        "x": 352,
-        "y": 515,
+        "x": 370,
+        "y": 560,
         "rotation": 0,
         "scale": 1
       },
@@ -1491,13 +1518,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1509,8 +1538,8 @@
       "label": "LP2",
       "levelId": "level-main",
       "transform": {
-        "x": 473,
-        "y": 515,
+        "x": 480,
+        "y": 560,
         "rotation": 0,
         "scale": 1
       },
@@ -1876,13 +1905,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1894,8 +1925,8 @@
       "label": "LP3",
       "levelId": "level-main",
       "transform": {
-        "x": 594,
-        "y": 515,
+        "x": 590,
+        "y": 560,
         "rotation": 0,
         "scale": 1
       },
@@ -2261,13 +2292,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }

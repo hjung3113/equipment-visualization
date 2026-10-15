@@ -23,100 +23,167 @@ const originalIds: Record<string, string[]> = {
 };
 const template = (id: string) => layoutDocumentSchema.parse(read(`assets/templates/${id}.template.json`)) as TemplateDocument;
 
-// Reviewed v0.3 bounds in layout units; fixed tuples keep CI independent of the local pack.
-const footprints: Record<string, [string, number, number][]> = {
+// Owner-approved prototype local geometry, rounded to 3 decimals; independent of the source pack.
+const geometry: Record<string, [string, number, number, number, number, number][]> = {
   'cluster-dual-hub': [
-    ['efem-1', 174, 276],
-    ['robot-1', 78, 76],
-    ['lp-1', 68, 66],
-    ['lp-2', 68, 66],
-    ['ll-a', 90, 64],
-    ['ll-b', 90, 64],
-    ['tm-1', 170, 186],
-    ['tm-2', 170, 186],
-    ['robot-2', 88, 84],
-    ['robot-3', 84, 82],
-    ['buffer-1', 70, 92],
-    ['pm-a', 114, 98],
-    ['pm-b', 114, 98],
-    ['pm-c', 114, 98],
-    ['pm-d', 114, 98],
-    ['pm-e', 114, 98],
-    ['pm-f', 114, 98],
+    ['efem-1', 360, 472, 0, 320, 96],
+    ['robot-1', 0, 0, 0, 76, 76],
+    ['lp-1', 310, 563, 0, 82, 66],
+    ['lp-2', 410, 563, 0, 82, 66],
+    ['ll-a', 297, 359.119, 30, 84, 72],
+    ['ll-b', 423, 359.119, -30, 84, 72],
+    ['tm-1', 360, 250, 0, 156, 180.13],
+    ['tm-2', 620, 250, 0, 156, 180.13],
+    ['robot-2', 0, 0, 0, 80, 80],
+    ['robot-3', 0, 0, 0, 80, 80],
+    ['buffer-1', 490, 250, 0, 80, 84],
+    ['pm-a', 222, 250, 90, 92, 96],
+    ['pm-b', 291, 130.488, 150, 92, 96],
+    ['pm-c', 551, 130.488, 150, 92, 96],
+    ['pm-d', 689, 130.488, -150, 92, 96],
+    ['pm-e', 758, 250, -90, 92, 96],
+    ['pm-f', 689, 369.512, -30, 92, 96],
   ],
   'cluster-single': [
-    ['tm-1', 190, 180],
-    ['pm-a', 126, 104],
-    ['pm-b', 122, 104],
-    ['pm-c', 122, 104],
-    ['pm-d', 126, 104],
-    ['ll-a', 94, 76],
-    ['ll-b', 94, 76],
-    ['efem-1', 420, 92],
-    ['robot-1', 78, 70],
-    ['aligner-1', 76, 66],
-    ['robot-2', 88, 82],
-    ['lp-1', 82, 66],
-    ['lp-2', 82, 66],
-    ['lp-3', 82, 66],
+    ['tm-1', 480, 236, 0, 173.2, 200],
+    ['pm-a', 331.4, 236, 90, 96, 100],
+    ['pm-b', 405.7, 107.309, 150, 96, 100],
+    ['pm-c', 554.3, 107.309, -150, 96, 100],
+    ['pm-d', 628.6, 236, -90, 96, 100],
+    ['ll-a', 412.7, 352.567, 30, 84, 72],
+    ['ll-b', 547.3, 352.567, -30, 84, 72],
+    ['efem-1', 480, 467, 0, 450, 100],
+    ['robot-1', 0, 0, 0, 80, 80],
+    ['aligner-1', 168, 0, 0, 84, 72],
+    ['robot-2', 0, 0, 0, 84, 84],
+    ['lp-1', 370, 560, 0, 82, 66],
+    ['lp-2', 480, 560, 0, 82, 66],
+    ['lp-3', 590, 560, 0, 82, 66],
   ],
   'lithography-dual-stage': [
-    ['lp-1', 98, 110],
-    ['robot-1', 104, 98],
-    ['stage-1', 145, 115],
-    ['stage-2', 145, 115],
-    ['metrology-1', 154, 135],
-    ['exposure-1', 154, 135],
-    ['robot-2', 142, 84],
-    ['optics-1', 117, 112],
-    ['housing-1', 710, 362],
+    ['lp-1', 125, 300, 0, 86, 80],
+    ['robot-1', -280, 0, 0, 72, 72],
+    ['stage-1', -100, -80, 0, 140, 110],
+    ['stage-2', -100, 80, 0, 140, 110],
+    ['metrology-1', 100, 80, 0, 140, 110],
+    ['exposure-1', 100, -80, 0, 140, 110],
+    ['robot-2', 785, 78, 0, 150, 60],
+    ['optics-1', 255, -80, 0, 100, 100],
+    ['housing-1', 530, 300, 0, 700, 360],
   ],
   'track-stacked': [
-    ['lp-1', 82, 68],
-    ['lp-2', 82, 68],
-    ['rail-1', 560, 54],
-    ['robot-1', 80, 76],
-    ['coater-1', 116, 111],
-    ['coater-2', 116, 111],
-    ['developer-1', 116, 111],
-    ['bake-1', 116, 105],
-    ['bake-2', 116, 105],
-    ['bake-3', 116, 105],
-    ['aligner-1', 96, 85],
+    ['lp-1', 167, 262, 0, 82, 66],
+    ['lp-2', 167, 338, 0, 82, 66],
+    ['rail-1', 520, 300, 0, 600, 72],
+    ['robot-1', -150, 0, 0, 64, 64],
+    ['coater-1', 430, 202, 0, 112, 100],
+    ['coater-2', 560, 202, 0, 112, 100],
+    ['developer-1', 690, 202, 0, 112, 100],
+    ['bake-1', 430, 398, 0, 112, 100],
+    ['bake-2', 560, 398, 0, 112, 100],
+    ['bake-3', 690, 398, 0, 112, 100],
+    ['aligner-1', 300, 216, 0, 80, 72],
   ],
   'vertical-batch-furnace': [
-    ['lp-1', 96, 80],
-    ['lp-2', 96, 80],
-    ['stocker-1', 154, 270],
-    ['boat-1', 110, 120],
-    ['boat-2', 110, 120],
-    ['robot-1', 108, 100],
-    ['reactor-1', 154, 150],
-    ['reactor-2', 154, 150],
+    ['lp-1', 133, 200, 0, 96, 80],
+    ['lp-2', 133, 340, 0, 96, 80],
+    ['stocker-1', 270, 270, 0, 154, 270],
+    ['boat-1', 600, 170, 0, 110, 120],
+    ['boat-2', 600, 370, 0, 110, 120],
+    ['robot-1', 440, 270, 0, 84, 84],
+    ['reactor-1', 790, 170, 0, 150, 150],
+    ['reactor-2', 790, 370, 0, 150, 150],
   ],
   'wet-linear': [
-    ['lp-1', 76, 80],
-    ['lp-2', 76, 80],
-    ['lp-3', 76, 80],
-    ['rail-1', 440, 80],
-    ['robot-1', 88, 70],
-    ['cell-1', 125, 112],
-    ['cell-2', 125, 112],
-    ['cell-3', 125, 112],
-    ['dry-1', 125, 105],
-    ['dry-2', 125, 105],
-    ['buffer-1', 125, 105],
+    ['lp-1', 187, 220, 0, 82, 66],
+    ['lp-2', 187, 300, 0, 82, 66],
+    ['lp-3', 187, 380, 0, 82, 66],
+    ['rail-1', 500, 300, 0, 520, 80],
+    ['robot-1', 0, 0, 0, 76, 76],
+    ['cell-1', 370, 196, 0, 112, 104],
+    ['cell-2', 500, 196, 0, 112, 104],
+    ['cell-3', 630, 196, 0, 112, 104],
+    ['dry-1', 370, 404, 0, 112, 104],
+    ['dry-2', 500, 404, 0, 112, 104],
+    ['buffer-1', 630, 404, 0, 112, 104],
   ],
 };
 
-
-it.each(cases)('%s preserves every reviewed footprint and its assumed provenance', (id) => {
+it.each(cases)('%s preserves every approved local geometry tuple', (id) => {
   const layout = template(id);
-  expect(layout.components.map((component) => [component.id, component.size?.width, component.size?.height]))
-    .toEqual(footprints[id]);
-  for (const component of layout.components) {
-    expect(component.provenance.size).toEqual({ certainty: 'assumed', sourceEvidence: ['src-v03-pack'] });
+  expect(layout.components.map(({ id, transform: t, size }) =>
+    [id, t.x, t.y, t.rotation, size?.width, size?.height]).sort())
+    .toEqual([...geometry[id]!].sort());
+});
+
+type Point = [number, number];
+type Component = TemplateDocument['components'][number];
+type Frame = { x: number; y: number; rotation: number; scale: number };
+const mapPoint = (frame: Frame, [x, y]: Point): Point => {
+  const angle = frame.rotation * Math.PI / 180;
+  return [frame.x + frame.scale * (x * Math.cos(angle) - y * Math.sin(angle)),
+    frame.y + frame.scale * (x * Math.sin(angle) + y * Math.cos(angle))];
+};
+const worldFrames = (layout: TemplateDocument) => {
+  const frames = new Map<string, Frame>();
+  const resolve = (component: Component): Frame => {
+    const cached = frames.get(component.id);
+    if (cached) return cached;
+    let frame = component.transform;
+    if (component.parentId) {
+      const parent = resolve(layout.components.find(({ id }) => id === component.parentId)!);
+      const [x, y] = mapPoint(parent, [frame.x, frame.y]);
+      frame = { x, y, rotation: parent.rotation + frame.rotation, scale: parent.scale * frame.scale };
+    }
+    frames.set(component.id, frame);
+    return frame;
+  };
+  layout.components.forEach(resolve);
+  return frames;
+};
+const footprint = (component: Component, frame: Frame): Point[] => {
+  const { width: w, height: h } = component.size!;
+  const points: Point[] = component.role === 'tm'
+    ? [[0, -h / 2], [w / 2, -h / 4], [w / 2, h / 4], [0, h / 2], [-w / 2, h / 4], [-w / 2, -h / 4]]
+    : [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]];
+  return points.map((point) => mapPoint(frame, point));
+};
+// Convex footprints are counterclockwise in their numeric coordinate system.
+const contains = (outer: Point[], inner: Point[], tolerance = 0.5) => inner.every(([x, y]) =>
+  outer.every(([ax, ay], i) => {
+    const [bx, by] = outer[(i + 1) % outer.length]!;
+    return ((bx - ax) * (y - ay) - (by - ay) * (x - ax)) / Math.hypot(bx - ax, by - ay) >= -tolerance;
+  }));
+const overlaps = (a: Point[], b: Point[], tolerance = 0.5) => [a, b].every((polygon) =>
+  polygon.every(([x, y], i) => {
+    const [nextX, nextY] = polygon[(i + 1) % polygon.length]!;
+    const length = Math.hypot(nextX - x, nextY - y);
+    const project = (points: Point[]) => points.map(([px, py]) => (px * (nextY - y) - py * (nextX - x)) / length);
+    const pa = project(a), pb = project(b);
+    return Math.min(Math.max(...pa), Math.max(...pb)) - Math.max(Math.min(...pa), Math.min(...pb)) > tolerance;
+  }));
+
+it.each(cases)('%s contains every child footprint inside its parent', (id) => {
+  const layout = template(id), frames = worldFrames(layout);
+  for (const child of layout.components.filter(({ parentId }) => parentId)) {
+    const parent = layout.components.find(({ id }) => id === child.parentId)!;
+    expect(contains(footprint(parent, frames.get(parent.id)!), footprint(child, frames.get(child.id)!)),
+      `${id}: ${child.id} inside ${parent.id}`).toBe(true);
   }
+});
+
+it.each(cases)('%s has no overlapping top-level or sibling footprints', (id) => {
+  const layout = template(id), frames = worldFrames(layout);
+  const collisions: string[] = [];
+  for (const [index, a] of layout.components.entries()) {
+    for (const b of layout.components.slice(index + 1)) {
+      if (a.parentId !== b.parentId) continue;
+      if (overlaps(footprint(a, frames.get(a.id)!), footprint(b, frames.get(b.id)!))) {
+        collisions.push(`${a.id}/${b.id}`);
+      }
+    }
+  }
+  expect(collisions, id).toEqual([]);
 });
 
 it.each(cases)('%s conforms to v0.4 with assumed evidence and module-to-module capabilities', (id, count) => {
@@ -136,10 +203,15 @@ it.each(cases)('%s conforms to v0.4 with assumed evidence and module-to-module c
       expect(component.holdingSites.some((site) => site.id === endpoint.holdingSiteId)).toBe(true);
     }
   }
-  const checkEvidence = (value: unknown): void => {
+  const checkEvidence = (value: unknown, path: string[] = []): void => {
     if (!value || typeof value !== 'object') return;
-    if ('certainty' in value) expect(value).toEqual({ certainty: 'assumed', sourceEvidence: ['src-v03-pack'] });
-    for (const child of Object.values(value)) checkEvidence(child);
+    const geometryProperty = path.length === 4 && path[0] === 'components'
+      && path[2] === 'provenance' && ['transform', 'size'].includes(path[3]!);
+    if ('certainty' in value) expect(value).toEqual({
+      certainty: 'assumed',
+      sourceEvidence: geometryProperty ? ['src-v03-pack', 'src-geometry-2026-10'] : ['src-v03-pack'],
+    });
+    for (const [key, child] of Object.entries(value)) checkEvidence(child, [...path, key]);
   };
   checkEvidence(layout);
   for (const [role, range] of Object.entries(layout.roleCardinality)) {
