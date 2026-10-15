@@ -70,6 +70,61 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 - **Material 묶음:** Batch/FOUP/Boat는 Wafer와 별도 Material. 식별된 Wafer 목록이 없으면 집합 객체로만 표시(wafer n개 임의 생성 금지).
 - **Late data:** 원천 MVP는 insert-only이므로 늦은 데이터는 새 segment로 Watermark가 늘어나는 것이다. 원천 logic version 변경·재처리 시에만 Data Generation이 올라가며, 이때 캐시된 SceneState를 폐기.
 
+### Scene State 계약 (#9b)
+
+`packages/core/src/scene/schema.ts`의 strict `sceneStateSchema`와
+`@eqv/core/scene-state.schema.json`이 아래 형식을 정의한다. reducer 구현은 #10 범위이며,
+`fixtures/cluster-single/expected-scene-states.json`은 구현과 독립적인 정답이다.
+DQI는 타임라인 마커이며 Scene State에 들어가지 않고 상태를 바꾸지 않는다.
+
+```ts
+type SceneState = {
+  equipmentId: string;
+  at: SiteWallClock;
+  appliedSeq: number | null;
+  binding: { layoutId: string; mappingHash: string } | null;
+  materials: SceneMaterial[];
+  components: SceneComponent[];
+  markers: SceneMarker[];
+};
+type SceneMaterial = {
+  key: string; // material id, 또는 id=null이면 `occ:<occurrenceId>`
+  kind: 'wafer' | 'carrier' | 'batch' | 'boat' | 'reticle';
+  id: string | null; identityEvidence: EvidenceLevel; lotId?: string;
+  alias: { moduleAlias: string; slotAlias?: string };
+  location: { componentId: string; holdingSiteId?: string } | null;
+  locationEvidence: 'observed' | 'derived' | 'unknown';
+  occurrenceId: string;
+  lastObservedAt: SiteWallClock | null; // 배치한 Occurrence의 start.at
+};
+type SceneComponent = {
+  componentId: string;
+  activity: 'processing' | 'post-processing' | 'function' | 'no recorded activity';
+  activityEvidence: 'observed' | 'derived' | 'unknown';
+  occurrenceIds: string[];
+};
+type SceneMarker =
+  | { kind: 'after-watermark'; watermarkAt: SiteWallClock }
+  | { kind: 'occupancy-conflict'; componentId: string; holdingSiteId: string; materialKeys: string[] }
+  | { kind: 'time-anomaly'; occurrenceId: string }
+  | { kind: 'unmapped-alias'; alias: string; occurrenceId: string };
+```
+
+`materials`는 `key`, `components`는 `componentId`, `markers`는 `kind` 다음 각 id 필드 순으로
+code-unit 정렬한다. 복합 식별자는 occupancy의 `(componentId, holdingSiteId)`,
+unmapped의 `(alias, occurrenceId)` 순이며 Time Anomaly는 `occurrenceId`다.
+`occurrenceIds`와 `materialKeys`도 code-unit 정렬한다. locale이나 현재 시각에 의존하지 않는다.
+
+1. **Prefix (Seek):** 모든 Occurrence 경계와 모든 DQI를 `seq` 순으로 둔다. null이 아닌 `at`이 모두 `at <= t`(문자열 비교)를 만족하는 가장 긴 prefix를 적용한다. `at: null`은 그 자체로 prefix를 멈추지 않는다. `appliedSeq`는 마지막 적용 seq이며 아무것도 적용하지 않았으면 null이다.
+2. **Open과 수명:** start가 prefix 안이고 end가 null이거나 prefix 밖이면 열린 Occurrence다. 배치와 활동은 열린 동안만 존재한다. 적용된 end는 위의 “다음 근거”이며 후속 배치가 없어도 기존 배치를 제거한다. 물질은 Scene State에서 사라지며 위치를 carry-forward하거나 추측하지 않는다.
+3. **배치:** 열린 Occurrence에 `material`과 `location`이 모두 있으면 물질을 배치한다. TRANSFER도 자신의 `location`(Handler alias와 arm slot)에 배치한다. `location`이 없으면 배치도 활동도 없고 `from`/`to`나 geometry로 대체하지 않는다. 같은 material key가 여러 열린 Occurrence에 있으면 `start.seq`가 가장 큰 것이 이긴다. `alias`는 원천 값을 보존한다.
+4. **해석과 Binding:** t를 포함하는 Binding을 사용한다. 없으면 `binding: null`, `components: []`이고 배치된 물질은 alias를 보존하며 `location: null`/`unknown`이다. Binding 부재는 미매핑 alias가 아니므로 마커를 만들지 않는다. `start.at < effectiveFrom`인 물질은 이전 segment에서 시작했으므로 `null`/`unknown`으로 초기화한다. `start.at: null`도 현재 segment 시작을 증명하지 못하므로 같다. 나머지는 t에서 `resolveLocation(moduleAlias, slotAlias)`로 해석한다. `location` 결과는 Component와 선택적 Holding Site를 사용하고, `unknown`의 `missing-mapping`은 `null`/`unknown`이며 마커가 없다. 미매핑 alias는 `null`/`unknown`과 `unmapped-alias` 마커를 만든다. `ignored`는 물질과 마커를 모두 생략한다. 옛 이력을 새 segment에 끼워 맞추지 않는다.
+5. **Location 근거:** VISIT/PROCESS/POST_PROCESS/FUNCTION/CARRIER_PRESENCE는 기본 `observed`, TRANSFER(Handler 위 물질)와 `synthetic: true`는 `derived`다. Mapping의 `certainty: assumed`는 최대 `derived`로 제한한다. 이어서 규칙 7의 활성 Time Anomaly, 규칙 8의 점유 충돌, 규칙 9의 Watermark 이후는 `unknown`으로 내린다. 순서는 `observed > derived > unknown`이며 적용된 등급 중 가장 낮은 것을 쓴다. fallback/forced 경계 근거는 location 근거를 바꾸지 않는다.
+6. **활동:** Binding의 Layout에 있는 모든 Component를 나열한다. 열린 PROCESS/POST_PROCESS/FUNCTION의 `location`이 해석되는 Component에 각각 `processing`/`post-processing`/`function`을 둔다. ignored/unmapped는 활동을 만들지 않는다. 여러 활동이면 가장 큰 `start.seq`가 활동 값을 정하고 모든 열린 활동 id를 `occurrenceIds`에 넣는다. 선택된 Occurrence의 `start.evidence`를 사용하되 assumed Mapping은 최대 `derived`, 규칙 7/9 또는 이전 Binding segment에서 시작했으면 `unknown`이다. `start.at: null`인 활동은 prefix로 open을 정하고 현재 Mapping으로 Component를 해석하되 근거는 `unknown`이다. 활동이 없으면 `no recorded activity`/`unknown`/`[]`이며 idle을 추론하지 않는다.
+7. **Time Anomaly:** prefix 밖과 ignored alias를 포함한 **모든** null이 아닌 시각 record를 seq 순으로 본다. 연속한 두 record에서 뒤 seq의 시각이 더 이르면 `[뒤.at, 앞.at]`(양 끝 포함)이 anomaly window다. t가 그 안이면 양 record를 소유한 각 Occurrence에 `time-anomaly` 마커를 붙이고 그 배치/활동을 `unknown`으로 둔다. 단, 현재 Mapping에서 `location` alias가 ignored인 소유자의 마커만 제외한다. 이 필터는 window나 다른 소유자의 마커를 지우지 않는다. DQI 자체는 Occurrence 소유자가 아니며 타임라인에만 표시한다.
+8. **점유 충돌:** 배치된 물질 둘 이상이 같은 `componentId`와 같은 **정의된** `holdingSiteId`로 해석되면 정렬된 material key 목록을 가진 마커 하나를 만들고 해당 물질의 location 근거를 모두 `unknown`으로 둔다. 참 점유자를 고르지 않는다. 한 Component의 서로 다른 Holding Site는 충돌하지 않으며 Holding Site가 없는 Component 단위 위치도 충돌시키지 않는다.
+9. **Watermark:** `t > watermark.at`이면 `after-watermark`를 만들고 모든 물질의 location 근거와 모든 활동 근거를 `unknown`으로 내린다. 값은 보존해 미확인으로 표시한다. identity 근거와 원천 경계 라벨은 바꾸지 않는다(ADR-0003의 facet 독립성).
+
 ## 3개 대표 Replay 시나리오
 
 ### A. Cluster

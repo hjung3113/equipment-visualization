@@ -1,0 +1,327 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "equipmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}$"
+    },
+    "appliedSeq": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "binding": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "layoutId": {
+              "type": "string",
+              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+            },
+            "mappingHash": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "layoutId",
+            "mappingHash"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "materials": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Material id, or occ:<occurrenceId> when id is null."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "wafer",
+              "carrier",
+              "batch",
+              "boat",
+              "reticle"
+            ]
+          },
+          "id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "identityEvidence": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "derived",
+              "illustrative",
+              "unknown"
+            ]
+          },
+          "lotId": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "object",
+            "properties": {
+              "moduleAlias": {
+                "type": "string",
+                "minLength": 1
+              },
+              "slotAlias": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "moduleAlias"
+            ],
+            "additionalProperties": false
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "holdingSiteId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "locationEvidence": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "derived",
+              "unknown"
+            ]
+          },
+          "occurrenceId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "lastObservedAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "kind",
+          "id",
+          "identityEvidence",
+          "alias",
+          "location",
+          "locationEvidence",
+          "occurrenceId",
+          "lastObservedAt"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Sorted by key in code-unit order."
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "componentId": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "activity": {
+            "type": "string",
+            "enum": [
+              "processing",
+              "post-processing",
+              "function",
+              "no recorded activity"
+            ]
+          },
+          "activityEvidence": {
+            "type": "string",
+            "enum": [
+              "observed",
+              "derived",
+              "unknown"
+            ]
+          },
+          "occurrenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Open activity Occurrence ids, sorted by code unit."
+          }
+        },
+        "required": [
+          "componentId",
+          "activity",
+          "activityEvidence",
+          "occurrenceIds"
+        ],
+        "additionalProperties": false
+      },
+      "description": "Every bound layout Component, sorted by componentId; empty without a Binding."
+    },
+    "markers": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "after-watermark"
+              },
+              "watermarkAt": {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}$"
+              }
+            },
+            "required": [
+              "kind",
+              "watermarkAt"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "occupancy-conflict"
+              },
+              "componentId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "holdingSiteId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "materialKeys": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "componentId",
+              "holdingSiteId",
+              "materialKeys"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "time-anomaly"
+              },
+              "occurrenceId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "occurrenceId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "const": "unmapped-alias"
+              },
+              "alias": {
+                "type": "string",
+                "minLength": 1
+              },
+              "occurrenceId": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "kind",
+              "alias",
+              "occurrenceId"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "description": "Sorted by kind then id fields in code-unit order; DQIs belong only to the timeline."
+    }
+  },
+  "required": [
+    "equipmentId",
+    "at",
+    "appliedSeq",
+    "binding",
+    "materials",
+    "components",
+    "markers"
+  ],
+  "additionalProperties": false
+}
