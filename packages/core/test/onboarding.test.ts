@@ -103,7 +103,7 @@ it.each(['none', 'transfer', 'slots', 'role', 'port', 'robot', 'unmapped'] as co
 
 it.each([
   { name: 'signed integers and offset', slots: ['x', '9007199254740993', '0', '-1', '+0'], offset: 2, bad: ['9007199254740993', 'x'] },
-  { name: 'BigInt does not round', slots: ['9007199254740993'], offset: 0, bad: ['9007199254740993'], limit: 9007199254740992 },
+  { name: 'BigInt does not round', slots: ['9007199254740993'], offset: -9007199254740991, bad: ['9007199254740993'], limit: 1 },
   { name: 'no SlotMap exceeds site count', offset: undefined, slots: ['x', '2', '1'], bad: ['1', '2', 'x'] },
 ] as const)('slot conflicts: $name', ({ slots, offset, bad, ...options }) => {
   const observed = inventory();
@@ -115,7 +115,7 @@ it.each([
   if ('ignore' in target) throw new Error('Expected mapped PM2');
   if (offset === undefined) delete target.slots;
   else target.slots = { offset, assign: [{ from: options.limit ?? 1, to: options.limit ?? 2, holdingSiteId: 'station-1' }] };
-  expect(findMappingConflicts({ inventory: observed, mapping: version, layout: layout(), dictionaries: [] })).toEqual([
+  expect(findMappingConflicts({ inventory: observed, mapping: mappingVersionSchema.parse(version), layout: layout(), dictionaries: [] })).toEqual([
     { kind: 'slot-exceeds-sites', alias: 'PM2', componentId: 'pm-b', slots: [...bad] },
   ]);
 });
