@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "0.4",
+  "scope": {
+    "level": "equipment",
+    "equipmentId": "eq-synth-01"
+  },
+  "rules": [
+    {
+      "id": "pm-two-assumed",
+      "match": {
+        "exact": [
+          "PM2"
+        ]
+      },
+      "target": {
+        "componentId": "pm-b",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "station-2"
+            }
+          ]
+        }
+      },
+      "certainty": "assumed"
+    }
+  ]
+}

@@ -14,7 +14,9 @@
     "./type-dictionary.schema.json": "./schema/type-dictionary.schema.json",
     "./alias-rules.schema.json": "./schema/alias-rules.schema.json",
     "./mapping-version.schema.json": "./schema/mapping-version.schema.json",
-    "./bindings.schema.json": "./schema/bindings.schema.json"
+    "./bindings.schema.json": "./schema/bindings.schema.json",
+    "./observed-inventory.schema.json": "./schema/observed-inventory.schema.json",
+    "./scene-state.schema.json": "./schema/scene-state.schema.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

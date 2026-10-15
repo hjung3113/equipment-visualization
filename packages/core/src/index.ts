@@ -21,3 +21,8 @@ export type {
 export { resolveRole, validateTypeDictionary, validateAliasRules, validateBindings } from './mapping/validate.js';
 export { publishMapping, verifyMappingHash } from './mapping/publish.js';
 export { resolveLocation } from './mapping/resolve.js';
+
+export { observedInventorySchema } from './inventory/schema.js';
+export type { ObservedInventory, InventoryAlias } from './inventory/schema.js';
+export { sceneStateSchema } from './scene/schema.js';
+export type { SceneState, SceneMaterial, SceneComponent, SceneMarker } from './scene/schema.js';

@@ -23,9 +23,38 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 
 ## 2. Observed Inventory
 
-- 계약은 `ObservedInventory` DTO. core가 기준 구현 `buildInventory(occurrences)`를 제공하고(독립 실행·synthetic fixture), 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
+- 계약은 `ObservedInventory` DTO. core가 기준 구현 `buildInventory`를 제공할 예정이며(#11, 독립 실행·synthetic fixture), 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
 - 샘플 기간 기본 **최근 30일**, 사용자 조정 가능. 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
 - Role은 Type Dictionary로 `ModuleType` → Role 변환. 사전에 없는 ModuleType은 Role `unknown`이고 목록 최상단에 표시.
+
+### ObservedInventory 계약 (#9b)
+
+`packages/core/src/inventory/schema.ts`의 strict `observedInventorySchema`와
+`@eqv/core/observed-inventory.schema.json`이 DTO 형식을 정의한다. Inventory 계산은 #11 범위다.
+
+```ts
+type ObservedInventory = {
+  equipmentId: string; from: SiteWallClock; to: SiteWallClock;
+  aliases: InventoryAlias[];
+  transfers: { from: string; to: string; count: number }[];
+};
+type InventoryAlias = {
+  alias: string;
+  references: number;
+  slots: string[];
+  activity: { kind: Occurrence['kind']; count: number }[];
+  firstSeen: SiteWallClock | null; lastSeen: SiteWallClock | null;
+  moduleType?: string; isPort?: boolean; isRobot?: boolean;
+};
+```
+
+- `from`/`to`는 입력 batch의 조회 구간이다. 중간 진입 Occurrence의 경계가 구간 밖이어도 버리지 않는다.
+- 각 Occurrence의 **존재하는** `location`/`from`/`to` 참조를 각각 수집한다. 같은 alias를 여러 필드에서 참조해도 `references`는 Occurrence당 한 번만 센다.
+- `slots`는 해당 alias와 함께 나온 모든 `slotAlias`의 중복 없는 집합이다. `/^[+-]?[0-9]+$/` 문자열을 먼저 정확한 정수 값(`BigInt`, `Number` 반올림 금지)으로 정렬하고, 같은 정수 값이면 code-unit 순으로 정렬한다. 나머지 문자열은 그 뒤에 code-unit 순으로 둔다.
+- `activity`는 `location.moduleAlias`가 해당 alias인 Occurrence만 종류별로 세며 `kind` 순으로 정렬한다. 이송의 `from`/`to` 참조를 활동으로 세지 않는다.
+- `firstSeen`/`lastSeen`은 해당 alias를 참조한 Occurrence의 모든 null이 아닌 경계 `at`의 최솟값/최댓값이다. 유효 시각이 하나도 없으면 둘 다 null이다.
+- `aliases`는 alias code-unit 순, `transfers`는 `(from, to)` code-unit 순이다. 이송 쌍은 `TRANSFER`이며 `from`과 `to`가 모두 있을 때만 세고 module alias 기준으로 합친다. locale 정렬은 사용하지 않는다.
+- `moduleType`/`isPort`/`isRobot`은 adapter가 별도로 공급하는 선택 필드다. OccurrenceBatch에는 이 값이 없으므로 추측하지 않는다. Role은 Type Dictionary로 얻는 표시 정보이며 DTO 필드가 아니다.
 
 ## 3. Template 매칭
 
