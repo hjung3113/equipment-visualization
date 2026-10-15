@@ -16,6 +16,10 @@ const input = (): ReplayInput => {
     bindings: bindingsFileSchema.parse(read('onboarding/bindings/eq-synth-01.bindings.json')),
     mappings: readdirSync(new URL(directory, root)).sort().map((file) => mappingVersionSchema.parse(read(directory + file))) };
 };
+const thrown = (run: () => unknown): unknown => {
+  try { run(); } catch (error) { return error; }
+  return undefined;
+};
 const expected = (read('expected-scene-states.json') as { states: unknown[] }).states.map((state) => sceneStateSchema.parse(state));
 it.each(['batch', 'occurrence', 'issue'] as const)('rejects foreign equipment in %s before replay', async (foreign) => {
   const data = input();
@@ -39,6 +43,22 @@ it.each(['batch', 'occurrence', 'issue'] as const)('rejects foreign equipment in
   expect(() => stepSceneState(data, 3)).toThrow(message);
   await expect(replayKey(data, time('10:00:30'))).rejects.toThrow(RangeError);
   await expect(replayKey(data, time('10:00:30'))).rejects.toThrow(message);
+});
+
+it.each([
+  { name: 'equal Occurrence boundary sequences', edit: (b: ReplayInput['batch']) => { b.occurrences[2]!.start.seq = 2; },
+    message: 'Record Sequence 2 is not unique (occurrences[1].start, occurrences[2].start)' },
+  { name: 'a DQI sharing a boundary sequence', edit: (b: ReplayInput['batch']) => { b.issues[0]!.seq = 45; },
+    message: 'Record Sequence 45 is not unique (occurrences[23].start, issues[0])' },
+  { name: 'an unfinished page', edit: (b: ReplayInput['batch']) => { b.continuationToken = 'page-2'; },
+    message: 'batch.continuationToken is set: replay needs the complete OccurrenceBatch' },
+])('rejects $name before replay', async ({ edit, message }) => {
+  const data = input();
+  edit(data.batch);
+  const error = new RangeError(message);
+  expect(thrown(() => seekSceneState(data, time('10:00:30')))).toEqual(error);
+  expect(thrown(() => stepSceneState(data, 3))).toEqual(error);
+  await expect(replayKey(data, time('10:00:30'))).rejects.toEqual(error);
 });
 
 it.each(expected)('seeks the independent Scene State at $at', (state) => {

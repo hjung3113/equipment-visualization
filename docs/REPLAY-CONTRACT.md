@@ -76,7 +76,9 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 `@eqv/core/scene-state.schema.json`이 아래 형식을 정의한다. `seekSceneState`는 시각 prefix, `stepSceneState`는 지정 seq 이하의 모든 record를 적용하고, `replayKey`는 재생 입력을 식별한다. `stepSceneState`의 `t`는 prefix에서 seq 순으로 마지막인 null 아닌 `at`이며, 없으면 `batch.from`이다.
 `fixtures/cluster-single/expected-scene-states.json`은 구현과 독립적인 정답이다.
 DQI는 타임라인 마커이며 Scene State에 들어가지 않고 상태를 바꾸지 않는다.
-Replay 입력은 하나의 설비에 속해야 하며 `bindings.equipmentId`, batch와 모든 Occurrence·DQI record의 `equipmentId`가 다르면 `seekSceneState`·`stepSceneState`·`replayKey`는 상태를 도출하기 전에 `RangeError`를 던진다.
+Replay 입력은 하나의 설비에 속해야 하며 `bindings.equipmentId`, batch와 모든 Occurrence·DQI record의 `equipmentId`가 다르면 `seekSceneState`·`stepSceneState`·`replayKey`는 상태를 도출하기 전에 `RangeError`를 던진다. 같은 진입점은 다음 batch도 `RangeError`로 거부한다(#42):
+- **Record Sequence 중복:** 모든 Occurrence의 `start.seq`·`end.seq`와 모든 DQI `seq`는 batch 안에서 서로 달라야 한다. 같은 seq면 입력 배열 순서가 상태를 정하게 되어 Replay Key 불변식이 깨진다.
+- **미완료 page:** `continuationToken`이 있는 batch. 빠진 page의 record가 facet을 바꿀 수 있으므로(예: 같은 Holding Site의 두 번째 점유) 호출자가 전체 batch를 모은 뒤 replay한다. core는 page를 가져오지 않는다.
 
 ```ts
 type SceneState = {

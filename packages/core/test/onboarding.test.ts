@@ -4,7 +4,7 @@ import { z } from 'zod';
 import {
   aliasMetadataFileSchema, buildInventory, computeCoverage, detectDrift, findMappingConflicts,
   layoutDocumentSchema, mappingVersionSchema, observedInventorySchema, occurrenceBatchSchema,
-  typeDictionaryFileSchema, type EquipmentLayoutDocument,
+  typeDictionaryFileSchema, type EquipmentLayoutDocument, type Occurrence,
 } from '../src/index.js';
 
 const read = (path: string) => JSON.parse(readFileSync(new URL(`../../../fixtures/cluster-single/${path}`, import.meta.url), 'utf8'));
@@ -18,6 +18,9 @@ const mapping = (prefix = '0abf') => {
   return mappingVersionSchema.parse(read(`onboarding/mappings/eq-synth-01/${file}`));
 };
 const inventory = () => buildInventory(batch(), metadata());
+// A cloned Occurrence needs its own Record Sequences (start = seq, end = seq + 1).
+const resequence = (occurrence: Occurrence, seq: number): Occurrence => ({ ...occurrence,
+  start: { ...occurrence.start, seq }, end: occurrence.end && { ...occurrence.end, seq: seq + 1 } });
 
 it('builds the hand-counted inventory, copying only supplied metadata for observed aliases', () => {
   expect(buildInventory(batch())).toEqual(expected());
@@ -42,7 +45,7 @@ it.each(['deduplicate', 'slot-order', 'null-boundaries', 'equipment'] as const)(
   input.occurrences = [occurrence];
   if (rule === 'deduplicate') expect(buildInventory(input).aliases[0]!.references).toBe(1);
   if (rule === 'slot-order') {
-    input.occurrences = ['x', '+9007199254740993', '9007199254740993', '10', '1', '9007199254740992', '01', '-1'].map((slotAlias) => ({ ...occurrence, to: undefined, location: { moduleAlias: 'A', slotAlias } }));
+    input.occurrences = ['x', '+9007199254740993', '9007199254740993', '10', '1', '9007199254740992', '01', '-1'].map((slotAlias, i) => ({ ...resequence(occurrence, 100 + 2 * i), to: undefined, location: { moduleAlias: 'A', slotAlias } }));
     expect(buildInventory(input).aliases[0]!.slots).toEqual(['-1', '01', '1', '10', '9007199254740992', '+9007199254740993', '9007199254740993', 'x']);
   }
   if (rule === 'null-boundaries') {
@@ -50,7 +53,23 @@ it.each(['deduplicate', 'slot-order', 'null-boundaries', 'equipment'] as const)(
     occurrence.end = occurrence.end && { ...occurrence.end, at: null };
     expect(buildInventory(input).aliases[0]).toMatchObject({ firstSeen: null, lastSeen: null });
   }
-  if (rule === 'equipment') expect(() => buildInventory(input, { ...metadata(), equipmentId: 'other' })).toThrow('Metadata equipmentId differs from batch');
+  if (rule === 'equipment') {
+    expect(() => buildInventory(input, { ...metadata(), equipmentId: 'other' }))
+      .toThrow(new RangeError(`metadata.equipmentId (other) must match batch.equipmentId (${input.equipmentId})`));
+  }
+});
+
+it.each([
+  { name: 'an Occurrence of another equipment', edit: (b: ReturnType<typeof batch>) => { b.occurrences[3]!.equipmentId = 'other'; },
+    message: 'occurrences[3].equipmentId (record occ-efem-out) (other) must match batch.equipmentId (eq-synth-01)' },
+  { name: 'a duplicate Record Sequence', edit: (b: ReturnType<typeof batch>) => { b.occurrences[2]!.start.seq = 2; },
+    message: 'Record Sequence 2 is not unique (occurrences[1].start, occurrences[2].start)' },
+])('rejects $name before building the Inventory', ({ edit, message }) => {
+  const input = batch();
+  edit(input);
+  let error: unknown;
+  try { buildInventory(input); } catch (caught) { error = caught; }
+  expect(error).toEqual(new RangeError(message));
 });
 
 it('computes weighted coverage, ignored references and assumed share', () => {
@@ -125,8 +144,8 @@ it('detects drift against the published inventory, including current unexplained
   const input = { baseline, current: baseline, mapping: mapping(), layout: layout() };
   expect(detectDrift(input)).toEqual({ newAliases: [], newSlots: [], transfersWithoutCapability: [] });
   const currentBatch = batch();
-  currentBatch.occurrences.push({ ...currentBatch.occurrences[0]!, location: { moduleAlias: 'NEW' }, from: undefined, to: undefined });
-  currentBatch.occurrences.push({ ...currentBatch.occurrences[0]!, kind: 'TRANSFER', location: { moduleAlias: 'PM2', slotAlias: '3' }, from: { moduleAlias: 'LP1' }, to: { moduleAlias: 'PM2' } });
+  currentBatch.occurrences.push({ ...resequence(currentBatch.occurrences[0]!, 100), location: { moduleAlias: 'NEW' }, from: undefined, to: undefined });
+  currentBatch.occurrences.push({ ...resequence(currentBatch.occurrences[0]!, 102), kind: 'TRANSFER', location: { moduleAlias: 'PM2', slotAlias: '3' }, from: { moduleAlias: 'LP1' }, to: { moduleAlias: 'PM2' } });
   expect(detectDrift({ ...input, current: buildInventory(currentBatch) })).toEqual({
     newAliases: ['NEW'], newSlots: [{ alias: 'PM2', slot: '3' }], transfersWithoutCapability: [
       { kind: 'transfer-without-capability', from: 'LP1', to: 'PM2', count: 1, fromComponentId: 'lp-a', toComponentId: 'pm-b' },

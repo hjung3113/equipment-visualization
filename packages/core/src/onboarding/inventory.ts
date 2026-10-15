@@ -1,9 +1,13 @@
 import type { AliasMetadataFile, InventoryAlias, ObservedInventory } from '../inventory/schema.js';
 import type { OccurrenceBatch } from '../occurrence/schema.js';
+import { assertBatchRecords } from '../occurrence/validate.js';
 import { compareSlots, compareText } from './order.js';
 
 export function buildInventory(batch: OccurrenceBatch, metadata?: AliasMetadataFile): ObservedInventory {
-  if (metadata && metadata.equipmentId !== batch.equipmentId) throw new Error('Metadata equipmentId differs from batch');
+  assertBatchRecords(batch);
+  if (metadata && metadata.equipmentId !== batch.equipmentId) {
+    throw new RangeError(`metadata.equipmentId (${metadata.equipmentId}) must match batch.equipmentId (${batch.equipmentId})`);
+  }
   const aliases = new Map<string, InventoryAlias>();
   const transfers = new Map<string, { from: string; to: string; count: number }>();
   for (const occurrence of batch.occurrences) {
