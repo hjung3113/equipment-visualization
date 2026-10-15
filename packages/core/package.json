@@ -10,7 +10,11 @@
       "import": "./dist/index.js"
     },
     "./layout.schema.json": "./schema/layout.schema.json",
-    "./occurrence-batch.schema.json": "./schema/occurrence-batch.schema.json"
+    "./occurrence-batch.schema.json": "./schema/occurrence-batch.schema.json",
+    "./type-dictionary.schema.json": "./schema/type-dictionary.schema.json",
+    "./alias-rules.schema.json": "./schema/alias-rules.schema.json",
+    "./mapping-version.schema.json": "./schema/mapping-version.schema.json",
+    "./bindings.schema.json": "./schema/bindings.schema.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

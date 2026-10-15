@@ -74,11 +74,15 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 | 로봇 arm 지정 | `TM_R1` slot `1` → `tm-robot` blade A Holding Site |
 | 무시 | `VIRT_SCH` → Ignored Alias |
 
-- **우선순위:** 정확 일치 > 패턴, 좁은 Mapping Scope > 넓은 Scope. 같은 수준 중첩은 Mapping Conflict로 저장 거부.
+- **우선순위:** 좁은 Mapping Scope를 먼저 선택한 뒤 그 범위 안에서 정확 일치 > 패턴. 같은 수준 중첩은 Mapping Conflict로 저장 거부.
 - **시간에 따른 의미 변경**(개조 등)은 규칙 유효기간이 아니라 새 Mapping Version + Binding으로 표현한다(시간 축 단일화).
 - **Mapping Scope:** `Global → Maker → Model → Equipment`. 주로 Model 범위에 작성하고 예외만 Equipment 범위에서 덮어쓴다. Publish 시 평탄화(ADR-0005).
 - **같은 Model 적용:** 한 대를 끝내면 같은 Model N대를 일괄 dry-run해 장비별 커버리지·충돌 표를 보여주고, 예외 장비만 열어 Equipment 범위로 덮어쓴다. Model 규칙이 바뀌면 해당 장비에 "새 규칙 반영 가능" 배지.
 - **assumed 게시:** 확정 안 된 항목은 Certainty `assumed`로 게시 가능. 그 매핑을 거친 location facet Evidence는 최대 `derived`.
+
+### 구현 규칙 (S3, #8)
+
+Publish는 먼저 가장 좁은 Mapping Scope를 선택하고, 그 범위 안에서 정확 일치를 패턴보다 우선한다. 패턴의 `{name}`은 숫자 문자열을 캡처하며 대상의 `{name}`은 숫자를 그대로, `{name:letter}`는 1–26을 a–z로 치환한다(그 밖의 값은 미매칭). slot 분할·slot 변환·로봇 arm 지정은 모두 하나의 `SlotMap` 형식(`offset` + `assign`의 정수 범위와 `holdingSiteId`)을 사용하며 범위 중첩은 거부한다. 규칙이 없는 alias는 Mapping Version에 포함하지 않고 `unknown`으로 해석한다. 버전 hash는 hash 필드를 제외한 canonical JSON(객체 키 재귀 정렬, 배열 순서 유지, 공백 없음)의 SHA-256이다.
 
 ## 6. 커버리지와 Mapping Conflict
 

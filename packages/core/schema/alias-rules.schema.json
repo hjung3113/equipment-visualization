@@ -1,0 +1,226 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.4"
+    },
+    "scope": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "const": "global"
+            }
+          },
+          "required": [
+            "level"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "const": "maker"
+            },
+            "maker": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "level",
+            "maker"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "const": "model"
+            },
+            "maker": {
+              "type": "string",
+              "minLength": 1
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "level",
+            "maker",
+            "model"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": {
+            "level": {
+              "type": "string",
+              "const": "equipment"
+            },
+            "equipmentId": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "level",
+            "equipmentId"
+          ],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "rules": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "match": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "exact": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "exact"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "pattern": {
+                    "type": "string",
+                    "pattern": "^(?:[^{}]|\\{[a-z]+\\})*$"
+                  }
+                },
+                "required": [
+                  "pattern"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "ignore": {
+                    "type": "boolean",
+                    "const": true
+                  }
+                },
+                "required": [
+                  "ignore"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "pattern": "^(?:[^{}]|\\{[a-z]+(?::letter)?\\})+$"
+                  },
+                  "slots": {
+                    "type": "object",
+                    "properties": {
+                      "offset": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991
+                      },
+                      "assign": {
+                        "minItems": 1,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "from": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "to": {
+                              "type": "integer",
+                              "minimum": -9007199254740991,
+                              "maximum": 9007199254740991
+                            },
+                            "holdingSiteId": {
+                              "type": "string",
+                              "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "holdingSiteId"
+                          ],
+                          "additionalProperties": false
+                        }
+                      }
+                    },
+                    "required": [
+                      "offset",
+                      "assign"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "componentId"
+                ],
+                "additionalProperties": false
+              }
+            ]
+          },
+          "certainty": {
+            "type": "string",
+            "enum": [
+              "verified",
+              "assumed"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "match",
+          "target",
+          "certainty"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "scope",
+    "rules"
+  ],
+  "additionalProperties": false
+}
