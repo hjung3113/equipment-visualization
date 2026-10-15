@@ -17,6 +17,30 @@ const input = (): ReplayInput => {
     mappings: readdirSync(new URL(directory, root)).sort().map((file) => mappingVersionSchema.parse(read(directory + file))) };
 };
 const expected = (read('expected-scene-states.json') as { states: unknown[] }).states.map((state) => sceneStateSchema.parse(state));
+it.each(['batch', 'occurrence', 'issue'] as const)('rejects foreign equipment in %s before replay', async (foreign) => {
+  const data = input();
+  const batch = data.batch;
+  const occurrenceIndex = batch.occurrences.length - 1;
+  const issueIndex = batch.issues.length - 1;
+  data.batch = occurrenceBatchSchema.parse({ ...batch,
+    equipmentId: foreign === 'batch' ? 'eq-other' : batch.equipmentId,
+    occurrences: batch.occurrences.map((record, i) => foreign === 'batch' || (foreign === 'occurrence' && i === occurrenceIndex)
+      ? { ...record, equipmentId: 'eq-other' } : record),
+    issues: batch.issues.map((record, i) => foreign === 'batch' || (foreign === 'issue' && i === issueIndex)
+      ? { ...record, equipmentId: 'eq-other' } : record),
+  });
+  const message = foreign === 'batch'
+    ? `bindings.equipmentId (${data.bindings.equipmentId}) must match batch.equipmentId (eq-other)`
+    : `${foreign === 'occurrence' ? `occurrences[${occurrenceIndex}].equipmentId (record ${batch.occurrences[occurrenceIndex]!.id})`
+      : `issues[${issueIndex}].equipmentId (record ${batch.issues[issueIndex]!.id})`} (eq-other) must match batch.equipmentId (${batch.equipmentId})`;
+  expect(() => seekSceneState(data, time('10:00:30'))).toThrow(RangeError);
+  expect(() => seekSceneState(data, time('10:00:30'))).toThrow(message);
+  expect(() => stepSceneState(data, 3)).toThrow(RangeError);
+  expect(() => stepSceneState(data, 3)).toThrow(message);
+  await expect(replayKey(data, time('10:00:30'))).rejects.toThrow(RangeError);
+  await expect(replayKey(data, time('10:00:30'))).rejects.toThrow(message);
+});
+
 it.each(expected)('seeks the independent Scene State at $at', (state) => {
   const actual = seekSceneState(input(), state.at);
   expect(sceneStateSchema.parse(actual)).toEqual(state);
