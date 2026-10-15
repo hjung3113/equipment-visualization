@@ -6,6 +6,13 @@ Templates are converted v0.4 semantic documents; primitives retain only the orig
 
 The Korean Endura reference row states an upper bound of nine process chambers; it supplies no complete range. Every template therefore keeps min = max = its drawn Role count.
 
+## Conversion rules (one-off converter, not committed)
+
+- Transfer Capabilities come only from v0.3 `transfer-access` edges. Each edge names a hub (or robot) and a module; the serving robot is the robot endpoint or the hub's single robot child. Every pair of distinct modules served by one robot gets one capability per pair of Holding Sites with a shared material kind, handler = that robot, Certainty `assumed`. This is possibility, not evidence of transfer.
+- Pairs of two load ports (`lp`) are excluded: no v0.3 edge describes carrier-to-carrier sorting, and the slot combinations dominated the output.
+- Edges with no robot endpoint and no robot child are skipped, never given an inferred handler: lithography `edge-03` (STAGE_A→EXPOSE), `edge-04` (STAGE_B→METRO); furnace `edge-02` (STOCK→BOAT1), `edge-03` (STOCK→BOAT2).
+- Holding Sites (all `assumed`): process-like modules `station-1`; `ll` `slot-1`, `slot-2`; robots one `blade-*` per v0.3 `bladeCount` (arm count is not a site count); `lp` `carrier` + `slot-1`…`slot-25`; boat `load`; reactor `boat`; stocker one `place-*` per v0.3 port; structural Roles none.
+
 ## assets/templates/cluster-dual-hub.template.json
 
 Origin: v0.3 pack `templates/cluster-dual-hub.layout.json` (archive SHA-256 above). Synthetic/illustrative; not an OEM drawing.

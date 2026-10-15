@@ -9,7 +9,7 @@ import {
 const root = new URL('../../../', import.meta.url);
 const read = (path: string) => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
 const cases = [
-  ['cluster-single', 26], ['cluster-dual-hub', 29], ['wet-linear', 2343],
+  ['cluster-single', 26], ['cluster-dual-hub', 29], ['wet-linear', 465],
   ['track-stacked', 21], ['lithography-dual-stage', 51], ['vertical-batch-furnace', 2],
 ] as const;
 // Original v0.3 IDs are pinned here so CI needs no external source pack.

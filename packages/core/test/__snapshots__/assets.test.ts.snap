@@ -32,6 +32,6 @@ exports[`preserves the reviewed template and primitive asset bytes 1`] = `
   "assets/templates/lithography-dual-stage.template.json": "01f4db00ea5e9f5a4ec4330cd3485e5cca4dfef2ff12f664de9e7bee192c6993",
   "assets/templates/track-stacked.template.json": "1791417ee609d7256b2bcb73f4ce42cfaa7e0f5245dd7ad2ca67933619d601b1",
   "assets/templates/vertical-batch-furnace.template.json": "9e40208fa97b260259801428096ac8be12b3cb8a58079fa694a94c6c817ff871",
-  "assets/templates/wet-linear.template.json": "69286456714df31f43adf215fcfbdd370fc88a66f7d82ce31627714671cd3c11",
+  "assets/templates/wet-linear.template.json": "198074901c4547ed74567b18186ef81f62ceb46382dcc865ed69a20cb1c3d580",
 }
 `;
