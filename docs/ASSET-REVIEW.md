@@ -16,7 +16,7 @@
 - No tested browser editing round-trip or actual draw.io import.
 - No actual parser raw data, real system integration or replay execution.
 - No verified Web UI/E2E, WCAG conformance, scale performance.
-- Converted v0.4 templates (6) and themed primitives (25) are in `assets/`; see [asset provenance](../assets/NOTICE.md). Template SVG/PNG, the original Python generators/validator and v0.3 fixtures are intentionally excluded. Remaining gaps: no measured OEM dimensions, validated kinematics, browser editing round-trip or real-data integration; four handler-ambiguous transfer edges are omitted.
+- Converted v0.4 templates (6) and themed primitives (25) are in `assets/`; see [asset provenance](../assets/NOTICE.md). #33 re-authored their generic geometry from the owner-approved prototype (2026-10-15), without deriving connectivity. Template SVG/PNG, the original Python generators/validator and v0.3 fixtures are intentionally excluded. Remaining gaps: no measured OEM dimensions, validated kinematics, browser editing round-trip or real-data integration; four handler-ambiguous transfer edges are omitted.
 
 ## v0.3 pack provenance
 - Source archive: `equipment-visualization-design-v0.3.zip`, sha256 `9e510a228bfa6da20e3a80749d991c91e5b8ed826bab62f51b127e355730aac2` (61 files, kept outside the repository).

@@ -27,6 +27,11 @@
       "title": "www.asm.com/our-technology-products/vertical-furnace/sonora",
       "uri": "https://www.asm.com/our-technology-products/vertical-furnace/sonora",
       "license": "reference-only"
+    },
+    {
+      "id": "src-geometry-2026-10",
+      "title": "Re-authored generic archetype geometry (owner-approved prototype, 2026-10-15)",
+      "license": "synthetic"
     }
   ],
   "levels": [
@@ -49,8 +54,8 @@
       "label": "Carrier LP1",
       "levelId": "level-main",
       "transform": {
-        "x": 105,
-        "y": 182,
+        "x": 133,
+        "y": 200,
         "rotation": 0,
         "scale": 1
       },
@@ -416,13 +421,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -434,8 +441,8 @@
       "label": "Carrier LP2",
       "levelId": "level-main",
       "transform": {
-        "x": 105,
-        "y": 347,
+        "x": 133,
+        "y": 340,
         "rotation": 0,
         "scale": 1
       },
@@ -801,13 +808,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -820,7 +829,7 @@
       "levelId": "level-main",
       "transform": {
         "x": 270,
-        "y": 269,
+        "y": 270,
         "rotation": 0,
         "scale": 1
       },
@@ -968,13 +977,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -986,8 +997,8 @@
       "label": "Boat A",
       "levelId": "level-main",
       "transform": {
-        "x": 475,
-        "y": 171,
+        "x": 600,
+        "y": 170,
         "rotation": 0,
         "scale": 1
       },
@@ -1068,13 +1079,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1086,8 +1099,8 @@
       "label": "Boat B",
       "levelId": "level-main",
       "transform": {
-        "x": 475,
-        "y": 368,
+        "x": 600,
+        "y": 370,
         "rotation": 0,
         "scale": 1
       },
@@ -1168,13 +1181,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1186,22 +1201,22 @@
       "label": "Boat Handler",
       "levelId": "level-main",
       "transform": {
-        "x": 628,
-        "y": 276,
+        "x": 440,
+        "y": 270,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 108,
-        "height": 100
+        "width": 84,
+        "height": 84
       },
       "ports": [
         {
           "id": "p-in-04",
           "label": "wafer-access",
           "position": {
-            "x": -49.68,
-            "y": -34.09
+            "x": -38.64,
+            "y": -28.636
           },
           "provenance": {
             "certainty": "assumed",
@@ -1214,8 +1229,8 @@
           "id": "p-in-05",
           "label": "wafer-access",
           "position": {
-            "x": -49.68,
-            "y": 29.87
+            "x": -38.64,
+            "y": 25.091
           },
           "provenance": {
             "certainty": "assumed",
@@ -1228,8 +1243,8 @@
           "id": "p-out-06",
           "label": "wafer-access",
           "position": {
-            "x": 49.68,
-            "y": -30.42
+            "x": 38.64,
+            "y": -25.553
           },
           "provenance": {
             "certainty": "assumed",
@@ -1242,8 +1257,8 @@
           "id": "p-out-07",
           "label": "wafer-access",
           "position": {
-            "x": 49.68,
-            "y": 31.26
+            "x": 38.64,
+            "y": 26.258
           },
           "provenance": {
             "certainty": "assumed",
@@ -1295,13 +1310,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1313,13 +1330,13 @@
       "label": "Reactor 1",
       "levelId": "level-main",
       "transform": {
-        "x": 806,
-        "y": 167,
+        "x": 790,
+        "y": 170,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 154,
+        "width": 150,
         "height": 150
       },
       "ports": [
@@ -1327,7 +1344,7 @@
           "id": "p-in-06",
           "label": "wafer-access",
           "position": {
-            "x": -70.84,
+            "x": -69,
             "y": 43.38
           },
           "provenance": {
@@ -1380,13 +1397,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
@@ -1398,13 +1417,13 @@
       "label": "Reactor 2",
       "levelId": "level-main",
       "transform": {
-        "x": 806,
-        "y": 388,
+        "x": 790,
+        "y": 370,
         "rotation": 0,
         "scale": 1
       },
       "size": {
-        "width": 154,
+        "width": 150,
         "height": 150
       },
       "ports": [
@@ -1412,7 +1431,7 @@
           "id": "p-in-07",
           "label": "wafer-access",
           "position": {
-            "x": -70.84,
+            "x": -69,
             "y": -44.57
           },
           "provenance": {
@@ -1465,13 +1484,15 @@
         "transform": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         },
         "size": {
           "certainty": "assumed",
           "sourceEvidence": [
-            "src-v03-pack"
+            "src-v03-pack",
+            "src-geometry-2026-10"
           ]
         }
       }
