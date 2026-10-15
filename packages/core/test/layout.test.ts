@@ -114,3 +114,31 @@ it('keeps the published JSON Schema synchronized with the zod source', async () 
   const schema = z.toJSONSchema(layoutDocumentSchema);
   await expect(JSON.stringify(schema, null, 2) + '\n').toMatchFileSnapshot('../schema/layout.schema.json');
 });
+
+it.each([
+  { width: 420, height: 92 },
+  { width: 0.5, height: 1.25 },
+])('preserves a valid local footprint $width × $height', (size) => {
+  const input = clusterTemplate();
+  const component = input.components[0]!;
+  component.transform = { x: 10, y: 20, rotation: 90, scale: 2 };
+  const layout = { ...input, components: [{ ...component, size }, ...input.components.slice(1)] };
+  expect(validateLayout(layout)).toEqual({ ok: true, layout, issues: [] });
+});
+
+it.each([
+  { name: 'zero width', size: { width: 0, height: 92 }, path: ['size', 'width'], code: 'schema' },
+  { name: 'negative height', size: { width: 420, height: -1 }, path: ['size', 'height'], code: 'schema' },
+  { name: 'extra footprint key', size: { width: 420, height: 92, depth: 1 }, path: ['size'], code: 'schema' },
+  { name: 'verified footprint without evidence', size: { width: 420, height: 92 }, path: ['provenance', 'size', 'sourceEvidence'], code: 'verified-without-evidence' },
+])('rejects $name at its precise footprint path', ({ size, path, code }) => {
+  const input = clusterTemplate();
+  const component = input.components[0]!;
+  const provenance = code === 'verified-without-evidence'
+    ? { ...component.provenance, size: { certainty: 'verified', sourceEvidence: [] } }
+    : component.provenance;
+  const layout = { ...input, components: [{ ...component, size, provenance }, ...input.components.slice(1)] };
+  expect(validateLayout(layout).issues).toEqual([
+    { code, path: ['components', 0, ...path], message: expect.any(String) },
+  ]);
+});

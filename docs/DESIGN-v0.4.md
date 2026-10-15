@@ -66,7 +66,7 @@ Catalog
 EquipmentLayout (templateId + Layout Revision, publish 후 불변)
  ├─ Component[]
  │   ├─ stable componentId, type, templateRef, overrides
- │   ├─ parentId / localTransform(x,y,rotation,scale) / levelId
+ │   ├─ parentId / localTransform(x,y,rotation,scale) / size? {width,height} (ADR-0006) / levelId
  │   ├─ ports[] / holdingSites[] / children[]
  │   └─ property별 { certainty: verified|assumed|unknown, sourceEvidence[] }
  ├─ Level[]
@@ -215,6 +215,7 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 | T04 Evidence policy | [ADR-0003](adr/0003-facet-evidence-levels.md) |
 | T05 패키지 경계와 메뉴 데이터 계약 | [ADR-0001](adr/0001-standalone-packages-thin-platform-consumer.md), [ADR-0002](adr/0002-occurrence-input-contract.md) |
 | T06 레퍼런스 저작권/에셋 provenance | Open |
+| Component footprint size | [ADR-0006](adr/0006-component-footprint-size.md) |
 
 ## 11. 설계상 남겨둔 Open
 

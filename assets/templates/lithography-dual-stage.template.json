@@ -54,6 +54,10 @@
         "rotation": 0,
         "scale": 1
       },
+      "size": {
+        "width": 98,
+        "height": 110
+      },
       "ports": [
         {
           "id": "p-out-00",
@@ -414,6 +418,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -429,6 +439,10 @@
         "y": 2,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 104,
+        "height": 98
       },
       "ports": [
         {
@@ -524,6 +538,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -539,6 +559,10 @@
         "y": -81,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 145,
+        "height": 115
       },
       "ports": [
         {
@@ -620,6 +644,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -635,6 +665,10 @@
         "y": 105,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 145,
+        "height": 115
       },
       "ports": [
         {
@@ -716,6 +750,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -731,6 +771,10 @@
         "y": 106,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 154,
+        "height": 135
       },
       "ports": [
         {
@@ -798,6 +842,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -813,6 +863,10 @@
         "y": -81,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 154,
+        "height": 135
       },
       "ports": [
         {
@@ -881,6 +935,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -895,6 +955,10 @@
         "y": 118,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 142,
+        "height": 84
       },
       "ports": [
         {
@@ -956,6 +1020,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -971,6 +1041,10 @@
         "y": -68,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 117,
+        "height": 112
       },
       "ports": [
         {
@@ -1039,6 +1113,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1053,6 +1133,10 @@
         "y": 304,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 710,
+        "height": 362
       },
       "ports": [],
       "holdingSites": [],
@@ -1082,6 +1166,12 @@
           ]
         },
         "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
           "certainty": "assumed",
           "sourceEvidence": [
             "src-v03-pack"

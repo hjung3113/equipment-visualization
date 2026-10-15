@@ -40,6 +40,9 @@ const componentSchema = z.strictObject({
   transform: z.strictObject({
     x: z.number(), y: z.number(), rotation: z.number(), scale: z.number().positive(),
   }).describe('Finite geometry local to the parent; geometry never establishes connectivity.'),
+  size: z.strictObject({
+    width: z.number().positive(), height: z.number().positive(),
+  }).optional().describe('ADR-0006: footprint in layout units in the Component local frame before rotation, multiplied by transform.scale. Absence means unknown; renderers fall back to primitive natural size. Structural Roles stretch to the footprint; module and robot symbols fit centred with aspect ratio preserved. Geometry never establishes connectivity.'),
   ports: z.array(portSchema),
   holdingSites: z.array(holdingSiteSchema),
   provenance: z.strictObject({
@@ -49,6 +52,7 @@ const componentSchema = z.strictObject({
     parentId: provenanceSchema.optional(),
     levelId: provenanceSchema.optional(),
     transform: provenanceSchema.optional(),
+    size: provenanceSchema.optional(),
   }).describe('An absent property key means its Certainty is unknown. Validation never fills assumed or verified provenance.'),
 });
 const portRefSchema = z.strictObject({ componentId: idSchema, portId: idSchema });

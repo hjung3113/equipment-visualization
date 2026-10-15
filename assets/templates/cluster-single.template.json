@@ -54,6 +54,10 @@
         "rotation": 0,
         "scale": 1
       },
+      "size": {
+        "width": 190,
+        "height": 180
+      },
       "ports": [
         {
           "id": "p-out-00",
@@ -171,6 +175,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -185,6 +195,10 @@
         "y": 170,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 126,
+        "height": 104
       },
       "ports": [
         {
@@ -246,6 +260,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -260,6 +280,10 @@
         "y": 131,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 122,
+        "height": 104
       },
       "ports": [
         {
@@ -321,6 +345,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -335,6 +365,10 @@
         "y": 131,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 122,
+        "height": 104
       },
       "ports": [
         {
@@ -396,6 +430,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -410,6 +450,10 @@
         "y": 170,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 126,
+        "height": 104
       },
       "ports": [
         {
@@ -471,6 +515,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -485,6 +535,10 @@
         "y": 334,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 94,
+        "height": 76
       },
       "ports": [
         {
@@ -572,6 +626,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -586,6 +646,10 @@
         "y": 334,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 94,
+        "height": 76
       },
       "ports": [
         {
@@ -673,6 +737,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -687,6 +757,10 @@
         "y": 435,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 420,
+        "height": 92
       },
       "ports": [
         {
@@ -791,6 +865,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -806,6 +886,10 @@
         "y": 0,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 78,
+        "height": 70
       },
       "ports": [],
       "holdingSites": [
@@ -870,6 +954,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -885,6 +975,10 @@
         "y": 0,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 76,
+        "height": 66
       },
       "ports": [],
       "holdingSites": [
@@ -937,6 +1031,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -952,6 +1052,10 @@
         "y": 0,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 88,
+        "height": 82
       },
       "ports": [],
       "holdingSites": [
@@ -1004,6 +1108,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1018,6 +1128,10 @@
         "y": 515,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 82,
+        "height": 66
       },
       "ports": [
         {
@@ -1379,6 +1493,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1393,6 +1513,10 @@
         "y": 515,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 82,
+        "height": 66
       },
       "ports": [
         {
@@ -1754,6 +1878,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1768,6 +1898,10 @@
         "y": 515,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 82,
+        "height": 66
       },
       "ports": [
         {
@@ -2125,6 +2259,12 @@
           ]
         },
         "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
           "certainty": "assumed",
           "sourceEvidence": [
             "src-v03-pack"

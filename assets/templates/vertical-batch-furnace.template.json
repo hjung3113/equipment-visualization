@@ -54,6 +54,10 @@
         "rotation": 0,
         "scale": 1
       },
+      "size": {
+        "width": 96,
+        "height": 80
+      },
       "ports": [
         {
           "id": "p-out-00",
@@ -414,6 +418,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -428,6 +438,10 @@
         "y": 347,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 96,
+        "height": 80
       },
       "ports": [
         {
@@ -789,6 +803,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -803,6 +823,10 @@
         "y": 269,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 154,
+        "height": 270
       },
       "ports": [
         {
@@ -946,6 +970,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -960,6 +990,10 @@
         "y": 171,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 110,
+        "height": 120
       },
       "ports": [
         {
@@ -1036,6 +1070,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1050,6 +1090,10 @@
         "y": 368,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 110,
+        "height": 120
       },
       "ports": [
         {
@@ -1126,6 +1170,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1140,6 +1190,10 @@
         "y": 276,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 108,
+        "height": 100
       },
       "ports": [
         {
@@ -1243,6 +1297,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1257,6 +1317,10 @@
         "y": 167,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 154,
+        "height": 150
       },
       "ports": [
         {
@@ -1318,6 +1382,12 @@
           "sourceEvidence": [
             "src-v03-pack"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
         }
       }
     },
@@ -1332,6 +1402,10 @@
         "y": 388,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 154,
+        "height": 150
       },
       "ports": [
         {
@@ -1389,6 +1463,12 @@
           ]
         },
         "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
           "certainty": "assumed",
           "sourceEvidence": [
             "src-v03-pack"

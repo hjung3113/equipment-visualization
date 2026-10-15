@@ -105,7 +105,7 @@ export function validateLayout(input: unknown): LayoutValidationResult {
       duplicate(siteIds, site.id, [...sitePath, 'id']);
       provenance(site.provenance, [...sitePath, 'provenance']);
     });
-    const properties = ['role', 'assetRef', 'label', 'parentId', 'levelId', 'transform'] as const;
+    const properties = ['role', 'assetRef', 'label', 'parentId', 'levelId', 'transform', 'size'] as const;
     for (const property of properties) {
       const value = component.provenance[property];
       if (value) provenance(value, [...path, 'provenance', property]);
