@@ -31,8 +31,8 @@ The second column quotes the applicable bullet from REPLAY-CONTRACT's test matri
 | Fallback start only | 강제 종료(`Forced*`) 경계, fallback 경계, synthetic relocation transfer | `occ-fallback` | Start derived for fallback time; end observed; material location and identity not applicable. No downgrade of end. |
 | Synthetic relocation | 강제 종료(`Forced*`) 경계, fallback 경계, synthetic relocation transfer | `occ-relocation` | Location derived, start derived, end derived; identity observed independently of the synthetic movement. |
 | Inferred wafer | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-inferred` | Resting location derived (v2 PM2 assumed cap); identity derived; start and end observed. |
-| Empty resolution | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-identity-empty` | Identity unknown with null id; anonymous occupancy is placed under an `occ:` key at PM1 (location observed); start and end observed. No wafer id is invented. DTO does not encode Empty vs Unknown. |
-| Unknown resolution | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-identity-unknown` | Identity unknown with null id; anonymous occupancy is placed under an `occ:` key at PM2/station-2 (location derived by assumed Mapping); start and end observed. No wafer id is invented. Distinction from Empty exists only in this case documentation. |
+| Empty resolution | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-identity-empty` | Identity unknown with null id; anonymous occupancy is placed under an `o:<occurrenceId>` key at PM1 (location observed); start and end observed. No wafer id is invented. DTO does not encode Empty vs Unknown. |
+| Unknown resolution | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-identity-unknown` | Identity unknown with null id; anonymous occupancy is placed under an `o:<occurrenceId>` key at PM2/station-2 (location derived by assumed Mapping); start and end observed. No wafer id is invented. Distinction from Empty exists only in this case documentation. |
 | Carrier-only row | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-carrier` | Carrier location observed, carrier identity observed, start and end observed; no wafer facet is manufactured. |
 | Lot filter and both LP wafer slots | Wafer identity Resolved/Inferred/Empty/Unknown, carrier-only Occurrence, Lot 필터 | `occ-lp-slot-one`, `occ-lp-slot-two` | Locations observed on different slots; wafer identities observed; starts and ends observed. LOT-A and LOT-B are attributes, not location objects. |
 | Two Handlers concurrently occupied | 두 Handler 동시 점유, 한 Handler 여러 Holding Site, multi-site PM 동시 점유(충돌 오탐 금지), 같은 Holding Site 이중 점유(충돌 검출) | `occ-efem-overlap`, `occ-tm-out` | Both Handler locations derived; both identities observed; starts and ends observed. Overlap does not imply a collision or trajectory. |
@@ -65,7 +65,7 @@ Schema validation deliberately transcribes the DTO without pairing, chronology, 
 
 ## Per-time rationale
 
-All rows use the date `2026-01-01` and millisecond precision `.000`; O/D/U below mean observed/derived/unknown location evidence. Identity and boundary evidence are independent. The carrier starts before the Binding switch and remains unresolved afterward until its end removes it. Every applied end removes its placement, even without a following placement. DQIs remain timeline-only.
+All rows use the date `2026-01-01` and millisecond precision `.000`; O/D/U below mean observed/derived/unknown location evidence. Identity and boundary evidence are independent. The carrier starts before the Binding switch and remains unresolved afterward until its end removes it. Identified materials use `m:<kind>:<id>` keys; anonymous materials use `o:<occurrenceId>`. The disjoint prefixes prevent collisions even when a raw id is `occ:anonymous`, and kind separates a wafer from a carrier with the same id. Raw source ids are preserved, and materials and conflict keys use code-unit ordering. Every applied end removes its placement, even without a following placement. DQIs remain timeline-only.
 
 | t | Rules exercised | Notable expected values |
 | --- | --- | --- |
@@ -78,7 +78,7 @@ All rows use the date `2026-01-01` and millisecond precision `.000`; O/D/U below
 | 10:14:30 | 2, 6; fallback start facet | seq 33: same C01/W01; pm-a function/D from fallback start. |
 | 10:15:30 | 3, 5; synthetic relocation | seq 35: same C01/W01 plus W06 tm-robot/blade-a D; W06 identity remains observed. |
 | 10:16:30 | 2, 5; Inferred identity | seq 37: same C01/W01 plus W06 pm-b/station-1 D; W06 identity is derived independently. |
-| 10:18:30 | 2, 3, 5; anonymous occupancy | seq 41: same C01/W01 plus anonymous material under an `occ:` key at pm-b/station-2 D; id null, identity unknown. |
+| 10:18:30 | 2, 3, 5; anonymous occupancy | seq 41: same C01/W01 plus anonymous material under an `o:<occurrenceId>` key at pm-b/station-2 D; id null, identity unknown. |
 | 10:19:30 | 1, 2, 7; whole-record anomaly window | seq 42 stops before seq 43 at 10:20. Only C01 null/U and W01 lp-a/slot-1 O remain; time-anomaly marker for the EndBeforeStart owner despite its start being outside the prefix. |
 | 10:20:30 | 1, 6; null-time start | seq 46 includes null-time FUNCTION and DQI. Same C01/W01; pm-b function/U. DQI contributes no Scene marker. |
 | 10:22:45 | 1, 7, 8; conflict and ignored anomaly owner | seq 49: same C01/W01 plus W08/W09 ll-a/slot-1 U. One occupancy marker with both keys; one time-anomaly marker for PM9's owner. Ignoring VIRT_SCH removes only its marker, preserving the inversion window [10:22:30, 10:23:00]. |

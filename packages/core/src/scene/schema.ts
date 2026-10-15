@@ -1,22 +1,25 @@
 import { z } from 'zod';
 import { idSchema } from '../layout/schema.js';
-import { evidenceLevelSchema, occurrenceSchema } from '../occurrence/schema.js';
+import { occurrenceSchema } from '../occurrence/schema.js';
 import { siteWallClockSchema } from '../site-wall-clock.js';
 
 const text = z.string().min(1);
 const stateEvidenceSchema = z.enum(['observed', 'derived', 'unknown']);
 const sceneMaterialSchema = z.strictObject({
-  key: text.describe('Material id, or occ:<occurrenceId> when id is null.'),
+  key: text.regex(/^(m:(wafer|carrier|batch|boat|reticle):.+|o:.+)$/)
+    .describe('m:<kind>:<id> for identified material; o:<occurrenceId> when id is null. Source id is preserved.'),
   kind: occurrenceSchema.shape.material.unwrap().shape.kind,
   id: text.nullable(),
-  identityEvidence: evidenceLevelSchema,
+  identityEvidence: stateEvidenceSchema.describe('Source identity evidence with illustrative read as unknown.'),
   lotId: z.string().optional(),
   alias: occurrenceSchema.shape.location.unwrap(),
   location: z.strictObject({ componentId: idSchema, holdingSiteId: idSchema.optional() }).nullable(),
   locationEvidence: stateEvidenceSchema,
   occurrenceId: text,
   lastObservedAt: siteWallClockSchema.nullable(),
-});
+}).refine((material) => material.key === (material.id === null
+  ? `o:${material.occurrenceId}` : `m:${material.kind}:${material.id}`),
+{ path: ['key'], message: 'Material key must match kind/id or anonymous occurrenceId.' });
 const sceneComponentSchema = z.strictObject({
   componentId: idSchema,
   activity: z.enum(['processing', 'post-processing', 'function', 'no recorded activity']),

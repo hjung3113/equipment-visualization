@@ -55,7 +55,8 @@
           "key": {
             "type": "string",
             "minLength": 1,
-            "description": "Material id, or occ:<occurrenceId> when id is null."
+            "pattern": "^(m:(wafer|carrier|batch|boat|reticle):.+|o:.+)$",
+            "description": "m:<kind>:<id> for identified material; o:<occurrenceId> when id is null. Source id is preserved."
           },
           "kind": {
             "type": "string",
@@ -83,9 +84,9 @@
             "enum": [
               "observed",
               "derived",
-              "illustrative",
               "unknown"
-            ]
+            ],
+            "description": "Source identity evidence with illustrative read as unknown."
           },
           "lotId": {
             "type": "string"
