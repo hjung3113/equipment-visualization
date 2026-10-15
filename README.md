@@ -30,7 +30,7 @@ packages/editor/              # Semantic Top View editor (planned)
 packages/replay/              # Observations -> deterministic replay (planned)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
-assets/                       # Reusable symbols & generalized layout fixtures (planned import)
+assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
 fixtures/  # Synthetic source-shaped replay fixtures (present)
 docs/                         # Design, decision records, research
 skills/                       # Reference image -> semantic SVG workflow
@@ -90,7 +90,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. The original generated SVG/JSON sample pack is **not yet imported** (tracked as M0 #1); there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
+**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
 
 ## Roadmap
 
