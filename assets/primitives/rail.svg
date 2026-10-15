@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70.9 -53.4 141.8 106.8" role="img">
-  <title>rail</title>
-  <g>
-    <rect x="-70.0" y="-52.5" width="140" height="105" rx="16" fill="var(--eqv-structure-fill, #dfe9f2)" fill-opacity="1" stroke="var(--eqv-structure-stroke, #92a5b3)" stroke-width="1.8" stroke-dasharray="none" />
-    <path d="M -55.0 -14.700000000000003 L 55.0 -14.700000000000003" fill="none" stroke="var(--eqv-detail-stroke, #8299ab)" stroke-width="3" stroke-linecap="round" />
-    <path d="M -55.0 14.700000000000003 L 55.0 14.700000000000003" fill="none" stroke="var(--eqv-detail-stroke, #8299ab)" stroke-width="3" stroke-linecap="round" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-260.88 -40.88 521.76 81.76" role="img" overflow="visible" preserveAspectRatio="none"><title>rail</title><rect fill="var(--eqv-structure-fill, #edf3fb)" stroke="var(--eqv-structure-stroke, #667083)" x="-260" y="-40" width="520" height="80" rx="12" stroke-width="1.75" vector-effect="non-scaling-stroke"/><path d="M-246 -24L246 -24" stroke="var(--eqv-structure-stroke, #667083)" fill="none" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M-246 24L246 24" stroke="var(--eqv-structure-stroke, #667083)" fill="none" stroke-width="1.6" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M-246 -28L-246 28" stroke="var(--eqv-structure-stroke, #667083)" fill="none" stroke-width="2.2" stroke-linecap="round" vector-effect="non-scaling-stroke"/><path d="M246 -28L246 28" stroke="var(--eqv-structure-stroke, #667083)" fill="none" stroke-width="2.2" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>

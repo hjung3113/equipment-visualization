@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
-  <title>buffer</title>
-  <g>
-    <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #edf3f7)" stroke="var(--eqv-module-stroke, #526c81)" stroke-width="2" stroke-linejoin="round" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-35.88 -42.88 71.76 85.76" role="img" overflow="visible"><title>buffer</title><rect fill="var(--eqv-holding-fill, #dcf8ef)" stroke="var(--eqv-holding-stroke, #008090)" x="-35" y="-42" width="70" height="84" rx="8" stroke-width="1.75" vector-effect="non-scaling-stroke"/><path d="M-19.6 -13.31V-10.08H19.6V-13.31" stroke="var(--eqv-holding-stroke, #008090)" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="M-19.6 -3.23V0H19.6V-3.23" stroke="var(--eqv-holding-stroke, #008090)" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/><path d="M-19.6 6.85V10.08H19.6V6.85" stroke="var(--eqv-holding-stroke, #008090)" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>

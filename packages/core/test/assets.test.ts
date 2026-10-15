@@ -270,29 +270,171 @@ it('keeps primitives free of element ids so repeated inlining cannot collide', (
   }
 });
 
-it.each(['robot-single', 'robot-dual', 'robot-multi', 'tm'])('%s bounds include every shape and its stroke', (name) => {
-  const svg = readFileSync(new URL(`assets/primitives/${name}.svg`, root), 'utf8');
-  const [x, y, width, height] = svg.match(/viewBox="([^"]+)"/)![1]!.split(/\s+/).map(Number) as [number, number, number, number];
+const primitiveClasses = {
+  process: ['pm', 'cell', 'coater', 'developer', 'dry', 'bake', 'reactor', 'exposure', 'metrology', 'stage', 'optics'],
+  holding: ['lp', 'loadlock', 'buffer', 'aligner', 'boat', 'stocker'],
+  robot: ['robot-single', 'robot-dual', 'robot-multi', 'handler'],
+  structure: ['efem', 'tm', 'rail', 'housing'],
+};
+const primitiveNames = Object.values(primitiveClasses).flat();
+const primitiveSVG = (name: string) => readFileSync(new URL(`assets/primitives/${name}.svg`, root), 'utf8');
+const knownTokens = new Set([...readFileSync(new URL('assets/primitives/README.md', root), 'utf8')
+  .matchAll(/^\| `(--eqv-[a-z-]+)` \|/gm)].map((match) => match[1]));
+const numbers = (value: string) => (value.match(/[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi) ?? []).map(Number);
+const attributes = (raw: string) => Object.fromEntries([...raw.matchAll(/([\w-]+)="([^"]*)"/g)]
+  .map((match) => [match[1]!, match[2]!]));
+
+// SVG transform lists compose right-to-left. Extrema are measured after mapping to root coordinates.
+const elementMap = (transform = '') => {
+  const operations = [...transform.matchAll(/([a-z]+)\(([^)]+)\)/gi)];
+  expect(transform.replace(/([a-z]+)\(([^)]+)\)/gi, '').trim()).toBe('');
+  return (point: Point): Point => operations.reduceRight<Point>(([x, y], [, operation, raw]) => {
+    const [a = 0, b = 0, c = 0] = numbers(raw!);
+    if (operation === 'translate') return [x + a, y + b];
+    expect(operation).toBe('rotate');
+    const r = a * Math.PI / 180;
+    return [b + (x - b) * Math.cos(r) - (y - c) * Math.sin(r), c + (x - b) * Math.sin(r) + (y - c) * Math.cos(r)];
+  }, point);
+};
+
+const pathExtrema = (d: string, map: (p: Point) => Point): Point[] => {
+  const parts = d.match(/[MLQAHVZ]|[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?/gi) ?? [];
+  expect(d.replace(/[MLQAHVZ]|[-+]?(?:\d*\.)?\d+(?:e[-+]?\d+)?|[\s,]/gi, '')).toBe('');
+  let i = 0, command = '', current: Point = [0, 0], start: Point = [0, 0];
+  const out: Point[] = [];
+  const take = () => Number(parts[i++]!);
+  const point = (): Point => [take(), take()];
+  while (i < parts.length) {
+    if (/^[A-Z]$/.test(parts[i]!)) command = parts[i++]!;
+    const from = current;
+    if (command === 'Z') { current = start; out.push(map(current)); command = ''; continue; }
+    if (command === 'M' || command === 'L') {
+      current = point(); if (command === 'M') { start = current; command = 'L'; }
+    } else if (command === 'H') current = [take(), current[1]];
+    else if (command === 'V') current = [current[0], take()];
+    else if (command === 'Q') {
+      const control = map(point()), endpoint = point(), a = map(from), b = map(endpoint);
+      // Solve each derivative in root coordinates, rather than bounding the control polygon.
+      for (const axis of [0, 1] as const) {
+        const denominator = a[axis] - 2 * control[axis] + b[axis];
+        const t = (a[axis] - control[axis]) / denominator;
+        if (t > 0 && t < 1) out.push([0, 1].map((j) =>
+          (1 - t) ** 2 * a[j]! + 2 * (1 - t) * t * control[j]! + t ** 2 * b[j]!) as Point);
+      }
+      out.push(a, b); current = endpoint;
+    } else if (command === 'A') {
+      let rx = Math.abs(take()), ry = Math.abs(take());
+      const phi = take() * Math.PI / 180, large = take(), sweep = take();
+      current = point();
+      if (rx && ry && (from[0] !== current[0] || from[1] !== current[1])) {
+        const cos = Math.cos(phi), sin = Math.sin(phi);
+        const dx = (from[0] - current[0]) / 2, dy = (from[1] - current[1]) / 2;
+        const xp = cos * dx + sin * dy, yp = -sin * dx + cos * dy;
+        const size = xp ** 2 / rx ** 2 + yp ** 2 / ry ** 2;
+        if (size > 1) { rx *= Math.sqrt(size); ry *= Math.sqrt(size); }
+        const factor = (large === sweep ? -1 : 1) * Math.sqrt(Math.max(0,
+          (rx ** 2 * ry ** 2 - rx ** 2 * yp ** 2 - ry ** 2 * xp ** 2) / (rx ** 2 * yp ** 2 + ry ** 2 * xp ** 2)));
+        const cxp = factor * rx * yp / ry, cyp = -factor * ry * xp / rx;
+        const center: Point = [cos * cxp - sin * cyp + (from[0] + current[0]) / 2,
+          sin * cxp + cos * cyp + (from[1] + current[1]) / 2];
+        const theta = Math.atan2((yp - cyp) / ry, (xp - cxp) / rx);
+        let delta = Math.atan2((-yp - cyp) / ry, (-xp - cxp) / rx) - theta;
+        const tau = 2 * Math.PI;
+        if (sweep && delta < 0) delta += tau;
+        if (!sweep && delta > 0) delta -= tau;
+        const origin = map(center), u = map([center[0] + rx * cos, center[1] + rx * sin]),
+          v = map([center[0] - ry * sin, center[1] + ry * cos]);
+        for (const axis of [0, 1] as const) {
+          const angle = Math.atan2(v[axis] - origin[axis], u[axis] - origin[axis]);
+          for (const t of [angle, angle + Math.PI]) {
+            const distance = ((sweep ? t - theta : theta - t) % tau + tau) % tau;
+            if (distance <= Math.abs(delta) + 1e-10) out.push([
+              origin[0] + (u[0] - origin[0]) * Math.cos(t) + (v[0] - origin[0]) * Math.sin(t),
+              origin[1] + (u[1] - origin[1]) * Math.cos(t) + (v[1] - origin[1]) * Math.sin(t),
+            ]);
+          }
+        }
+      }
+    } else throw new Error(`Unsupported path command: ${command}`);
+    out.push(map(from), map(current));
+  }
+  return out;
+};
+
+const shapesFit = (svg: string) => {
+  const [x, y, width, height] = numbers(svg.match(/viewBox="([^"]+)"/)![1]!) as [number, number, number, number];
   expect(x).toBe(-width / 2); expect(y).toBe(-height / 2);
   const shapes = [...svg.matchAll(/<(rect|circle|polygon|path)\b([^>]+)\/>/g)];
-  expect(shapes.length).toBeGreaterThan(1);
-  for (const [, tag, raw] of shapes) {
-    const attrs = Object.fromEntries([...raw!.matchAll(/([\w-]+)="([^"]*)"/g)].map((match) => [match[1]!, match[2]!]));
-    const n = (key: string) => Number(attrs[key] ?? 0);
-    let xs: number[], ys: number[];
-    if (tag === 'rect') { xs = [n('x'), n('x') + n('width')]; ys = [n('y'), n('y') + n('height')]; }
-    else if (tag === 'circle') { xs = [n('cx') - n('r'), n('cx') + n('r')]; ys = [n('cy') - n('r'), n('cy') + n('r')]; }
+  expect(shapes.length).toBeGreaterThan(0);
+  return shapes.every(([, tag, raw]) => {
+    const attrs = attributes(raw!), n = (key: string) => Number(attrs[key] ?? 0);
+    const map = elementMap(attrs.transform);
+    let points: Point[];
+    if (tag === 'rect') points = [[n('x'), n('y')], [n('x') + n('width'), n('y')],
+      [n('x'), n('y') + n('height')], [n('x') + n('width'), n('y') + n('height')]].map((p) => map(p as Point));
+    else if (tag === 'circle') {
+      const [cx, cy] = map([n('cx'), n('cy')]), r = n('r');
+      points = [[cx - r, cy - r], [cx + r, cy + r]];
+    } else if (tag === 'path') points = pathExtrema(attrs.d!, map);
     else {
-      const coordinates = (attrs[tag === 'path' ? 'd' : 'points']!.match(/-?\d+(?:\.\d+)?/g) ?? []).map(Number);
-      if (tag === 'path') expect(attrs.d!.replace(/[-\d.\sMLZ,]/g, '')).toBe('');
-      xs = coordinates.filter((_, i) => i % 2 === 0); ys = coordinates.filter((_, i) => i % 2 === 1);
+      const coords = numbers(attrs.points!);
+      points = coords.flatMap((px, i) => i % 2 ? [] : [map([px, coords[i + 1]!])]);
     }
-    const halfStroke = n('stroke-width') / 2;
-    expect(Math.min(...xs) - halfStroke).toBeGreaterThanOrEqual(x - 1e-10);
-    expect(Math.max(...xs) + halfStroke).toBeLessThanOrEqual(x + width + 1e-10);
-    expect(Math.min(...ys) - halfStroke).toBeGreaterThanOrEqual(y - 1e-10);
-    expect(Math.max(...ys) + halfStroke).toBeLessThanOrEqual(y + height + 1e-10);
+    const halfStroke = attrs.stroke === 'none' ? 0 : n('stroke-width') / 2;
+    return points.every(([px, py]) => px - halfStroke >= x - 1e-10 && px + halfStroke <= x + width + 1e-10
+      && py - halfStroke >= y - 1e-10 && py + halfStroke <= y + height + 1e-10);
+  });
+};
+
+it.each(primitiveNames)('%s bounds include every transformed shape and its stroke', (name) => {
+  expect(shapesFit(primitiveSVG(name)), name).toBe(true);
+});
+
+it('rejects a transformed blade outside a shrunken viewBox', () => {
+  const blade = '<rect x="0" y="-2" width="12" height="4" transform="translate(15 0) rotate(45)"/>';
+  expect(shapesFit(`<svg viewBox="-30 -30 60 60">${blade}</svg>`)).toBe(true);
+  expect(shapesFit(`<svg viewBox="-20 -20 40 40">${blade}</svg>`)).toBe(false);
+});
+
+it.each(primitiveNames)('%s uses documented explicit theme paints', (name) => {
+  const svg = primitiveSVG(name);
+  for (const [, paint] of svg.matchAll(/(?:fill|stroke)="([^"]+)"/g)) {
+    if (paint === 'none') continue;
+    expect(paint).toMatch(/^var\((--eqv-[a-z-]+), #[0-9a-f]{6}\)$/);
+    expect(knownTokens.has(paint!.match(/--eqv-[a-z-]+/)?.[0]), paint).toBe(true);
   }
+  expect(svg).not.toMatch(/\s(?:class|id|style)=|<text\b/);
+});
+
+it.each(primitiveNames)('%s keeps every stroke at screen width when fitted or stretched', (name) => {
+  const stroked = primitiveSVG(name).match(/<(?:rect|circle|path|polygon)\b[^>]*\sstroke="var\([^>]*>/g) ?? [];
+  expect(stroked.length, name).toBeGreaterThan(0);
+  for (const element of stroked) expect(element, name).toContain('vector-effect="non-scaling-stroke"');
+});
+
+it.each(primitiveNames)('%s lets screen-width strokes overflow the viewBox edge instead of clipping', (name) => {
+  expect(primitiveSVG(name), name).toMatch(/^<svg\b[^>]*\soverflow="visible"/);
+});
+
+it.each(primitiveNames)('%s follows the structural stretch rule', (name) => {
+  expect(primitiveSVG(name).includes('preserveAspectRatio="none"')).toBe(primitiveClasses.structure.includes(name));
+});
+
+it.each(Object.entries(primitiveClasses))('%s primitives use only their class paints and detail fill', (cls, names) => {
+  for (const name of names) {
+    const tokens = [...primitiveSVG(name).matchAll(/var\((--eqv-[a-z-]+),/g)].map((match) => match[1]);
+    expect(tokens.length).toBeGreaterThan(0);
+    for (const token of tokens) expect([
+      `--eqv-${cls}-fill`, `--eqv-${cls}-stroke`, '--eqv-detail-fill',
+      ...(name === 'housing' ? ['--eqv-board'] : []),
+    ], name).toContain(token);
+  }
+});
+
+it('fills the housing body with board instead of structure fill', () => {
+  const svg = primitiveSVG('housing');
+  expect(svg).toMatch(/<rect\b[^>]*fill="var\(--eqv-board, #fbfdff\)"/);
+  expect(svg).not.toContain('--eqv-structure-fill');
 });
 
 it('ranks converted cluster-single within the top three for the fixture Inventory', () => {
