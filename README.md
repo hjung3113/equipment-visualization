@@ -31,6 +31,7 @@ packages/replay/              # Observations -> deterministic replay (planned)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # Reusable symbols & generalized layout fixtures (planned import)
+fixtures/  # Synthetic source-shaped replay fixtures (present)
 docs/                         # Design, decision records, research
 skills/                       # Reference image -> semantic SVG workflow
 ```
