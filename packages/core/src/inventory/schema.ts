@@ -23,3 +23,15 @@ export const observedInventorySchema = z.strictObject({
 });
 export type InventoryAlias = z.infer<typeof inventoryAliasSchema>;
 export type ObservedInventory = z.infer<typeof observedInventorySchema>;
+
+export const aliasMetadataFileSchema = z.strictObject({
+  schemaVersion: z.literal('0.4'), equipmentId: z.string().min(1),
+  aliases: z.array(z.strictObject({
+    alias: z.string().min(1), moduleType: z.string().min(1).optional(),
+    isPort: z.boolean().optional(), isRobot: z.boolean().optional(),
+  })),
+}).describe('Adapter-supplied alias metadata; OccurrenceBatch cannot carry it.')
+  .refine(({ aliases }) => new Set(aliases.map(({ alias }) => alias)).size === aliases.length, {
+    path: ['aliases'], message: 'Duplicate metadata alias',
+  });
+export type AliasMetadataFile = z.infer<typeof aliasMetadataFileSchema>;

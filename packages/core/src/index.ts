@@ -26,3 +26,13 @@ export { observedInventorySchema } from './inventory/schema.js';
 export type { ObservedInventory, InventoryAlias } from './inventory/schema.js';
 export { sceneStateSchema } from './scene/schema.js';
 export type { SceneState, SceneMaterial, SceneComponent, SceneMarker } from './scene/schema.js';
+
+export { aliasMetadataFileSchema } from './inventory/schema.js';
+export type { AliasMetadataFile } from './inventory/schema.js';
+export { buildInventory } from './onboarding/inventory.js';
+export { computeCoverage } from './onboarding/coverage.js';
+export type { Coverage } from './onboarding/coverage.js';
+export { findMappingConflicts } from './onboarding/conflicts.js';
+export type { MappingConflict } from './onboarding/conflicts.js';
+export { detectDrift } from './onboarding/drift.js';
+export type { Drift } from './onboarding/drift.js';
