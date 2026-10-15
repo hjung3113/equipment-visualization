@@ -61,8 +61,7 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 
 Once `apps/studio` exists (S8, #13): start the Studio dev server from the worktree's root `dev` script on a free port,
 bound to `<label>.localhost`, and a second one from the wave baseline worktree (install: `pnpm install
---frozen-lockfile`). Captures go to `.review/<n>-shots/`. Stop both servers in the same turn they are no longer
-needed. There is no preview script yet (see Tools → Not yet ported).
+--frozen-lockfile`). Captures go to `.review/<n>-shots/`. There is no preview script yet (see Tools → Not yet ported).
 
 ## Review
 
@@ -76,6 +75,8 @@ needed. There is no preview script yet (see Tools → Not yet ported).
 - Conflict order starts with AGENTS.md invariants (package boundary, evidence fidelity, geometry ≠ connectivity,
   unknown stays unknown), then ADRs and recorded owner decisions.
 - Value-gate critical defects here: wrong state shown, interpolation labelled `observed`, a boundary leak.
+- Same-slice overlap is wider than the global rule: when an earlier PR in the slice touched the same **package**,
+  schema or doc section, the code reviewer's task names that PR and asks for the combined behaviour.
 
 ## Fold scope
 
@@ -91,7 +92,6 @@ check.
 - Release gate: `scripts/release-gate.sh "$EV_MAIN"` on a clean checkout at `origin/develop`. On success it prints
   the `gh pr create --base main --head develop` command; open the release PR. The user merges it (merge commit) and
   owns any tag; the conductor merges only with explicit approval in the session (`gh pr merge <n> --merge`).
-- Before any handoff, no Studio dev server or preview may still be running.
 
 ## Tools
 
