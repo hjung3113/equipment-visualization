@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
+  <title>boat</title>
+  <g>
+    <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #d9ecec)" stroke="var(--eqv-module-stroke, #0e808d)" stroke-width="2" />
+    <path d="M -36.4 -26.25 L 36.4 -26.25" fill="none" stroke="var(--eqv-detail-stroke, #489494)" stroke-width="2" stroke-linecap="round" />
+    <path d="M -36.4 -13.65 L 36.4 -13.65" fill="none" stroke="var(--eqv-detail-stroke, #489494)" stroke-width="2" stroke-linecap="round" />
+    <path d="M -36.4 -1.0500000000000007 L 36.4 -1.0500000000000007" fill="none" stroke="var(--eqv-detail-stroke, #489494)" stroke-width="2" stroke-linecap="round" />
+    <path d="M -36.4 11.549999999999997 L 36.4 11.549999999999997" fill="none" stroke="var(--eqv-detail-stroke, #489494)" stroke-width="2" stroke-linecap="round" />
+    <path d="M -36.4 24.15 L 36.4 24.15" fill="none" stroke="var(--eqv-detail-stroke, #489494)" stroke-width="2" stroke-linecap="round" />
+  </g>
+</svg>

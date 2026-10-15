@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70.9 -53.4 141.8 106.8" role="img">
+  <title>optics</title>
+  <g>
+    <rect x="-70.0" y="-52.5" width="140" height="105" rx="16" fill="var(--eqv-module-fill, #e7eefb)" stroke="var(--eqv-module-stroke, #687a9f)" stroke-width="1.8" />
+    <circle cx="0" cy="0" r="22.05" fill="var(--eqv-detail-fill, #f2faff)" stroke="var(--eqv-detail-stroke, #547e9a)" stroke-width="3" />
+    <path d="M -44.800000000000004 0 L 44.800000000000004 0" fill="none" stroke="var(--eqv-detail-stroke, #7290aa)" stroke-width="2" stroke-linecap="round" stroke-dasharray="4 3" />
+  </g>
+</svg>

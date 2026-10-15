@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
+  <title>reactor</title>
+  <g>
+    <rect x="-70.0" y="-52.5" width="140" height="105" rx="14" fill="var(--eqv-module-fill, #edf3f7)" stroke="var(--eqv-module-stroke, #526c81)" stroke-width="2" stroke-linejoin="round" />
+    <circle cx="0" cy="-8" r="33.6" fill="var(--eqv-detail-fill, #e0ebf1)" stroke="var(--eqv-detail-stroke, #526c81)" stroke-width="3" />
+    <circle cx="0" cy="-8" r="22.05" fill="var(--eqv-detail-fill, #f8fcff)" stroke="var(--eqv-detail-stroke, #89a0aa)" stroke-width="2" />
+  </g>
+</svg>

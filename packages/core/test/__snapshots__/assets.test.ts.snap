@@ -1,0 +1,37 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`preserves the reviewed template and primitive asset bytes 1`] = `
+{
+  "assets/primitives/aligner.svg": "8072933f0a547dd140c7d734547af052758b8d6fc404e105fa4c3f615d5cdcde",
+  "assets/primitives/bake.svg": "89c107f9a1a710d8164bbff31116d53eecbc3292fa3e83f37f200369a17ac571",
+  "assets/primitives/boat.svg": "c53456b53115b726aba87905f7fd8c2b069cfdac2ae36d4c3e312e4931e330dd",
+  "assets/primitives/buffer.svg": "8f87298e368d04b2c977e0a63dd0b08d7b48fed5d673fe387a9f1379eb322602",
+  "assets/primitives/cell.svg": "6fa0d1d26ebfefee80d35c8553cfaced230a7e4114f2b9138eff596236342a85",
+  "assets/primitives/coater.svg": "75251a34d9396d4b1f5bbf557978738271e60355ee75a674921e579af239f768",
+  "assets/primitives/developer.svg": "8a39d606091c8f8f671f0f59f1b646bca4f72dfa092eefdb95ab21d2b256fabc",
+  "assets/primitives/dry.svg": "a8575a31f459d3e8046de6c86e5a8a7fa41ad5c646c1e481de5b631fe73e34a3",
+  "assets/primitives/efem.svg": "9904401454ace6817d116762c5dc68c1c284a50307ea7346ac1652053d7378f2",
+  "assets/primitives/exposure.svg": "87bbcb237f1fce213744237379ae268d91209d6606936f5205f84dd58caaa2c9",
+  "assets/primitives/handler.svg": "283f88ca3ac67fa9193d737ba655b4670a9be9258d49d728b34055743e0599d1",
+  "assets/primitives/housing.svg": "b1d34ddc8e2b35156d2f95310b978d9672bba079f72bba24e7d1595c821ec958",
+  "assets/primitives/loadlock.svg": "6c430997ebeab3a990507d296b51befd790fe80406d8c9693b879dc8fc3e5332",
+  "assets/primitives/lp.svg": "f26e1fd45699be2155e51026651c5ed83843c8df4b9dcf8f5c1a1ce36ad87faa",
+  "assets/primitives/metrology.svg": "d3f24ab0ba511c07befe52c186a5995025e95fe0c58bc45cc29f17e0e42c894d",
+  "assets/primitives/optics.svg": "70a617dab71f15b8b5a666a317d9cde88adc5edf0bba08c304f19ade99dd550b",
+  "assets/primitives/pm.svg": "019ed0c079aea1516eda1198a08721c8417e59d1845f92b1c3d978a702531865",
+  "assets/primitives/rail.svg": "7c528e211e8ec43ef4474c6cfd8750abf072ffff9a53916506bab87da1d67a0b",
+  "assets/primitives/reactor.svg": "810424d8a065651fd30f580925189a53970fd26652c2c530eb7abfd4ecda7e7a",
+  "assets/primitives/robot-dual.svg": "85bf989fd30a0f8a1f51ba729673c0ea32be3844f8cacd89216d0e46fb1dece8",
+  "assets/primitives/robot-multi.svg": "99f58aa889f774579dcf0b477369ad9879349ab59339fa53b105de0a03f3219c",
+  "assets/primitives/robot-single.svg": "47f3511dd4867a126e3c86b94f140f1e9578d96ce6eb74046fe457e0da4b22fa",
+  "assets/primitives/stage.svg": "16456007e5c6e3a4d67220fd6ea3009b28065cef1a6a9992bc546611ca5836aa",
+  "assets/primitives/stocker.svg": "f45b5a7813db54fb006147200a354ebbafb1215cae974572332f750471f4facb",
+  "assets/primitives/tm.svg": "101085c58dadd300501d1d7fe967300545c8a0fd645c27866cc5fa117a4dbd0e",
+  "assets/templates/cluster-dual-hub.template.json": "0a37e4252990ea6bfbdc28ce700e73a9f3e4c30c21b44407dc81b80a9864d408",
+  "assets/templates/cluster-single.template.json": "3adf3d00cf2b11b949c1eef312b39589131e72ca6f2d19322edf4b6c8e9cc3a5",
+  "assets/templates/lithography-dual-stage.template.json": "01f4db00ea5e9f5a4ec4330cd3485e5cca4dfef2ff12f664de9e7bee192c6993",
+  "assets/templates/track-stacked.template.json": "1791417ee609d7256b2bcb73f4ce42cfaa7e0f5245dd7ad2ca67933619d601b1",
+  "assets/templates/vertical-batch-furnace.template.json": "16c06dd140b73987633ebd8b88b4c1eda6c1b9408cd57aab42a94adb47e73020",
+  "assets/templates/wet-linear.template.json": "e9bc560be91f589f91e7c6a129b4c9883ea30fc878bcb8015d7a3b16c4b32b1b",
+}
+`;
