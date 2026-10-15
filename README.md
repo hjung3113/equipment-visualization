@@ -24,10 +24,10 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 
 ```
 apps/studio/                   # Standalone web app (planned)
-packages/core/                # Layout schema + structural validator (present)
+packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
 packages/renderer/            # SVG-first rendering and interaction (planned)
 packages/editor/              # Semantic Top View editor (planned)
-packages/replay/              # Observations -> deterministic replay (planned)
+packages/replay/              # Playback timeline and controls over the core reducer (planned)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
@@ -97,7 +97,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 1. Import and review v0.3 research, normalized schemas, and generalized SVG prototypes.
 2. Build standalone `apps/studio` with synthetic data and zero platform runtime imports.
 3. Validate semantic ports/kinematic constraints (where known) and SVG round-trip.
-4. Implement a deterministic observation reducer and playback timeline.
+4. ~~Implement a deterministic observation reducer~~ (done in `@eqv/core`: `seekSceneState`, `stepSceneState`, `replayKey`); build the playback timeline.
 5. Integrate through a **separate** analytics-platform PR after its integration issues and submodule/CI gate (#332) are resolved.
 
 Related: [analytics-platform](https://github.com/hjung3113/analytics-platform) and platform issue [#291](https://github.com/hjung3113/analytics-platform/issues/291) (broader visualization capability work; avoid overlap).
