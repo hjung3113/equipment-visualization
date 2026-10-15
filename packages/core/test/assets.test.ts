@@ -9,8 +9,8 @@ import {
 const root = new URL('../../../', import.meta.url);
 const read = (path: string) => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
 const cases = [
-  ['cluster-single', 26], ['cluster-dual-hub', 29], ['wet-linear', 465],
-  ['track-stacked', 21], ['lithography-dual-stage', 51], ['vertical-batch-furnace', 2],
+  ['cluster-single', 26], ['cluster-dual-hub', 29], ['wet-linear', 2340],
+  ['track-stacked', 21], ['lithography-dual-stage', 51], ['vertical-batch-furnace', 1],
 ] as const;
 // Original v0.3 IDs are pinned here so CI needs no external source pack.
 const originalIds: Record<string, string[]> = {
@@ -71,6 +71,23 @@ it.each([
 ])('%s excludes ambiguous transfer %s–%s', (id, a, b) => {
   expect(template(id!).transferCapabilities.some((edge) =>
     [edge.a.componentId, edge.b.componentId].sort().join(',') === [a, b].sort().join(','))).toBe(false);
+});
+
+it.each(cases.map(([id]) => id))('%s links only sites sharing a material its handler blades can hold', (id) => {
+  const layout = template(id);
+  const sites = new Map(layout.components.flatMap((c) => c.holdingSites.map((s) => [`${c.id}/${s.id}`, s.materialKinds] as const)));
+  const carried = (handler: string) => new Set(layout.components.find((c) => c.id === handler)!.holdingSites.flatMap((s) => s.materialKinds));
+  for (const edge of layout.transferCapabilities) {
+    const a = sites.get(`${edge.a.componentId}/${edge.a.holdingSiteId}`)!;
+    const b = sites.get(`${edge.b.componentId}/${edge.b.holdingSiteId}`)!;
+    expect(a.some((kind) => b.includes(kind) && carried(edge.handlerComponentId).has(kind)), edge.id).toBe(true);
+  }
+});
+
+it('lets the wet-linear wafer robot move wafers between load ports', () => {
+  expect(template('wet-linear').transferCapabilities).toContainEqual(expect.objectContaining({
+    a: { componentId: 'lp-1', holdingSiteId: 'slot-1' }, b: { componentId: 'lp-2', holdingSiteId: 'slot-1' }, handlerComponentId: 'robot-1',
+  }));
 });
 
 it('contains exactly six templates and 25 primitives', () => {

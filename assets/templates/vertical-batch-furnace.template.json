@@ -1453,24 +1453,6 @@
           "src-v03-pack"
         ]
       }
-    },
-    {
-      "id": "reactor-1-boat-reactor-2-boat",
-      "a": {
-        "componentId": "reactor-1",
-        "holdingSiteId": "boat"
-      },
-      "b": {
-        "componentId": "reactor-2",
-        "holdingSiteId": "boat"
-      },
-      "handlerComponentId": "robot-1",
-      "provenance": {
-        "certainty": "assumed",
-        "sourceEvidence": [
-          "src-v03-pack"
-        ]
-      }
     }
   ],
   "processRoutes": [],
