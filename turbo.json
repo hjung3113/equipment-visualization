@@ -10,7 +10,8 @@
   "tasks": {
     "typecheck": {},
     "test": {
-      "dependsOn": ["^typecheck"]
+      "dependsOn": ["^typecheck"],
+      "cache": false
     },
     "build": {
       "outputs": ["dist/**"]
