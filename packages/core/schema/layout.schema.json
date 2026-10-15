@@ -163,6 +163,25 @@
                 "additionalProperties": false,
                 "description": "Finite geometry local to the parent; geometry never establishes connectivity."
               },
+              "size": {
+                "description": "ADR-0006: footprint in layout units in the Component local frame before rotation, multiplied by transform.scale. Absence means unknown; renderers fall back to primitive natural size. Structural Roles stretch to the footprint; module and robot symbols fit centred with aspect ratio preserved. Geometry never establishes connectivity.",
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false
+              },
               "ports": {
                 "type": "array",
                 "items": {
@@ -416,6 +435,31 @@
                     "additionalProperties": false
                   },
                   "transform": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "size": {
                     "type": "object",
                     "properties": {
                       "certainty": {
@@ -880,6 +924,25 @@
                 "additionalProperties": false,
                 "description": "Finite geometry local to the parent; geometry never establishes connectivity."
               },
+              "size": {
+                "description": "ADR-0006: footprint in layout units in the Component local frame before rotation, multiplied by transform.scale. Absence means unknown; renderers fall back to primitive natural size. Structural Roles stretch to the footprint; module and robot symbols fit centred with aspect ratio preserved. Geometry never establishes connectivity.",
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false
+              },
               "ports": {
                 "type": "array",
                 "items": {
@@ -1133,6 +1196,31 @@
                     "additionalProperties": false
                   },
                   "transform": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "size": {
                     "type": "object",
                     "properties": {
                       "certainty": {

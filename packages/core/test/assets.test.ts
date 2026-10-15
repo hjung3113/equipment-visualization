@@ -23,6 +23,102 @@ const originalIds: Record<string, string[]> = {
 };
 const template = (id: string) => layoutDocumentSchema.parse(read(`assets/templates/${id}.template.json`)) as TemplateDocument;
 
+// Reviewed v0.3 bounds in layout units; fixed tuples keep CI independent of the local pack.
+const footprints: Record<string, [string, number, number][]> = {
+  'cluster-dual-hub': [
+    ['efem-1', 174, 276],
+    ['robot-1', 78, 76],
+    ['lp-1', 68, 66],
+    ['lp-2', 68, 66],
+    ['ll-a', 90, 64],
+    ['ll-b', 90, 64],
+    ['tm-1', 170, 186],
+    ['tm-2', 170, 186],
+    ['robot-2', 88, 84],
+    ['robot-3', 84, 82],
+    ['buffer-1', 70, 92],
+    ['pm-a', 114, 98],
+    ['pm-b', 114, 98],
+    ['pm-c', 114, 98],
+    ['pm-d', 114, 98],
+    ['pm-e', 114, 98],
+    ['pm-f', 114, 98],
+  ],
+  'cluster-single': [
+    ['tm-1', 190, 180],
+    ['pm-a', 126, 104],
+    ['pm-b', 122, 104],
+    ['pm-c', 122, 104],
+    ['pm-d', 126, 104],
+    ['ll-a', 94, 76],
+    ['ll-b', 94, 76],
+    ['efem-1', 420, 92],
+    ['robot-1', 78, 70],
+    ['aligner-1', 76, 66],
+    ['robot-2', 88, 82],
+    ['lp-1', 82, 66],
+    ['lp-2', 82, 66],
+    ['lp-3', 82, 66],
+  ],
+  'lithography-dual-stage': [
+    ['lp-1', 98, 110],
+    ['robot-1', 104, 98],
+    ['stage-1', 145, 115],
+    ['stage-2', 145, 115],
+    ['metrology-1', 154, 135],
+    ['exposure-1', 154, 135],
+    ['robot-2', 142, 84],
+    ['optics-1', 117, 112],
+    ['housing-1', 710, 362],
+  ],
+  'track-stacked': [
+    ['lp-1', 82, 68],
+    ['lp-2', 82, 68],
+    ['rail-1', 560, 54],
+    ['robot-1', 80, 76],
+    ['coater-1', 116, 111],
+    ['coater-2', 116, 111],
+    ['developer-1', 116, 111],
+    ['bake-1', 116, 105],
+    ['bake-2', 116, 105],
+    ['bake-3', 116, 105],
+    ['aligner-1', 96, 85],
+  ],
+  'vertical-batch-furnace': [
+    ['lp-1', 96, 80],
+    ['lp-2', 96, 80],
+    ['stocker-1', 154, 270],
+    ['boat-1', 110, 120],
+    ['boat-2', 110, 120],
+    ['robot-1', 108, 100],
+    ['reactor-1', 154, 150],
+    ['reactor-2', 154, 150],
+  ],
+  'wet-linear': [
+    ['lp-1', 76, 80],
+    ['lp-2', 76, 80],
+    ['lp-3', 76, 80],
+    ['rail-1', 440, 80],
+    ['robot-1', 88, 70],
+    ['cell-1', 125, 112],
+    ['cell-2', 125, 112],
+    ['cell-3', 125, 112],
+    ['dry-1', 125, 105],
+    ['dry-2', 125, 105],
+    ['buffer-1', 125, 105],
+  ],
+};
+
+
+it.each(cases)('%s preserves every reviewed footprint and its assumed provenance', (id) => {
+  const layout = template(id);
+  expect(layout.components.map((component) => [component.id, component.size?.width, component.size?.height]))
+    .toEqual(footprints[id]);
+  for (const component of layout.components) {
+    expect(component.provenance.size).toEqual({ certainty: 'assumed', sourceEvidence: ['src-v03-pack'] });
+  }
+});
+
 it.each(cases)('%s conforms to v0.4 with assumed evidence and module-to-module capabilities', (id, count) => {
   const layout = template(id);
   expect(validateLayout(layout)).toMatchObject({ ok: true });
@@ -143,4 +239,20 @@ it('preserves the reviewed template and primitive asset bytes', () => {
   const hashes = Object.fromEntries(paths.map((path) => [path,
     createHash('sha256').update(readFileSync(new URL(path, root))).digest('hex')]));
   expect(hashes).toMatchSnapshot();
+});
+
+it.each(cases.flatMap(([id]) => [
+  { id, name: 'zero width', size: { width: 0, height: 92 }, path: ['size', 'width'], code: 'schema' },
+  { id, name: 'negative height', size: { width: 420, height: -1 }, path: ['size', 'height'], code: 'schema' },
+  { id, name: 'extra footprint key', size: { width: 420, height: 92, depth: 1 }, path: ['size'], code: 'schema' },
+  { id, name: 'verified footprint without evidence', size: { width: 420, height: 92 }, path: ['provenance', 'size', 'sourceEvidence'], code: 'verified-without-evidence' },
+]))('$id rejects $name with a precise footprint issue', ({ id, size, path, code }) => {
+  const input = read(`assets/templates/${id}.template.json`);
+  input.components[0].size = size;
+  if (code === 'verified-without-evidence') {
+    input.components[0].provenance.size = { certainty: 'verified', sourceEvidence: [] };
+  }
+  expect(validateLayout(input).issues).toEqual([
+    { code, path: ['components', 0, ...path], message: expect.any(String) },
+  ]);
 });
