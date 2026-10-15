@@ -10,7 +10,7 @@ in your report.
 2. **Run the narrowest checks yourself before you report:** the test files you touched or added
    (`vitest run <files>`, never watch mode; the worker cap comes from the environment, so add no worker flags),
    plus the package's `typecheck` script when one exists. For assets, run
-   `python3 .claude/skills/issue-wave-conductor/scripts/asset-check.py . <changed asset paths>`. Fix what fails and
+   `python3 .claude/conductor/scripts/asset-check.py . <changed asset paths>`. Fix what fails and
    put the commands and results in your report. Test runs stay in the foreground and finish (no trailing `&`, no
    `nohup`): several workers share one machine, and a killed runner leaves its pool children orphaned.
    In React lifecycle code, never write refs or read the DOM during render; use event handlers, effects, or
