@@ -20,7 +20,7 @@ Build a reusable semantic equipment Top View and explainable log replay framewor
 - **Hooks.** Enable once per clone: `git config core.hooksPath .githooks`. `pre-commit` refuses commits on `develop`/`main` (README-only on `main` allowed); `pre-push` blocks direct non-README pushes to `main`. Client-side only. The server-side gate is GitHub branch protection on `develop` and `main` (required check `Gate`, admins included, no force push or deletion) plus a ruleset that limits `main` to merge-commit PRs, so even a README-only change reaches `main` through a PR.
 
 ## Before implementation
-- Read `README.md`, `CONTEXT.md` (glossary), `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`.
+- Read `README.md`, `GLOSSARY.md` (glossary), `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`.
 - Distinguish **Proposed** design from implemented/validated functionality.
 - Work from GitHub issues, record design decisions in an ADR before breaking format/API changes.
 - Prefer tests on 6 generalized equipment archetypes over OEM-faithful depiction claims.
@@ -43,7 +43,7 @@ Build a reusable semantic equipment Top View and explainable log replay framewor
 - UI changes: browser interaction, keyboard/a11y, variants review. In analytics-platform, honor its `?variant=` prototype approval and E2E gates.
 - Report unrun checks honestly; run reviewer pass for major design, auth, data trust or package boundary changes.
 - For behaviour changes and bug fixes, write or update the failing test first, then make the smallest change that passes it. If TDD is not practical, say why and still verify the touched behaviour.
-- Docs-only changes (Markdown under `docs/`, `AGENTS.md`/`CLAUDE.md`, `CONTEXT.md`, `.claude/**/*.md`) need no gate run; confirm that every path, script and symbol they name exists. Scripts and settings under `.claude/` are code: run their tests or say why not.
+- Docs-only changes (Markdown under `docs/`, `AGENTS.md`/`CLAUDE.md`, `GLOSSARY.md`, `.claude/**/*.md`) need no gate run; confirm that every path, script and symbol they name exists. Scripts and settings under `.claude/` are code: run their tests or say why not.
 
 ### Test discipline
 Test code is a liability. Fewer, sharper tests beat more tests.
@@ -56,12 +56,12 @@ Test code is a liability. Fewer, sharper tests beat more tests.
 - Playbook for running issues with workers (briefs, launch, host verification, role-split review, ship, cleanup): `.claude/skills/issue-wave-conductor/`. Model routing comes from the user-level `orca-dispatch-recipes` skill (`routing.tsv`); this repo adds only the per-issue routing criteria in the conductor's launch step.
 - Workers run in Orca-managed worktrees and terminals (`orca-cli`, `orchestration`, `orca-dispatch-recipes` skills). Close every worktree and terminal you created as soon as its work is done.
 - Reviewers are chosen per issue by `.claude/skills/issue-wave-conductor/scripts/review-plan.py`; agent definitions live in `.claude/agents/review-*.md`.
-- PR review priorities: domain-invariant violations (evidence fidelity, geometry vs connectivity, unknowns), package-boundary leaks, missing verification, and docs that disagree with `CONTEXT.md` or an ADR.
+- PR review priorities: domain-invariant violations (evidence fidelity, geometry vs connectivity, unknowns), package-boundary leaks, missing verification, and docs that disagree with `GLOSSARY.md` or an ADR.
 
 ## Agent docs
 - **Issue tracker:** GitHub issues on `hjung3113/equipment-visualization` via `gh`. See `docs/agents/issue-tracker.md`.
 - **Triage labels:** `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
-- **Domain docs:** root `CONTEXT.md` owns the glossary; `docs/adr/` owns architectural decisions. See `docs/agents/domain.md`.
+- **Domain docs:** root `GLOSSARY.md` owns the glossary; `docs/adr/` owns architectural decisions. See `docs/agents/domain.md`.
 - Agent-facing docs (`AGENTS.md`, `CLAUDE.md`, memory files) are written in English.
 
 ## Integration rules

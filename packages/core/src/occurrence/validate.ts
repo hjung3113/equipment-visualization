@@ -1,7 +1,7 @@
 import type { OccurrenceBatch } from './schema.js';
 
 // Preconditions every consumer of a batch relies on: one equipment, and Record Sequence as a total order
-// (CONTEXT: a per-equipment global order number). An equal sequence would let array order decide state.
+// (GLOSSARY: a per-equipment global order number). An equal sequence would let array order decide state.
 export function assertBatchRecords(batch: OccurrenceBatch): void {
   const owners = new Map<number, string>();
   const claim = (seq: number, label: string) => {

@@ -27,7 +27,7 @@ You run in a disposable worktree detached at `origin/develop`, never the owner's
 ## Authority
 
 - Root `AGENTS.md`: Architecture constraints, Change quality gates, Integration rules.
-- `CONTEXT.md`, `docs/DESIGN-v0.4.md` (domain model), `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`, ADRs under `docs/adr/`,
+- `GLOSSARY.md`, `docs/DESIGN-v0.4.md` (domain model), `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`, ADRs under `docs/adr/`,
   and nested `AGENTS.md` files on touched paths. A section marked **Proposed** is design, not a contract the code
   must already meet; flag code that contradicts it, not code that has not built it yet.
 - **Lens:** the `codebase-design` skill (load it with the Skill tool). The repo's rules win where they differ.

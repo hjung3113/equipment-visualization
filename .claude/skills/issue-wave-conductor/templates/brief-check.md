@@ -14,7 +14,7 @@ that would cost a review or fix round; style and wording preferences are out of 
    makes the worker invent one. Docs marked **Proposed** are design, not code: the brief must say which part it
    implements.
 2. **Rules are copied, not remembered.** Field names, cardinalities, units and enum values (fidelity labels, event
-   kinds, levels) match `CONTEXT.md`, `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md` and the code, not the issue text.
+   kinds, levels) match `GLOSSARY.md`, `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md` and the code, not the issue text.
 3. **Invariants are stated where they bite.** If the work touches geometry, ports, robots or replay, the brief
    repeats the relevant AGENTS.md constraint (no connectivity from adjacency; arm ≠ blade; unknown stays unknown;
    interpolation is never `observed`; no `@ap/*` outside the adapter) and names a test that would catch a breach.

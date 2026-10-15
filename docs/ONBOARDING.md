@@ -1,6 +1,6 @@
 # Onboarding — 로그 관측으로 레이아웃·매핑 만들기 v0.4
 
-**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); UI·편집·Template 승격은 제안 단계다. 용어는 [`CONTEXT.md`](../CONTEXT.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
+**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); UI·편집·Template 승격은 제안 단계다. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
 Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다.
 
