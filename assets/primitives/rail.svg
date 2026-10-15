@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-70.9 -53.4 141.8 106.8" role="img">
   <title>rail</title>
-  <g id="cmp-RAIL">
+  <g>
     <rect x="-70.0" y="-52.5" width="140" height="105" rx="16" fill="var(--eqv-structure-fill, #dfe9f2)" fill-opacity="1" stroke="var(--eqv-structure-stroke, #92a5b3)" stroke-width="1.8" stroke-dasharray="none" />
     <path d="M -55.0 -14.700000000000003 L 55.0 -14.700000000000003" fill="none" stroke="var(--eqv-detail-stroke, #8299ab)" stroke-width="3" stroke-linecap="round" />
     <path d="M -55.0 14.700000000000003 L 55.0 14.700000000000003" fill="none" stroke="var(--eqv-detail-stroke, #8299ab)" stroke-width="3" stroke-linecap="round" />

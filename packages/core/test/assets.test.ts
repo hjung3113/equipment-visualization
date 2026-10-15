@@ -96,6 +96,12 @@ it('contains exactly six templates and 25 primitives', () => {
   expect(readdirSync(new URL('assets/primitives/', root)).filter((name) => name.endsWith('.svg'))).toHaveLength(25);
 });
 
+it('keeps primitives free of element ids so repeated inlining cannot collide', () => {
+  for (const name of readdirSync(new URL('assets/primitives/', root)).filter((file) => file.endsWith('.svg'))) {
+    expect(readFileSync(new URL(`assets/primitives/${name}`, root), 'utf8'), name).not.toMatch(/\sid="/);
+  }
+});
+
 it.each(['robot-single', 'robot-dual', 'robot-multi', 'tm'])('%s bounds include every shape and its stroke', (name) => {
   const svg = readFileSync(new URL(`assets/primitives/${name}.svg`, root), 'utf8');
   const [x, y, width, height] = svg.match(/viewBox="([^"]+)"/)![1]!.split(/\s+/).map(Number) as [number, number, number, number];

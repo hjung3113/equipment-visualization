@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-56.599999999999994 -36.6 113.19999999999999 73.2" role="img">
   <title>robot-multi</title>
-  <g id="cmp-ROBOT_MULTI">
+  <g>
     <circle cx="0" cy="0" r="35.7" fill="var(--eqv-handler-fill, #f5faff)" stroke="var(--eqv-handler-stroke, #607c92)" stroke-width="1.8" />
     <circle cx="0" cy="0" r="9" fill="var(--eqv-detail-fill, #648497)" stroke="var(--eqv-detail-stroke, #547388)" stroke-width="1.5" />
     <path d="M 0 0 L 22.626602845052187 -24.674797653265724" fill="none" stroke="var(--eqv-handler-primary, #0e808d)" stroke-width="7" stroke-linecap="round" />

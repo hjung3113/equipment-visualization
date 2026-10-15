@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
   <title>stocker</title>
-  <g id="cmp-STOCKER">
+  <g>
     <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #edf3f7)" stroke="var(--eqv-module-stroke, #526c81)" stroke-width="2" stroke-linejoin="round" />
     <rect x="-58.0" y="-40.5" width="116" height="23.666666666666668" rx="3" fill="var(--eqv-detail-fill, #fff)" stroke="var(--eqv-detail-stroke, #7790a1)" stroke-width="1" />
     <rect x="-58.0" y="-14.166666666666668" width="116" height="23.666666666666668" rx="3" fill="var(--eqv-detail-fill, #fff)" stroke="var(--eqv-detail-stroke, #7790a1)" stroke-width="1" />

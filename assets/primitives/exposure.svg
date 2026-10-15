@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
   <title>exposure</title>
-  <g id="cmp-EXPOSURE">
+  <g>
     <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #edf3f7)" stroke="var(--eqv-module-stroke, #526c81)" stroke-width="2" stroke-linejoin="round" />
     <rect x="-25.2" y="-18.9" width="50.4" height="37.8" rx="6" fill="var(--eqv-accent-fill, #fff6e5)" stroke="var(--eqv-accent-stroke, #bf9137)" stroke-width="1.8" />
   </g>
