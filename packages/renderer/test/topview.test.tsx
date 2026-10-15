@@ -6,8 +6,9 @@ import {
   layoutDocumentSchema, type Component, type LayoutDocument, type PhysicalInterfaceEdge, type Port,
 } from '@eqv/core';
 import { buildScene, TopView, type SceneOptions, type SvgNode } from '../src/index.js';
-import { apply, isArm, mul, rectsOverlap, rotation, scaling, translation, type Box, type Mat } from '../src/geom.js';
+import { apply, bboxOf, mul, rectsOverlap, rotation, scaling, translation, type Box, type Mat } from '../src/geom.js';
 import { estimateTextWidth } from '../src/text.js';
+import { primitives } from '../src/primitives.generated.js';
 
 const root = new URL('../../../', import.meta.url);
 const TEMPLATE_IDS = [
@@ -179,19 +180,45 @@ function circleBox(circle: SvgNode, world: Mat): Box {
   return { x0: wx - r, y0: wy - r, x1: wx + r, y1: wy + r };
 }
 
+const ROBOT_ASSETS = new Set(['robot-single', 'robot-dual', 'robot-multi', 'handler']);
+
+/** The rendered fit scale of a component group: its main `scale(...)` symbol group, skipping the stacked copy. */
+function fitOf(group: SvgNode): number {
+  for (const child of group.children) {
+    if (typeof child === 'string' || child.attrs['data-stack'] === 'true') continue;
+    const match = /^scale\(([\d.]+)\)/.exec(child.attrs.transform ?? '');
+    if (match) return Number(match[1]);
+  }
+  throw new Error('component group without a fit group');
+}
+
 /**
- * Robot (isArm) body circle boxes in world coordinates, from the rendered body circles.
- * The body is the first circle in each robot group; detail circles are not the body.
+ * Robot-class chip guard: each robot's fitted primitive extent (viewBox scaled by the rendered fit) in
+ * world coordinates, from the rendered group transform plus the primitive viewBox — covers arms and fork.
  */
-function robotBodyBoxes(layout: LayoutDocument, node: SvgNode): Map<string, Box[]> {
-  const arms = new Set(layout.components
-    .filter((item) => isArm(item.assetRef.replace(/^primitive:/, '')))
-    .map((item) => item.id));
+function robotExtentBoxes(layout: LayoutDocument, node: SvgNode): Map<string, Box[]> {
+  const robots = new Map(layout.components
+    .filter((item) => ROBOT_ASSETS.has(item.assetRef.replace(/^primitive:/, '')))
+    .map((item) => [item.id, item.assetRef.replace(/^primitive:/, '')]));
   const out = new Map<string, Box[]>();
-  walkWorld(node, (current, world, owner) => {
-    if (current.tag !== 'circle' || !owner || !arms.has(owner) || out.has(owner)) return;
-    out.set(owner, [circleBox(current, world)]);
-  });
+  const visit = (current: SvgNode, world: Mat): void => {
+    const m = current.attrs.transform ? mul(world, parseTransform(current.attrs.transform)) : world;
+    const id = current.attrs['data-component-id'];
+    const asset = id != null ? robots.get(id) : undefined;
+    if (id != null && asset != null) {
+      const fit = fitOf(current);
+      const { x, y, width, height } = primitives[asset]!.viewBox;
+      const corners = [
+        apply(m, x * fit, y * fit),
+        apply(m, (x + width) * fit, y * fit),
+        apply(m, (x + width) * fit, (y + height) * fit),
+        apply(m, x * fit, (y + height) * fit),
+      ];
+      out.set(id, [bboxOf(corners)]);
+    }
+    for (const child of current.children) if (typeof child !== 'string') visit(child, m);
+  };
+  visit(node, IDENT);
   return out;
 }
 
@@ -373,7 +400,7 @@ it.each([
   ['cluster-single', 'none'],
   ['track-stacked', 'label'],
   ['track-stacked', 'none'],
-] as const)('%s with labels=%s keeps chips clear of badges, labels and robot bodies', (id, mode) => {
+] as const)('%s with labels=%s keeps chips clear of badges, labels and robot extents', (id, mode) => {
   const layout = templates[id];
   const { scene } = render(layout, {
     labels: mode,
@@ -382,7 +409,7 @@ it.each([
   const chips = chipRects(scene.node);
   const badges = badgeBoxes(scene.node);
   const labels = labelBoxesFromRendered(scene.node, false);
-  const bodies = robotBodyBoxes(layout, scene.node);
+  const guards = robotExtentBoxes(layout, scene.node);
   expect(chips.length).toBeGreaterThan(0);
   expect(badges.length).toBeGreaterThan(0);
   for (const chip of chips) {
@@ -393,8 +420,8 @@ it.each([
     for (const label of labels) {
       expect(rectsOverlap(rect, label), `chip of ${chip.id} over a label`).toBe(false);
     }
-    for (const body of bodies.get(chip.id) ?? []) {
-      expect(rectsOverlap(rect, body), `chip of ${chip.id} over its robot body`).toBe(false);
+    for (const guard of guards.get(chip.id) ?? []) {
+      expect(rectsOverlap(rect, guard), `chip of ${chip.id} over its robot extent`).toBe(false);
     }
   }
 });
@@ -560,7 +587,11 @@ it.each([
     expect(Number(rect?.attrs.height)).toBe(size.height);
   } else {
     expect(size).toBeUndefined();
-    expect(Number(rect?.attrs.width)).toBeGreaterThan(0);
+    // Natural body geometry: the primitive body's own x/y/width/height (efem), not the padded viewBox frame.
+    expect(Number(rect?.attrs.x)).toBe(-220);
+    expect(Number(rect?.attrs.y)).toBe(-50);
+    expect(Number(rect?.attrs.width)).toBe(440);
+    expect(Number(rect?.attrs.height)).toBe(100);
   }
   expect(Number(rect?.attrs.rx) * scaleProduct(doc, id) * pxPerUnit).toBeCloseTo(12, 4);
 });

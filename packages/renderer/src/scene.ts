@@ -130,17 +130,25 @@ function stackWrap(kLocal: number, children: SvgNode[]): SvgNode {
   }, children);
 }
 
-function structureRect(body: SvgNode, w: number, h: number, rx: number, fill?: string): SvgNode {
+function structureRect(body: SvgNode, w: number | null, h: number | null, rx: number, fill?: string): SvgNode {
   const attrs: Record<string, string> = {};
   for (const key of BODY_ATTRS) {
     const value = body.attrs[key];
     if (value != null) attrs[key] = value;
   }
   if (fill) attrs.fill = fill;
-  attrs.x = formatNum(-w / 2);
-  attrs.y = formatNum(-h / 2);
-  attrs.width = formatNum(w);
-  attrs.height = formatNum(h);
+  if (w == null || h == null) {
+    // A size-less structure keeps its natural body geometry; only the corner radius is screen-fixed.
+    if (body.attrs.x != null) attrs.x = body.attrs.x;
+    if (body.attrs.y != null) attrs.y = body.attrs.y;
+    if (body.attrs.width != null) attrs.width = body.attrs.width;
+    if (body.attrs.height != null) attrs.height = body.attrs.height;
+  } else {
+    attrs.x = formatNum(-w / 2);
+    attrs.y = formatNum(-h / 2);
+    attrs.width = formatNum(w);
+    attrs.height = formatNum(h);
+  }
   attrs.rx = formatNum(rx);
   return el('rect', attrs);
 }
@@ -171,8 +179,10 @@ function symbolNodes(placed: Placed, plan: LabelPlan | undefined, showLabel: boo
   const nodes: SvgNode[] = [];
   if (prim.stretches && prim.body.tag === 'rect') {
     const rx = 12 * kLocal;
-    if (placed.stacked) nodes.push(stackWrap(kLocal, [structureRect(prim.body, placed.w, placed.h, rx, PAINT.board)]));
-    nodes.push(structureRect(prim.body, placed.w, placed.h, rx));
+    const bw = hasSize ? placed.w : null;
+    const bh = hasSize ? placed.h : null;
+    if (placed.stacked) nodes.push(stackWrap(kLocal, [structureRect(prim.body, bw, bh, rx, PAINT.board)]));
+    nodes.push(structureRect(prim.body, bw, bh, rx));
     if (prim.rest.length) nodes.push(scaleGroup(sx, sy, prim.rest.map(cloneNode)));
     return nodes;
   }
@@ -393,26 +403,40 @@ function chipSize(placed: Placed, k: number): { width: number; height: number } 
   return { width: tw + 6 * k, height: 14 * k };
 }
 
-/** Chip candidates in order: top-right inside, top-left inside, bottom-right inside, just outside the top-right. */
+/** Chip candidates in order: top-right inside, top-left inside, bottom-right inside, just outside the top-right. Robot-class Components try corners of their fitted primitive extent, so the fallback can sit clear of arms and fork. */
 function chipRectAt(placed: Placed, index: number, k: number): Box {
   const { width, height } = chipSize(placed, k);
-  const { bbox } = placed;
-  if (index === 1) return { x0: bbox.x0, y0: bbox.y0, x1: bbox.x0 + width, y1: bbox.y0 + height };
-  if (index === 2) return { x0: bbox.x1 - width, y0: bbox.y1 - height, x1: bbox.x1, y1: bbox.y1 };
-  if (index === 3) return { x0: bbox.x1, y0: bbox.y0, x1: bbox.x1 + width, y1: bbox.y0 + height };
-  return { x0: bbox.x1 - width, y0: bbox.y0, x1: bbox.x1, y1: bbox.y0 + height };
+  const frame = placed.cls === 'robot' ? fittedExtent(placed) : placed.bbox;
+  if (index === 1) return { x0: frame.x0, y0: frame.y0, x1: frame.x0 + width, y1: frame.y0 + height };
+  if (index === 2) return { x0: frame.x1 - width, y0: frame.y1 - height, x1: frame.x1, y1: frame.y1 };
+  if (index === 3) return { x0: frame.x1, y0: frame.y0, x1: frame.x1 + width, y1: frame.y0 + height };
+  return { x0: frame.x1 - width, y0: frame.y0, x1: frame.x1, y1: frame.y0 + height };
+}
+
+/** A robot-class Component's fitted primitive extent in world coordinates: the viewBox scaled by the fit, arms and fork included. */
+function fittedExtent(placed: Placed): Box {
+  const { viewBox } = placed.prim;
+  const fit = placed.component.size == null
+    ? 1
+    : Math.min(placed.w / viewBox.width, placed.h / viewBox.height);
+  return bboxOf([
+    apply(placed.matrix, viewBox.x * fit, viewBox.y * fit),
+    apply(placed.matrix, (viewBox.x + viewBox.width) * fit, viewBox.y * fit),
+    apply(placed.matrix, (viewBox.x + viewBox.width) * fit, (viewBox.y + viewBox.height) * fit),
+    apply(placed.matrix, viewBox.x * fit, (viewBox.y + viewBox.height) * fit),
+  ]);
 }
 
 /**
- * First chip candidate clear of every badge, label box, already-placed chip and, for an arm robot,
- * its own body circle; if none is clear, the last candidate.
+ * First chip candidate clear of every badge, label box, already-placed chip and, for a robot-class
+ * Component, its fitted primitive extent; if none is clear, the last candidate.
  */
 function chipRectFor(placed: Placed, taken: Box[], labels: LabelBox[], k: number): Box {
-  const body = isArm(placed.asset) ? circleBox(placed.center, robotR(placed.w, placed.h) * placed.S) : undefined;
+  const guard = placed.cls === 'robot' ? fittedExtent(placed) : undefined;
   const clear = (rect: Box): boolean =>
     !taken.some((box) => rectsOverlap(rect, box))
     && !labels.some((box) => rectsOverlap(rect, box))
-    && !(body && rectsOverlap(rect, body));
+    && !(guard && rectsOverlap(rect, guard));
   let chosen = chipRectAt(placed, 0, k);
   for (let index = 1; index < 4 && !clear(chosen); index += 1) chosen = chipRectAt(placed, index, k);
   return chosen;

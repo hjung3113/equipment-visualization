@@ -39,9 +39,11 @@ Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then
 
 ## Performance
 
-The conductor measures these in a browser and fills the cells. They are empty in this change.
+First render of the demo's `?stress=N` layout (tiled `cluster-dual-hub`), measured as `performance.measure('eqv-render')` from just before `createRoot().render` to the root's first `useLayoutEffect`. Median of 5 page loads, all layers at their defaults. Chromium (Ego Lite), Apple-silicon Mac, `vite` dev server, so this is the React development build; a production build is faster. Measured 2026-10-16 on `feature/12-static-viewer`.
 
-| N | Duration (ms) |
-| --- | --- |
-| 1000 | |
-| 2000 | |
+| N requested | Components | SVG elements | Median (ms) | Range (ms) |
+| --- | --- | --- | --- | --- |
+| 1000 | 1003 | 7204 | 122 | 112–138 |
+| 2000 | 2006 | 14166 | 342 | 331–349 |
+
+Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because this is a one-time static render.

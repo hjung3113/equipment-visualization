@@ -8,6 +8,8 @@ const ORDER = [
   'lithography-dual-stage', 'vertical-batch-furnace',
 ] as const;
 
+const STAGE_W = 960;
+
 const files = import.meta.glob('../../../assets/templates/*.template.json', { eager: true, import: 'default' }) as Record<string, unknown>;
 
 const templates = ORDER.map((id) => {
@@ -66,8 +68,13 @@ function stressLayout(count: number): LayoutDocument {
       processRoutes.push({ ...route, id: idOf(route.id), steps: route.steps.map(idOf) });
     }
   }
-  // `outside` labels and annotation chips extend past the components, so leave a margin on every side.
-  const margin = 48;
+  // `outside` labels and annotation chips extend past the components, so leave a margin on every side:
+  // 48 screen px converted to layout units with a one-pass scale estimate from the demo stage and the
+  // tiled extent (ignoring the margin's own effect), plus 40 units of slack for the units the margin adds.
+  const extentW = base.viewBox.width * cols;
+  const extentH = base.viewBox.height * rows;
+  const stageH = Math.round(STAGE_W * (extentH / extentW));
+  const margin = 48 / Math.min(STAGE_W / extentW, stageH / extentH) + 40;
   return {
     ...base,
     id: `${base.id}-stress`,
@@ -75,8 +82,8 @@ function stressLayout(count: number): LayoutDocument {
     viewBox: {
       x: base.viewBox.x - margin,
       y: base.viewBox.y - margin,
-      width: base.viewBox.width * cols + margin * 2,
-      height: base.viewBox.height * rows + margin * 2,
+      width: extentW + margin * 2,
+      height: extentH + margin * 2,
     },
     components,
     physicalInterfaces,
@@ -109,7 +116,7 @@ function App() {
   if (!selected) return null;
   const layout = stress > 0 ? stressLayout(stress) : selected;
   const visibleLevelIds = upper ? undefined : layout.levels.filter((level) => level.id !== 'level-upper').map((level) => level.id);
-  const stageW = 960;
+  const stageW = STAGE_W;
   const stageH = Math.max(1, Math.round(stageW * (layout.viewBox.height / layout.viewBox.width)));
 
   return (
