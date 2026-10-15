@@ -25,7 +25,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 ```
 apps/studio/                   # Standalone web app (planned)
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
-packages/renderer/            # SVG-first rendering and interaction (planned)
+packages/renderer/            # Static read-only Top View (`TopView`, `buildScene`): fitted primitives, labels, Physical Interface marks, Transfer Capability segments, Holding Site counts, Certainty badges
 packages/editor/              # Semantic Top View editor (planned)
 packages/replay/              # Playback timeline and controls over the core reducer (planned)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)

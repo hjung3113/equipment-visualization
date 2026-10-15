@@ -8,12 +8,15 @@
     "VITEST_MIN_THREADS"
   ],
   "tasks": {
-    "typecheck": {},
+    "typecheck": {
+      "dependsOn": ["^build"]
+    },
     "test": {
-      "dependsOn": ["^typecheck"],
+      "dependsOn": ["^build"],
       "cache": false
     },
     "build": {
+      "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     }
   }
