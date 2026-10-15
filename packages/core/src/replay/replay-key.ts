@@ -2,7 +2,7 @@ import { canonicalJson, sha256Hex } from '../canonical.js';
 import type { Binding } from '../mapping/schema.js';
 import type { SceneState } from '../scene/schema.js';
 import type { SiteWallClock } from '../site-wall-clock.js';
-import { RULESET_VERSION, type ReplayInput } from './reduce.js';
+import { RULESET_VERSION, assertReplayInput, type ReplayInput } from './reduce.js';
 
 export type ReplayKey = {
   binding: Binding | null;
@@ -13,6 +13,7 @@ export type ReplayKey = {
   t: SiteWallClock;
 };
 export async function replayKey(input: ReplayInput, t: SiteWallClock): Promise<ReplayKey> {
+  assertReplayInput(input);
   const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
   const layout = binding && input.layouts.find((l) => l.id === binding.layoutId);
   const mapping = binding && input.mappings.find((m) => m.hash === binding.mappingHash && m.layoutId === binding.layoutId && m.equipmentId === input.bindings.equipmentId);

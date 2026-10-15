@@ -9,6 +9,19 @@ export const RULESET_VERSION = 'scene-rules-1';
 export type ReplayInput = {
   batch: OccurrenceBatch; layouts: EquipmentLayoutDocument[]; bindings: BindingsFile; mappings: MappingVersion[];
 };
+export function assertReplayInput(input: ReplayInput): void {
+  const equipmentId = input.batch.equipmentId;
+  if (input.bindings.equipmentId !== equipmentId) {
+    throw new RangeError(`bindings.equipmentId (${input.bindings.equipmentId}) must match batch.equipmentId (${equipmentId})`);
+  }
+  for (const field of ['occurrences', 'issues'] as const) {
+    for (const [i, record] of input.batch[field].entries()) {
+      if (record.equipmentId !== equipmentId) {
+        throw new RangeError(`${field}[${i}].equipmentId (record ${record.id}) (${record.equipmentId}) must match batch.equipmentId (${equipmentId})`);
+      }
+    }
+  }
+}
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 type Record = { seq: number; at: SiteWallClock | null; owner?: Occurrence };
 function records(input: ReplayInput): Record[] {
@@ -23,11 +36,13 @@ const evidence = (value: EvidenceLevel): SceneMaterial['identityEvidence'] => va
 const cap = (value: SceneMaterial['identityEvidence'], assumed: boolean) => assumed && value === 'observed' ? 'derived' : value;
 
 export function seekSceneState(input: ReplayInput, t: SiteWallClock): SceneState {
+  assertReplayInput(input);
   const all = records(input);
   const stop = all.findIndex((record) => record.at !== null && record.at > t);
   return reduce(input, t, all, stop === -1 ? all : all.slice(0, stop));
 }
 export function stepSceneState(input: ReplayInput, seq: number): SceneState {
+  assertReplayInput(input);
   const all = records(input);
   const prefix = all.filter((record) => record.seq <= seq);
   const t = prefix.filter((record) => record.at !== null).at(-1)?.at ?? input.batch.from;
