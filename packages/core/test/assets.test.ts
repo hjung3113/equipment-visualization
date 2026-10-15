@@ -412,6 +412,10 @@ it.each(primitiveNames)('%s keeps every stroke at screen width when fitted or st
   for (const element of stroked) expect(element, name).toContain('vector-effect="non-scaling-stroke"');
 });
 
+it.each(primitiveNames)('%s lets screen-width strokes overflow the viewBox edge instead of clipping', (name) => {
+  expect(primitiveSVG(name), name).toMatch(/^<svg\b[^>]*\soverflow="visible"/);
+});
+
 it.each(primitiveNames)('%s follows the structural stretch rule', (name) => {
   expect(primitiveSVG(name).includes('preserveAspectRatio="none"')).toBe(primitiveClasses.structure.includes(name));
 });
