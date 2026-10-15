@@ -1,6 +1,7 @@
 import type { ObservedInventory } from '../inventory/schema.js';
 import type { MappingVersion } from '../mapping/schema.js';
 import { compareText } from './order.js';
+import { assertOnboardingTuple } from './tuple.js';
 
 type Count = { resolved: number; total: number; ratio: number | null };
 export type Coverage = {
@@ -12,6 +13,7 @@ export type Coverage = {
 };
 const ratio = (part: number, total: number): number | null => total === 0 ? null : part / total;
 export function computeCoverage(inventory: ObservedInventory, mapping: MappingVersion): Coverage {
+  assertOnboardingTuple(mapping, { inventory });
   const result: Coverage = {
     references: { resolved: 0, total: 0, ratio: null }, aliases: { resolved: 0, total: 0, ratio: null },
     ignored: { aliases: [], references: 0 }, assumed: { references: 0, ratio: null }, unmapped: [],
