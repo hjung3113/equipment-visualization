@@ -8,6 +8,8 @@ Geometry is generated from the prototype’s symbol-only primitive-sheet recipe 
 
 The standalone assets read only `--eqv-*` custom properties with the approved light fallback below. The optional platform adapter injects the listed platform token values; the primitives have no platform dependency. Tokens for canvas, overlays and labels are listed for the shared renderer theme even where the primitive symbols do not use them. Robot and material fills are literal approved palette values with no corresponding prototype platform token.
 
+The adapter must inject complete CSS colours. analytics-platform tokens hold RGB channel lists (for example `--chart-blue-stroke: 37 119 204`), so map them as `--eqv-process-stroke: rgb(var(--chart-blue-stroke)); --eqv-process-fill: rgb(var(--icon-blue-soft));`. A defined custom property with the wrong value type is not rescued by the SVG fallback.
+
 | Token | Purpose | Fallback | Platform token mapping |
 | --- | --- | --- | --- |
 | `--eqv-canvas` | Canvas background | `#f3f7fe` | `--surface-canvas` |
@@ -43,7 +45,7 @@ The standalone assets read only `--eqv-*` custom properties with the approved li
 
 Each symbol uses its own class’s fill/stroke and `--eqv-detail-fill`. The housing body uses `--eqv-board` instead of structure fill, as in the approved prototype.
 
-Under ADR-0006, structural primitives (efem, tm, rail, housing) carry `preserveAspectRatio="none"` and stretch to the Component footprint. Module and robot symbols keep the SVG default, preserving aspect ratio and fitting centrally inside the footprint. Footprint and pose are illustrative geometry, never evidence of connectivity or motion.
+Under ADR-0006, structural primitives (efem, tm, rail, housing) carry `preserveAspectRatio="none"` and stretch to the Component footprint. Module and robot symbols keep the SVG default, preserving aspect ratio and fitting centrally inside the footprint. Every stroked shape carries `vector-effect="non-scaling-stroke"`, so line weights stay at their drawn screen width when a symbol is fitted or stretched (the approved prototype compensated stroke width for scale); this applies when the SVG is inlined, which is how the renderer uses it. Footprint and pose are illustrative geometry, never evidence of connectivity or motion.
 
 ## Removed #7 tokens
 

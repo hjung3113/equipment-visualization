@@ -406,6 +406,12 @@ it.each(primitiveNames)('%s uses documented explicit theme paints', (name) => {
   expect(svg).not.toMatch(/\s(?:class|id|style)=|<text\b/);
 });
 
+it.each(primitiveNames)('%s keeps every stroke at screen width when fitted or stretched', (name) => {
+  const stroked = primitiveSVG(name).match(/<(?:rect|circle|path|polygon)\b[^>]*\sstroke="var\([^>]*>/g) ?? [];
+  expect(stroked.length, name).toBeGreaterThan(0);
+  for (const element of stroked) expect(element, name).toContain('vector-effect="non-scaling-stroke"');
+});
+
 it.each(primitiveNames)('%s follows the structural stretch rule', (name) => {
   expect(primitiveSVG(name).includes('preserveAspectRatio="none"')).toBe(primitiveClasses.structure.includes(name));
 });
