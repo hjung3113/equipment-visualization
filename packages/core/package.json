@@ -16,7 +16,8 @@
     "./mapping-version.schema.json": "./schema/mapping-version.schema.json",
     "./bindings.schema.json": "./schema/bindings.schema.json",
     "./observed-inventory.schema.json": "./schema/observed-inventory.schema.json",
-    "./scene-state.schema.json": "./schema/scene-state.schema.json"
+    "./scene-state.schema.json": "./schema/scene-state.schema.json",
+    "./alias-metadata.schema.json": "./schema/alias-metadata.schema.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

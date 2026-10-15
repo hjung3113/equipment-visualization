@@ -23,14 +23,14 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 
 ## 2. Observed Inventory
 
-- 계약은 `ObservedInventory` DTO. core가 기준 구현 `buildInventory`를 제공할 예정이며(#11, 독립 실행·synthetic fixture), 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
+- 계약은 `ObservedInventory` DTO. core는 기준 구현 `buildInventory(batch: OccurrenceBatch, metadata?: AliasMetadataFile): ObservedInventory`를 제공하며(#11a, 독립 실행·synthetic fixture), 선택 입력 `AliasMetadataFile`은 같은 `equipmentId`의 adapter metadata(`moduleType`/`isPort`/`isRobot`)만 공급한다. 다른 장비 metadata는 오류이며 batch에 없는 alias는 추가하지 않는다. 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
 - 샘플 기간 기본 **최근 30일**, 사용자 조정 가능. 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
 - Role은 Type Dictionary로 `ModuleType` → Role 변환. 사전에 없는 ModuleType은 Role `unknown`이고 목록 최상단에 표시.
 
 ### ObservedInventory 계약 (#9b)
 
 `packages/core/src/inventory/schema.ts`의 strict `observedInventorySchema`와
-`@eqv/core/observed-inventory.schema.json`이 DTO 형식을 정의한다. Inventory 계산은 #11 범위다.
+`@eqv/core/observed-inventory.schema.json`이 DTO 형식을 정의한다. Inventory 계산은 `buildInventory`가 구현한다(#11a).
 
 ```ts
 type ObservedInventory = {
@@ -115,9 +115,33 @@ Publish는 먼저 가장 좁은 Mapping Scope를 선택하고, 그 범위 안에
 
 ## 6. 커버리지와 Mapping Conflict
 
-- **커버리지(headline):** 샘플 기간 Occurrence의 alias 참조 중 해석된 비율(**건수 가중**). 보조로 alias 개수 기준 커버리지. Ignored Alias는 분모 제외·별도 표시, assumed 비율 병기.
-- **Mapping Conflict:** Transfer Capability 없는 관측 이송, Holding Site 수를 넘는 관측 slot, Port 플래그와 Role 불일치, 같은 수준 규칙 중첩. 자동 수정 없음. 조치: "이송 경로 추가"(sourceEvidence = 로그 관측, 사람 확인) 또는 재매핑.
-- **Drift:** 게시 이후 처음 보는 alias, 처음 보는 slot, Transfer Capability 없는 관측 이송. Fleet 상태 `Drift` + 영향도. 외부 알림은 플랫폼 통합 단계.
+`computeCoverage(inventory, mapping)`의 반환값은 다음과 같다. alias에 non-ignore Mapping entry가 있으면 해석됨, `{ ignore: true }`이면 무시, entry가 없으면 미매핑이다. SlotMap의 문제는 alias 해석 여부를 바꾸지 않고 Mapping Conflict로 보고한다.
+
+```ts
+type Coverage = {
+  references: { resolved: number; total: number; ratio: number | null };
+  aliases: { resolved: number; total: number; ratio: number | null };
+  ignored: { aliases: string[]; references: number };
+  assumed: { references: number; ratio: number | null };
+  unmapped: { alias: string; references: number }[];
+};
+```
+
+- **커버리지(headline):** `references`는 Inventory의 `references` 건수로 가중하며 `aliases`는 alias 개수 기준 보조 지표다. 각각 `ratio = resolved / total`이며 자신의 `total`이 0이면 null이다.
+- **Ignored Alias:** 두 지표의 분자·분모 모두에서 제외하며 `ignored.aliases`(code-unit 순)와 `ignored.references`로 따로 표시한다. `unmapped`에는 포함하지 않는다.
+- **assumed:** `assumed.references`는 assumed entry로 해석된 참조 수이며 `ratio = assumed.references / references.resolved`다. 해석된 참조가 0이면 null이다. `unmapped`는 참조 수 내림차순, 동률은 alias code-unit 순이다. 어떤 비율도 NaN이 되지 않는다.
+
+`findMappingConflicts({ inventory, mapping, layout, dictionaries })`는 다음 다섯 종류를 반환한다. 미매핑·무시 alias는 충돌을 만들지 않으며 자동 수정하지 않는다.
+
+- `transfer-without-capability`: 두 alias가 모두 Component로 해석되지만 두 Component의 Holding Site 사이에 명시적인 Transfer Capability가 없는 관측 이송(무방향 검사). 형상·Physical Interface·Process Route는 사용하지 않는다.
+- `slot-exceeds-sites`: SlotMap이 있으면 signed-decimal이 아니거나 `BigInt(slot) + BigInt(offset)`이 어느 `assign` 범위에도 속하지 않는 관측 slot만 반환한다. SlotMap이 없으면 고유 관측 slot 수가 Holding Site 수보다 많을 때 모든 관측 slot을 반환한다.
+- `role-mismatch`: alias의 `moduleType`을 `resolveRole`로 해석한 Role이 `unknown`이 아니고 Component의 `role`과 다르다.
+- `port-flag-mismatch`: 정의된 `isPort`가 Component의 `materialKinds`에 `carrier`가 있는 Holding Site 존재 여부와 다르다.
+- `robot-flag-mismatch`: 정의된 `isRobot`이 Component의 `role === 'robot'` 여부와 다르다.
+
+충돌은 `kind`, alias(이송은 `(from, to)`) code-unit 순으로 정렬하며 slot은 §2 순서다. 같은 수준의 winning rule 중첩은 `findMappingConflicts`가 아니라 `publishMapping`의 범위 평탄화에서 공급된 alias를 대상으로 `same-level-overlap`으로 보고한다. 파일 내부의 중복 exact alias·겹치는 slot 범위 검사는 `validateAliasRules`가 담당한다. 조치는 사람 확인 후 이송 경로 추가(sourceEvidence = 로그 관측) 또는 재매핑이며 자동 게시하지 않는다.
+
+`detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`와 영향도로 표시하며 외부 알림은 플랫폼 통합 단계다.
 
 ## 7. 파일 배치 (Studio 파일 기반)
 

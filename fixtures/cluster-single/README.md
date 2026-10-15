@@ -54,6 +54,9 @@ Schema validation deliberately transcribes the DTO without pairing, chronology, 
 
 ## #9b answer-key files
 
+- `onboarding/alias-metadata.json`: synthetic adapter metadata for #11; explicit ModuleType, Port and Robot flags, supplied separately from OccurrenceBatch.
+- `onboarding/scopes/model/synth-maker/synth-model/type-dictionary.json`: synthetic model-scope Type Dictionary for #11; SYN_VIRTUAL deliberately has no Role entry.
+
 - `layout.json`: eight Components, explicit ports, Physical Interfaces, Transfer Capabilities and one Process Route. All geometry/connectivity provenance is synthetic and assumed; no arm count or kinematics is claimed. The LP carrier site exists but the carrier Occurrence supplies no slot, so its mapped Location remains Component-level.
 - `onboarding/scopes/model/synth-maker/synth-model/alias-rules.json`: verified model rules, slot-free `PM{n}` pattern and exact PM2 station map. PM1 has no station-2, so a shared two-station pattern would be invalid. PM9 has no target Component and stays unmapped. EFEM has no SlotMap, so no blade is inferred.
 - `onboarding/scopes/equipment/eq-synth-01/alias-rules.json`: one PM2 exception with the same stations and assumed certainty.
