@@ -21,6 +21,7 @@ const originalIds: Record<string, string[]> = {
   'lithography-dual-stage': ['WAFER_LP', 'WH', 'STAGE_A', 'STAGE_B', 'METRO', 'EXPOSE', 'RETICLE', 'OPTICS', 'BODY'],
   'vertical-batch-furnace': ['LP1', 'LP2', 'STOCK', 'BOAT1', 'BOAT2', 'HANDLER', 'REACTOR1', 'REACTOR2'],
 };
+const clusterRanges: Record<string, { min: number; max: number }> = { pm: { min: 1, max: 9 }, ll: { min: 1, max: 2 }, lp: { min: 1, max: 4 } };
 const template = (id: string) => layoutDocumentSchema.parse(read(`assets/templates/${id}.template.json`)) as TemplateDocument;
 
 // Owner-approved prototype local geometry, rounded to 3 decimals; independent of the source pack.
@@ -216,7 +217,8 @@ it.each(cases)('%s conforms to v0.4 with assumed evidence and module-to-module c
   checkEvidence(layout);
   for (const [role, range] of Object.entries(layout.roleCardinality)) {
     const drawn = layout.components.filter((component) => component.role === role).length;
-    expect(range).toEqual({ min: drawn, max: drawn });
+    // #27: assumed ranges for repeated cluster module Roles (NOTICE); every other Role keeps its drawn count.
+    expect(range).toEqual(id.startsWith('cluster-') && clusterRanges[role] || { min: drawn, max: drawn });
   }
 });
 
@@ -437,14 +439,13 @@ it('fills the housing body with board instead of structure fill', () => {
   expect(svg).not.toContain('--eqv-structure-fill');
 });
 
-it('ranks converted cluster-single within the top three for the fixture Inventory', () => {
+it('ranks converted cluster-single first for the fixture Inventory', () => {
   const base = 'fixtures/cluster-single/';
   const inventory = buildInventory(occurrenceBatchSchema.parse(read(`${base}occurrence-batch.json`)),
     aliasMetadataFileSchema.parse(read(`${base}onboarding/alias-metadata.json`)));
   const dictionaries = [typeDictionaryFileSchema.parse(read(`${base}onboarding/scopes/model/synth-maker/synth-model/type-dictionary.json`))];
   const proposals = proposeTemplates({ inventory, dictionaries, templates: cases.map(([id]) => template(id)) });
-  console.info('Converted asset ranks:', proposals.map(({ templateId, rank }) => ({ templateId, rank })));
-  expect(proposals.find(({ templateId }) => templateId === 'cluster-single')?.rank).toBeLessThanOrEqual(3);
+  expect(proposals[0]).toMatchObject({ templateId: 'cluster-single', fits: true });
 });
 
 it('preserves the reviewed template and primitive asset bytes', () => {

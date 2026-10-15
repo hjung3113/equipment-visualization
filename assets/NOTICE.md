@@ -4,7 +4,7 @@ Every asset below originates in `equipment-visualization-design-v0.3.zip`, SHA-2
 
 Templates are converted v0.4 semantic documents; primitives were restyled in #34 as redrawn generic glyphs from the owner-approved prototype (2026-10-15), with semantic theme tokens. They remain synthetic, not OEM depictions. Primitive references are pack-wide background, not claims about individual symbol geometry. All layout provenance cites the synthetic pack as assumed.
 
-The Korean Endura reference row states an upper bound of nine process chambers; it supplies no complete range. Every template therefore keeps min = max = its drawn Role count.
+The Korean Endura reference row states an upper bound of nine process chambers; it supplies no complete range. #27 therefore records **assumed** ranges (owner decision, 2026-10-15) for the repeated module Roles of the two cluster templates: `pm` 1–9 (upper bound from the Endura row, lower bound assumed), `ll` 1–2 and `lp` 1–4 (assumed). They are not measured on any specific equipment. Every other Role, and every Role of the other four templates, keeps min = max = its drawn count.
 
 ## Conversion rules (one-off converter, not committed)
 
