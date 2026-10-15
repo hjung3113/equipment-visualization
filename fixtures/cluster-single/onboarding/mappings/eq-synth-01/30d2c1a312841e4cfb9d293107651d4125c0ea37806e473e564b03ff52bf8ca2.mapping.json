@@ -1,0 +1,173 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-synth-01",
+  "layoutId": "eq-synth-01-layout",
+  "entries": [
+    {
+      "alias": "EFEM_R1",
+      "target": {
+        "componentId": "efem-robot"
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "efem"
+      }
+    },
+    {
+      "alias": "LLA",
+      "target": {
+        "componentId": "ll-a",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "ll"
+      }
+    },
+    {
+      "alias": "LP1",
+      "target": {
+        "componentId": "lp-a",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "lp"
+      }
+    },
+    {
+      "alias": "PM1",
+      "target": {
+        "componentId": "pm-a"
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "pm-pattern"
+      }
+    },
+    {
+      "alias": "PM2",
+      "target": {
+        "componentId": "pm-b",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "station-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "pm-two"
+      }
+    },
+    {
+      "alias": "TM_R1",
+      "target": {
+        "componentId": "tm-robot",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "blade-a"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "blade-b"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "tm"
+      }
+    },
+    {
+      "alias": "VIRT_SCH",
+      "target": {
+        "ignore": true
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-model"
+        },
+        "ruleId": "ignore-virtual"
+      }
+    }
+  ],
+  "hash": "sha256:30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2"
+}

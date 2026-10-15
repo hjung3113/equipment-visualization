@@ -1,0 +1,2142 @@
+{
+  "schemaVersion": "0.4",
+  "kind": "template",
+  "id": "track-stacked",
+  "name": "Photo Track · Multi-level Process Modules",
+  "unit": "abstract",
+  "viewBox": {
+    "x": 0,
+    "y": 0,
+    "width": 960,
+    "height": 600
+  },
+  "sources": [
+    {
+      "id": "src-v03-pack",
+      "title": "equipment-visualization-design v0.3 (synthetic, illustrative)",
+      "license": "synthetic"
+    },
+    {
+      "id": "src-ref-1",
+      "title": "www.tel.com/product/lithius.html",
+      "uri": "https://www.tel.com/product/lithius.html",
+      "license": "reference-only"
+    },
+    {
+      "id": "src-geometry-2026-10",
+      "title": "Re-authored generic archetype geometry (owner-approved prototype, 2026-10-15)",
+      "license": "synthetic"
+    }
+  ],
+  "levels": [
+    {
+      "id": "level-main",
+      "label": "Main level",
+      "order": 0
+    },
+    {
+      "id": "level-upper",
+      "label": "Upper/alternate level",
+      "order": 1
+    }
+  ],
+  "components": [
+    {
+      "id": "lp-1",
+      "role": "lp",
+      "assetRef": "primitive:lp",
+      "label": "LP1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 167,
+        "y": 262,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 82,
+        "height": 66
+      },
+      "ports": [
+        {
+          "id": "p-out-00",
+          "label": "interface",
+          "position": {
+            "x": 37.72,
+            "y": -14.627
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "carrier",
+          "materialKinds": [
+            "carrier"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-5",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-6",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-7",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-8",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-9",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-10",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-11",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-12",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-13",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-14",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-15",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-16",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-17",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-18",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-19",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-20",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-21",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-22",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-23",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-24",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-25",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "lp-2",
+      "role": "lp",
+      "assetRef": "primitive:lp",
+      "label": "LP2",
+      "levelId": "level-main",
+      "transform": {
+        "x": 167,
+        "y": 338,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 82,
+        "height": 66
+      },
+      "ports": [
+        {
+          "id": "p-out-01",
+          "label": "interface",
+          "position": {
+            "x": 37.72,
+            "y": -20.14
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "carrier",
+          "materialKinds": [
+            "carrier"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-5",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-6",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-7",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-8",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-9",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-10",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-11",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-12",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-13",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-14",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-15",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-16",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-17",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-18",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-19",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-20",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-21",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-22",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-23",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-24",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-25",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "rail-1",
+      "role": "rail",
+      "assetRef": "primitive:rail",
+      "label": "Transfer Corridor",
+      "levelId": "level-main",
+      "transform": {
+        "x": 520,
+        "y": 300,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 600,
+        "height": 72
+      },
+      "ports": [
+        {
+          "id": "p-in-00",
+          "label": "interface",
+          "position": {
+            "x": -66.621,
+            "y": 33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-in-01",
+          "label": "interface",
+          "position": {
+            "x": -48.386,
+            "y": 33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-in-02",
+          "label": "wafer-access",
+          "position": {
+            "x": -55.189,
+            "y": -33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-03",
+          "label": "wafer-access",
+          "position": {
+            "x": -24.568,
+            "y": -33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-04",
+          "label": "wafer-access",
+          "position": {
+            "x": 6.546,
+            "y": -33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-05",
+          "label": "wafer-access",
+          "position": {
+            "x": 38.282,
+            "y": -33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-06",
+          "label": "wafer-access",
+          "position": {
+            "x": -25.554,
+            "y": 33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-07",
+          "label": "wafer-access",
+          "position": {
+            "x": 6.814,
+            "y": 33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-08",
+          "label": "wafer-access",
+          "position": {
+            "x": 39.386,
+            "y": 33.12
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "robot-1",
+      "role": "robot",
+      "assetRef": "primitive:robot-single",
+      "label": "Handler",
+      "parentId": "rail-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": -150,
+        "y": 0,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 64,
+        "height": 64
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "blade-a",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coater-1",
+      "role": "coater",
+      "assetRef": "primitive:coater",
+      "label": "COT1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 430,
+        "y": 202,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 112,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-03",
+          "label": "wafer-access",
+          "position": {
+            "x": 45.505,
+            "y": 46
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "coater-2",
+      "role": "coater",
+      "assetRef": "primitive:coater",
+      "label": "COT2",
+      "levelId": "level-main",
+      "transform": {
+        "x": 560,
+        "y": 202,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 112,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-04",
+          "label": "wafer-access",
+          "position": {
+            "x": -12.137,
+            "y": 46
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "developer-1",
+      "role": "developer",
+      "assetRef": "primitive:developer",
+      "label": "DEV1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 690,
+        "y": 202,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 112,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-05",
+          "label": "wafer-access",
+          "position": {
+            "x": -51.52,
+            "y": 33.423
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bake-1",
+      "role": "bake",
+      "assetRef": "primitive:bake",
+      "label": "BKE1",
+      "levelId": "level-upper",
+      "transform": {
+        "x": 430,
+        "y": 398,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 112,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-06",
+          "label": "wafer-access",
+          "position": {
+            "x": 44.771,
+            "y": -46
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bake-2",
+      "role": "bake",
+      "assetRef": "primitive:bake",
+      "label": "BKE2",
+      "levelId": "level-upper",
+      "transform": {
+        "x": 560,
+        "y": 398,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 112,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-07",
+          "label": "wafer-access",
+          "position": {
+            "x": -11.934,
+            "y": -46
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "bake-3",
+      "role": "bake",
+      "assetRef": "primitive:bake",
+      "label": "COOL",
+      "levelId": "level-upper",
+      "transform": {
+        "x": 690,
+        "y": 398,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 112,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-08",
+          "label": "wafer-access",
+          "position": {
+            "x": -51.52,
+            "y": -34.333
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "aligner-1",
+      "role": "aligner",
+      "assetRef": "primitive:aligner",
+      "label": "Align",
+      "levelId": "level-main",
+      "transform": {
+        "x": 300,
+        "y": 216,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 80,
+        "height": 72
+      },
+      "ports": [
+        {
+          "id": "p-out-02",
+          "label": "wafer-access",
+          "position": {
+            "x": 36.8,
+            "y": 18.042
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    }
+  ],
+  "physicalInterfaces": [
+    {
+      "id": "edge-00",
+      "kind": "gate",
+      "a": {
+        "componentId": "lp-1",
+        "portId": "p-out-00"
+      },
+      "b": {
+        "componentId": "rail-1",
+        "portId": "p-in-00"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "edge-01",
+      "kind": "gate",
+      "a": {
+        "componentId": "lp-2",
+        "portId": "p-out-01"
+      },
+      "b": {
+        "componentId": "rail-1",
+        "portId": "p-in-01"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    }
+  ],
+  "transferCapabilities": [
+    {
+      "id": "coater-1-station-1-coater-2-station-1",
+      "a": {
+        "componentId": "coater-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "coater-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-1-station-1-developer-1-station-1",
+      "a": {
+        "componentId": "coater-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "developer-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-1-station-1-bake-1-station-1",
+      "a": {
+        "componentId": "coater-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-1-station-1-bake-2-station-1",
+      "a": {
+        "componentId": "coater-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-1-station-1-bake-3-station-1",
+      "a": {
+        "componentId": "coater-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-3",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-1-station-1-aligner-1-station-1",
+      "a": {
+        "componentId": "coater-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "aligner-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-2-station-1-developer-1-station-1",
+      "a": {
+        "componentId": "coater-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "developer-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-2-station-1-bake-1-station-1",
+      "a": {
+        "componentId": "coater-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-2-station-1-bake-2-station-1",
+      "a": {
+        "componentId": "coater-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-2-station-1-bake-3-station-1",
+      "a": {
+        "componentId": "coater-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-3",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "coater-2-station-1-aligner-1-station-1",
+      "a": {
+        "componentId": "coater-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "aligner-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "developer-1-station-1-bake-1-station-1",
+      "a": {
+        "componentId": "developer-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "developer-1-station-1-bake-2-station-1",
+      "a": {
+        "componentId": "developer-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "developer-1-station-1-bake-3-station-1",
+      "a": {
+        "componentId": "developer-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-3",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "developer-1-station-1-aligner-1-station-1",
+      "a": {
+        "componentId": "developer-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "aligner-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "bake-1-station-1-bake-2-station-1",
+      "a": {
+        "componentId": "bake-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "bake-1-station-1-bake-3-station-1",
+      "a": {
+        "componentId": "bake-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-3",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "bake-1-station-1-aligner-1-station-1",
+      "a": {
+        "componentId": "bake-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "aligner-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "bake-2-station-1-bake-3-station-1",
+      "a": {
+        "componentId": "bake-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "bake-3",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "bake-2-station-1-aligner-1-station-1",
+      "a": {
+        "componentId": "bake-2",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "aligner-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "bake-3-station-1-aligner-1-station-1",
+      "a": {
+        "componentId": "bake-3",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "aligner-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    }
+  ],
+  "processRoutes": [],
+  "roleCardinality": {
+    "lp": {
+      "min": 2,
+      "max": 2
+    },
+    "rail": {
+      "min": 1,
+      "max": 1
+    },
+    "robot": {
+      "min": 1,
+      "max": 1
+    },
+    "coater": {
+      "min": 2,
+      "max": 2
+    },
+    "developer": {
+      "min": 1,
+      "max": 1
+    },
+    "bake": {
+      "min": 3,
+      "max": 3
+    },
+    "aligner": {
+      "min": 1,
+      "max": 1
+    }
+  }
+}

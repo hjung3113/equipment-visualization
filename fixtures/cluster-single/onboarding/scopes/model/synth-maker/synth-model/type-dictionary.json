@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "0.4",
+  "scope": {
+    "level": "model",
+    "maker": "synth-maker",
+    "model": "synth-model"
+  },
+  "entries": [
+    {
+      "moduleType": "SYN_LOADPORT",
+      "role": "lp"
+    },
+    {
+      "moduleType": "SYN_ATM_ROBOT",
+      "role": "robot"
+    },
+    {
+      "moduleType": "SYN_LOADLOCK",
+      "role": "ll"
+    },
+    {
+      "moduleType": "SYN_VAC_ROBOT",
+      "role": "robot"
+    },
+    {
+      "moduleType": "SYN_PROC_CH",
+      "role": "pm"
+    }
+  ]
+}

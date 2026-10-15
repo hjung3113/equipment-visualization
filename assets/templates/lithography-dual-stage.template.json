@@ -1,0 +1,2195 @@
+{
+  "schemaVersion": "0.4",
+  "kind": "template",
+  "id": "lithography-dual-stage",
+  "name": "Lithography · Dual-stage Concept",
+  "unit": "abstract",
+  "viewBox": {
+    "x": 0,
+    "y": 0,
+    "width": 960,
+    "height": 600
+  },
+  "sources": [
+    {
+      "id": "src-v03-pack",
+      "title": "equipment-visualization-design v0.3 (synthetic, illustrative)",
+      "license": "synthetic"
+    },
+    {
+      "id": "src-ref-1",
+      "title": "www.asml.com/en/company/stories/2021/twinscan-20-years-innovation",
+      "uri": "https://www.asml.com/en/company/stories/2021/twinscan-20-years-innovation",
+      "license": "reference-only"
+    },
+    {
+      "id": "src-ref-2",
+      "title": "global.canon/en/technology/canon-tech/tech/semicon/",
+      "uri": "https://global.canon/en/technology/canon-tech/tech/semicon/",
+      "license": "reference-only"
+    },
+    {
+      "id": "src-geometry-2026-10",
+      "title": "Re-authored generic archetype geometry (owner-approved prototype, 2026-10-15)",
+      "license": "synthetic"
+    }
+  ],
+  "levels": [
+    {
+      "id": "level-main",
+      "label": "Main level",
+      "order": 0
+    },
+    {
+      "id": "level-upper",
+      "label": "Upper/alternate level",
+      "order": 1
+    }
+  ],
+  "components": [
+    {
+      "id": "lp-1",
+      "role": "lp",
+      "assetRef": "primitive:lp",
+      "label": "Wafer LP",
+      "levelId": "level-main",
+      "transform": {
+        "x": 125,
+        "y": 300,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 86,
+        "height": 80
+      },
+      "ports": [
+        {
+          "id": "p-out-00",
+          "label": "wafer-access",
+          "position": {
+            "x": 39.56,
+            "y": 0
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "carrier",
+          "materialKinds": [
+            "carrier"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-5",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-6",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-7",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-8",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-9",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-10",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-11",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-12",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-13",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-14",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-15",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-16",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-17",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-18",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-19",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-20",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-21",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-22",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-23",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-24",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-25",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "robot-1",
+      "role": "robot",
+      "assetRef": "primitive:robot-single",
+      "label": "Wafer Handler",
+      "parentId": "housing-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": -280,
+        "y": 0,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 72,
+        "height": 72
+      },
+      "ports": [
+        {
+          "id": "p-in-00",
+          "label": "wafer-access",
+          "position": {
+            "x": -33.12,
+            "y": 0
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-01",
+          "label": "wafer-access",
+          "position": {
+            "x": 33.12,
+            "y": -16.575
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-02",
+          "label": "wafer-access",
+          "position": {
+            "x": 33.12,
+            "y": 20.571
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "blade-a",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "stage-1",
+      "role": "stage",
+      "assetRef": "primitive:stage",
+      "label": "Wafer Table A",
+      "parentId": "housing-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": -100,
+        "y": -80,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 140,
+        "height": 110
+      },
+      "ports": [
+        {
+          "id": "p-in-01",
+          "label": "wafer-access",
+          "position": {
+            "x": -64.4,
+            "y": 30.092
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-03",
+          "label": "wafer-access",
+          "position": {
+            "x": 64.4,
+            "y": 0
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "stage-2",
+      "role": "stage",
+      "assetRef": "primitive:stage",
+      "label": "Wafer Table B",
+      "parentId": "housing-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": -100,
+        "y": 80,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 140,
+        "height": 110
+      },
+      "ports": [
+        {
+          "id": "p-in-02",
+          "label": "wafer-access",
+          "position": {
+            "x": -64.4,
+            "y": -37.333
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-04",
+          "label": "wafer-access",
+          "position": {
+            "x": 64.4,
+            "y": 0.306
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "metrology-1",
+      "role": "metrology",
+      "assetRef": "primitive:metrology",
+      "label": "Measurement",
+      "parentId": "housing-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 100,
+        "y": 80,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 140,
+        "height": 110
+      },
+      "ports": [
+        {
+          "id": "p-in-04",
+          "label": "wafer-access",
+          "position": {
+            "x": -64.4,
+            "y": -0.277
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "exposure-1",
+      "role": "exposure",
+      "assetRef": "primitive:exposure",
+      "label": "Exposure",
+      "parentId": "housing-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 100,
+        "y": -80,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 140,
+        "height": 110
+      },
+      "ports": [
+        {
+          "id": "p-in-03",
+          "label": "wafer-access",
+          "position": {
+            "x": -64.4,
+            "y": 0
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-in-06",
+          "label": "optical",
+          "position": {
+            "x": 64.4,
+            "y": 4.31
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "robot-2",
+      "role": "robot",
+      "assetRef": "primitive:handler",
+      "label": "Reticle Handler",
+      "levelId": "level-main",
+      "transform": {
+        "x": 785,
+        "y": 78,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 150,
+        "height": 60
+      },
+      "ports": [
+        {
+          "id": "p-out-05",
+          "label": "optical",
+          "position": {
+            "x": 1.035,
+            "y": 27.6
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "blade-a",
+          "materialKinds": [
+            "reticle"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "optics-1",
+      "role": "optics",
+      "assetRef": "primitive:optics",
+      "label": "Optics",
+      "parentId": "housing-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 255,
+        "y": -80,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 100,
+        "height": 100
+      },
+      "ports": [
+        {
+          "id": "p-in-05",
+          "label": "optical",
+          "position": {
+            "x": -1.12,
+            "y": -46
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-06",
+          "label": "optical",
+          "position": {
+            "x": -46,
+            "y": -3.589
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "parentId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "housing-1",
+      "role": "housing",
+      "assetRef": "primitive:housing",
+      "label": "Stage / Optics Housing",
+      "levelId": "level-main",
+      "transform": {
+        "x": 530,
+        "y": 300,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 700,
+        "height": 360
+      },
+      "ports": [],
+      "holdingSites": [],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    }
+  ],
+  "physicalInterfaces": [
+    {
+      "id": "edge-05",
+      "kind": "optical",
+      "a": {
+        "componentId": "robot-2",
+        "portId": "p-out-05"
+      },
+      "b": {
+        "componentId": "optics-1",
+        "portId": "p-in-05"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "edge-06",
+      "kind": "optical",
+      "a": {
+        "componentId": "optics-1",
+        "portId": "p-out-06"
+      },
+      "b": {
+        "componentId": "exposure-1",
+        "portId": "p-in-06"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    }
+  ],
+  "transferCapabilities": [
+    {
+      "id": "lp-1-slot-1-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-1"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-2-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-2"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-3-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-3"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-4-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-4"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-5-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-5"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-6-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-6"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-7-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-7"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-8-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-8"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-9-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-9"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-10-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-10"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-11-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-11"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-12-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-12"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-13-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-13"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-14-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-14"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-15-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-15"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-16-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-16"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-17-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-17"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-18-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-18"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-19-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-19"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-20-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-20"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-21-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-21"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-22-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-22"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-23-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-23"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-24-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-24"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-25-stage-1-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-25"
+      },
+      "b": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-1-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-1"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-2-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-2"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-3-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-3"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-4-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-4"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-5-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-5"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-6-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-6"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-7-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-7"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-8-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-8"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-9-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-9"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-10-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-10"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-11-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-11"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-12-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-12"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-13-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-13"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-14-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-14"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-15-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-15"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-16-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-16"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-17-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-17"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-18-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-18"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-19-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-19"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-20-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-20"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-21-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-21"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-22-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-22"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-23-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-23"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-24-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-24"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "lp-1-slot-25-stage-2-station-1",
+      "a": {
+        "componentId": "lp-1",
+        "holdingSiteId": "slot-25"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "stage-1-station-1-stage-2-station-1",
+      "a": {
+        "componentId": "stage-1",
+        "holdingSiteId": "station-1"
+      },
+      "b": {
+        "componentId": "stage-2",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    }
+  ],
+  "processRoutes": [],
+  "roleCardinality": {
+    "lp": {
+      "min": 1,
+      "max": 1
+    },
+    "robot": {
+      "min": 2,
+      "max": 2
+    },
+    "stage": {
+      "min": 2,
+      "max": 2
+    },
+    "metrology": {
+      "min": 1,
+      "max": 1
+    },
+    "exposure": {
+      "min": 1,
+      "max": 1
+    },
+    "optics": {
+      "min": 1,
+      "max": 1
+    },
+    "housing": {
+      "min": 1,
+      "max": 1
+    }
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "name": "@eqv/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./layout.schema.json": "./schema/layout.schema.json",
+    "./occurrence-batch.schema.json": "./schema/occurrence-batch.schema.json",
+    "./type-dictionary.schema.json": "./schema/type-dictionary.schema.json",
+    "./alias-rules.schema.json": "./schema/alias-rules.schema.json",
+    "./mapping-version.schema.json": "./schema/mapping-version.schema.json",
+    "./bindings.schema.json": "./schema/bindings.schema.json",
+    "./observed-inventory.schema.json": "./schema/observed-inventory.schema.json",
+    "./scene-state.schema.json": "./schema/scene-state.schema.json",
+    "./alias-metadata.schema.json": "./schema/alias-metadata.schema.json"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "tsc -p tsconfig.build.json"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  },
+  "dependencies": {
+    "zod": "4.6.5"
+  }
+}

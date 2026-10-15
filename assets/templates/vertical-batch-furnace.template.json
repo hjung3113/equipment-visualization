@@ -1,0 +1,1582 @@
+{
+  "schemaVersion": "0.4",
+  "kind": "template",
+  "id": "vertical-batch-furnace",
+  "name": "Vertical Furnace · Dual Reactor & Boat",
+  "unit": "abstract",
+  "viewBox": {
+    "x": 0,
+    "y": 0,
+    "width": 960,
+    "height": 600
+  },
+  "sources": [
+    {
+      "id": "src-v03-pack",
+      "title": "equipment-visualization-design v0.3 (synthetic, illustrative)",
+      "license": "synthetic"
+    },
+    {
+      "id": "src-ref-1",
+      "title": "www.asm.com/our-technology-products/vertical-furnace/a400-duo",
+      "uri": "https://www.asm.com/our-technology-products/vertical-furnace/a400-duo",
+      "license": "reference-only"
+    },
+    {
+      "id": "src-ref-2",
+      "title": "www.asm.com/our-technology-products/vertical-furnace/sonora",
+      "uri": "https://www.asm.com/our-technology-products/vertical-furnace/sonora",
+      "license": "reference-only"
+    },
+    {
+      "id": "src-geometry-2026-10",
+      "title": "Re-authored generic archetype geometry (owner-approved prototype, 2026-10-15)",
+      "license": "synthetic"
+    }
+  ],
+  "levels": [
+    {
+      "id": "level-main",
+      "label": "Main level",
+      "order": 0
+    },
+    {
+      "id": "level-upper",
+      "label": "Upper/alternate level",
+      "order": 1
+    }
+  ],
+  "components": [
+    {
+      "id": "lp-1",
+      "role": "lp",
+      "assetRef": "primitive:lp",
+      "label": "Carrier LP1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 133,
+        "y": 200,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 96,
+        "height": 80
+      },
+      "ports": [
+        {
+          "id": "p-out-00",
+          "label": "interface",
+          "position": {
+            "x": 44.16,
+            "y": 23.28
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "carrier",
+          "materialKinds": [
+            "carrier"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-5",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-6",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-7",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-8",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-9",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-10",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-11",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-12",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-13",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-14",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-15",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-16",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-17",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-18",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-19",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-20",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-21",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-22",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-23",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-24",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-25",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "lp-2",
+      "role": "lp",
+      "assetRef": "primitive:lp",
+      "label": "Carrier LP2",
+      "levelId": "level-main",
+      "transform": {
+        "x": 133,
+        "y": 340,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 96,
+        "height": 80
+      },
+      "ports": [
+        {
+          "id": "p-out-01",
+          "label": "interface",
+          "position": {
+            "x": 44.16,
+            "y": -20.88
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "carrier",
+          "materialKinds": [
+            "carrier"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-5",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-6",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-7",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-8",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-9",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-10",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-11",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-12",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-13",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-14",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-15",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-16",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-17",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-18",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-19",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-20",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-21",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-22",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-23",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-24",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "slot-25",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "stocker-1",
+      "role": "stocker",
+      "assetRef": "primitive:stocker",
+      "label": "Stocker",
+      "levelId": "level-main",
+      "transform": {
+        "x": 270,
+        "y": 270,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 154,
+        "height": 270
+      },
+      "ports": [
+        {
+          "id": "p-in-00",
+          "label": "interface",
+          "position": {
+            "x": -70.84,
+            "y": -37.35
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-in-01",
+          "label": "interface",
+          "position": {
+            "x": -70.84,
+            "y": 33.49
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-02",
+          "label": "wafer-access",
+          "position": {
+            "x": 70.84,
+            "y": -33.86
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-03",
+          "label": "wafer-access",
+          "position": {
+            "x": 70.84,
+            "y": 34.21
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "place-1",
+          "materialKinds": [
+            "carrier",
+            "boat"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "place-2",
+          "materialKinds": [
+            "carrier",
+            "boat"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "place-3",
+          "materialKinds": [
+            "carrier",
+            "boat"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "place-4",
+          "materialKinds": [
+            "carrier",
+            "boat"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "boat-1",
+      "role": "boat",
+      "assetRef": "primitive:boat",
+      "label": "Boat A",
+      "levelId": "level-main",
+      "transform": {
+        "x": 600,
+        "y": 170,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 110,
+        "height": 120
+      },
+      "ports": [
+        {
+          "id": "p-in-02",
+          "label": "wafer-access",
+          "position": {
+            "x": -50.6,
+            "y": 24.19
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-04",
+          "label": "wafer-access",
+          "position": {
+            "x": 50.6,
+            "y": 34.73
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "load",
+          "materialKinds": [
+            "wafer",
+            "batch"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "boat-2",
+      "role": "boat",
+      "assetRef": "primitive:boat",
+      "label": "Boat B",
+      "levelId": "level-main",
+      "transform": {
+        "x": 600,
+        "y": 370,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 110,
+        "height": 120
+      },
+      "ports": [
+        {
+          "id": "p-in-03",
+          "label": "wafer-access",
+          "position": {
+            "x": -50.6,
+            "y": -24.44
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-05",
+          "label": "wafer-access",
+          "position": {
+            "x": 50.6,
+            "y": -30.43
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "load",
+          "materialKinds": [
+            "wafer",
+            "batch"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "robot-1",
+      "role": "robot",
+      "assetRef": "primitive:robot-single",
+      "label": "Boat Handler",
+      "levelId": "level-main",
+      "transform": {
+        "x": 440,
+        "y": 270,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 84,
+        "height": 84
+      },
+      "ports": [
+        {
+          "id": "p-in-04",
+          "label": "wafer-access",
+          "position": {
+            "x": -38.64,
+            "y": -28.636
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-in-05",
+          "label": "wafer-access",
+          "position": {
+            "x": -38.64,
+            "y": 25.091
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-06",
+          "label": "wafer-access",
+          "position": {
+            "x": 38.64,
+            "y": -25.553
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        },
+        {
+          "id": "p-out-07",
+          "label": "wafer-access",
+          "position": {
+            "x": 38.64,
+            "y": 26.258
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "blade-a",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "reactor-1",
+      "role": "reactor",
+      "assetRef": "primitive:reactor",
+      "label": "Reactor 1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 790,
+        "y": 170,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 150,
+        "height": 150
+      },
+      "ports": [
+        {
+          "id": "p-in-06",
+          "label": "wafer-access",
+          "position": {
+            "x": -69,
+            "y": 43.38
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "boat",
+          "materialKinds": [
+            "boat"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    },
+    {
+      "id": "reactor-2",
+      "role": "reactor",
+      "assetRef": "primitive:reactor",
+      "label": "Reactor 2",
+      "levelId": "level-main",
+      "transform": {
+        "x": 790,
+        "y": 370,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 150,
+        "height": 150
+      },
+      "ports": [
+        {
+          "id": "p-in-07",
+          "label": "wafer-access",
+          "position": {
+            "x": -69,
+            "y": -44.57
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "boat",
+          "materialKinds": [
+            "boat"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-v03-pack"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-v03-pack",
+            "src-geometry-2026-10"
+          ]
+        }
+      }
+    }
+  ],
+  "physicalInterfaces": [
+    {
+      "id": "edge-00",
+      "kind": "gate",
+      "a": {
+        "componentId": "lp-1",
+        "portId": "p-out-00"
+      },
+      "b": {
+        "componentId": "stocker-1",
+        "portId": "p-in-00"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    },
+    {
+      "id": "edge-01",
+      "kind": "gate",
+      "a": {
+        "componentId": "lp-2",
+        "portId": "p-out-01"
+      },
+      "b": {
+        "componentId": "stocker-1",
+        "portId": "p-in-01"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    }
+  ],
+  "transferCapabilities": [
+    {
+      "id": "boat-1-load-boat-2-load",
+      "a": {
+        "componentId": "boat-1",
+        "holdingSiteId": "load"
+      },
+      "b": {
+        "componentId": "boat-2",
+        "holdingSiteId": "load"
+      },
+      "handlerComponentId": "robot-1",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-v03-pack"
+        ]
+      }
+    }
+  ],
+  "processRoutes": [],
+  "roleCardinality": {
+    "lp": {
+      "min": 2,
+      "max": 2
+    },
+    "stocker": {
+      "min": 1,
+      "max": 1
+    },
+    "boat": {
+      "min": 2,
+      "max": 2
+    },
+    "robot": {
+      "min": 1,
+      "max": 1
+    },
+    "reactor": {
+      "min": 2,
+      "max": 2
+    }
+  }
+}

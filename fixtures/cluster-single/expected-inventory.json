@@ -1,0 +1,175 @@
+{
+  "equipmentId": "eq-synth-01",
+  "to": "2026-01-01T10:30:00.000",
+  "aliases": [
+    {
+      "alias": "EFEM_R1",
+      "references": 3,
+      "slots": [],
+      "activity": [
+        {
+          "kind": "TRANSFER",
+          "count": 3
+        }
+      ],
+      "firstSeen": "2026-01-01T10:01:00.000",
+      "lastSeen": "2026-01-01T10:13:00.000"
+    },
+    {
+      "alias": "LLA",
+      "references": 12,
+      "slots": [
+        "1",
+        "2"
+      ],
+      "activity": [
+        {
+          "kind": "VISIT",
+          "count": 5
+        }
+      ],
+      "firstSeen": "2026-01-01T10:01:00.000",
+      "lastSeen": "2026-01-01T10:24:00.000"
+    },
+    {
+      "alias": "LP1",
+      "references": 7,
+      "slots": [
+        "1",
+        "2"
+      ],
+      "activity": [
+        {
+          "kind": "CARRIER_PRESENCE",
+          "count": 1
+        },
+        {
+          "kind": "VISIT",
+          "count": 3
+        }
+      ],
+      "firstSeen": "2026-01-01T09:58:00.000",
+      "lastSeen": "2026-01-01T10:24:00.000"
+    },
+    {
+      "alias": "PM1",
+      "references": 7,
+      "slots": [],
+      "activity": [
+        {
+          "kind": "FUNCTION",
+          "count": 2
+        },
+        {
+          "kind": "POST_PROCESS",
+          "count": 1
+        },
+        {
+          "kind": "PROCESS",
+          "count": 2
+        }
+      ],
+      "firstSeen": "2026-01-01T10:03:00.000",
+      "lastSeen": "2026-01-01T10:20:00.000"
+    },
+    {
+      "alias": "PM2",
+      "references": 8,
+      "slots": [
+        "1",
+        "2"
+      ],
+      "activity": [
+        {
+          "kind": "FUNCTION",
+          "count": 1
+        },
+        {
+          "kind": "PROCESS",
+          "count": 3
+        },
+        {
+          "kind": "VISIT",
+          "count": 2
+        }
+      ],
+      "firstSeen": "2026-01-01T10:05:00.000",
+      "lastSeen": "2026-01-01T10:24:00.000"
+    },
+    {
+      "alias": "PM9",
+      "references": 1,
+      "slots": [],
+      "activity": [
+        {
+          "kind": "PROCESS",
+          "count": 1
+        }
+      ],
+      "firstSeen": "2026-01-01T10:23:00.000",
+      "lastSeen": "2026-01-01T10:24:00.000"
+    },
+    {
+      "alias": "TM_R1",
+      "references": 4,
+      "slots": [
+        "1",
+        "2"
+      ],
+      "activity": [
+        {
+          "kind": "TRANSFER",
+          "count": 4
+        }
+      ],
+      "firstSeen": "2026-01-01T10:03:00.000",
+      "lastSeen": "2026-01-01T10:16:00.000"
+    },
+    {
+      "alias": "VIRT_SCH",
+      "references": 1,
+      "slots": [],
+      "activity": [
+        {
+          "kind": "FUNCTION",
+          "count": 1
+        }
+      ],
+      "firstSeen": "2026-01-01T10:22:30.000",
+      "lastSeen": "2026-01-01T10:24:00.000"
+    }
+  ],
+  "transfers": [
+    {
+      "from": "LLA",
+      "to": "LP1",
+      "count": 1
+    },
+    {
+      "from": "LLA",
+      "to": "PM1",
+      "count": 1
+    },
+    {
+      "from": "LLA",
+      "to": "PM2",
+      "count": 1
+    },
+    {
+      "from": "LP1",
+      "to": "LLA",
+      "count": 2
+    },
+    {
+      "from": "PM1",
+      "to": "LLA",
+      "count": 1
+    },
+    {
+      "from": "PM2",
+      "to": "LLA",
+      "count": 1
+    }
+  ],
+  "from": "2026-01-01T10:00:00.000"
+}

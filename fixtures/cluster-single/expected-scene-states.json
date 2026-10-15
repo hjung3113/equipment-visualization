@@ -1,0 +1,1773 @@
+{
+  "equipmentId": "eq-synth-01",
+  "states": [
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:00:30.000",
+      "appliedSeq": 3,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": {
+            "componentId": "lp-a"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-slot-one",
+          "lastObservedAt": "2026-01-01T09:59:00.000"
+        },
+        {
+          "key": "m:wafer:W02",
+          "kind": "wafer",
+          "id": "W02",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-2"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-slot-two",
+          "lastObservedAt": "2026-01-01T10:00:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:03:30.000",
+      "appliedSeq": 9,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": {
+            "componentId": "lp-a"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "TM_R1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "tm-robot",
+            "holdingSiteId": "blade-a"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-tm-out",
+          "lastObservedAt": "2026-01-01T10:03:00.000"
+        },
+        {
+          "key": "m:wafer:W02",
+          "kind": "wafer",
+          "id": "W02",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-2"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-slot-two",
+          "lastObservedAt": "2026-01-01T10:00:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:04:15.000",
+      "appliedSeq": 11,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": {
+            "componentId": "lp-a"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "TM_R1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "tm-robot",
+            "holdingSiteId": "blade-a"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-tm-out",
+          "lastObservedAt": "2026-01-01T10:03:00.000"
+        },
+        {
+          "key": "m:wafer:W02",
+          "kind": "wafer",
+          "id": "W02",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "EFEM_R1"
+          },
+          "location": {
+            "componentId": "efem-robot"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-efem-overlap",
+          "lastObservedAt": "2026-01-01T10:04:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:05:30.000",
+      "appliedSeq": 14,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "TM_R1",
+            "slotAlias": "1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-tm-out",
+          "lastObservedAt": "2026-01-01T10:03:00.000"
+        },
+        {
+          "key": "m:wafer:W02",
+          "kind": "wafer",
+          "id": "W02",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "LLA",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "ll-a",
+            "holdingSiteId": "slot-2"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lla-slot-two",
+          "lastObservedAt": "2026-01-01T10:05:00.000"
+        },
+        {
+          "key": "m:wafer:W03",
+          "kind": "wafer",
+          "id": "W03",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "TM_R1",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "tm-robot",
+            "holdingSiteId": "blade-b"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-tm-arm-two",
+          "lastObservedAt": "2026-01-01T10:05:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:08:30.000",
+      "appliedSeq": 20,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "PM1"
+          },
+          "location": {
+            "componentId": "pm-a"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-pm1-process",
+          "lastObservedAt": "2026-01-01T10:06:00.000"
+        },
+        {
+          "key": "m:wafer:W04",
+          "kind": "wafer",
+          "id": "W04",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "PM2",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "pm-b",
+            "holdingSiteId": "station-1"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-pm2-slot-one",
+          "lastObservedAt": "2026-01-01T10:07:00.000"
+        },
+        {
+          "key": "m:wafer:W05",
+          "kind": "wafer",
+          "id": "W05",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "PM2",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "pm-b",
+            "holdingSiteId": "station-2"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-pm2-slot-two",
+          "lastObservedAt": "2026-01-01T10:08:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "processing",
+          "activityEvidence": "observed",
+          "occurrenceIds": [
+            "occ-pm1-process"
+          ]
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "processing",
+          "activityEvidence": "derived",
+          "occurrenceIds": [
+            "occ-pm2-slot-one",
+            "occ-pm2-slot-two"
+          ]
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:13:30.000",
+      "appliedSeq": 31,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "post-processing",
+          "activityEvidence": "observed",
+          "occurrenceIds": [
+            "occ-forced"
+          ]
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:14:30.000",
+      "appliedSeq": 33,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "function",
+          "activityEvidence": "derived",
+          "occurrenceIds": [
+            "occ-fallback"
+          ]
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:15:30.000",
+      "appliedSeq": 35,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        },
+        {
+          "key": "m:wafer:W06",
+          "kind": "wafer",
+          "id": "W06",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "TM_R1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "tm-robot",
+            "holdingSiteId": "blade-a"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-relocation",
+          "lastObservedAt": "2026-01-01T10:15:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:16:30.000",
+      "appliedSeq": 37,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        },
+        {
+          "key": "m:wafer:W06",
+          "kind": "wafer",
+          "id": "W06",
+          "identityEvidence": "derived",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "PM2",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "pm-b",
+            "holdingSiteId": "station-1"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-inferred",
+          "lastObservedAt": "2026-01-01T10:16:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:18:30.000",
+      "appliedSeq": 41,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        },
+        {
+          "key": "o:occ-identity-unknown",
+          "kind": "wafer",
+          "id": null,
+          "identityEvidence": "unknown",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "PM2",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "pm-b",
+            "holdingSiteId": "station-2"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-identity-unknown",
+          "lastObservedAt": "2026-01-01T10:18:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:19:30.000",
+      "appliedSeq": 42,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": [
+        {
+          "kind": "time-anomaly",
+          "occurrenceId": "occ-time-anomaly"
+        }
+      ]
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:20:30.000",
+      "appliedSeq": 46,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "function",
+          "activityEvidence": "unknown",
+          "occurrenceIds": [
+            "occ-null-time"
+          ]
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:22:45.000",
+      "appliedSeq": 49,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        },
+        {
+          "key": "m:wafer:W08",
+          "kind": "wafer",
+          "id": "W08",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LLA",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "ll-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-lla-conflict-one",
+          "lastObservedAt": "2026-01-01T10:21:00.000"
+        },
+        {
+          "key": "m:wafer:W09",
+          "kind": "wafer",
+          "id": "W09",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "LLA",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "ll-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-lla-conflict-two",
+          "lastObservedAt": "2026-01-01T10:22:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": [
+        {
+          "kind": "occupancy-conflict",
+          "componentId": "ll-a",
+          "holdingSiteId": "slot-1",
+          "materialKeys": [
+            "m:wafer:W08",
+            "m:wafer:W09"
+          ]
+        },
+        {
+          "kind": "time-anomaly",
+          "occurrenceId": "occ-unmapped"
+        }
+      ]
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:23:30.000",
+      "appliedSeq": 52,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:carrier:C01",
+          "kind": "carrier",
+          "id": "C01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-carrier",
+          "lastObservedAt": "2026-01-01T09:58:00.000"
+        },
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "LP1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "lp-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lp-return",
+          "lastObservedAt": "2026-01-01T10:13:00.000"
+        },
+        {
+          "key": "m:wafer:W09",
+          "kind": "wafer",
+          "id": "W09",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "LLA",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "ll-a",
+            "holdingSiteId": "slot-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-lla-conflict-two",
+          "lastObservedAt": "2026-01-01T10:22:00.000"
+        },
+        {
+          "key": "m:wafer:W10",
+          "kind": "wafer",
+          "id": "W10",
+          "identityEvidence": "observed",
+          "lotId": "LOT-A",
+          "alias": {
+            "moduleAlias": "PM9"
+          },
+          "location": null,
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-unmapped",
+          "lastObservedAt": "2026-01-01T10:23:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": [
+        {
+          "kind": "unmapped-alias",
+          "alias": "PM9",
+          "occurrenceId": "occ-unmapped"
+        }
+      ]
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:24:30.000",
+      "appliedSeq": 58,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:wafer:W11",
+          "kind": "wafer",
+          "id": "W11",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "PM2",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "pm-b",
+            "holdingSiteId": "station-1"
+          },
+          "locationEvidence": "derived",
+          "occurrenceId": "occ-open",
+          "lastObservedAt": "2026-01-01T10:24:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "processing",
+          "activityEvidence": "derived",
+          "occurrenceIds": [
+            "occ-open"
+          ]
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-01",
+      "at": "2026-01-01T10:26:00.000",
+      "appliedSeq": 59,
+      "binding": {
+        "layoutId": "eq-synth-01-layout",
+        "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef"
+      },
+      "materials": [
+        {
+          "key": "m:wafer:W11",
+          "kind": "wafer",
+          "id": "W11",
+          "identityEvidence": "observed",
+          "lotId": "LOT-B",
+          "alias": {
+            "moduleAlias": "PM2",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "pm-b",
+            "holdingSiteId": "station-1"
+          },
+          "locationEvidence": "unknown",
+          "occurrenceId": "occ-open",
+          "lastObservedAt": "2026-01-01T10:24:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "efem-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "efem-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "ll-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "lp-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "processing",
+          "activityEvidence": "unknown",
+          "occurrenceIds": [
+            "occ-open"
+          ]
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-robot",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": [
+        {
+          "kind": "after-watermark",
+          "watermarkAt": "2026-01-01T10:25:00.000"
+        }
+      ]
+    }
+  ]
+}

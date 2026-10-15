@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "0.4"
+    },
+    "equipmentId": {
+      "type": "string",
+      "minLength": 1
+    },
+    "aliases": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "alias": {
+            "type": "string",
+            "minLength": 1
+          },
+          "moduleType": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isPort": {
+            "type": "boolean"
+          },
+          "isRobot": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "alias"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "equipmentId",
+    "aliases"
+  ],
+  "additionalProperties": false,
+  "description": "Adapter-supplied alias metadata; OccurrenceBatch cannot carry it."
+}

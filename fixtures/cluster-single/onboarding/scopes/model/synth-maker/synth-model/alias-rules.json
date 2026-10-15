@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "0.4",
+  "scope": {
+    "level": "model",
+    "maker": "synth-maker",
+    "model": "synth-model"
+  },
+  "rules": [
+    {
+      "id": "lp",
+      "match": {
+        "exact": [
+          "LP1"
+        ]
+      },
+      "target": {
+        "componentId": "lp-a",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified"
+    },
+    {
+      "id": "efem",
+      "match": {
+        "exact": [
+          "EFEM_R1"
+        ]
+      },
+      "target": {
+        "componentId": "efem-robot"
+      },
+      "certainty": "verified"
+    },
+    {
+      "id": "ll",
+      "match": {
+        "exact": [
+          "LLA"
+        ]
+      },
+      "target": {
+        "componentId": "ll-a",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified"
+    },
+    {
+      "id": "tm",
+      "match": {
+        "exact": [
+          "TM_R1"
+        ]
+      },
+      "target": {
+        "componentId": "tm-robot",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "blade-a"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "blade-b"
+            }
+          ]
+        }
+      },
+      "certainty": "verified"
+    },
+    {
+      "id": "pm-two",
+      "match": {
+        "exact": [
+          "PM2"
+        ]
+      },
+      "target": {
+        "componentId": "pm-b",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "station-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified"
+    },
+    {
+      "id": "pm-pattern",
+      "match": {
+        "pattern": "PM{n}"
+      },
+      "target": {
+        "componentId": "pm-{n:letter}"
+      },
+      "certainty": "verified"
+    },
+    {
+      "id": "ignore-virtual",
+      "match": {
+        "exact": [
+          "VIRT_SCH"
+        ]
+      },
+      "target": {
+        "ignore": true
+      },
+      "certainty": "verified"
+    }
+  ]
+}

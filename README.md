@@ -24,15 +24,59 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 
 ```
 apps/studio/                   # Standalone web app (planned)
-packages/core/                # Semantic layout, ports, robot specs (planned)
+packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
 packages/renderer/            # SVG-first rendering and interaction (planned)
 packages/editor/              # Semantic Top View editor (planned)
-packages/replay/              # Observations -> deterministic replay (planned)
+packages/replay/              # Playback timeline and controls over the core reducer (planned)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
-assets/                       # Reusable symbols & generalized layout fixtures (planned import)
+tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
+assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
+fixtures/  # Synthetic source-shaped replay fixtures (present)
 docs/                         # Design, decision records, research
 skills/                       # Reference image -> semantic SVG workflow
 ```
+
+## Development
+
+Prerequisites:
+
+- Node.js from [`.nvmrc`](.nvmrc) (26.7.0) — e.g. `nvm install` or `fnm use` in this directory.
+- pnpm 11.1.1, the version pinned by the `packageManager` field in `package.json` (e.g. `npm install -g pnpm`; `corepack enable pnpm` also works on Node versions that ship corepack).
+
+```sh
+pnpm install
+pnpm lint        # ESLint flat config across all packages (incl. the @ap/* boundary rule)
+pnpm typecheck   # turbo run typecheck
+pnpm test        # turbo run test
+pnpm build       # turbo run build
+git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
+```
+
+Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
+
+| Tool | Version | Note |
+| --- | --- | --- |
+| TypeScript | 5.9.3 | |
+| vitest | 3.2.7 | |
+| turbo | 2.11.4 | |
+| ESLint | 10.11.0 | |
+| React | 19.3.0 | added in S7/S8 (#12/#13) |
+| vite | 7.3.6 | added in S7/S8 (#12/#13) |
+
+
+### Layout schema changes
+
+The zod schema in `packages/core/src/layout/schema.ts` is the single source of truth.
+Regenerate the committed `packages/core/schema/layout.schema.json` snapshot with:
+
+```sh
+pnpm --filter @eqv/core exec vitest run -u test/layout.test.ts
+```
+
+An additive change (a new optional field) updates both files in the same PR. A breaking
+change (rename, removal, new required field, changed meaning, or enum value removal)
+bumps `schemaVersion` and requires an ADR in `docs/adr/` merged first or in the same PR
+(see `AGENTS.md`).
 
 ## Initial validation targets
 
@@ -46,14 +90,14 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. The original generated SVG/JSON sample pack is **not yet imported** (tracked as M0 #1); there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **private**, while the parent analytics-platform is public; do not add the submodule to the parent until the access/CI gate (#332) is decided.
+**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
 
 ## Roadmap
 
 1. Import and review v0.3 research, normalized schemas, and generalized SVG prototypes.
 2. Build standalone `apps/studio` with synthetic data and zero platform runtime imports.
 3. Validate semantic ports/kinematic constraints (where known) and SVG round-trip.
-4. Implement a deterministic observation reducer and playback timeline.
-5. Integrate through a **separate** analytics-platform PR after its integration issues and private-submodule CI access gate are resolved.
+4. ~~Implement a deterministic observation reducer~~ (done in `@eqv/core`: `seekSceneState`, `stepSceneState`, `replayKey`); build the playback timeline.
+5. Integrate through a **separate** analytics-platform PR after its integration issues and submodule/CI gate (#332) are resolved.
 
 Related: [analytics-platform](https://github.com/hjung3113/analytics-platform) and platform issue [#291](https://github.com/hjung3113/analytics-platform/issues/291) (broader visualization capability work; avoid overlap).

@@ -1,0 +1,20 @@
+{
+  "$schema": "https://turborepo.com/schema.json",
+  "globalPassThroughEnv": [
+    "VITEST_MAX_WORKERS",
+    "VITEST_MAX_FORKS",
+    "VITEST_MAX_THREADS",
+    "VITEST_MIN_FORKS",
+    "VITEST_MIN_THREADS"
+  ],
+  "tasks": {
+    "typecheck": {},
+    "test": {
+      "dependsOn": ["^typecheck"],
+      "cache": false
+    },
+    "build": {
+      "outputs": ["dist/**"]
+    }
+  }
+}

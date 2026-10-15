@@ -1,0 +1,1504 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.4"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "abstract",
+            "mm"
+          ],
+          "description": "Abstract coordinates are never promoted to mm without evidence."
+        },
+        "viewBox": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "height": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "license"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "levels": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "order": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "components": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "role": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+                "description": "Open Role vocabulary; only robot has structural handler meaning."
+              },
+              "assetRef": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "parentId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "levelId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "transform": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "rotation": {
+                    "type": "number"
+                  },
+                  "scale": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "rotation",
+                  "scale"
+                ],
+                "additionalProperties": false,
+                "description": "Finite geometry local to the parent; geometry never establishes connectivity."
+              },
+              "size": {
+                "description": "ADR-0006: footprint in layout units in the Component local frame before rotation, multiplied by transform.scale. Absence means unknown; renderers fall back to primitive natural size. Structural Roles stretch to the footprint; module and robot symbols fit centred with aspect ratio preserved. Geometry never establishes connectivity.",
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false
+              },
+              "ports": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "position": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "properties": {
+                        "certainty": {
+                          "type": "string",
+                          "enum": [
+                            "verified",
+                            "assumed",
+                            "unknown"
+                          ]
+                        },
+                        "sourceEvidence": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                          }
+                        }
+                      },
+                      "required": [
+                        "certainty",
+                        "sourceEvidence"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "position",
+                    "provenance"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Port IDs are unique within their Component; edges use Component + Port references."
+                }
+              },
+              "holdingSites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "materialKinds": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "wafer",
+                          "carrier",
+                          "batch",
+                          "boat",
+                          "reticle"
+                        ]
+                      }
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "properties": {
+                        "certainty": {
+                          "type": "string",
+                          "enum": [
+                            "verified",
+                            "assumed",
+                            "unknown"
+                          ]
+                        },
+                        "sourceEvidence": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                          }
+                        }
+                      },
+                      "required": [
+                        "certainty",
+                        "sourceEvidence"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "materialKinds",
+                    "provenance"
+                  ],
+                  "additionalProperties": false,
+                  "description": "One explicit entry per discrete material place, with an ID unique within its Component. A 25-slot LoadPort has 25 sites; no count or range shorthand. Robot blades are Holding Sites, independent of arm counts and kinematics."
+                }
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "assetRef": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "label": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "parentId": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "levelId": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "transform": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "size": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "description": "An absent property key means its Certainty is unknown. Validation never fills assumed or verified provenance."
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "assetRef",
+              "label",
+              "levelId",
+              "transform",
+              "ports",
+              "holdingSites",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "physicalInterfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "gate",
+                  "slit",
+                  "docking",
+                  "optical",
+                  "pass-through",
+                  "stage-landing",
+                  "service"
+                ]
+              },
+              "a": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "portId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "portId"
+                ],
+                "additionalProperties": false
+              },
+              "b": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "portId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "portId"
+                ],
+                "additionalProperties": false
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "certainty": {
+                    "type": "string",
+                    "enum": [
+                      "verified",
+                      "assumed",
+                      "unknown"
+                    ]
+                  },
+                  "sourceEvidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    }
+                  }
+                },
+                "required": [
+                  "certainty",
+                  "sourceEvidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "a",
+              "b",
+              "provenance"
+            ],
+            "additionalProperties": false,
+            "description": "Explicit undirected physical port interface; never inferred from visual adjacency."
+          }
+        },
+        "transferCapabilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "a": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "holdingSiteId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "holdingSiteId"
+                ],
+                "additionalProperties": false
+              },
+              "b": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "holdingSiteId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "holdingSiteId"
+                ],
+                "additionalProperties": false
+              },
+              "handlerComponentId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "certainty": {
+                    "type": "string",
+                    "enum": [
+                      "verified",
+                      "assumed",
+                      "unknown"
+                    ]
+                  },
+                  "sourceEvidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    }
+                  }
+                },
+                "required": [
+                  "certainty",
+                  "sourceEvidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "a",
+              "b",
+              "handlerComponentId",
+              "provenance"
+            ],
+            "additionalProperties": false,
+            "description": "Explicit undirected Holding Site capability via a robot Component; possible transfer is not evidence of an actual transfer."
+          }
+        },
+        "processRoutes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "steps": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "steps"
+            ],
+            "additionalProperties": false,
+            "description": "Explanatory Component sequence only, never Replay evidence (ADR-0004)."
+          }
+        },
+        "kind": {
+          "type": "string",
+          "const": "template"
+        },
+        "roleCardinality": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "name",
+        "unit",
+        "viewBox",
+        "sources",
+        "levels",
+        "components",
+        "physicalInterfaces",
+        "transferCapabilities",
+        "processRoutes",
+        "kind",
+        "roleCardinality"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schemaVersion": {
+          "type": "string",
+          "const": "0.4"
+        },
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "unit": {
+          "type": "string",
+          "enum": [
+            "abstract",
+            "mm"
+          ],
+          "description": "Abstract coordinates are never promoted to mm without evidence."
+        },
+        "viewBox": {
+          "type": "object",
+          "properties": {
+            "x": {
+              "type": "number"
+            },
+            "y": {
+              "type": "number"
+            },
+            "width": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            },
+            "height": {
+              "type": "number",
+              "exclusiveMinimum": 0
+            }
+          },
+          "required": [
+            "x",
+            "y",
+            "width",
+            "height"
+          ],
+          "additionalProperties": false
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "title": {
+                "type": "string"
+              },
+              "uri": {
+                "type": "string"
+              },
+              "revision": {
+                "type": "string"
+              },
+              "license": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "license"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "levels": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "order": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "components": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "role": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$",
+                "description": "Open Role vocabulary; only robot has structural handler meaning."
+              },
+              "assetRef": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              },
+              "parentId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "levelId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "transform": {
+                "type": "object",
+                "properties": {
+                  "x": {
+                    "type": "number"
+                  },
+                  "y": {
+                    "type": "number"
+                  },
+                  "rotation": {
+                    "type": "number"
+                  },
+                  "scale": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "rotation",
+                  "scale"
+                ],
+                "additionalProperties": false,
+                "description": "Finite geometry local to the parent; geometry never establishes connectivity."
+              },
+              "size": {
+                "description": "ADR-0006: footprint in layout units in the Component local frame before rotation, multiplied by transform.scale. Absence means unknown; renderers fall back to primitive natural size. Structural Roles stretch to the footprint; module and robot symbols fit centred with aspect ratio preserved. Geometry never establishes connectivity.",
+                "type": "object",
+                "properties": {
+                  "width": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "height": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  }
+                },
+                "required": [
+                  "width",
+                  "height"
+                ],
+                "additionalProperties": false
+              },
+              "ports": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "position": {
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "properties": {
+                        "certainty": {
+                          "type": "string",
+                          "enum": [
+                            "verified",
+                            "assumed",
+                            "unknown"
+                          ]
+                        },
+                        "sourceEvidence": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                          }
+                        }
+                      },
+                      "required": [
+                        "certainty",
+                        "sourceEvidence"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "position",
+                    "provenance"
+                  ],
+                  "additionalProperties": false,
+                  "description": "Port IDs are unique within their Component; edges use Component + Port references."
+                }
+              },
+              "holdingSites": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "materialKinds": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "enum": [
+                          "wafer",
+                          "carrier",
+                          "batch",
+                          "boat",
+                          "reticle"
+                        ]
+                      }
+                    },
+                    "provenance": {
+                      "type": "object",
+                      "properties": {
+                        "certainty": {
+                          "type": "string",
+                          "enum": [
+                            "verified",
+                            "assumed",
+                            "unknown"
+                          ]
+                        },
+                        "sourceEvidence": {
+                          "type": "array",
+                          "items": {
+                            "type": "string",
+                            "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                          }
+                        }
+                      },
+                      "required": [
+                        "certainty",
+                        "sourceEvidence"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "materialKinds",
+                    "provenance"
+                  ],
+                  "additionalProperties": false,
+                  "description": "One explicit entry per discrete material place, with an ID unique within its Component. A 25-slot LoadPort has 25 sites; no count or range shorthand. Robot blades are Holding Sites, independent of arm counts and kinematics."
+                }
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "role": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "assetRef": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "label": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "parentId": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "levelId": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "transform": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "size": {
+                    "type": "object",
+                    "properties": {
+                      "certainty": {
+                        "type": "string",
+                        "enum": [
+                          "verified",
+                          "assumed",
+                          "unknown"
+                        ]
+                      },
+                      "sourceEvidence": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                        }
+                      }
+                    },
+                    "required": [
+                      "certainty",
+                      "sourceEvidence"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false,
+                "description": "An absent property key means its Certainty is unknown. Validation never fills assumed or verified provenance."
+              }
+            },
+            "required": [
+              "id",
+              "role",
+              "assetRef",
+              "label",
+              "levelId",
+              "transform",
+              "ports",
+              "holdingSites",
+              "provenance"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "physicalInterfaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "gate",
+                  "slit",
+                  "docking",
+                  "optical",
+                  "pass-through",
+                  "stage-landing",
+                  "service"
+                ]
+              },
+              "a": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "portId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "portId"
+                ],
+                "additionalProperties": false
+              },
+              "b": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "portId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "portId"
+                ],
+                "additionalProperties": false
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "certainty": {
+                    "type": "string",
+                    "enum": [
+                      "verified",
+                      "assumed",
+                      "unknown"
+                    ]
+                  },
+                  "sourceEvidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    }
+                  }
+                },
+                "required": [
+                  "certainty",
+                  "sourceEvidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "a",
+              "b",
+              "provenance"
+            ],
+            "additionalProperties": false,
+            "description": "Explicit undirected physical port interface; never inferred from visual adjacency."
+          }
+        },
+        "transferCapabilities": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "a": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "holdingSiteId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "holdingSiteId"
+                ],
+                "additionalProperties": false
+              },
+              "b": {
+                "type": "object",
+                "properties": {
+                  "componentId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  },
+                  "holdingSiteId": {
+                    "type": "string",
+                    "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                  }
+                },
+                "required": [
+                  "componentId",
+                  "holdingSiteId"
+                ],
+                "additionalProperties": false
+              },
+              "handlerComponentId": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "provenance": {
+                "type": "object",
+                "properties": {
+                  "certainty": {
+                    "type": "string",
+                    "enum": [
+                      "verified",
+                      "assumed",
+                      "unknown"
+                    ]
+                  },
+                  "sourceEvidence": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                    }
+                  }
+                },
+                "required": [
+                  "certainty",
+                  "sourceEvidence"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "a",
+              "b",
+              "handlerComponentId",
+              "provenance"
+            ],
+            "additionalProperties": false,
+            "description": "Explicit undirected Holding Site capability via a robot Component; possible transfer is not evidence of an actual transfer."
+          }
+        },
+        "processRoutes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+              },
+              "label": {
+                "type": "string"
+              },
+              "steps": {
+                "minItems": 2,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "steps"
+            ],
+            "additionalProperties": false,
+            "description": "Explanatory Component sequence only, never Replay evidence (ADR-0004)."
+          }
+        },
+        "kind": {
+          "type": "string",
+          "const": "equipment-layout"
+        },
+        "templateId": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$"
+        }
+      },
+      "required": [
+        "schemaVersion",
+        "id",
+        "name",
+        "unit",
+        "viewBox",
+        "sources",
+        "levels",
+        "components",
+        "physicalInterfaces",
+        "transferCapabilities",
+        "processRoutes",
+        "kind",
+        "templateId"
+      ],
+      "additionalProperties": false
+    }
+  ]
+}

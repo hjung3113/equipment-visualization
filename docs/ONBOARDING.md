@@ -1,6 +1,6 @@
 # Onboarding — 로그 관측으로 레이아웃·매핑 만들기 v0.4
 
-**상태:** Proposed (설계 grilling 확정, 2026-10-14). 용어는 [`CONTEXT.md`](../CONTEXT.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
+**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); UI·편집·Template 승격은 제안 단계다. 용어는 [`CONTEXT.md`](../CONTEXT.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
 Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다.
 
@@ -23,23 +23,67 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 
 ## 2. Observed Inventory
 
-- 계약은 `ObservedInventory` DTO. core가 기준 구현 `buildInventory(occurrences)`를 제공하고(독립 실행·synthetic fixture), 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
+- 계약은 `ObservedInventory` DTO. core는 기준 구현 `buildInventory(batch: OccurrenceBatch, metadata?: AliasMetadataFile): ObservedInventory`를 제공하며(#11a, 독립 실행·synthetic fixture), 선택 입력 `AliasMetadataFile`은 같은 `equipmentId`의 adapter metadata(`moduleType`/`isPort`/`isRobot`)만 공급한다. 다른 장비 metadata, batch와 다른 `equipmentId`의 Occurrence·DQI record, 중복 Record Sequence는 `RangeError`이며(replay와 같은 검사, #42) batch에 없는 alias는 추가하지 않는다. `computeCoverage`·`findMappingConflicts`·`detectDrift`는 Inventory와 Mapping Version의 `equipmentId`, Layout과 `mapping.layoutId`가 다르면 `RangeError`를 던진다(#39). 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
 - 샘플 기간 기본 **최근 30일**, 사용자 조정 가능. 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
 - Role은 Type Dictionary로 `ModuleType` → Role 변환. 사전에 없는 ModuleType은 Role `unknown`이고 목록 최상단에 표시.
 
+### ObservedInventory 계약 (#9b)
+
+`packages/core/src/inventory/schema.ts`의 strict `observedInventorySchema`와
+`@eqv/core/observed-inventory.schema.json`이 DTO 형식을 정의한다. Inventory 계산은 `buildInventory`가 구현한다(#11a).
+
+```ts
+type ObservedInventory = {
+  equipmentId: string; from: SiteWallClock; to: SiteWallClock;
+  aliases: InventoryAlias[];
+  transfers: { from: string; to: string; count: number }[];
+};
+type InventoryAlias = {
+  alias: string;
+  references: number;
+  slots: string[];
+  activity: { kind: Occurrence['kind']; count: number }[];
+  firstSeen: SiteWallClock | null; lastSeen: SiteWallClock | null;
+  moduleType?: string; isPort?: boolean; isRobot?: boolean;
+};
+```
+
+- `from`/`to`는 입력 batch의 조회 구간이다. 중간 진입 Occurrence의 경계가 구간 밖이어도 버리지 않는다.
+- 각 Occurrence의 **존재하는** `location`/`from`/`to` 참조를 각각 수집한다. 같은 alias를 여러 필드에서 참조해도 `references`는 Occurrence당 한 번만 센다.
+- `slots`는 해당 alias와 함께 나온 모든 `slotAlias`의 중복 없는 집합이다. `/^[+-]?[0-9]+$/` 문자열을 먼저 정확한 정수 값(`BigInt`, `Number` 반올림 금지)으로 정렬하고, 같은 정수 값이면 code-unit 순으로 정렬한다. 나머지 문자열은 그 뒤에 code-unit 순으로 둔다.
+- `activity`는 `location.moduleAlias`가 해당 alias인 Occurrence만 종류별로 세며 `kind` 순으로 정렬한다. 이송의 `from`/`to` 참조를 활동으로 세지 않는다.
+- `firstSeen`/`lastSeen`은 해당 alias를 참조한 Occurrence의 모든 null이 아닌 경계 `at`의 최솟값/최댓값이다. 유효 시각이 하나도 없으면 둘 다 null이다.
+- `aliases`는 alias code-unit 순, `transfers`는 `(from, to)` code-unit 순이다. 이송 쌍은 `TRANSFER`이며 `from`과 `to`가 모두 있을 때만 세고 module alias 기준으로 합친다. locale 정렬은 사용하지 않는다.
+- `moduleType`/`isPort`/`isRobot`은 adapter가 별도로 공급하는 선택 필드다. OccurrenceBatch에는 이 값이 없으므로 추측하지 않는다. Role은 Type Dictionary로 얻는 표시 정보이며 DTO 필드가 아니다.
+
 ## 3. Template 매칭
 
-결정론적·설명 가능한 점수만 사용한다(ML 없음). 제안은 자동 게시되지 않는다.
+`proposeTemplates({ inventory, dictionaries, templates })`는 결정론적·설명 가능한 규칙으로 상위 3개(후보가 적으면 그 수만큼)를 반환한다(ML 없음). **자동 게시 없음:** 제안만 반환하며 Mapping Version을 만들지 않는다.
 
-1. **Role 개수 적합도:** 정확히 일치, 또는 템플릿 `roleCardinality` 범위 안(예: radial TM의 PM 2–6).
-2. **이송 일관성:** 관측 이송 쌍 중 템플릿 Transfer Capability로 설명되는 비율.
-3. **감점:** 설명되지 않는 alias 수.
-4. **대칭 배정:** 같은 Role 여러 개(`PM1–4` → `pm-a–d`)는 관측 이송 이웃으로 먼저 구분, 안 되면 alias 자연 정렬 순서로 배정하고 Certainty `assumed`.
-5. **금지:** Component ID나 label이 alias와 같다는 사실을 매핑 근거로 쓰지 않는다.
+1. **Role 개수 적합도:** alias의 `moduleType`을 `resolveRole`과 Type Dictionary로 해석한다. 필드가 없거나 사전에서 해석되지 않으면 `unknown`이며 alias 문자열에서 Role을 추측하지 않는다. Inventory에서 관측된 Role 중 `unknown`을 제외한 Role만 code-unit 순으로 `roleFit` 행을 만든다. `drawn`은 Template의 해당 Role Component 수, `min`·`max`는 `roleCardinality` 값(항목이 없으면 모두 0)이다. 관측 수가 범위 밖인 Role 수가 `rolesOutOfRange`이며 0이면 `fits: true`다. 관측되지 않은 Template Role은 감점하지 않는다.
+2. **대칭 배정:** 먼저 관측 alias와 Template Component가 각각 하나인 Role을 `unique-role`로 배정한다. 다음은 Role code-unit 순, alias 자연 정렬 순으로 이미 배정된 관측 이송 이웃(양방향)을 검사한다. 같은 Role의 미배정 Component 중 모든 배정된 이웃과 명시적인 Transfer Capability로 연결된 후보가 정확히 하나이면 `transfer-neighbors`로 배정한다. 이 단계에서 앞서 배정한 이웃도 사용한다. 마지막으로 남은 alias 자연 정렬 순과 남은 Component ID code-unit 순을 짝지어 `natural-order`로 배정한다. 모든 배정은 근거 `basis`를 가지며 Certainty는 `assumed`다. Component가 부족한 alias와 모든 `unknown` alias는 `unexplainedAliases`에 자연 정렬 순으로 남긴다.
+3. **이송 일관성:** `total`은 Inventory 이송 쌍의 `count` 합, `explained`는 양쪽 alias가 배정되고 두 Component의 Holding Site 사이에 명시적인 Transfer Capability가 있는 쌍의 `count` 합이다. 양방향으로 검사하며 geometry·Physical Interface·Process Route는 근거가 아니다. `ratio = explained / total`, 이송이 없으면 null이다.
+4. **순위:** `rolesOutOfRange` 오름차순 → 이송 `ratio` 내림차순(null은 마지막) → 설명되지 않는 alias 수 오름차순 → `exactRoleMatches` 내림차순 → Template ID code-unit 오름차순의 사전식 비교다. `exactRoleMatches`는 범위 안이며 관측 수와 `drawn`이 같은 Role 수다. `rank`는 1부터 시작한다.
+5. **금지·정렬:** Component ID나 label이 alias와 같다는 사실을 매핑 근거로 쓰지 않는다. 자연 정렬은 최대 숫자·비숫자 run을 비교하고 숫자끼리는 정확한 `BigInt`, 나머지는 code-unit 순을 쓴다. run 목록이 접두사면 짧은 목록이 먼저며, 마지막 동률은 원문 code-unit 순이다(`PM2 < PM10`, `PM01 < PM1`). 배정 결과도 alias 자연 정렬 순이다.
+
+**근거 문장:** Role을 대문자로 표기한다. 범위 안이고 관측 수가 `drawn`과 같으면 `ROLE 관측/도형 ✓`, 범위 안이지만 다르면 `ROLE 관측 (최소–최대) ✓`, 범위 밖이면 `ROLE 관측 (최소–최대) ✗`다. 이어 `이송 explained/total ✓`(`explained < total`이면 `✗`), 이송이 없으면 `이송 없음`, 마지막은 `설명 안 되는 alias n`이다. 각 항목은 `, `로 잇고 범위에는 en dash(`–`)를 쓴다. synthetic cluster fixture의 `cluster-single` 제안:
+
+```text
+LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2
+```
+
+`fixtures/templates/`의 세 후보는 #11b의 synthetic Template이며 OEM 형상이나 기구학 검증을 주장하지 않는다. #7의 변환 아키타입은 후속 후보로 합류한다.
 
 ### Generic Layout
 
-맞는 템플릿이 없으면 Observed Inventory에서 자동 생성한다. 흐름 방향은 관측 이송 그래프를 Port 기점으로 위상 정렬한 열 배치(LP → EFEM 쪽 → LL → TM → PM), 같은 열 안은 alias 자연 정렬. 같은 Inventory면 항상 같은 배치. 모든 형상 Certainty는 `assumed`. 다듬은 뒤 "Template으로 승격"하면 다른 장비의 매칭 후보가 된다.
+맞는 Template이 없으면 `buildGenericLayout({ inventory, dictionaries })`로 Observed Inventory에서 생성한다. **alias가 하나 이상이어야 한다.** 빈 Inventory는 `RangeError('Cannot build Generic Layout from empty Inventory')`를 던진다.
+
+- `unknown`을 포함해 alias마다 Component 하나를 만든다. Role 해석은 위와 같고, 각 Role 안의 alias 자연 정렬 순번 `n`으로 ID는 `role-n`, label은 `ROLE n`, asset은 `generic-box`다. alias 이름을 label로 복사하지 않는다. 좌표 단위는 `abstract`다.
+- `isPort === true`인 모든 alias가 0열이다. 열은 **무방향 관측 이송 그래프의 Port 기점 최단 거리**다. 도달하지 못한 alias는 최대 도달 열 + 1인 마지막 열에 두며 Port가 하나도 없으면 모두 0열이다. 같은 열 안은 alias 자연 정렬 순으로 0부터 행을 매긴다. 좌표는 `(10 + 20·열, 10 + 20·행)`, 회전 0, scale 1이며 viewBox는 `(0, 0, 20·열 수, 20·최대 행 수)`다. 같은 Inventory는 입력 배열 순서와 무관하게 같은 결과다.
+- 관측 slot 중 정수 문자열(`/^[+-]?[0-9]+$/`)만 §2의 정렬 순으로 Holding Site를 만든다. 정확한 `BigInt` 값 `v`가 0 이상이면 `slot-v`, 음수면 `slot-neg-절댓값`이다. 같은 값의 문자열(`01`, `1`)은 첫 문자열이 만든 site 하나를 공유하고 둘 다 `assignments.sites`에 남긴다. 정수가 아닌 slot은 site·배정 항목을 만들지 않는다. `materialKinds`는 다섯 종류 전체(`wafer`, `carrier`, `batch`, `boat`, `reticle`)를 나열해 특정 종류를 단정하지 않는다.
+- 모든 생성 속성·Holding Site와 alias 배정의 Certainty는 `assumed`다. provenance는 `src-observed-inventory`를 참조한다. `ports`·Physical Interface·Transfer Capability·Process Route는 비어 있으며 관측 이송으로 연결 가능성을 만들지 않는다. 이송 경로는 사람이 추가한다. **자동 게시 없음.**
+
+형상을 다듬고 "Template으로 승격"하는 UI 흐름은 제안 단계다.
 
 ## 4. Mapping Board
 
@@ -74,17 +118,45 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 | 로봇 arm 지정 | `TM_R1` slot `1` → `tm-robot` blade A Holding Site |
 | 무시 | `VIRT_SCH` → Ignored Alias |
 
-- **우선순위:** 정확 일치 > 패턴, 좁은 Mapping Scope > 넓은 Scope. 같은 수준 중첩은 Mapping Conflict로 저장 거부.
+- **우선순위:** 좁은 Mapping Scope를 먼저 선택한 뒤 그 범위 안에서 정확 일치 > 패턴. 같은 수준 중첩은 Mapping Conflict로 저장 거부.
 - **시간에 따른 의미 변경**(개조 등)은 규칙 유효기간이 아니라 새 Mapping Version + Binding으로 표현한다(시간 축 단일화).
 - **Mapping Scope:** `Global → Maker → Model → Equipment`. 주로 Model 범위에 작성하고 예외만 Equipment 범위에서 덮어쓴다. Publish 시 평탄화(ADR-0005).
 - **같은 Model 적용:** 한 대를 끝내면 같은 Model N대를 일괄 dry-run해 장비별 커버리지·충돌 표를 보여주고, 예외 장비만 열어 Equipment 범위로 덮어쓴다. Model 규칙이 바뀌면 해당 장비에 "새 규칙 반영 가능" 배지.
 - **assumed 게시:** 확정 안 된 항목은 Certainty `assumed`로 게시 가능. 그 매핑을 거친 location facet Evidence는 최대 `derived`.
 
+### 구현 규칙 (S3, #8)
+
+Publish는 먼저 가장 좁은 Mapping Scope를 선택하고, 그 범위 안에서 정확 일치를 패턴보다 우선한다. 패턴의 `{name}`은 숫자 문자열을 캡처하며 대상의 `{name}`은 숫자를 그대로, `{name:letter}`는 1–26을 a–z로 치환한다(그 밖의 값은 미매칭). slot 분할·slot 변환·로봇 arm 지정은 모두 하나의 `SlotMap` 형식(`offset` + `assign`의 정수 범위와 `holdingSiteId`)을 사용하며 범위 중첩은 거부한다. 규칙이 없는 alias는 Mapping Version에 포함하지 않고 `unknown`으로 해석한다. 버전 hash는 hash 필드를 제외한 canonical JSON(객체 키 재귀 정렬, 배열 순서 유지, 공백 없음)의 SHA-256이다. Type Dictionary에서 해당 ModuleType 항목이 있는 가장 좁은 범위의 Role이 서로 다르면 파일 순서와 관계없이 `unknown`으로 해석하며, 같은 Role의 중복은 허용한다.
+
 ## 6. 커버리지와 Mapping Conflict
 
-- **커버리지(headline):** 샘플 기간 Occurrence의 alias 참조 중 해석된 비율(**건수 가중**). 보조로 alias 개수 기준 커버리지. Ignored Alias는 분모 제외·별도 표시, assumed 비율 병기.
-- **Mapping Conflict:** Transfer Capability 없는 관측 이송, Holding Site 수를 넘는 관측 slot, Port 플래그와 Role 불일치, 같은 수준 규칙 중첩. 자동 수정 없음. 조치: "이송 경로 추가"(sourceEvidence = 로그 관측, 사람 확인) 또는 재매핑.
-- **Drift:** 게시 이후 처음 보는 alias, 처음 보는 slot, Transfer Capability 없는 관측 이송. Fleet 상태 `Drift` + 영향도. 외부 알림은 플랫폼 통합 단계.
+`computeCoverage(inventory, mapping)`의 반환값은 다음과 같다. alias에 non-ignore Mapping entry가 있으면 해석됨, `{ ignore: true }`이면 무시, entry가 없으면 미매핑이다. SlotMap의 문제는 alias 해석 여부를 바꾸지 않고 Mapping Conflict로 보고한다.
+
+```ts
+type Coverage = {
+  references: { resolved: number; total: number; ratio: number | null };
+  aliases: { resolved: number; total: number; ratio: number | null };
+  ignored: { aliases: string[]; references: number };
+  assumed: { references: number; ratio: number | null };
+  unmapped: { alias: string; references: number }[];
+};
+```
+
+- **커버리지(headline):** `references`는 Inventory의 `references` 건수로 가중하며 `aliases`는 alias 개수 기준 보조 지표다. 각각 `ratio = resolved / total`이며 자신의 `total`이 0이면 null이다.
+- **Ignored Alias:** 두 지표의 분자·분모 모두에서 제외하며 `ignored.aliases`(code-unit 순)와 `ignored.references`로 따로 표시한다. `unmapped`에는 포함하지 않는다.
+- **assumed:** `assumed.references`는 assumed entry로 해석된 참조 수이며 `ratio = assumed.references / references.resolved`다. 해석된 참조가 0이면 null이다. `unmapped`는 참조 수 내림차순, 동률은 alias code-unit 순이다. 어떤 비율도 NaN이 되지 않는다.
+
+`findMappingConflicts({ inventory, mapping, layout, dictionaries })`는 다음 다섯 종류를 반환한다. 미매핑·무시 alias는 충돌을 만들지 않으며 자동 수정하지 않는다.
+
+- `transfer-without-capability`: 두 alias가 모두 Component로 해석되지만 두 Component의 Holding Site 사이에 명시적인 Transfer Capability가 없는 관측 이송(무방향 검사). 형상·Physical Interface·Process Route는 사용하지 않는다.
+- `slot-exceeds-sites`: SlotMap이 있으면 signed-decimal이 아니거나 `BigInt(slot) + BigInt(offset)`이 어느 `assign` 범위에도 속하지 않는 관측 slot만 반환한다. SlotMap이 없으면 고유 관측 slot 수가 Holding Site 수보다 많을 때 모든 관측 slot을 반환한다.
+- `role-mismatch`: alias의 `moduleType`을 `resolveRole`로 해석한 Role이 `unknown`이 아니고 Component의 `role`과 다르다.
+- `port-flag-mismatch`: 정의된 `isPort`가 Component의 `materialKinds`에 `carrier`가 있는 Holding Site 존재 여부와 다르다.
+- `robot-flag-mismatch`: 정의된 `isRobot`이 Component의 `role === 'robot'` 여부와 다르다.
+
+충돌은 `kind`, alias(이송은 `(from, to)`) code-unit 순으로 정렬하며 slot은 §2 순서다. 같은 수준의 winning rule 중첩은 `findMappingConflicts`가 아니라 `publishMapping`의 범위 평탄화에서 공급된 alias를 대상으로 `same-level-overlap`으로 보고한다. 파일 내부의 중복 exact alias·겹치는 slot 범위 검사는 `validateAliasRules`가 담당한다. 조치는 사람 확인 후 이송 경로 추가(sourceEvidence = 로그 관측) 또는 재매핑이며 자동 게시하지 않는다.
+
+`detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`와 영향도로 표시하며 외부 알림은 플랫폼 통합 단계다.
 
 ## 7. 파일 배치 (Studio 파일 기반)
 
