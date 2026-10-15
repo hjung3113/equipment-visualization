@@ -40,3 +40,7 @@ export { findMappingConflicts } from './onboarding/conflicts.js';
 export type { MappingConflict } from './onboarding/conflicts.js';
 export { detectDrift } from './onboarding/drift.js';
 export type { Drift } from './onboarding/drift.js';
+
+export { proposeTemplates } from './onboarding/templates.js';
+export type { TemplateProposal } from './onboarding/templates.js';
+export { buildGenericLayout } from './onboarding/generic-layout.js';

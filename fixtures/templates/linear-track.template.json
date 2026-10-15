@@ -1,0 +1,437 @@
+{
+  "schemaVersion": "0.4",
+  "kind": "template",
+  "id": "linear-track",
+  "name": "Synthetic linear track matching candidate",
+  "unit": "abstract",
+  "viewBox": {
+    "x": 0,
+    "y": 0,
+    "width": 100,
+    "height": 100
+  },
+  "sources": [
+    {
+      "id": "src-synthetic",
+      "title": "Synthetic cluster concept; no OEM geometry or kinematics",
+      "license": "synthetic"
+    }
+  ],
+  "levels": [
+    {
+      "id": "level-main",
+      "label": "Main",
+      "order": 0
+    }
+  ],
+  "components": [
+    {
+      "id": "lp-a",
+      "role": "lp",
+      "assetRef": "synthetic-lp",
+      "label": "lp-a",
+      "levelId": "level-main",
+      "transform": {
+        "x": 10,
+        "y": 30,
+        "rotation": 0,
+        "scale": 1
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "carrier",
+          "materialKinds": [
+            "carrier"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        },
+        {
+          "id": "slot-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        },
+        {
+          "id": "slot-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        }
+      }
+    },
+    {
+      "id": "track-robot",
+      "role": "robot",
+      "assetRef": "synthetic-robot",
+      "label": "track-robot",
+      "levelId": "level-main",
+      "transform": {
+        "x": 40,
+        "y": 50,
+        "rotation": 0,
+        "scale": 1
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "blade-a",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        },
+        {
+          "id": "blade-b",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        }
+      }
+    },
+    {
+      "id": "pm-a",
+      "role": "pm",
+      "assetRef": "synthetic-pm",
+      "label": "pm-a",
+      "levelId": "level-main",
+      "transform": {
+        "x": 30,
+        "y": 30,
+        "rotation": 0,
+        "scale": 1
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        }
+      }
+    },
+    {
+      "id": "pm-b",
+      "role": "pm",
+      "assetRef": "synthetic-pm",
+      "label": "pm-b",
+      "levelId": "level-main",
+      "transform": {
+        "x": 50,
+        "y": 30,
+        "rotation": 0,
+        "scale": 1
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        }
+      }
+    },
+    {
+      "id": "pm-c",
+      "role": "pm",
+      "assetRef": "synthetic-pm",
+      "label": "pm-c",
+      "levelId": "level-main",
+      "transform": {
+        "x": 70,
+        "y": 30,
+        "rotation": 0,
+        "scale": 1
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        }
+      }
+    }
+  ],
+  "physicalInterfaces": [],
+  "transferCapabilities": [
+    {
+      "id": "lp-a-pm-a",
+      "a": {
+        "componentId": "lp-a",
+        "holdingSiteId": "slot-1"
+      },
+      "b": {
+        "componentId": "pm-a",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "track-robot",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-synthetic"
+        ]
+      }
+    },
+    {
+      "id": "lp-a-pm-b",
+      "a": {
+        "componentId": "lp-a",
+        "holdingSiteId": "slot-1"
+      },
+      "b": {
+        "componentId": "pm-b",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "track-robot",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-synthetic"
+        ]
+      }
+    },
+    {
+      "id": "lp-a-pm-c",
+      "a": {
+        "componentId": "lp-a",
+        "holdingSiteId": "slot-1"
+      },
+      "b": {
+        "componentId": "pm-c",
+        "holdingSiteId": "station-1"
+      },
+      "handlerComponentId": "track-robot",
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-synthetic"
+        ]
+      }
+    }
+  ],
+  "processRoutes": [],
+  "roleCardinality": {
+    "lp": {
+      "min": 1,
+      "max": 2
+    },
+    "robot": {
+      "min": 1,
+      "max": 1
+    },
+    "pm": {
+      "min": 2,
+      "max": 8
+    }
+  }
+}
