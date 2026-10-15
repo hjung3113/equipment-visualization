@@ -3,6 +3,7 @@ import type { EquipmentLayoutDocument } from '../layout/schema.js';
 import type { MappingVersion } from '../mapping/schema.js';
 import { transfersWithoutCapability } from './conflicts.js';
 import { compareSlots, compareText } from './order.js';
+import { assertOnboardingTuple } from './tuple.js';
 
 export type Drift = {
   newAliases: string[];
@@ -12,6 +13,7 @@ export type Drift = {
 export function detectDrift(input: {
   baseline: ObservedInventory; current: ObservedInventory; mapping: MappingVersion; layout: EquipmentLayoutDocument;
 }): Drift {
+  assertOnboardingTuple(input.mapping, { baseline: input.baseline, current: input.current }, input.layout);
   const baseline = new Map(input.baseline.aliases.map((row) => [row.alias, new Set(row.slots)]));
   const newAliases: string[] = [];
   const newSlots: Drift['newSlots'] = [];

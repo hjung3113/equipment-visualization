@@ -134,6 +134,17 @@ it('detects drift against the published inventory, including current unexplained
   });
 });
 
+it.each([
+  { name: 'coverage, inventory of another equipment', run: () => computeCoverage({ ...expected(), equipmentId: 'other' }, mapping()), error: 'inventory.equipmentId (other)' },
+  { name: 'conflicts, inventory of another equipment', run: () => findMappingConflicts({ inventory: { ...inventory(), equipmentId: 'other' }, mapping: mapping(), layout: layout(), dictionaries: [] }), error: 'inventory.equipmentId (other)' },
+  { name: 'conflicts, mapping for another layout', run: () => findMappingConflicts({ inventory: inventory(), mapping: mapping(), layout: { ...layout(), id: 'other' }, dictionaries: [] }), error: 'layout.id (other)' },
+  { name: 'drift, baseline of another equipment', run: () => detectDrift({ baseline: { ...expected(), equipmentId: 'other' }, current: expected(), mapping: mapping(), layout: layout() }), error: 'baseline.equipmentId (other)' },
+  { name: 'drift, mapping for another layout', run: () => detectDrift({ baseline: expected(), current: expected(), mapping: mapping(), layout: { ...layout(), id: 'other' } }), error: 'layout.id (other)' },
+])('rejects a mismatched onboarding tuple: $name', ({ run, error }) => {
+  expect(run).toThrow(RangeError);
+  expect(run).toThrow(error);
+});
+
 it('validates metadata and dictionary and pins the public metadata schema', async () => {
   expect(metadata().aliases).toHaveLength(8);
   expect(dictionary().entries).toHaveLength(5);

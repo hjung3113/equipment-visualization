@@ -3,6 +3,7 @@ import type { EquipmentLayoutDocument, LayoutDocument } from '../layout/schema.j
 import type { MappingVersion, TypeDictionaryFile } from '../mapping/schema.js';
 import { resolveRole } from '../mapping/validate.js';
 import { compareSlots, compareText, isIntegerSlot } from './order.js';
+import { assertOnboardingTuple } from './tuple.js';
 
 type TransferConflict = { kind: 'transfer-without-capability'; from: string; to: string; count: number; fromComponentId: string; toComponentId: string };
 export type MappingConflict = TransferConflict
@@ -41,6 +42,7 @@ export function transfersWithoutCapability({ inventory, mapping, layout }: Input
 
 export function findMappingConflicts(input: Input & { dictionaries: TypeDictionaryFile[] }): MappingConflict[] {
   const { inventory, mapping, layout, dictionaries } = input;
+  assertOnboardingTuple(mapping, { inventory }, layout);
   const conflicts: MappingConflict[] = transfersWithoutCapability(input);
   const entries = new Map(mapping.entries.map((entry) => [entry.alias, entry.target]));
   const components = new Map(layout.components.map((component) => [component.id, component]));
