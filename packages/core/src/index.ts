@@ -26,6 +26,10 @@ export { observedInventorySchema } from './inventory/schema.js';
 export type { ObservedInventory, InventoryAlias } from './inventory/schema.js';
 export { sceneStateSchema } from './scene/schema.js';
 export type { SceneState, SceneMaterial, SceneComponent, SceneMarker } from './scene/schema.js';
+export { RULESET_VERSION, seekSceneState, stepSceneState } from './replay/reduce.js';
+export type { ReplayInput } from './replay/reduce.js';
+export { replayKey, sceneStateHash } from './replay/replay-key.js';
+export type { ReplayKey } from './replay/replay-key.js';
 
 export { aliasMetadataFileSchema } from './inventory/schema.js';
 export type { AliasMetadataFile } from './inventory/schema.js';

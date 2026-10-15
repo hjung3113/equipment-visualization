@@ -1,20 +1,11 @@
+import { canonicalJson, sha256Hex } from '../canonical.js';
 import type { LayoutDocument } from '../layout/schema.js';
 import { specificity, validateAliasRules } from './validate.js';
 import type { AliasRule, AliasRulesFile, MappingEntry, MappingIssue, MappingScope, MappingVersion } from './schema.js';
 
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
-// Build JSON directly: object enumeration would reorder integer-like keys after sorting.
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value !== null && typeof value === 'object') {
-    return `{${Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => compare(a, b))
-      .map(([key, v]) => `${JSON.stringify(key)}:${canonical(v)}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-async function hashVersion(version: Omit<MappingVersion, 'hash'>): Promise<string> {
-  const digest = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(canonical(version)));
-  return `sha256:${Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, '0')).join('')}`;
+function hashVersion(version: Omit<MappingVersion, 'hash'>): Promise<string> {
+  return sha256Hex(canonicalJson(version));
 }
 export async function verifyMappingHash(mapping: MappingVersion): Promise<boolean> {
   const { hash, ...body } = mapping;
@@ -103,7 +94,7 @@ export async function publishMapping(input: {
     const winners = scoped.filter((candidate) => candidate.exact === winningKind);
     if (winners.length > 1) issues.push({
       code: 'same-level-overlap', path: ['aliases', input.aliases.indexOf(alias)],
-      message: `Alias ${alias} conflicts between rules ${winners.map(({ entry }) => canonical(entry.rule)).sort(compare).join(', ')}`,
+      message: `Alias ${alias} conflicts between rules ${winners.map(({ entry }) => canonicalJson(entry.rule)).sort(compare).join(', ')}`,
     });
     else if (winners[0]) entries.push(winners[0].entry);
   }
