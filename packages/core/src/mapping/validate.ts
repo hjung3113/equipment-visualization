@@ -14,6 +14,7 @@ function validate<T>(schema: z.ZodType<T>, input: unknown, semantic: (file: T) =
   return issues.length ? { ok: false, issues } : { ok: true, file: parsed.data };
 }
 export const specificity = (scope: MappingScope): number => ({ global: 0, maker: 1, model: 2, equipment: 3 })[scope.level];
+/** Resolves the most specific supplied scope with an entry; conflicting roles at that rank stay unknown. */
 export function resolveRole(dictionaries: TypeDictionaryFile[], moduleType: string): string {
   let role = 'unknown';
   let rank = -1;
@@ -22,6 +23,8 @@ export function resolveRole(dictionaries: TypeDictionaryFile[], moduleType: stri
     if (entry && specificity(file.scope) > rank) {
       role = entry.role;
       rank = specificity(file.scope);
+    } else if (entry && specificity(file.scope) === rank && entry.role !== role) {
+      role = 'unknown';
     }
   }
   return role;

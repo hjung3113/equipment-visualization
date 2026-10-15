@@ -28,6 +28,48 @@ const split = { offset: 0, assign: [
 ] };
 
 it.each([
+  { name: 'matching tuple', equipmentId: 'eq-a', layoutId: 'cluster-single', compatible: true },
+  { name: 'foreign equipment', equipmentId: 'eq-b', layoutId: 'cluster-single', compatible: false },
+  { name: 'foreign layout', equipmentId: 'eq-a', layoutId: 'other-layout', compatible: false },
+])('enforces the Binding tuple: $name', async ({ equipmentId, layoutId, compatible }) => {
+  const result = await publishMapping({ equipmentId: 'eq-a', maker: 'synthetic', model: 'cluster',
+    layout: clusterTemplate(), aliases: ['PM1'],
+    ruleFiles: [file([{ ...rule('verified', { exact: ['PM1'] }, { componentId: 'pm-a' }), certainty: 'verified' }], { level: 'global' })],
+  });
+  if (!result.ok) throw new Error(JSON.stringify(result.issues));
+  expect(await verifyMappingHash(result.mapping)).toBe(true);
+  const bindingFile: BindingsFile = { schemaVersion: '0.4', equipmentId,
+    bindings: [{ layoutId, mappingHash: result.mapping.hash, effectiveFrom: at }],
+  };
+  expect(resolveLocation({ bindings: bindingFile, mappings: [result.mapping], alias: 'PM1', at })).toEqual(compatible ? {
+    kind: 'location', componentId: 'pm-a', certainty: 'verified', layoutId: 'cluster-single',
+    mappingHash: result.mapping.hash, slotStatus: 'none',
+  } : { kind: 'unknown', reason: 'missing-mapping' });
+});
+
+it.each([
+  { roles: ['pm', 'robot'], expected: 'unknown' },
+  { roles: ['robot', 'pm'], expected: 'unknown' },
+  { roles: ['pm', 'pm'], expected: 'pm' },
+])('resolves same-scope dictionary ties ($roles) to $expected', ({ roles, expected }) => {
+  const dictionaries = roles.map((role) => ({ schemaVersion: '0.4' as const, scope: { level: 'global' as const },
+    entries: [{ moduleType: 'PROCESS', role }],
+  }));
+  expect(resolveRole(dictionaries, 'PROCESS')).toBe(expected);
+});
+
+it('reports one unknown-target issue for a pattern matched by several aliases', async () => {
+  const result = await publish([file([rule('missing-site', { pattern: 'LL{n}' }, { componentId: 'll-a',
+    slots: { offset: 0, assign: [{ from: 1, to: 1, holdingSiteId: 'missing' }] },
+  })])], ['LL1', 'LL2']);
+  expect(result.ok).toBe(false);
+  if (!result.ok) expect(result.issues.filter((issue) => issue.code === 'unknown-target')).toEqual([{
+    code: 'unknown-target', path: ['ruleFiles', 0, 'rules', 0, 'target', 'slots', 'assign', 0, 'holdingSiteId'],
+    message: 'Unknown Holding Site ll-a/missing',
+  }]);
+});
+
+it.each([
   { name: 'exact', match: { exact: ['PM1'] }, target: { componentId: 'pm-a' }, alias: 'PM1', componentId: 'pm-a' },
   { name: 'pattern', match: { pattern: 'PM{n}' }, target: { componentId: 'pm-{n:letter}' }, alias: 'PM2', componentId: 'pm-b' },
   { name: 'many-to-one', match: { exact: ['CH1', 'Chamber1'] }, target: { componentId: 'pm-a' }, alias: 'Chamber1', componentId: 'pm-a' },

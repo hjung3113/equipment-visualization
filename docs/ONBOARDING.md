@@ -82,7 +82,7 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 
 ### 구현 규칙 (S3, #8)
 
-Publish는 먼저 가장 좁은 Mapping Scope를 선택하고, 그 범위 안에서 정확 일치를 패턴보다 우선한다. 패턴의 `{name}`은 숫자 문자열을 캡처하며 대상의 `{name}`은 숫자를 그대로, `{name:letter}`는 1–26을 a–z로 치환한다(그 밖의 값은 미매칭). slot 분할·slot 변환·로봇 arm 지정은 모두 하나의 `SlotMap` 형식(`offset` + `assign`의 정수 범위와 `holdingSiteId`)을 사용하며 범위 중첩은 거부한다. 규칙이 없는 alias는 Mapping Version에 포함하지 않고 `unknown`으로 해석한다. 버전 hash는 hash 필드를 제외한 canonical JSON(객체 키 재귀 정렬, 배열 순서 유지, 공백 없음)의 SHA-256이다.
+Publish는 먼저 가장 좁은 Mapping Scope를 선택하고, 그 범위 안에서 정확 일치를 패턴보다 우선한다. 패턴의 `{name}`은 숫자 문자열을 캡처하며 대상의 `{name}`은 숫자를 그대로, `{name:letter}`는 1–26을 a–z로 치환한다(그 밖의 값은 미매칭). slot 분할·slot 변환·로봇 arm 지정은 모두 하나의 `SlotMap` 형식(`offset` + `assign`의 정수 범위와 `holdingSiteId`)을 사용하며 범위 중첩은 거부한다. 규칙이 없는 alias는 Mapping Version에 포함하지 않고 `unknown`으로 해석한다. 버전 hash는 hash 필드를 제외한 canonical JSON(객체 키 재귀 정렬, 배열 순서 유지, 공백 없음)의 SHA-256이다. Type Dictionary에서 해당 ModuleType 항목이 있는 가장 좁은 범위의 Role이 서로 다르면 파일 순서와 관계없이 `unknown`으로 해석하며, 같은 Role의 중복은 허용한다.
 
 ## 6. 커버리지와 Mapping Conflict
 

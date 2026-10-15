@@ -7,7 +7,8 @@ export function resolveLocation(input: {
   const binding = input.bindings.bindings.find((binding) => binding.effectiveFrom <= input.at &&
     (binding.effectiveTo === undefined || input.at < binding.effectiveTo));
   if (!binding) return { kind: 'unknown', reason: 'no-binding' };
-  const mapping = input.mappings.find((mapping) => mapping.hash === binding.mappingHash);
+  const mapping = input.mappings.find((mapping) => mapping.hash === binding.mappingHash &&
+    mapping.equipmentId === input.bindings.equipmentId && mapping.layoutId === binding.layoutId);
   if (!mapping) return { kind: 'unknown', reason: 'missing-mapping' };
   const entry = mapping.entries.find((entry) => entry.alias === input.alias);
   if (!entry) return { kind: 'unknown', reason: 'unmapped-alias' };

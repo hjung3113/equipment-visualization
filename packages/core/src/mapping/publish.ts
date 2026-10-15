@@ -107,7 +107,15 @@ export async function publishMapping(input: {
     });
     else if (winners[0]) entries.push(winners[0].entry);
   }
-  if (issues.length) return { ok: false, issues };
+  if (issues.length) {
+    const seen = new Set<string>();
+    return { ok: false, issues: issues.filter((issue) => {
+      const key = JSON.stringify([issue.code, issue.path]);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    }) };
+  }
   const body: Omit<MappingVersion, 'hash'> = { schemaVersion: '0.4', equipmentId: input.equipmentId, layoutId: input.layout.id, entries };
   return { ok: true, mapping: { ...body, hash: await hashVersion(body) } };
 }
