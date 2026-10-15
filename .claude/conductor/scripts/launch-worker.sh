@@ -8,7 +8,7 @@
 # network). pnpm may reformat package.json arrays: check the diff before committing.
 # Needs: WAVE_STATE, WAVE_BRIEFS, EV_MAIN (main checkout path).
 : "${WAVE_STATE:?}"; : "${WAVE_BRIEFS:?}"; : "${EV_MAIN:?}"; set -u
-N=$1; SLUG=$2; SKILL=$EV_MAIN/.claude/skills/issue-wave-conductor
+N=$1; SLUG=$2; CONDUCTOR=$EV_MAIN/.claude/conductor
 # The script cds into the new worktree, so a relative brief dir would silently resolve there (an empty task).
 WAVE_BRIEFS=${WAVE_BRIEFS:A}; WAVE_STATE=${WAVE_STATE:A}
 [ -f "$WAVE_BRIEFS/$N-task.md" ] || { echo "Missing brief: $WAVE_BRIEFS/$N-task.md" >&2; exit 2; }
@@ -20,8 +20,8 @@ orca worktree create --repo path:"$EV_MAIN" --name "$N-$SLUG" --base-branch orig
 W=$(git -C "$EV_MAIN" worktree list --porcelain | awk -v n="/$N-$SLUG" '/^worktree / { p = substr($0, 10); if (substr(p, length(p) - length(n) + 1) == n) print p }' | tail -1)
 [ -n "$W" ] && cd "$W" || { echo "created worktree $N-$SLUG not found in git worktree list"; exit 1; }
 git branch -m "feature/$N-$SLUG"; mkdir -p .review
-cp "$SKILL/templates/impl-rules.md" .review/00-IMPL-RULES.md
-cp "$SKILL/templates/review-rules.md" .review/00-REVIEW-RULES.md
+cp "$CONDUCTOR/templates/impl-rules.md" .review/00-IMPL-RULES.md
+cp "$CONDUCTOR/templates/review-rules.md" .review/00-REVIEW-RULES.md
 # The shared launcher reads only the task; include the copied rules without moving its final sentinel.
 { printf 'Read .review/00-IMPL-RULES.md first.\n\n'; cat "$WAVE_BRIEFS/$N-task.md"; } > ".review/W-$N-TASK.md"
 for h in $(orca terminal list --worktree path:"$W" --json 2>/dev/null | grep -o 'term_[a-z0-9-]*' | sort -u); do orca terminal close --terminal "$h" >/dev/null 2>&1; done
