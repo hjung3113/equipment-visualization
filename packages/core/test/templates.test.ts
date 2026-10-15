@@ -157,3 +157,14 @@ it('rejects an empty Inventory before generating geometry', () => {
   expect(() => buildGenericLayout({ inventory: { ...inventory(), aliases: [], transfers: [] }, dictionaries }))
     .toThrow(new RangeError('Cannot build Generic Layout from empty Inventory'));
 });
+
+it('uses the 0–0 range for an observed Role without its own cardinality entry', () => {
+  const input = inventory();
+  input.aliases = [{ ...input.aliases.find(({ alias }) => alias === 'PM1')!, moduleType: 'SYN_CONSTRUCTOR' }];
+  input.transfers = [];
+  const dictionary = typeDictionaryFileSchema.parse({ schemaVersion: '0.4', scope: { level: 'global' },
+    entries: [{ moduleType: 'SYN_CONSTRUCTOR', role: 'constructor' }] });
+  const [proposal] = proposeTemplates({ inventory: input, dictionaries: [dictionary], templates: [templates()[0]!] });
+  expect(proposal!.roleFit).toEqual([{ role: 'constructor', observed: 1, drawn: 0, min: 0, max: 0, inRange: false }]);
+  expect(proposal!.evidence).toBe('CONSTRUCTOR 1 (0–0) ✗, 이송 없음, 설명 안 되는 alias 1');
+});

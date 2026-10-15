@@ -37,7 +37,8 @@ export function proposeTemplates({ inventory, dictionaries, templates }: {
     const roleFit = roles.map((role) => {
       const observed = aliasesByRole.get(role)!.length;
       const drawn = componentsFor(role).length;
-      const { min, max } = template.roleCardinality[role] ?? { min: 0, max: 0 };
+      // Own entries only: an open-vocabulary Role such as `constructor` must not read Object.prototype.
+      const { min, max } = Object.hasOwn(template.roleCardinality, role) ? template.roleCardinality[role]! : { min: 0, max: 0 };
       return { role, observed, drawn, min, max, inRange: observed >= min && observed <= max };
     });
     const assignments = new Map<string, TemplateProposal['assignments'][number]>();
