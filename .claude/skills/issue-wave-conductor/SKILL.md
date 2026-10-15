@@ -49,7 +49,7 @@ installed before dispatch.
 
 ## Slice start
 
-1. Read every candidate issue for the slice and the docs AGENTS.md requires (`README.md`, `CONTEXT.md`,
+1. Read every candidate issue for the slice and the docs AGENTS.md requires (`README.md`, `GLOSSARY.md`,
    `docs/DESIGN-v0.4.md`, `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`,
    `docs/adr/`). Separate **Proposed** design from what is implemented.
 2. Collect every decision only the owner can make (format/ADR approval, `DELIVERY-PLAN.md` checklist items, scope,

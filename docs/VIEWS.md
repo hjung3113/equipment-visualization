@@ -1,6 +1,6 @@
 # 분석 화면 모드 v0.4
 
-**상태:** Proposed (설계 grilling 확정, 2026-10-14). 용어는 [`CONTEXT.md`](../CONTEXT.md). 사용자·과업 우선순위는 [DESIGN-v0.4 §1](DESIGN-v0.4.md#1-제품-목표--비목표).
+**상태:** Proposed (설계 grilling 확정, 2026-10-14). 용어는 [`GLOSSARY.md`](../GLOSSARY.md). 사용자·과업 우선순위는 [DESIGN-v0.4 §1](DESIGN-v0.4.md#1-제품-목표--비목표).
 
 | 모드 | 사용자 과업 | 진입 키 | 구현 순서 |
 |---|---|---|---|

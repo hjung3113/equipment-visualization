@@ -77,7 +77,7 @@ main() {
   [[ -n "${WAVE_STATE:-}" ]] || fail 'set WAVE_STATE to the wave scratch directory' 2
   local checkout
   checkout=$(cd -- "$1" 2>/dev/null && pwd) || fail "checkout does not exist: $1" 2
-  [[ -f "$checkout/AGENTS.md" && -f "$checkout/CONTEXT.md" && -d "$checkout/docs/adr" ]] \
+  [[ -f "$checkout/AGENTS.md" && -f "$checkout/GLOSSARY.md" && -d "$checkout/docs/adr" ]] \
     || fail "not an equipment-visualization checkout: $checkout" 2
   [[ -x "$SCRIPT_DIR/verify.sh" ]] || fail 'verify.sh is missing or not executable' 2
 

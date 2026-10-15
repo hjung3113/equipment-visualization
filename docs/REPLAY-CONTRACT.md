@@ -1,6 +1,6 @@
 # Replay Contract v0.4 — 로그 기반 설명 가능한 시각 재생
 
-용어는 [`CONTEXT.md`](../CONTEXT.md), 근거 결정은 [ADR-0002](adr/0002-occurrence-input-contract.md)·[ADR-0003](adr/0003-facet-evidence-levels.md).
+용어는 [`GLOSSARY.md`](../GLOSSARY.md), 근거 결정은 [ADR-0002](adr/0002-occurrence-input-contract.md)·[ADR-0003](adr/0003-facet-evidence-levels.md).
 
 ## 기본 정의
 

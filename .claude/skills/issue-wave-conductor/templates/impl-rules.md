@@ -4,7 +4,7 @@
 agents and do not ask who dispatches; if something is ambiguous, make the smallest reasonable call and record it
 in your report.
 
-1. **Read first:** root `AGENTS.md`, then the docs your task names (normally `CONTEXT.md`, `docs/DESIGN-v0.4.md`,
+1. **Read first:** root `AGENTS.md`, then the docs your task names (normally `GLOSSARY.md`, `docs/DESIGN-v0.4.md`,
    `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`) and any nested `AGENTS.md` on the paths you touch. A design
    marked **Proposed** is not implemented behaviour; build only what the task asks.
 2. **Run the narrowest checks yourself before you report:** the test files you touched or added
