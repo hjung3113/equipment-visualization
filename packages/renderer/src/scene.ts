@@ -156,7 +156,7 @@ function fittedGlyph(placed: Placed, plan: LabelPlan | undefined, showLabel: boo
   const availH = placed.h - band - 10 * kLocal;
   const glyphW = prim.glyphBox.width * fit;
   const glyphH = prim.glyphBox.height * fit;
-  const glyphScale = Math.min(1, glyphW > 0 ? availW / glyphW : 1, glyphH > 0 ? availH / glyphH : 1);
+  const glyphScale = placed.asset === 'loadlock' ? 1 : Math.min(1, glyphW > 0 ? availW / glyphW : 1, glyphH > 0 ? availH / glyphH : 1);
   if (!(glyphScale > 0)) return null;
   const glyph = cloneNode(prim.glyph);
   glyph.attrs = { ...glyph.attrs, transform: `translate(0 ${formatNum(gy)}) scale(${formatNum(glyphScale)})` };
@@ -169,7 +169,7 @@ function symbolNodes(placed: Placed, plan: LabelPlan | undefined, showLabel: boo
   const sx = !hasSize ? 1 : prim.stretches ? placed.w / prim.viewBox.width : Math.min(placed.w / prim.viewBox.width, placed.h / prim.viewBox.height);
   const sy = !hasSize ? 1 : prim.stretches ? placed.h / prim.viewBox.height : sx;
   const nodes: SvgNode[] = [];
-  if (hasSize && prim.stretches && prim.body.tag === 'rect') {
+  if (prim.stretches && prim.body.tag === 'rect') {
     const rx = 12 * kLocal;
     if (placed.stacked) nodes.push(stackWrap(kLocal, [structureRect(prim.body, placed.w, placed.h, rx, PAINT.board)]));
     nodes.push(structureRect(prim.body, placed.w, placed.h, rx));
@@ -346,12 +346,23 @@ function hasAssumed(component: Component): boolean {
   return Object.values(component.provenance).some((entry) => entry?.certainty === 'assumed');
 }
 
-function badgeAt(placed: Placed, label: LabelBox | undefined, k: number): Point {
+function circleBox(center: Point, r: number): Box {
+  return { x0: center[0] - r, y0: center[1] - r, x1: center[0] + r, y1: center[1] + r };
+}
+
+/** Badge position: next to the label, else the corner. A corner badge dodges to the bottom-left when it would sit on the chip slot. */
+function badgeAt(placed: Placed, label: LabelBox | undefined, chipSlot: Box | undefined, k: number): Point {
   const corner: Point = [placed.bbox.x1 - 12 * k, placed.bbox.y0 + 12 * k];
-  if (!label) return corner;
-  const bx = label.x1 + 12 * k;
-  if (!isArm(placed.asset) && label.inside && bx + 10 * k > placed.bbox.x1) return corner;
-  return [bx, (label.y0 + label.y1) / 2];
+  let at = corner;
+  if (label) {
+    const bx = label.x1 + 12 * k;
+    if (!isArm(placed.asset) && label.inside && bx + 10 * k > placed.bbox.x1) at = corner;
+    else at = [bx, (label.y0 + label.y1) / 2];
+  }
+  if (at === corner && chipSlot && rectsOverlap(circleBox(at, 8.5 * k), chipSlot)) {
+    return [placed.bbox.x0 + 12 * k, placed.bbox.y1 - 12 * k];
+  }
+  return at;
 }
 
 function assumedBadge(x: number, y: number, k: number): SvgNode {
@@ -377,20 +388,46 @@ function assumedBadge(x: number, y: number, k: number): SvgNode {
   ]);
 }
 
-function holdingChip(placed: Placed, k: number): SvgNode {
+function chipSize(placed: Placed, k: number): { width: number; height: number } {
+  const tw = estimateTextWidth(String(placed.component.holdingSites.length), 10, false) * k;
+  return { width: tw + 6 * k, height: 14 * k };
+}
+
+/** Chip candidates in order: top-right inside, top-left inside, bottom-right inside, just outside the top-right. */
+function chipRectAt(placed: Placed, index: number, k: number): Box {
+  const { width, height } = chipSize(placed, k);
+  const { bbox } = placed;
+  if (index === 1) return { x0: bbox.x0, y0: bbox.y0, x1: bbox.x0 + width, y1: bbox.y0 + height };
+  if (index === 2) return { x0: bbox.x1 - width, y0: bbox.y1 - height, x1: bbox.x1, y1: bbox.y1 };
+  if (index === 3) return { x0: bbox.x1, y0: bbox.y0, x1: bbox.x1 + width, y1: bbox.y0 + height };
+  return { x0: bbox.x1 - width, y0: bbox.y0, x1: bbox.x1, y1: bbox.y0 + height };
+}
+
+/**
+ * First chip candidate clear of every badge, label box, already-placed chip and, for an arm robot,
+ * its own body circle; if none is clear, the last candidate.
+ */
+function chipRectFor(placed: Placed, taken: Box[], labels: LabelBox[], k: number): Box {
+  const body = isArm(placed.asset) ? circleBox(placed.center, robotR(placed.w, placed.h) * placed.S) : undefined;
+  const clear = (rect: Box): boolean =>
+    !taken.some((box) => rectsOverlap(rect, box))
+    && !labels.some((box) => rectsOverlap(rect, box))
+    && !(body && rectsOverlap(rect, body));
+  let chosen = chipRectAt(placed, 0, k);
+  for (let index = 1; index < 4 && !clear(chosen); index += 1) chosen = chipRectAt(placed, index, k);
+  return chosen;
+}
+
+function holdingChip(placed: Placed, rect: Box, k: number): SvgNode {
   const n = placed.component.holdingSites.length;
   const px = 10;
-  const tw = estimateTextWidth(String(n), px, false) * k;
-  const pad = 3 * k;
-  const width = tw + pad * 2;
-  const height = 14 * k;
-  const x = placed.bbox.x1 - width;
-  const y = placed.bbox.y0;
-  return el('g', {}, [
+  const width = rect.x1 - rect.x0;
+  const height = rect.y1 - rect.y0;
+  return el('g', { 'data-chip-for': placed.id }, [
     el('title', {}, [`Holding Site ${n}곳`]),
     el('rect', {
-      x: formatNum(x),
-      y: formatNum(y),
+      x: formatNum(rect.x0),
+      y: formatNum(rect.y0),
       width: formatNum(width),
       height: formatNum(height),
       rx: formatNum(2 * k),
@@ -399,8 +436,8 @@ function holdingChip(placed: Placed, k: number): SvgNode {
       'stroke-width': formatNum(k),
     }),
     el('text', {
-      x: formatNum(x + width / 2),
-      y: formatNum(y + height / 2 + px * 0.35 * k),
+      x: formatNum(rect.x0 + width / 2),
+      y: formatNum(rect.y0 + height / 2 + px * 0.35 * k),
       'text-anchor': 'middle',
       'font-family': 'inherit',
       'font-size': formatNum(px * k),
@@ -633,20 +670,35 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     }
   }
 
+  // Badges are placed before any chip so every chip can dodge them; each badge in turn dodges
+  // its own component's preferred chip slot by falling back to the bottom-left corner.
   const badgeNodes: SvgNode[] = [];
-  if (layers.certainty) {
-    for (const row of rows) {
-      if (row.hidden || row.cls === 'structure' || !hasAssumed(row.component)) continue;
-      const [x, y] = badgeAt(row, labelBoxes.find((label) => label.owner === row.id), k);
-      badgeNodes.push(assumedBadge(x, y, k));
-    }
-  }
-
   const chipNodes: SvgNode[] = [];
-  if (layers.holdingSites) {
-    for (const row of rows) {
-      if (row.hidden || row.component.holdingSites.length < 1) continue;
-      chipNodes.push(holdingChip(row, k));
+  const badgeBoxes: Box[] = [];
+  if (layers.certainty || layers.holdingSites) {
+    const chipSlots = new Map<string, Box>();
+    if (layers.holdingSites) {
+      for (const row of rows) {
+        if (row.hidden || row.component.holdingSites.length < 1) continue;
+        chipSlots.set(row.id, chipRectAt(row, 0, k));
+      }
+    }
+    if (layers.certainty) {
+      for (const row of rows) {
+        if (row.hidden || row.cls === 'structure' || !hasAssumed(row.component)) continue;
+        const [x, y] = badgeAt(row, labelBoxes.find((label) => label.owner === row.id), chipSlots.get(row.id), k);
+        badgeNodes.push(assumedBadge(x, y, k));
+        badgeBoxes.push(circleBox([x, y], 8.5 * k));
+      }
+    }
+    if (layers.holdingSites) {
+      const chipBoxes: Box[] = [];
+      for (const row of rows) {
+        if (row.hidden || row.component.holdingSites.length < 1) continue;
+        const rect = chipRectFor(row, [...badgeBoxes, ...chipBoxes], labelBoxes, k);
+        chipNodes.push(holdingChip(row, rect, k));
+        chipBoxes.push(rect);
+      }
     }
   }
 

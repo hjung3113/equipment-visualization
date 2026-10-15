@@ -20,8 +20,8 @@ function decode(raw: string): string {
     const end = raw.indexOf(';', i);
     if (end < 0) throw new Error('unterminated entity');
     const name = raw.slice(i + 1, end);
-    const value = ENTITIES[name];
-    if (value == null) throw new Error(`unknown entity &${name};`);
+    if (!Object.hasOwn(ENTITIES, name)) throw new Error(`unknown entity &${name};`);
+    const value: string = ENTITIES[name]!;
     out += value;
     i = end;
   }

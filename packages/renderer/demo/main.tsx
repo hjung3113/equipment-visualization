@@ -66,11 +66,18 @@ function stressLayout(count: number): LayoutDocument {
       processRoutes.push({ ...route, id: idOf(route.id), steps: route.steps.map(idOf) });
     }
   }
+  // `outside` labels and annotation chips extend past the components, so leave a margin on every side.
+  const margin = 48;
   return {
     ...base,
     id: `${base.id}-stress`,
     name: `${base.name} × ${tiles}`,
-    viewBox: { x: base.viewBox.x, y: base.viewBox.y, width: base.viewBox.width * cols, height: base.viewBox.height * rows },
+    viewBox: {
+      x: base.viewBox.x - margin,
+      y: base.viewBox.y - margin,
+      width: base.viewBox.width * cols + margin * 2,
+      height: base.viewBox.height * rows + margin * 2,
+    },
     components,
     physicalInterfaces,
     transferCapabilities,

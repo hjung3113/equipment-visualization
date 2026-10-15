@@ -21,7 +21,7 @@ Default options: `labels: 'label'`, interfaces on, certainty / holding sites / c
 | `layers.certainty` | An "A" badge on each non-structure component whose provenance has an `assumed` entry. An absent key stays unknown. Default off. |
 | `visibleLevelIds` | Levels to draw. A hidden component keeps `data-component-id` and `data-hidden="true"` so the id still appears once, and its visible descendants stay nested. |
 
-Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then `chips`. Holding-site chips are a fifth layer; the four named layers do not include them. Labels are upright in world coordinates.
+Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then `chips`. Holding-site chips are a fifth layer; the four named layers do not include them. Labels are upright in world coordinates. `outside` labels and annotations can extend past the Components' extent, so a layout's `viewBox` should leave room for them.
 
 ## Caveats
 

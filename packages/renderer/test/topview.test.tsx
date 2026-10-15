@@ -6,6 +6,8 @@ import {
   layoutDocumentSchema, type Component, type LayoutDocument, type PhysicalInterfaceEdge, type Port,
 } from '@eqv/core';
 import { buildScene, TopView, type SceneOptions, type SvgNode } from '../src/index.js';
+import { apply, isArm, mul, rectsOverlap, rotation, scaling, translation, type Box, type Mat } from '../src/geom.js';
+import { estimateTextWidth } from '../src/text.js';
 
 const root = new URL('../../../', import.meta.url);
 const TEMPLATE_IDS = [
@@ -123,6 +125,7 @@ function component(partial: Pick<Component, 'id' | 'assetRef' | 'label'> & {
   role?: string; parentId?: string; levelId?: string;
   x?: number; y?: number; rotation?: number; scale?: number;
   w?: number; h?: number; ports?: Port[]; provenance?: Component['provenance'];
+  holdingSites?: Component['holdingSites'];
 }): Component {
   return {
     id: partial.id,
@@ -134,14 +137,117 @@ function component(partial: Pick<Component, 'id' | 'assetRef' | 'label'> & {
     transform: { x: partial.x ?? 0, y: partial.y ?? 0, rotation: partial.rotation ?? 0, scale: partial.scale ?? 1 },
     size: partial.w != null && partial.h != null ? { width: partial.w, height: partial.h } : undefined,
     ports: partial.ports ?? [],
-    holdingSites: [],
+    holdingSites: partial.holdingSites ?? [],
     provenance: partial.provenance ?? {},
   };
 }
 
+function site(id: string): Component['holdingSites'][number] {
+  return { id, materialKinds: ['wafer'], provenance: { certainty: 'assumed', sourceEvidence: [] } };
+}
+
+const IDENT: Mat = { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 };
+
+function parseTransform(value: string): Mat {
+  let m = IDENT;
+  for (const match of value.matchAll(/(translate|rotate|scale)\(([^)]*)\)/g)) {
+    const fn = match[1]!;
+    const args = match[2]!.trim().split(/[\s,]+/).map(Number);
+    if (fn === 'translate') m = mul(m, translation(args[0]!, args[1] ?? 0));
+    else if (fn === 'rotate') m = mul(m, rotation(args[0]!));
+    else m = mul(m, scaling(args[1] ?? args[0]!));
+  }
+  return m;
+}
+
+/** Walk the rendered tree, accumulating each element's world matrix from its rendered transform attributes. */
+function walkWorld(node: SvgNode, visit: (current: SvgNode, world: Mat, owner: string | null) => void): void {
+  const recurse = (current: SvgNode, m: Mat, owner: string | null): void => {
+    const world = current.attrs.transform ? mul(m, parseTransform(current.attrs.transform)) : m;
+    const id = current.attrs['data-component-id'] ?? owner;
+    visit(current, world, id);
+    for (const child of current.children) if (typeof child !== 'string') recurse(child, world, id);
+  };
+  recurse(node, IDENT, null);
+}
+
+function circleBox(circle: SvgNode, world: Mat): Box {
+  const cx = Number(circle.attrs.cx);
+  const cy = Number(circle.attrs.cy);
+  const r = Number(circle.attrs.r) * Math.hypot(world.a, world.b);
+  const [wx, wy] = apply(world, cx, cy);
+  return { x0: wx - r, y0: wy - r, x1: wx + r, y1: wy + r };
+}
+
+/**
+ * Robot (isArm) body circle boxes in world coordinates, from the rendered body circles.
+ * The body is the first circle in each robot group; detail circles are not the body.
+ */
+function robotBodyBoxes(layout: LayoutDocument, node: SvgNode): Map<string, Box[]> {
+  const arms = new Set(layout.components
+    .filter((item) => isArm(item.assetRef.replace(/^primitive:/, '')))
+    .map((item) => item.id));
+  const out = new Map<string, Box[]>();
+  walkWorld(node, (current, world, owner) => {
+    if (current.tag !== 'circle' || !owner || !arms.has(owner) || out.has(owner)) return;
+    out.set(owner, [circleBox(current, world)]);
+  });
+  return out;
+}
+
+/** Rendered geometry is rounded to four decimals; clearance is asserted beyond that formatting noise. */
+const FORMAT_EPS = 0.01;
+
+function shrink(rect: Box, eps: number): Box {
+  return { x0: rect.x0 + eps, y0: rect.y0 + eps, x1: rect.x1 - eps, y1: rect.y1 - eps };
+}
+
+function badgeBoxes(node: SvgNode): Box[] {
+  const out: Box[] = [];
+  walkWorld(layer(node, 'badges'), (current, world) => {
+    if (current.tag === 'circle') out.push(circleBox(current, world));
+  });
+  return out;
+}
+
+function labelBoxesFromRendered(node: SvgNode, mono: boolean): Box[] {
+  const out: Box[] = [];
+  walkWorld(layer(node, 'labels'), (current) => {
+    if (current.tag !== 'text') return;
+    const text = current.children.filter((child) => typeof child === 'string').join('');
+    const px = Number(current.attrs['font-size']);
+    const x = Number(current.attrs.x);
+    const by = Number(current.attrs.y);
+    const tw = estimateTextWidth(text, px, mono);
+    const x0 = current.attrs['text-anchor'] === 'middle' ? x - tw / 2
+      : current.attrs['text-anchor'] === 'end' ? x - tw : x;
+    out.push({ x0, x1: x0 + tw, y0: by - 0.78 * px, y1: by + 0.22 * px });
+  });
+  return out;
+}
+
+function chipRects(node: SvgNode): { id: string; box: Box }[] {
+  const out: { id: string; box: Box }[] = [];
+  for (const group of layer(node, 'chips').children) {
+    if (typeof group === 'string') continue;
+    const rect = group.children.find((child): child is SvgNode => typeof child !== 'string' && child.tag === 'rect');
+    if (!rect || !group.attrs['data-chip-for']) throw new Error('chip without owner or rect');
+    const x = Number(rect.attrs.x);
+    const y = Number(rect.attrs.y);
+    out.push({
+      id: group.attrs['data-chip-for']!,
+      box: { x0: x, y0: y, x1: x + Number(rect.attrs.width), y1: y + Number(rect.attrs.height) },
+    });
+  }
+  return out;
+}
+
 function fixture(
   components: Component[],
-  extra: { physicalInterfaces?: LayoutDocument['physicalInterfaces'] } = {},
+  extra: {
+    physicalInterfaces?: LayoutDocument['physicalInterfaces'];
+    transferCapabilities?: LayoutDocument['transferCapabilities'];
+  } = {},
 ): LayoutDocument {
   return {
     schemaVersion: '0.4',
@@ -157,7 +263,7 @@ function fixture(
     ],
     components,
     physicalInterfaces: extra.physicalInterfaces ?? [],
-    transferCapabilities: [],
+    transferCapabilities: extra.transferCapabilities ?? [],
     processRoutes: [],
     roleCardinality: {},
   };
@@ -235,11 +341,69 @@ it.each(TEMPLATE_IDS)('%s draws the distinct handler capability pairs', (id) => 
   }
 });
 
+it('draws handler to module only, never a self segment, when a capability endpoint is the handler site', () => {
+  const layout = fixture([
+    component({
+      id: 'robot-1', assetRef: 'primitive:robot-single', label: 'Robot', role: 'robot', x: 200, y: 300, w: 80, h: 80,
+      holdingSites: [site('blade-1')],
+    }),
+    component({ id: 'pm-1', assetRef: 'primitive:pm', label: 'PM', x: 500, y: 300, w: 96, h: 100, holdingSites: [site('slot-1')] }),
+  ], {
+    transferCapabilities: [{
+      id: 'cap-1',
+      a: { componentId: 'robot-1', holdingSiteId: 'blade-1' },
+      b: { componentId: 'pm-1', holdingSiteId: 'slot-1' },
+      handlerComponentId: 'robot-1',
+      provenance: { certainty: 'assumed', sourceEvidence: [] },
+    }],
+  });
+  const { scene } = render(layout, { layers: { capabilities: true } });
+  expect(titles(layer(scene.node, 'capabilities'))).toEqual(['Robot → PM · Transfer Capability (가능, 관측 아님)']);
+});
+
 it.each(TEMPLATE_IDS)('%s chip text equals the holding site count', (id) => {
   const layout = templates[id];
   const { scene } = render(layout, { layers: { holdingSites: true } });
   const expected = layout.components.filter((item) => item.holdingSites.length >= 1).map((item) => String(item.holdingSites.length)).sort();
   expect(texts(layer(scene.node, 'chips')).sort()).toEqual(expected);
+});
+
+it.each([
+  ['cluster-single', 'label'],
+  ['cluster-single', 'none'],
+  ['track-stacked', 'label'],
+  ['track-stacked', 'none'],
+] as const)('%s with labels=%s keeps chips clear of badges, labels and robot bodies', (id, mode) => {
+  const layout = templates[id];
+  const { scene } = render(layout, {
+    labels: mode,
+    layers: { interfaces: true, certainty: true, holdingSites: true, capabilities: true },
+  });
+  const chips = chipRects(scene.node);
+  const badges = badgeBoxes(scene.node);
+  const labels = labelBoxesFromRendered(scene.node, false);
+  const bodies = robotBodyBoxes(layout, scene.node);
+  expect(chips.length).toBeGreaterThan(0);
+  expect(badges.length).toBeGreaterThan(0);
+  for (const chip of chips) {
+    const rect = shrink(chip.box, FORMAT_EPS);
+    for (const badge of badges) {
+      expect(rectsOverlap(rect, badge), `chip of ${chip.id} over a badge`).toBe(false);
+    }
+    for (const label of labels) {
+      expect(rectsOverlap(rect, label), `chip of ${chip.id} over a label`).toBe(false);
+    }
+    for (const body of bodies.get(chip.id) ?? []) {
+      expect(rectsOverlap(rect, body), `chip of ${chip.id} over its robot body`).toBe(false);
+    }
+  }
+});
+
+it('draws the loadlock glyph at scale 1 and offset 0 in band mode', () => {
+  const { scene } = render(templates['cluster-single']);
+  const node = componentsOf(scene.node).get('ll-a')?.node;
+  expect(node).toBeTruthy();
+  expect(glyphTransform(node!)).toBe('translate(0 0) scale(1)');
 });
 
 it('badges appear only where an assumed provenance entry exists', () => {
@@ -317,7 +481,7 @@ it('keeps a visible child nested under a hidden parent and drops a mark on that 
 });
 
 it.each([
-  { mode: 'band', w: 96, h: 100 },
+  { mode: 'band', w: 70, h: 76 },
   { mode: 'center', w: 28, h: 40 },
   { mode: 'outside', w: 16, h: 16 },
 ] as const)('label lod uses $mode', ({ mode, w, h }) => {
@@ -329,8 +493,16 @@ it.each([
   expect(label).toBeTruthy();
   const y = Number(label?.attrs.y);
   if (mode === 'band') {
-    expect(glyphTransform(node!)).toMatch(/^translate\(0 -/);
-    expect(glyphTransform(node!)).toContain('scale(');
+    const transform = glyphTransform(node!);
+    expect(transform).toMatch(/^translate\(0 -/);
+    const glyphScale = Number(transform?.match(/scale\(([\d.]+)\)/)?.[1]);
+    expect(glyphScale).toBeLessThan(1);
+    // The glyph sits inside the primitive fit group, so its world offset is fit × gy = -band/2 = -(13+14)/2.
+    const fit = Number(node!.children
+      .find((child): child is SvgNode => typeof child !== 'string' && /^scale\(/.test(child.attrs.transform ?? ''))
+      ?.attrs.transform?.match(/scale\(([\d.]+)\)/)?.[1]);
+    const gy = Number(transform?.match(/translate\(0 (-?[\d.]+)\)/)?.[1]);
+    expect(fit * gy).toBeCloseTo(-13.5, 2);
     expect(y).toBeGreaterThan(150 - h / 2);
     expect(y).toBeLessThan(150 + h / 2);
   } else if (mode === 'center') {
@@ -369,14 +541,27 @@ it.each([
     ]),
     id: 'efem-1',
   },
+  {
+    name: 'size-less efem under a parent scaled by 2',
+    layout: () => fixture([
+      component({ id: 'frame', assetRef: 'primitive:housing', label: 'Frame', x: 400, y: 300, scale: 2, w: 700, h: 400, role: 'housing' }),
+      component({ id: 'efem-1', assetRef: 'primitive:efem', label: 'EFEM', parentId: 'frame', role: 'efem' }),
+    ]),
+    id: 'efem-1',
+  },
 ])('keeps a 12px corner on $name', ({ layout, id }) => {
   const doc = layout();
   const { scene, pxPerUnit } = render(doc);
   const node = componentsOf(scene.node).get(id)?.node;
   const rect = node?.children.find((child): child is SvgNode => typeof child !== 'string' && child.tag === 'rect');
   const size = doc.components.find((item) => item.id === id)?.size;
-  expect(Number(rect?.attrs.width)).toBe(size?.width);
-  expect(Number(rect?.attrs.height)).toBe(size?.height);
+  if (size) {
+    expect(Number(rect?.attrs.width)).toBe(size.width);
+    expect(Number(rect?.attrs.height)).toBe(size.height);
+  } else {
+    expect(size).toBeUndefined();
+    expect(Number(rect?.attrs.width)).toBeGreaterThan(0);
+  }
   expect(Number(rect?.attrs.rx) * scaleProduct(doc, id) * pxPerUnit).toBeCloseTo(12, 4);
 });
 

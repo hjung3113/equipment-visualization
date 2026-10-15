@@ -15,6 +15,9 @@ const hostile: [string, string][] = [
   ['comment', '<svg><!-- note --></svg>'],
   ['doctype', '<!DOCTYPE svg><svg></svg>'],
   ['unknown entity', '<svg><title>&nbsp;</title></svg>'],
+  ['constructor entity', '<svg><title>&constructor;</title></svg>'],
+  ['toString entity', '<svg><title>&toString;</title></svg>'],
+  ['__proto__ entity', '<svg><title>&__proto__;</title></svg>'],
   ['image', '<svg><image/></svg>'],
   ['use', '<svg><use/></svg>'],
 ];
