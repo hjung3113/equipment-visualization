@@ -9,7 +9,8 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./layout.schema.json": "./schema/layout.schema.json"
+    "./layout.schema.json": "./schema/layout.schema.json",
+    "./occurrence-batch.schema.json": "./schema/occurrence-batch.schema.json"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
