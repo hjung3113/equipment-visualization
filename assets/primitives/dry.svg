@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
-  <title>dry</title>
-  <g>
-    <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #d9ecec)" stroke="var(--eqv-module-stroke, #0e808d)" stroke-width="2" />
-    <circle cx="0" cy="0" r="27.3" fill="var(--eqv-detail-fill, #f8feff)" stroke="var(--eqv-detail-stroke, #4c9ea5)" stroke-width="1.5" />
-    <circle cx="0" cy="0" r="12.6" fill="var(--eqv-detail-fill, #bbdfe2)" stroke="var(--eqv-detail-stroke, #4c9ea5)" stroke-width="1" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-56.88 -52.88 113.76 105.76" role="img"><title>dry</title><rect fill="var(--eqv-process-fill, #e3efff)" stroke="var(--eqv-process-stroke, #2577cc)" x="-56" y="-52" width="112" height="104" rx="8" stroke-width="1.75"/><circle cx="0" cy="0" r="35.28" fill="var(--eqv-detail-fill, #ffffff)" stroke="var(--eqv-process-stroke, #2577cc)" stroke-width="1.5"/><circle cx="0" cy="0" r="16.23" fill="var(--eqv-process-fill, #e3efff)" stroke="var(--eqv-process-stroke, #2577cc)" stroke-width="1.5"/><path d="M14.97 14.97L20.96 20.96" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.8" stroke-linecap="round"/><path d="M-14.97 14.97L-20.96 20.96" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.8" stroke-linecap="round"/><path d="M-14.97 -14.97L-20.96 -20.96" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.8" stroke-linecap="round"/><path d="M14.97 -14.97L20.96 -20.96" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.8" stroke-linecap="round"/></svg>

@@ -1,7 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
-  <title>metrology</title>
-  <g>
-    <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #edf3f7)" stroke="var(--eqv-module-stroke, #526c81)" stroke-width="2" stroke-linejoin="round" />
-    <circle cx="0" cy="0" r="26.25" fill="var(--eqv-accent-fill, #fff9e7)" stroke="var(--eqv-accent-stroke, #bf9137)" stroke-width="2" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-70.88 -55.88 141.76 111.76" role="img"><title>metrology</title><rect fill="var(--eqv-process-fill, #e3efff)" stroke="var(--eqv-process-stroke, #2577cc)" x="-70" y="-55" width="140" height="110" rx="8" stroke-width="1.75"/><circle cx="0" cy="0" r="41.4" fill="var(--eqv-detail-fill, #ffffff)" stroke="var(--eqv-process-stroke, #2577cc)" stroke-width="1.5"/><path d="M-52.99 0L-14.49 0" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.5" stroke-linecap="round"/><path d="M14.49 0L52.99 0" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.5" stroke-linecap="round"/><path d="M0 -52.99L0 -14.49" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.5" stroke-linecap="round"/><path d="M0 14.49L0 52.99" stroke="var(--eqv-process-stroke, #2577cc)" fill="none" stroke-width="1.5" stroke-linecap="round"/><circle cx="0" cy="0" r="4.97" fill="var(--eqv-process-stroke, #2577cc)" stroke-width="0"/></svg>

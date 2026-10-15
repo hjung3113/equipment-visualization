@@ -2,7 +2,7 @@
 
 Every asset below originates in `equipment-visualization-design-v0.3.zip`, SHA-256 `9e510a228bfa6da20e3a80749d991c91e5b8ed826bab62f51b127e355730aac2`. All are synthetic/illustrative generic concepts, not OEM drawings, measured dimensions or validated kinematics. Public references provide background only: their URLs do not confer a redistribution licence for manufacturer photographs, diagrams or other material. No such images are included.
 
-Templates are converted v0.4 semantic documents; primitives retain only the original symbol shapes with theme tokens. Primitive references are pack-wide background, not claims about individual symbol geometry. All layout provenance cites the synthetic pack as assumed.
+Templates are converted v0.4 semantic documents; primitives were restyled in #34 as redrawn generic glyphs from the owner-approved prototype (2026-10-15), with semantic theme tokens. They remain synthetic, not OEM depictions. Primitive references are pack-wide background, not claims about individual symbol geometry. All layout provenance cites the synthetic pack as assumed.
 
 The Korean Endura reference row states an upper bound of nine process chambers; it supplies no complete range. Every template therefore keeps min = max = its drawn Role count.
 
@@ -64,6 +64,10 @@ Origin: v0.3 pack `templates/wet-linear.layout.json` (archive SHA-256 above). Sy
 Background references only:
 
 - <https://www.semes.com/en/product/process>
+
+## Primitive restyle (#34)
+
+All 25 primitives below use the owner-approved prototype’s symbol-only glyphs and body frames, generated at `k = 1`. The pack identifies their original archetype lineage; the #34 geometry and palette replace the original shapes and colours. No OEM image, label or validated kinematic claim is included. Robot arm count does not imply blade count. Templates and connectivity are unchanged by this restyle. See [primitive tokens and sizing](primitives/README.md).
 
 ## assets/primitives/aligner.svg
 

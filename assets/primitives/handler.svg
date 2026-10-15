@@ -1,6 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-71 -53.5 142 107" role="img">
-  <title>handler</title>
-  <g>
-    <rect x="-70.0" y="-52.5" width="140" height="105" rx="11" fill="var(--eqv-module-fill, #edf3f7)" stroke="var(--eqv-module-stroke, #526c81)" stroke-width="2" stroke-linejoin="round" />
-  </g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-65.88 -30.88 131.76 61.76" role="img"><title>handler</title><rect fill="var(--eqv-robot-fill, #f3eefd)" stroke="var(--eqv-robot-stroke, #8154ce)" x="-65" y="-30" width="130" height="60" rx="8" stroke-width="1.75"/><path d="M23 -9.66H-5.75Q-11.5 -9.66 -11.5 -3.91V3.91Q-11.5 9.66 -5.75 9.66H23M-11.5 0H-25.3" stroke="var(--eqv-robot-stroke, #8154ce)" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
