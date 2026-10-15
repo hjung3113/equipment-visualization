@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const LAYOUT_SCHEMA_VERSION = '0.4';
 
-const idSchema = z.string().regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
+export const idSchema = z.string().regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
 const certaintySchema = z.enum(['verified', 'assumed', 'unknown']);
 const materialKindSchema = z.enum(['wafer', 'carrier', 'batch', 'boat', 'reticle']);
 const provenanceSchema = z.strictObject({

@@ -12,3 +12,12 @@ export type { LayoutIssue, LayoutIssueCode, LayoutValidationResult } from './lay
 
 export { occurrenceBatchSchema } from './occurrence/schema.js';
 export type { EvidenceLevel, Boundary, Occurrence, DataQualityIssue, OccurrenceBatch } from './occurrence/schema.js';
+
+export { typeDictionaryFileSchema, aliasRulesFileSchema, mappingVersionSchema, bindingsFileSchema } from './mapping/schema.js';
+export type {
+  MappingScope, TypeDictionaryFile, AliasRulesFile, AliasRule, SlotMap, MappingVersion,
+  MappingEntry, BindingsFile, Binding, Resolution, MappingIssue,
+} from './mapping/schema.js';
+export { resolveRole, validateTypeDictionary, validateAliasRules, validateBindings } from './mapping/validate.js';
+export { publishMapping, verifyMappingHash } from './mapping/publish.js';
+export { resolveLocation } from './mapping/resolve.js';
