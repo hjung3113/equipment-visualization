@@ -324,8 +324,8 @@ export interface PatternPreview {
   rows: {
     alias: string;
     target: string | null;
-    outcome: 'applies' | 'exception' | 'missing-target' | 'overlap' | 'shadowed';
-    /** exception/shadowed: the winning rule id; overlap: the tied rule ids. */
+    outcome: 'applies' | 'exception' | 'missing-target' | 'overlap' | 'blocked' | 'shadowed';
+    /** exception/shadowed: the winning rule id; overlap/blocked: the tied rule ids. */
     ruleIds: string[];
   }[];
   /** Save-scope exact rules that become redundant and are removed when the rule is added. */
@@ -386,7 +386,7 @@ export function previewPatternRule(
       return { ...base, outcome: 'overlap', ruleIds: overlap.map(({ ruleId }) => ruleId) };
     }
     if (entry?.rule.ruleId === candidate.id && entry.rule.scope.level === saveScope) return { ...base, outcome: 'applies', ruleIds: [] };
-    if (!entry) return { ...base, outcome: 'exception', ruleIds: overlap.map(({ ruleId }) => ruleId) };
+    if (!entry) return { ...base, outcome: 'blocked', ruleIds: overlap.map(({ ruleId }) => ruleId) };
     return { ...base, outcome: entry.rule.scope.level === saveScope ? 'exception' : 'shadowed', ruleIds: [entry.rule.ruleId] };
   });
   const problems: string[] = [];
@@ -397,7 +397,7 @@ export function previewPatternRule(
 }
 function summarize(rows: PatternPreview['rows']): string {
   const count = (outcome: PatternPreview['rows'][number]['outcome']) => rows.filter((row) => row.outcome === outcome).length;
-  return `매칭 ${rows.length} · 적용 ${count('applies')} · 예외 ${count('exception')} · 대상 없음 ${count('missing-target')} · 충돌 ${count('overlap')}`;
+  return `매칭 ${rows.length} · 적용 ${count('applies')} · 예외 ${count('exception')} · 대상 없음 ${count('missing-target')} · 충돌 ${count('overlap') + count('blocked')}`;
 }
 
 /** Adds the previewed pattern at the save scope and drops the exact rules it makes redundant, as one history entry. */

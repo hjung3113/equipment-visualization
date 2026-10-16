@@ -30,6 +30,7 @@ const OUTCOME_TEXT = (row: PatternPreview['rows'][number]): string => {
     case 'exception': return `예외 (정확 규칙 ${ids})`;
     case 'missing-target': return '대상 없음 (레이아웃에 없음)';
     case 'overlap': return `충돌 (${ids})`;
+    case 'blocked': return `충돌 (더 좁은 범위: ${ids})`;
     case 'shadowed': return `우선 규칙 ${ids}`;
   }
 };
@@ -77,6 +78,8 @@ export function MappingBoard(props: MappingBoardProps) {
   const selected = rows.find((row) => row.alias === alias) ?? null;
   const markedRows = rows.filter((row) => marks.has(row.alias));
   const bulkRows = markedRows.length >= 2 || (markedRows.length === 1 && markedRows[0] !== selected) ? markedRows : null;
+  const changedModelRules = [...new Set((bulkRows ?? []).flatMap((row) => row.changedModelRule ? [row.changedModelRule] : []))];
+  const overriddenRows = (bulkRows ?? []).filter((row) => row.overriddenBy);
   const autoRows = rows.filter((row) => row.status === 'assumed');
   const preview = useMemo(() => rule ? previewPatternRule(input, state.present, saveScope, { pattern: rule.pattern, target: rule.target }) : null,
     [input, state.present, saveScope, rule]);
@@ -121,6 +124,14 @@ export function MappingBoard(props: MappingBoardProps) {
     return () => document.removeEventListener('focusin', keepFocus);
   }, [modalOpen]);
 
+  useEffect(() => {
+    const visible = new Set(groups.flatMap((group) => group.rows.map((row) => row.alias)));
+    setMarks((current) => {
+      const kept = [...current].filter((name) => visible.has(name));
+      return kept.length === current.size ? current : new Set(kept);
+    });
+  }, [groups]);
+
   const optionId = (name: string) => `${ids}-alias-${name}`;
   const paletteOptionId = (id: string) => `${ids}-component-${id}`;
   const edit = (change: BoardEdit) => {
@@ -148,7 +159,11 @@ export function MappingBoard(props: MappingBoardProps) {
     return next;
   });
   const onRowClick = (event: MouseEvent, row: BoardRow) => {
-    if (event.metaKey || event.ctrlKey) toggleMark(row.alias);
+    if (event.metaKey || event.ctrlKey) setMarks((current) => {
+      const next = new Set(current.size === 0 && selected && selected !== row ? [selected.alias] : current);
+      if (!next.delete(row.alias)) next.add(row.alias);
+      return next;
+    });
     else if (event.shiftKey && selected) {
       const [from, to] = [rows.indexOf(selected), rows.indexOf(row)].sort((a, b) => a - b) as [number, number];
       setMarks((current) => new Set([...current, ...rows.slice(from, to + 1).map(({ alias: name }) => name)]));
@@ -156,17 +171,23 @@ export function MappingBoard(props: MappingBoardProps) {
     else setMarks(new Set());
     select(row.alias);
   };
-  const changeQuery = (text: string) => {
-    setQuery(text);
-    setMarks((current) => new Set([...current].filter((name) => view.rows.some((row) => row.alias === name && matchesQuery(row, text)))));
-  };
+  const changeQuery = (text: string) => setQuery(text);
   const bulk = (targets: readonly BoardRow[], kind: 'confirm' | 'ignore') => {
     if (savingRef.current || !targets.length) return;
     const result = applyEdits(input, state, saveScope, targets.map((row) => ({ kind, alias: row.alias })));
     const skipped = result.skipped.length
       ? `, ${result.skipped.length}건 건너뜀 (${[...new Set(result.skipped.map(({ reason }) => reason))].join(', ')})` : '';
+    const before = resolveBoard(input, state.present, saveScope, state.baseline);
+    const after = resolveBoard(input, result.state.present, saveScope, state.baseline);
+    const unchanged = result.applied.flatMap((name) => {
+      const previous = before.rows.find((row) => row.alias === name)!;
+      const next = after.rows.find((row) => row.alias === name)!;
+      return previous.status === next.status && JSON.stringify(previous.target) === JSON.stringify(next.target)
+        ? [next.overriddenBy ? `${name} (설비 규칙 ${next.overriddenBy} 우선)` : name] : [];
+    });
+    const unchangedText = unchanged.length ? ` · 결과가 바뀌지 않음: ${unchanged.join(', ')}` : '';
     setState(result.state);
-    setNotice({ state: result.state, alias, scope: saveScope, text: `${result.applied.length}건 ${kind === 'confirm' ? '확정' : '무시'}${skipped}` });
+    setNotice({ state: result.state, alias, scope: saveScope, text: `${result.applied.length}건 ${kind === 'confirm' ? '확정' : '무시'}${skipped}${unchangedText}` });
   };
   const openRule = () => {
     if (!selected || savingRef.current) return;
@@ -376,6 +397,7 @@ export function MappingBoard(props: MappingBoardProps) {
                     }}
                     onDragEnd={() => { dragAlias.current = null; }}
                   >
+                    {row === selected && <span className="eqv-ed-board-active" aria-hidden="true">▸</span>}
                     <span className="eqv-ed-board-alias">{row.alias}</span>
                     <span className="eqv-ed-board-status">{row.statusText}</span>
                     <span className="eqv-ed-board-target">{targetText(row)}</span>
@@ -398,6 +420,8 @@ export function MappingBoard(props: MappingBoardProps) {
           {bulkRows ? (
             <>
               <h3>{bulkRows.length}개 선택</h3>
+              {changedModelRules.length > 0 && <p className="eqv-ed-note">Model 규칙을 바꿉니다: {changedModelRules.join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
+              {overriddenRows.length > 0 && <p className="eqv-ed-note">설비 범위 규칙이 우선하는 alias: {overriddenRows.map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</p>}
               <div className="eqv-ed-board-actions">
                 <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => bulk(bulkRows, 'confirm')}>일괄 확정 (Enter)</button>
                 <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => bulk(bulkRows, 'ignore')}>일괄 무시 (I)</button>

@@ -1,9 +1,13 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { URL as NodeURL } from 'node:url';
 import { validateAliasRules } from '@eqv/core';
 import { MappingBoard, type MappingBoardProps, type SaveOutcome } from '../src/index.js';
 import { boardInput, equipmentRules, templateDraft } from './board-data.js';
+
+const editorCss = readFileSync(new NodeURL('../src/editor.css', import.meta.url), 'utf8');
 
 afterEach(cleanup);
 
@@ -430,7 +434,7 @@ it.each(['pattern', 'shared exact'] as const)('UX-5 warns when a pending exact r
     .toContain(`Model 규칙 ${id}을(를) 바꿉니다: synth-maker/synth-model의 모든 설비에 적용됩니다`);
 });
 
-const markedAliases = () => Array.from(list().querySelectorAll('[aria-selected="true"]')).map((node) => node.textContent!.slice(0, node.textContent!.search(/[●◐○⊘⚠]/)).trim());
+const markedAliases = () => Array.from(list().querySelectorAll('[aria-selected="true"]')).map((node) => node.querySelector('.eqv-ed-board-alias')!.textContent);
 const equipmentScope = () => fireEvent.click(screen.getByRole('radio', { name: /설비/ }));
 
 it('confirms two marked rows with the keyboard at Equipment scope and undoes them together', () => {
@@ -444,7 +448,7 @@ it('confirms two marked rows with the keyboard at Equipment scope and undoes the
   expect(markedAliases()).toEqual(['LLA', 'LP1']);
   expect(screen.getByText('2개 선택')).toBeTruthy();
   press(list(), 'Enter');
-  expect(screen.getByRole('status').textContent).toBe('2건 확정');
+  expect(screen.getByRole('status').textContent).toBe('2건 확정 · 결과가 바뀌지 않음: LLA, LP1');
   expect(option('LLA').textContent).toContain('미저장');
   press(list(), 'z', { ctrlKey: true });
   expect(option('LLA').textContent).not.toContain('미저장');
@@ -458,9 +462,9 @@ it('marks with modifier clicks, clears with a plain click, and keeps aria-select
   expect(markedAliases()).toEqual(['LLA']);
   fireEvent.click(option('PM1'), { ctrlKey: true });
   fireEvent.click(option('PM9'), { shiftKey: true });
-  expect(markedAliases()).toEqual(['PM1', 'PM2', 'PM9']);
+  expect(markedAliases()).toEqual(['LLA', 'PM1', 'PM2', 'PM9']);
   fireEvent.click(option('LP1'), { metaKey: true });
-  expect(markedAliases()).toEqual(['LP1', 'PM1', 'PM2', 'PM9']);
+  expect(markedAliases()).toEqual(['LLA', 'LP1', 'PM1', 'PM2', 'PM9']);
   fireEvent.click(option('TM_R1'));
   expect(markedAliases()).toEqual(['TM_R1']);
 });
@@ -556,4 +560,113 @@ it('offers an empty rule dialog when the alias has no digits', () => {
   const dialog = screen.getByRole('dialog');
   expect(dialog.textContent).toContain('패턴을 제안할 숫자가 없습니다');
   expect((within(dialog).getByLabelText(/패턴/) as HTMLInputElement).value).toBe('');
+});
+
+it.each(['ctrlKey', 'metaKey'] as const)('preserves the implicit active selection on the first %s click', (modifier) => {
+  mount();
+  equipmentScope();
+  fireEvent.click(option('LLA'));
+  fireEvent.click(option('LP1'), { [modifier]: true });
+  expect(markedAliases()).toEqual(['LLA', 'LP1']);
+  press(list(), 'Enter');
+  expect(screen.getByRole('status').textContent).toBe('2건 확정 · 결과가 바뀌지 않음: LLA, LP1');
+  fireEvent.click(option('LLA'));
+  fireEvent.click(option('LLA'), { [modifier]: true });
+  expect(option('LLA').getAttribute('aria-label')).toContain('일괄 선택됨');
+  expect(markedAliases()).toEqual(['LLA']);
+});
+
+it('drops marks when reassignment hides a row under a target filter', () => {
+  mount();
+  equipmentScope();
+  const search = screen.getByRole('searchbox', { name: 'Alias 검색' });
+  fireEvent.change(search, { target: { value: 'pm-a' } });
+  fireEvent.click(option('PM1'));
+  press(list(), ' ');
+  press(list(), 'a');
+  choose('pm-b');
+  expect(within(list()).queryByRole('option')).toBeNull();
+  fireEvent.change(search, { target: { value: 'pm' } });
+  press(list(), 'j');
+  press(list(), ' ');
+  expect(markedAliases()).toEqual(['PM2']);
+  press(list(), 'i');
+  expect(option('PM2').textContent).toContain('⊘ 무시');
+  expect(option('PM1').textContent).toContain('pm-b');
+  expect(option('PM1').textContent).not.toContain('⊘ 무시');
+});
+
+it('keeps aggregated Model and override warnings and qualifies bulk ignore results', () => {
+  mount();
+  fireEvent.click(option('PM1'));
+  press(list(), ' ');
+  press(list(), 'j', { shiftKey: true });
+  const pane = screen.getByRole('region', { name: '선택한 항목' });
+  expect(pane.textContent).toContain('설비 범위 규칙이 우선하는 alias: PM2 (pm-two-assumed) — 확정·무시하려면 저장 범위를 설비로 바꾸세요');
+  press(list(), 'i');
+  expect(screen.getByRole('status').textContent).toBe('2건 무시 · 결과가 바뀌지 않음: PM2 (설비 규칙 pm-two-assumed 우선)');
+  expect(pane.textContent).toContain('Model 규칙을 바꿉니다: pm-pattern, pm-two — synth-maker/synth-model의 모든 설비에 적용됩니다');
+  expect(option('PM1').textContent).toContain('⊘ 무시');
+  expect(option('PM2').textContent).toContain('◐ 자동');
+  fireEvent.click(button('실행 취소'));
+  expect(pane.textContent).not.toContain('Model 규칙을 바꿉니다:');
+});
+
+
+it('keeps a separate active caret and outline while ignored rows remain marked', () => {
+  const style = document.createElement('style');
+  style.textContent = editorCss;
+  document.head.append(style);
+  try {
+    mount();
+    equipmentScope();
+    fireEvent.click(option('LLA'));
+    press(list(), ' ');
+    press(list(), 'j', { shiftKey: true });
+    press(list(), 'i');
+    const activeCaret = () => option('LP1').querySelector('[aria-hidden="true"]');
+    expect(activeCaret()?.textContent).toBe('▸');
+    expect(getComputedStyle(option('LP1')).outlineStyle).toBe('solid');
+    press(list(), 'k');
+    expect(option('LP1').querySelector('.eqv-ed-board-active')).toBeNull();
+    expect(option('LLA').querySelector('.eqv-ed-board-active')?.textContent).toBe('▸');
+    expect(markedAliases()).toEqual(['LLA', 'LP1']);
+    expect(list().getAttribute('aria-activedescendant')).toBe(option('LLA').id);
+  } finally {
+    style.remove();
+  }
+});
+
+it.each(['a', 'r'])('caps the %s dialog inside 16px viewport gutters with border-box sizing', (key) => {
+  const style = document.createElement('style');
+  style.textContent = editorCss;
+  document.head.append(style);
+  try {
+    mount();
+    fireEvent.click(option('PM1'));
+    press(list(), key);
+    const sizing = getComputedStyle(screen.getByRole('dialog'));
+    expect(sizing.boxSizing).toBe('border-box');
+    expect(sizing.maxWidth).toBe(`${window.innerWidth - 32}px`);
+    expect(sizing.width).toBe(key === 'a' ? '420px' : '560px');
+  } finally {
+    style.remove();
+  }
+});
+
+it('shows a narrower-scope conflict in the rule preview without disabling add', () => {
+  const base = boardInput();
+  mount(undefined, { ruleFiles: {
+    ...base.ruleFiles,
+    model: { ...base.ruleFiles.model!, rules: [] },
+    equipment: { ...base.ruleFiles.equipment!, rules: ['eq-a', 'eq-b'].map((id) => ({
+      id, match: { pattern: 'PM{n}' }, target: { componentId: 'pm-a' }, certainty: 'verified' as const,
+    })) },
+  } });
+  fireEvent.click(option('PM1'));
+  press(list(), 'r');
+  const dialog = screen.getByRole('dialog');
+  fireEvent.change(within(dialog).getByLabelText(/대상 component/), { target: { value: 'pm-{n:letter}' } });
+  expect(dialog.textContent).toContain('PM1 → pm-a · 충돌 (더 좁은 범위: eq-a, eq-b)');
+  expect(within(dialog).getByRole('button', { name: '규칙 추가' }).getAttribute('aria-disabled')).toBe('false');
 });

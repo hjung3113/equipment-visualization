@@ -357,6 +357,25 @@ describe('pattern rules', () => {
     expect(preview.problems).toEqual([]);
   });
 
+  it('keeps a narrower-scope overlap blocked without refusing the candidate', () => {
+    const base = boardInput();
+    const input = boardInput({ ruleFiles: {
+      ...base.ruleFiles,
+      model: { ...base.ruleFiles.model!, rules: [] },
+      equipment: { ...base.ruleFiles.equipment!, rules: ['eq-a', 'eq-b'].map((id) => ({
+        id, match: { pattern: 'PM{n}' }, target: { componentId: 'pm-a' }, certainty: 'verified' as const,
+      })) },
+    } });
+    const state = createBoardState(input);
+    const preview = previewPatternRule(input, state.present, 'model', draft);
+    expect(preview.rows.find((r) => r.alias === 'PM1')).toMatchObject({ outcome: 'blocked', ruleIds: ['eq-a', 'eq-b'] });
+    expect(preview.summary).toBe('매칭 3 · 적용 0 · 예외 0 · 대상 없음 1 · 충돌 2');
+    expect(preview.problems).toEqual([]);
+    const added = addPatternRule(input, state, 'model', draft);
+    expect(added.present.model.rules.map(({ id }) => id)).toEqual(['pattern-pm-n']);
+    expect(row(input, 'PM1', added).status).toBe('conflict');
+  });
+
   it('labels a narrower-scope winner as shadowed', () => {
     const input = boardInput();
     const preview = previewPatternRule(input, createBoardState(input).present, 'model', draft);
