@@ -1,0 +1,918 @@
+{
+  "equipmentId": "eq-synth-02",
+  "from": "2026-01-01T10:00:00.000",
+  "to": "2026-01-01T10:30:00.000",
+  "timeDomain": "site-synth",
+  "watermark": {
+    "seq": 59,
+    "at": "2026-01-01T10:25:00.000"
+  },
+  "parserContractVersion": "synthetic-1",
+  "dataGeneration": "g1",
+  "occurrences": [
+    {
+      "id": "occ-carrier",
+      "equipmentId": "eq-synth-02",
+      "kind": "CARRIER_PRESENCE",
+      "start": {
+        "at": "2026-01-01T09:58:00.000",
+        "seq": 1,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 53,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "carrier",
+        "id": "C01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-lp-slot-one",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T09:59:00.000",
+        "seq": 2,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:01:00.000",
+        "seq": 4,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP2",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-lp-slot-two",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:00:00.000",
+        "seq": 3,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:04:00.000",
+        "seq": 10,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP2",
+        "slotAlias": "2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W02",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      }
+    },
+    {
+      "id": "occ-efem-out",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:01:00.000",
+        "seq": 5,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:02:00.000",
+        "seq": 6,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "EFEM_R1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      },
+      "from": {
+        "moduleAlias": "LP2",
+        "slotAlias": "1"
+      },
+      "to": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      }
+    },
+    {
+      "id": "occ-lla-arrival",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:02:00.000",
+        "seq": 7,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:03:00.000",
+        "seq": 8,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-tm-out",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:03:00.000",
+        "seq": 9,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:06:00.000",
+        "seq": 15,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "TM_R1",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      },
+      "from": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      },
+      "to": {
+        "moduleAlias": "PM1"
+      }
+    },
+    {
+      "id": "occ-efem-overlap",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:04:00.000",
+        "seq": 11,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:05:00.000",
+        "seq": 12,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "EFEM_R1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W02",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      },
+      "from": {
+        "moduleAlias": "LP2",
+        "slotAlias": "2"
+      },
+      "to": {
+        "moduleAlias": "LLA",
+        "slotAlias": "2"
+      }
+    },
+    {
+      "id": "occ-lla-slot-two",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:05:00.000",
+        "seq": 13,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:06:00.000",
+        "seq": 16,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LLA",
+        "slotAlias": "2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W02",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      }
+    },
+    {
+      "id": "occ-tm-arm-two",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:05:00.000",
+        "seq": 14,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:06:00.000",
+        "seq": 17,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "TM_R1",
+        "slotAlias": "2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W03",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      },
+      "from": {
+        "moduleAlias": "PM2",
+        "slotAlias": "2"
+      },
+      "to": {
+        "moduleAlias": "LLA",
+        "slotAlias": "2"
+      }
+    },
+    {
+      "id": "occ-pm1-process",
+      "equipmentId": "eq-synth-02",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:06:00.000",
+        "seq": 18,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:10:00.000",
+        "seq": 22,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-pm2-slot-one",
+      "equipmentId": "eq-synth-02",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:07:00.000",
+        "seq": 19,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:09:00.000",
+        "seq": 21,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM2",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W04",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-pm2-slot-two",
+      "equipmentId": "eq-synth-02",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:08:00.000",
+        "seq": 20,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:10:00.000",
+        "seq": 23,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM2",
+        "slotAlias": "2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W05",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      }
+    },
+    {
+      "id": "occ-tm-return",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:10:00.000",
+        "seq": 24,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:11:00.000",
+        "seq": 25,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "TM_R1",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      },
+      "from": {
+        "moduleAlias": "PM1"
+      },
+      "to": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      }
+    },
+    {
+      "id": "occ-lla-return",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:11:00.000",
+        "seq": 26,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:12:00.000",
+        "seq": 27,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-efem-return",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:12:00.000",
+        "seq": 28,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:13:00.000",
+        "seq": 29,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "EFEM_R1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      },
+      "from": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      },
+      "to": {
+        "moduleAlias": "LP2",
+        "slotAlias": "1"
+      }
+    },
+    {
+      "id": "occ-lp-return",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:13:00.000",
+        "seq": 30,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 54,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP2",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W01",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-forced",
+      "equipmentId": "eq-synth-02",
+      "kind": "POST_PROCESS",
+      "start": {
+        "at": "2026-01-01T10:13:00.000",
+        "seq": 31,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:14:00.000",
+        "seq": 32,
+        "evidence": "derived",
+        "reason": "ForcedByNextStart"
+      },
+      "location": {
+        "moduleAlias": "PM1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-fallback",
+      "equipmentId": "eq-synth-02",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:14:00.000",
+        "seq": 33,
+        "evidence": "derived",
+        "reason": "FallbackTime"
+      },
+      "end": {
+        "at": "2026-01-01T10:15:00.000",
+        "seq": 34,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-relocation",
+      "equipmentId": "eq-synth-02",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:15:00.000",
+        "seq": 35,
+        "evidence": "derived"
+      },
+      "end": {
+        "at": "2026-01-01T10:16:00.000",
+        "seq": 36,
+        "evidence": "derived"
+      },
+      "location": {
+        "moduleAlias": "TM_R1",
+        "slotAlias": "1"
+      },
+      "synthetic": true,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W06",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      },
+      "from": {
+        "moduleAlias": "LLA",
+        "slotAlias": "2"
+      },
+      "to": {
+        "moduleAlias": "PM2",
+        "slotAlias": "1"
+      }
+    },
+    {
+      "id": "occ-inferred",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:16:00.000",
+        "seq": 37,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:17:00.000",
+        "seq": 38,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM2",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W06",
+        "identityEvidence": "derived",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-identity-empty",
+      "equipmentId": "eq-synth-02",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:17:00.000",
+        "seq": 39,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:18:00.000",
+        "seq": 40,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": null,
+        "identityEvidence": "unknown",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-identity-unknown",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:18:00.000",
+        "seq": 41,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:19:00.000",
+        "seq": 42,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM2",
+        "slotAlias": "2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": null,
+        "identityEvidence": "unknown",
+        "lotId": "LOT-B"
+      }
+    },
+    {
+      "id": "occ-time-anomaly",
+      "equipmentId": "eq-synth-02",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:20:00.000",
+        "seq": 43,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:19:00.000",
+        "seq": 44,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W07",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-null-time",
+      "equipmentId": "eq-synth-02",
+      "kind": "FUNCTION",
+      "start": {
+        "at": null,
+        "seq": 45,
+        "evidence": "unknown",
+        "reason": "TimeParseFailure"
+      },
+      "end": {
+        "at": "2026-01-01T10:21:00.000",
+        "seq": 47,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-lla-conflict-one",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:21:00.000",
+        "seq": 48,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:23:00.000",
+        "seq": 50,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W08",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-lla-conflict-two",
+      "equipmentId": "eq-synth-02",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:22:00.000",
+        "seq": 49,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 55,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LLA",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W09",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      }
+    },
+    {
+      "id": "occ-unmapped",
+      "equipmentId": "eq-synth-02",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:23:00.000",
+        "seq": 51,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 56,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "PM9"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W10",
+        "identityEvidence": "observed",
+        "lotId": "LOT-A"
+      }
+    },
+    {
+      "id": "occ-ignored",
+      "equipmentId": "eq-synth-02",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:22:30.000",
+        "seq": 52,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 57,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "VIRT_SCH"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-open",
+      "equipmentId": "eq-synth-02",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 58,
+        "evidence": "observed"
+      },
+      "end": null,
+      "location": {
+        "moduleAlias": "PM2",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W11",
+        "identityEvidence": "observed",
+        "lotId": "LOT-B"
+      }
+    }
+  ],
+  "issues": [
+    {
+      "id": "dqi-end-before-start",
+      "equipmentId": "eq-synth-02",
+      "issueType": "EndBeforeStart",
+      "seq": 46,
+      "at": "2026-01-01T10:20:00.000",
+      "relatedOccurrenceId": "occ-time-anomaly"
+    },
+    {
+      "id": "dqi-unmatched-end",
+      "equipmentId": "eq-synth-02",
+      "issueType": "UnmatchedEnd",
+      "seq": 59,
+      "at": "2026-01-01T10:25:00.000"
+    }
+  ]
+}

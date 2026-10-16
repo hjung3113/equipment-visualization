@@ -2,7 +2,7 @@ import { lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile 
 import { dirname, join, sep } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
-  layoutRevision, mappingVersionSchema, validateAliasRules, validateBindings, validateLayout,
+  layoutRevision, mappingVersionSchema, observedInventorySchema, validateAliasRules, validateBindings, validateLayout,
   validateTypeDictionary, verifyMappingHash,
 } from '@eqv/core';
 
@@ -100,6 +100,17 @@ function writeTarget(segments: string[]): Target {
           if (!await verifyMappingHash(parsed.data)) fail(400, 'Mapping hash does not match its content');
           if (parsed.data.hash !== `sha256:${hex}`) fail(400, 'Mapping hash does not match the file name');
           if (parsed.data.equipmentId !== equipmentId) fail(400, 'equipmentId does not match the path');
+        },
+      };
+    }
+    const baseline = /^baselines\/([^/]+)\/([^/]+)\.inventory\.json$/.exec(key);
+    if (baseline && NAME.test(baseline[1]!) && HEX.test(baseline[2]!)) {
+      return {
+        immutable: true,
+        validate: async (value) => {
+          const parsed = observedInventorySchema.safeParse(value);
+          if (!parsed.success) return fail(400, 'Invalid inventory', parsed.error.issues);
+          if (parsed.data.equipmentId !== baseline[1]) fail(400, 'equipmentId does not match the path');
         },
       };
     }

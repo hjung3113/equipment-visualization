@@ -6,7 +6,7 @@ import {
   bringIntoView, clampCenter, defaultCamera, fitScale, panByFraction, pxPerUnit, screenToLayout,
   viewBoxOf, zoomAtPoint, zoomFromWheel, ZOOM_MAX, ZOOM_MIN, type Camera, type Frame, type Size,
 } from './camera.js';
-import { buildOverlay } from './overlay.js';
+import { buildOverlay, type Highlight } from './overlay.js';
 import { buildScene, type Scene } from './scene.js';
 import { formatNum, renderNode } from './svg.js';
 import type { TopViewProps } from './TopView.js';
@@ -16,6 +16,8 @@ export interface TopViewerProps extends TopViewProps {
   selectedId?: string | null;
   /** Fires for every user change in both the internal and the controlled selection. */
   onSelectedChange?: (id: string | null) => void;
+  /** Rings the listed components and draws a dashed line per observed transfer. Display only. */
+  highlight?: Highlight | null;
 }
 
 interface Drag {
@@ -121,7 +123,7 @@ function staticParts(scene: Scene): {
  * updates `aria-pressed` and the overlay, so a click does not rebuild the picture.
  */
 export function TopViewer({
-  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange,
+  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight,
 }: TopViewerProps) {
   const controlled = selectedId !== undefined;
   const [internalSelection, setInternalSelection] = useState<string | null>(null);
@@ -191,13 +193,14 @@ export function TopViewer({
   const showAll = layers?.capabilities ?? false;
   const overlay = useMemo(
     () => buildOverlay(scene, {
-      selectedId: selection, hoveredId: hover, focusedId: focusForOverlay, showAllCapabilities: showAll,
+      selectedId: selection, hoveredId: hover, focusedId: focusForOverlay, showAllCapabilities: showAll, highlight,
     }, 1 / scene.pxPerUnit),
-    [scene, selection, hover, focusForOverlay, showAll],
+    [scene, selection, hover, focusForOverlay, showAll, highlight],
   );
   const overlayNodes = useMemo(() => ({
     interaction: renderNode(overlay.interaction),
     capabilities: renderNode(overlay.capabilities),
+    highlight: overlay.highlight.children.length ? renderNode(overlay.highlight) : null,
   }), [overlay]);
 
   const queueRelayout = () => {
@@ -466,6 +469,7 @@ export function TopViewer({
         {overlayNodes.interaction}
         {parts.interfaces}
         {overlayNodes.capabilities}
+        {overlayNodes.highlight}
         {parts.labels}
         {parts.badges}
         {parts.chips}

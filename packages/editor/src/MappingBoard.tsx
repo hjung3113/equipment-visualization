@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import type { AliasRulesFile } from '@eqv/core';
-import { TopViewer } from '@eqv/renderer';
+import { TopViewer, type TopViewerProps } from '@eqv/renderer';
 import {
   addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
   paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,
@@ -14,6 +14,8 @@ export interface MappingBoardProps extends BoardInput {
    */
   onSave(files: { scope: SaveScope; file: AliasRulesFile }[]): Promise<SaveOutcome>;
   onDirtyChange?(dirty: boolean): void;
+  /** Rings and lines drawn over the Top View for a selected Mapping Conflict. */
+  highlight?: TopViewerProps['highlight'];
 }
 
 const VIEW = { width: 560, height: 420 };
@@ -412,7 +414,7 @@ export function MappingBoard(props: MappingBoardProps) {
         <div className="eqv-ed-board-pane eqv-ed-board-view" ref={viewRef} onDragOver={(event) => { if (dragAlias.current && componentAt(event)) event.preventDefault(); }} onDrop={onDrop}>
           <TopViewer
             layout={layout} width={VIEW.width} height={VIEW.height} selectedId={viewerId}
-            onSelectedChange={(id) => setPick({ kind: 'component', id })}
+            onSelectedChange={(id) => setPick({ kind: 'component', id })} highlight={props.highlight ?? null}
           />
         </div>
         <div className="eqv-ed-board-pane" aria-label="선택한 항목" role="region">

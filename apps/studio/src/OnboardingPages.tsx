@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
 import { buildGenericLayout, instantiateLayout, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
-  FleetTable, InventoryView, MappingBoard, summarizeFleet, TemplateProposals, type FleetRow, type MappingBoardProps,
+  FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
+  type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
 } from '@eqv/editor';
-import { ApiError, createDraft, saveAliasRules } from './api.js';
+import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
@@ -147,11 +148,49 @@ export function OnboardingPage({ equipmentId }: { equipmentId: string }) {
 
 const LEAVE_MESSAGE = '저장하지 않은 매핑 변경이 있습니다. 버리고 이동할까요?';
 
-function LoadedBoard({ equipmentId, result, layout, onDirtyChange }: {
-  equipmentId: string; result: Ok; layout: EquipmentLayoutDocument; onDirtyChange: (dirty: boolean) => void;
+type PublishOutcome = Awaited<ReturnType<PublishPanelProps['onPublish']>>;
+type Publication = { publishing: boolean; receipt: PublishPanelProps['receipt']; run(plan: PublishPlan, execute: () => Promise<PublishOutcome>): Promise<PublishOutcome> };
+
+/** D5: revision, Mapping Version, Baseline Inventory, then the bindings file (the commit point). Stops at the first failing step. */
+async function writePublication(plan: PublishPlan, layout: EquipmentLayoutDocument): Promise<PublishOutcome> {
+  const { mapping, bindings } = plan;
+  if (!mapping || !bindings) return { ok: false, error: '게시할 수 없는 상태입니다' };
+  const hex = mapping.hash.slice('sha256:'.length);
+  const { equipmentId } = mapping;
+  const steps: [string, () => Promise<void>][] = [
+    ['① Layout Revision', async () => {
+      const { revision } = await publishRevision(layout);
+      if (revision !== plan.layoutRevision) throw new Error('저장된 revision이 계획과 다릅니다');
+    }],
+    ['② Mapping Version', () => putImmutable(`onboarding/mappings/${equipmentId}/${hex}.mapping.json`, mapping)],
+    ['③ Baseline Inventory', async () => {
+      try {
+        await putImmutable(`onboarding/baselines/${equipmentId}/${hex}.inventory.json`, plan.baseline);
+      } catch (error) {
+        // A baseline for this Mapping Version already exists: the first one stays the Drift reference.
+        if (!(error instanceof ApiError && error.status === 409)) throw error;
+      }
+    }],
+    ['④ bindings', () => saveBindings(equipmentId, bindings)],
+  ];
+  for (const [name, write] of steps) {
+    try {
+      await write();
+    } catch (error) {
+      return { ok: false, error: `${name} 단계 실패: ${message(error)}` };
+    }
+  }
+  return { ok: true, mappingHash: mapping.hash };
+}
+
+function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }: {
+  equipmentId: string; result: Ok; layout: EquipmentLayoutDocument; onDirtyChange: (dirty: boolean) => void; publication: Publication;
 }) {
-  const { record, inventory, dictionaries, ruleFiles } = result.data;
+  const { record, inventory, dictionaries, ruleFiles, bindings, mappings } = result.data;
   const equipment = useMemo(() => ({ equipmentId, maker: record.maker, model: record.model }), [equipmentId, record.maker, record.model]);
+  // The rule files as saved: what a dry-run and Publish read. Unsaved Board edits are not part of them.
+  const [saved, setSaved] = useState<RuleFiles>(ruleFiles);
+  const [highlight, setHighlight] = useState<MappingBoardProps['highlight']>(null);
   const onSave: MappingBoardProps['onSave'] = async (files) => {
     // The paths come from what was loaded when the save starts, not from whatever the route is by the time a write returns.
     const paths = { model: `onboarding/scopes/model/${equipment.maker}/${equipment.model}/alias-rules.json`,
@@ -163,15 +202,62 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange }: {
       try {
         await saveAliasRules(paths[scope], file.file);
         savedScopes.push(scope);
+        setSaved((previous) => ({ ...previous, [scope]: file.file }));
       } catch (error) {
         return { savedScopes, error: message(error) };
       }
     }
     return { savedScopes };
   };
+  const [dirty, setDirty] = useState(false);
+  const input = useMemo(() => ({ equipment, inventory, dictionaries, layout, ruleFiles: saved }),
+    [equipment, inventory, dictionaries, layout, saved]);
+  const latest = bindings?.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a) ?? null;
+  const previous = latest ? mappings[latest.mappingHash] ?? null : null;
+
+  const onModelDryRun = async () => {
+    const ids = await listEquipmentIds();
+    const loads = await Promise.all(ids.map((id) => loadOnboarding(id)));
+    const rows: ModelDryRunInput[] = [];
+    loads.forEach((load, i) => {
+      const id = ids[i]!;
+      if (load.kind === 'not-found') return;
+      if (load.kind === 'error') {
+        if (load.record?.maker === equipment.maker && load.record.model === equipment.model) rows.push({ equipmentId: id, published: false, error: load.error });
+        return;
+      }
+      const { data } = load;
+      if (data.record.maker !== equipment.maker || data.record.model !== equipment.model) return;
+      const published = (data.bindings?.bindings.length ?? 0) > 0;
+      if (load.draft.kind === 'error') {
+        rows.push({ equipmentId: id, published, error: `레이아웃 draft 오류: ${load.draft.error}` });
+        return;
+      }
+      // Every row reads the saved Model rules of this page; the Equipment rules are the row's own.
+      const ruleFilesOfRow: RuleFiles = id === equipmentId ? saved : { ...data.ruleFiles, ...(saved.model ? { model: saved.model } : {}) };
+      rows.push({ equipmentId: id, published, input: {
+        equipment: { equipmentId: id, maker: data.record.maker, model: data.record.model }, inventory: data.inventory,
+        dictionaries: data.dictionaries, layout: load.draft.kind === 'found' ? load.draft.layout : null, ruleFiles: ruleFilesOfRow,
+      } });
+    });
+    return modelDryRunRows(rows);
+  };
+
+  // While publishing the Board is inert; the capture guard keeps a synthetic or scripted event from reaching it as well.
+  const guard = publication.publishing ? (event: SyntheticEvent) => { event.stopPropagation(); event.preventDefault(); } : undefined;
   return (
-    <MappingBoard key={equipmentId} equipment={equipment} inventory={inventory} dictionaries={dictionaries} layout={layout}
-      ruleFiles={ruleFiles} templates={result.templates} onSave={onSave} onDirtyChange={onDirtyChange} />
+    <>
+      <PublishPanel input={input} bindings={bindings} previous={previous} boardDirty={dirty}
+        publishing={publication.publishing} receipt={publication.receipt}
+        onPublish={(plan) => publication.run(plan, () => writePublication(plan, layout))}
+        onHighlight={setHighlight} onModelDryRun={onModelDryRun}
+        renderLink={(id) => <Link href={hrefFor({ name: 'board', equipmentId: id })}>{id}</Link>} />
+      <div inert={publication.publishing} onClickCapture={guard} onKeyDownCapture={guard} onDropCapture={guard}>
+        <MappingBoard key={equipmentId} equipment={equipment} inventory={inventory} dictionaries={dictionaries} layout={layout}
+          ruleFiles={ruleFiles} templates={result.templates} onSave={onSave} highlight={highlight}
+          onDirtyChange={(next) => { setDirty(next); onDirtyChange(next); }} />
+      </div>
+    </>
   );
 }
 
@@ -182,6 +268,34 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
   if (loaded.equipmentId !== equipmentId) setLoaded({ equipmentId, result: null });
   if (dirtyState.equipmentId !== equipmentId) setDirtyState({ equipmentId, dirty: false });
   const dirty = dirtyState.equipmentId === equipmentId && dirtyState.dirty;
+  // The publication outlives the reload that follows it, so its flag and receipt live here, above the Board.
+  const [publicationState, setPublicationState] = useState<{ equipmentId: string; publishing: boolean; receipt: PublishPanelProps['receipt']; reloads: number }>(
+    { equipmentId, publishing: false, receipt: null, reloads: 0 });
+  if (publicationState.equipmentId !== equipmentId) setPublicationState({ equipmentId, publishing: false, receipt: null, reloads: 0 });
+  const publicationNow = publicationState.equipmentId === equipmentId ? publicationState : { equipmentId, publishing: false, receipt: null, reloads: 0 };
+  const alive = useRef({ mounted: true, equipmentId });
+  alive.current.equipmentId = equipmentId;
+  useEffect(() => {
+    alive.current.mounted = true;
+    return () => { alive.current.mounted = false; };
+  }, []);
+
+  const run: Publication['run'] = async (plan, execute) => {
+    const forId = equipmentId;
+    const current = () => alive.current.mounted && alive.current.equipmentId === forId;
+    setPublicationState((previous) => ({ ...previous, equipmentId: forId, publishing: true, receipt: null }));
+    const outcome = await execute();
+    if (!outcome.ok) {
+      if (current()) setPublicationState((previous) => ({ ...previous, publishing: false }));
+      return outcome;
+    }
+    const reloaded = await loadOnboarding(forId);
+    if (!current()) return outcome;
+    setLoaded({ equipmentId: forId, result: reloaded });
+    const effectiveFrom = plan.bindings!.bindings.at(-1)!.effectiveFrom;
+    setPublicationState((previous) => ({ equipmentId: forId, publishing: false, receipt: { mappingHash: outcome.mappingHash, effectiveFrom }, reloads: previous.reloads + 1 }));
+    return outcome;
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -213,7 +327,8 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
           <p>레이아웃 draft가 없습니다</p>
         </>
       ) : (
-        <LoadedBoard equipmentId={equipmentId} result={result} layout={result.draft.layout}
+        <LoadedBoard key={publicationNow.reloads} equipmentId={equipmentId} result={result} layout={result.draft.layout}
+          publication={{ publishing: publicationNow.publishing, receipt: publicationNow.receipt, run }}
           onDirtyChange={(next) => setDirtyState({ equipmentId, dirty: next })} />
       )}
     </>

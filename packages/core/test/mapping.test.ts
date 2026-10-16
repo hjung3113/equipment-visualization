@@ -172,6 +172,15 @@ it.each(['overlap', 'equal', 'reverse', 'open-before-latest'])('rejects invalid 
   if (!result.ok) expect(result.issues.some((issue) => issue.code === (kind === 'overlap' ? 'binding-overlap' : 'binding-order'))).toBe(true);
 });
 
+it('accepts an optional layoutRevision on a binding and rejects a malformed one', () => {
+  const binding = { layoutId: 'cluster-single', mappingHash: `sha256:${'0'.repeat(64)}`, effectiveFrom: at };
+  const parse = (layoutRevision: string) => validateBindings({ schemaVersion: '0.4', equipmentId: 'eq-1', bindings: [{ ...binding, layoutRevision }] });
+  expect(parse(`sha256:${'1'.repeat(64)}`).ok).toBe(true);
+  const bad = parse('sha256:xyz');
+  expect(bad.ok).toBe(false);
+  if (!bad.ok) expect(bad.issues.some((issue) => issue.code === 'schema')).toBe(true);
+});
+
 it('resolves the most specific dictionary and detects duplicate entries', () => {
   const dictionaries = [scope, { level: 'equipment' as const, equipmentId: 'eq-1' }].map((scope, i) => ({ schemaVersion: '0.4' as const, scope, entries: [{ moduleType: 'PROCESS', role: i ? 'chamber' : 'pm' }] }));
   expect(resolveRole(dictionaries, 'PROCESS')).toBe('chamber');

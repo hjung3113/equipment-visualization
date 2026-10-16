@@ -28,6 +28,7 @@ The adapter must inject complete CSS colours. analytics-platform tokens hold RGB
 | `--eqv-interface` | Physical Interface overlay | `#374151` | `--text-secondary` |
 | `--eqv-capability` | Transfer Capability overlay | `#8154ce` | `--chart-purple-stroke` |
 | `--eqv-selection` | Selection outline | `#1428a0` | `--accent-primary` |
+| `--eqv-highlight` | Conflict highlight rings and observed-transfer line | `#b42318` | Literal palette value (no platform token) |
 | `--eqv-selection-fill` | Selection fill | `#e4e8f6` | `--accent-primary-soft` |
 | `--eqv-detail-fill` | Interior stations, hubs and joints | `#ffffff` | `--surface-field-filled` |
 | `--eqv-material-fill` | Material fill | `#f7e4cd` | Literal palette value (no platform token) |
