@@ -155,6 +155,8 @@ P0+P1의 6종이 conformance fixture 대상이며 P2 2종은 설계 검토용이
 
 - 파일 기반: Studio는 `assets/` 아래 Layout JSON을 읽고 쓴다(dev 서버 파일 API + import/export).
 - Publish = 내용 hash가 붙은 불변 Layout Revision 파일 생성. 이력·리뷰는 git diff.
+- 구현 규칙(#13): 작업 파일은 `layouts/<layoutId>/draft.layout.json`(덮어쓰기), Publish는 `layouts/<layoutId>/<hex>.layout.json`(불변, 덮어쓰지 않음)이다. `<hex>`는 `canonicalJson(layout)`의 SHA-256 64자리이며 Replay Key의 `layoutHash`(`sha256:` 접두 제외)와 같은 값이다(`layoutRevision`). Layout 스키마는 바뀌지 않는다.
+- 쓰기 범위: dev 파일 API는 `layouts/**`와 `onboarding/**`만 쓴다(각 경로 패턴의 core validator 통과 필수). `templates/`, `primitives/`는 읽기 전용이다.
 - 플랫폼 메타 DB 소유권은 통합 단계의 Open(§11).
 
 ## 7. Replay 기능 분리

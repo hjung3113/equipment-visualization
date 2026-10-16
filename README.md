@@ -2,7 +2,7 @@
 
 Reusable, standalone equipment Top View editor and explainable log replay toolkit for semiconductor equipment.
 
-> **Status: Design-first / research prototype (v0.3).** This repository is not yet an executable Studio, and the sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
+> **Status: Runnable Studio shell and layouts page.** Onboarding and Focus screens are pending (#14/#15). The sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
 
 ## Goals
 
@@ -23,7 +23,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 ## Planned packages
 
 ```
-apps/studio/                   # Standalone web app (planned)
+apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, import/export, draft, Layout Revision publish), dev-only file API (present); Onboarding and Focus screens pending (#14/#15)
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
 packages/renderer/            # Static read-only Top View (`TopView`, `buildScene`): fitted primitives, labels, Physical Interface marks, Transfer Capability segments, Holding Site counts, Certainty badges
 packages/editor/              # Semantic Top View editor (planned)
@@ -49,6 +49,7 @@ pnpm lint        # ESLint flat config across all packages (incl. the @ap/* bound
 pnpm typecheck   # turbo run typecheck
 pnpm test        # turbo run test
 pnpm build       # turbo run build
+pnpm dev         # builds core/renderer, then starts the Studio dev server (see apps/studio/README.md)
 git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
 ```
 
@@ -60,8 +61,8 @@ Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 | vitest | 3.2.7 | |
 | turbo | 2.11.4 | |
 | ESLint | 10.11.0 | |
-| React | 19.3.0 | added in S7/S8 (#12/#13) |
-| vite | 7.3.6 | added in S7/S8 (#12/#13) |
+| React | 19.3.1 | added in S7/S8 (#12/#13) |
+| vite | 7.3.7 | added in S7/S8 (#12/#13) |
 
 
 ### Layout schema changes
@@ -90,7 +91,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; there is no runnable Studio/replay app yet (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
+**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); the Onboarding and Focus screens (#14/#15) and the replay app are still pending (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
 
 ## Roadmap
 

@@ -7,6 +7,7 @@
     "node": ">=26.7.0"
   },
   "scripts": {
+    "dev": "turbo run build --filter=@eqv/studio^... && pnpm --filter @eqv/studio dev",
     "lint": "eslint .",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
