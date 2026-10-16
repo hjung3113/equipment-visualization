@@ -64,7 +64,7 @@
 
 /* 14c: Board editing */
 .eqv-ed-board-search { box-sizing: border-box; width: 100%; margin: 0 0 8px; padding: 4px 8px; font: inherit; }
-.eqv-ed-multi { background: var(--eqv-canvas, #f3f7fe); border-left-color: var(--eqv-selection, #1428a0); }
+.eqv-ed-multi:not(.eqv-ed-selected) { background: var(--eqv-canvas, #f3f7fe); border-left-color: var(--eqv-selection, #1428a0); }
 .eqv-ed-rule { width: min(560px, 94vw); max-height: 80vh; overflow-y: auto; }
 .eqv-ed-rule label { display: block; margin: 0 0 8px; }
 .eqv-ed-rule-rows { max-height: 200px; margin: 0 0 8px; padding-left: 20px; overflow-y: auto; font-variant-numeric: tabular-nums; }

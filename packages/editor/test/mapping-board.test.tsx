@@ -670,3 +670,43 @@ it('shows a narrower-scope conflict in the rule preview without disabling add', 
   expect(dialog.textContent).toContain('PM1 → pm-a · 충돌 (더 좁은 범위: eq-a, eq-b)');
   expect(within(dialog).getByRole('button', { name: '규칙 추가' }).getAttribute('aria-disabled')).toBe('false');
 });
+
+
+it('describes auto-confirm sharing and overrides before one-click confirmation', () => {
+  mount();
+  const auto = button('자동 일괄 확정 (1)');
+  const description = () => document.getElementById(auto.getAttribute('aria-describedby') ?? '')?.textContent;
+  expect(description()).toContain('Model 범위에 저장: synth-maker/synth-model의 모든 설비에 적용됩니다');
+  expect(description()).toContain('설비 범위 규칙이 우선하는 alias: PM2 (pm-two-assumed)');
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Alias 검색' }), { target: { value: 'LLA' } });
+  expect(description()).not.toContain('PM2');
+  fireEvent.change(screen.getByRole('searchbox', { name: 'Alias 검색' }), { target: { value: '' } });
+  fireEvent.click(auto);
+  expect(screen.getByRole('status').textContent).toBe('0건 확정, 1건 건너뜀 (이미 확정됨)');
+  equipmentScope();
+  expect(description()).not.toContain('Model 범위에 저장');
+  expect(description()).not.toContain('설비 범위 규칙이 우선');
+  fireEvent.click(auto);
+  expect(option('PM2').textContent).toContain('● 확정');
+  expect(screen.getByRole('status').textContent).toBe('1건 확정');
+});
+
+
+it('keeps the active selection background when the active row is also bulk-marked', () => {
+  const style = document.createElement('style');
+  // jsdom does not resolve CSS custom-property fallbacks for background colours.
+  style.textContent = editorCss.replace(/var\(--[^,]+,\s*([^)]+)\)/g, '$1');
+  document.head.append(style);
+  try {
+    mount();
+    fireEvent.click(option('LLA'));
+    const selection = getComputedStyle(option('LLA')).backgroundColor;
+    press(list(), ' ');
+    expect(getComputedStyle(option('LLA')).backgroundColor).toBe(selection);
+    press(list(), 'j', { shiftKey: true });
+    expect(getComputedStyle(option('LP1')).backgroundColor).toBe(selection);
+    expect(getComputedStyle(option('LLA')).backgroundColor).not.toBe(selection);
+  } finally {
+    style.remove();
+  }
+});

@@ -174,17 +174,11 @@ export function MappingBoard(props: MappingBoardProps) {
   const changeQuery = (text: string) => setQuery(text);
   const bulk = (targets: readonly BoardRow[], kind: 'confirm' | 'ignore') => {
     if (savingRef.current || !targets.length) return;
-    const result = applyEdits(input, state, saveScope, targets.map((row) => ({ kind, alias: row.alias })));
+    const result = applyEdits(input, state, saveScope, targets.map((row) => ({ kind, alias: row.alias })), view);
     const skipped = result.skipped.length
       ? `, ${result.skipped.length}건 건너뜀 (${[...new Set(result.skipped.map(({ reason }) => reason))].join(', ')})` : '';
-    const before = resolveBoard(input, state.present, saveScope, state.baseline);
-    const after = resolveBoard(input, result.state.present, saveScope, state.baseline);
-    const unchanged = result.applied.flatMap((name) => {
-      const previous = before.rows.find((row) => row.alias === name)!;
-      const next = after.rows.find((row) => row.alias === name)!;
-      return previous.status === next.status && JSON.stringify(previous.target) === JSON.stringify(next.target)
-        ? [next.overriddenBy ? `${name} (설비 규칙 ${next.overriddenBy} 우선)` : name] : [];
-    });
+    const unchanged = result.unchanged.map(({ alias: name, overriddenBy }) =>
+      overriddenBy ? `${name} (설비 규칙 ${overriddenBy} 우선)` : name);
     const unchangedText = unchanged.length ? ` · 결과가 바뀌지 않음: ${unchanged.join(', ')}` : '';
     setState(result.state);
     setNotice({ state: result.state, alias, scope: saveScope, text: `${result.applied.length}건 ${kind === 'confirm' ? '확정' : '무시'}${skipped}${unchangedText}` });
@@ -354,10 +348,15 @@ export function MappingBoard(props: MappingBoardProps) {
         </fieldset>
         <button type="button" className="eqv-ed-btn" disabled={saving || !canUndo(state)} onClick={() => setState(undo)}>실행 취소</button>
         <button type="button" className="eqv-ed-btn" disabled={saving || !canRedo(state)} onClick={() => setState(redo)}>다시 실행</button>
-        <button type="button" className="eqv-ed-btn" disabled={saving || autoRows.length === 0} onClick={() => bulk(autoRows, 'confirm')}>자동 일괄 확정 ({autoRows.length})</button>
+        <button type="button" className="eqv-ed-btn" disabled={saving || autoRows.length === 0} aria-describedby={`${ids}-auto-warnings`} onClick={() => bulk(autoRows, 'confirm')}>자동 일괄 확정 ({autoRows.length})</button>
         <button type="button" className="eqv-ed-btn eqv-ed-btn-primary" disabled={saving || !canSave} onClick={save}>저장</button>
         <span ref={saveStatusRef} role="status" tabIndex={-1}>{saving ? '저장 중…' : notice?.state === state && notice.alias === alias && notice.scope === saveScope ? notice.text : status}</span>
         {saveError && <span role="alert" className="eqv-ed-error">{saveError}</span>}
+      </div>
+      <div id={`${ids}-auto-warnings`}>
+        {saveScope === 'model' && <p className="eqv-ed-note">Model 범위에 저장: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
+        {saveScope === 'model' && autoRows.some((row) => row.changedModelRule) && <p className="eqv-ed-note">Model 규칙을 바꿉니다: {[...new Set(autoRows.flatMap((row) => row.changedModelRule ? [row.changedModelRule] : []))].join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
+        {autoRows.some((row) => row.overriddenBy) && <p className="eqv-ed-note">설비 범위 규칙이 우선하는 alias: {autoRows.filter((row) => row.overriddenBy).map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</p>}
       </div>
       {view.missingTemplate && <p className="eqv-ed-note">Template {view.missingTemplate}을(를) 찾을 수 없어 자동 배정이 없습니다.</p>}
       {view.unattributed.length > 0 && (
