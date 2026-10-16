@@ -67,6 +67,21 @@ const PAINT = {
   assumedFg: 'var(--eqv-assumed-fg, #8e5500)',
 } as const;
 
+const NEUTRAL_BOX: PrimitiveParts = {
+  body: el('rect', {
+    x: '-4', y: '-4', width: '8', height: '8',
+    fill: PAINT.board,
+    stroke: PAINT.secondary,
+    'stroke-width': '1.75',
+    'vector-effect': 'non-scaling-stroke',
+  }),
+  glyph: null,
+  rest: [],
+  viewBox: { x: -4, y: -4, width: 8, height: 8 },
+  stretches: false,
+  glyphBox: null,
+};
+
 const CLASS_KO: Record<SceneComponent['cls'], string> = {
   process: '공정 모듈',
   holding: '대기·출입 모듈',
@@ -103,6 +118,7 @@ interface Placed {
   asset: string;
   cls: 'process' | 'holding' | 'robot' | 'structure';
   prim: PrimitiveParts;
+  unknownAsset: boolean;
   w: number;
   h: number;
   S: number;
@@ -115,12 +131,17 @@ interface Placed {
   stacked: boolean;
 }
 
-function assetOf(assetRef: string): { name: string; cls: Placed['cls']; prim: PrimitiveParts } {
+function roleClass(role: string): Placed['cls'] {
+  return Object.hasOwn(CLASS, role) ? CLASS[role]! : (role === 'll' ? 'holding' : role === 'robot' ? 'robot' : 'process');
+}
+
+function assetOf(assetRef: string, role: string): { name: string; cls: Placed['cls']; prim: PrimitiveParts; unknownAsset: boolean } {
   const name = assetRef.startsWith('primitive:') ? assetRef.slice('primitive:'.length) : assetRef;
-  const prim = primitives[name];
-  const cls = CLASS[name];
-  if (!prim || !cls) throw new Error(`Unknown assetRef: ${assetRef}`);
-  return { name, cls, prim };
+  const prim = Object.hasOwn(primitives, name) ? primitives[name] : undefined;
+  const cls = Object.hasOwn(CLASS, name) ? CLASS[name] : undefined;
+  if (name === 'generic-box') return { name, cls: roleClass(role), prim: NEUTRAL_BOX, unknownAsset: false };
+  if (prim && cls) return { name, cls, prim, unknownAsset: false };
+  return { name: 'generic-box', cls: roleClass(role), prim: NEUTRAL_BOX, unknownAsset: true };
 }
 
 function localTransform(component: Component): string {
@@ -207,6 +228,25 @@ function fittedGlyph(placed: Placed, plan: LabelPlan | undefined, showLabel: boo
 
 function symbolNodes(placed: Placed, plan: LabelPlan | undefined, showLabel: boolean, kLocal: number): SvgNode[] {
   const { prim } = placed;
+  if (placed.asset === 'generic-box') {
+    const body = cloneNode(prim.body);
+    body.attrs = {
+      ...body.attrs,
+      x: formatNum(-placed.w / 2),
+      y: formatNum(-placed.h / 2),
+      width: formatNum(placed.w),
+      height: formatNum(placed.h),
+      ...(placed.unknownAsset ? { 'stroke-dasharray': '4 3' } : {}),
+    };
+    const nodes: SvgNode[] = [];
+    if (placed.stacked) {
+      const stackBody = cloneNode(body);
+      stackBody.attrs = { ...stackBody.attrs, fill: PAINT.board };
+      nodes.push(stackWrap(kLocal, [stackBody]));
+    }
+    nodes.push(body);
+    return nodes;
+  }
   const hasSize = placed.component.size != null;
   const sx = !hasSize ? 1 : prim.stretches ? placed.w / prim.viewBox.width : Math.min(placed.w / prim.viewBox.width, placed.h / prim.viewBox.height);
   const sy = !hasSize ? 1 : prim.stretches ? placed.h / prim.viewBox.height : sx;
@@ -333,7 +373,7 @@ function interfaceMark(a: Placed, b: Placed, kind: string, k: number): SvgNode |
 }
 
 function segmentEnd(row: Placed): CapabilityEnd {
-  return { label: row.component.label, center: row.center, poly: row.poly, w: row.w, h: row.h, S: row.S };
+  return { asset: row.asset, label: row.component.label, center: row.center, poly: row.poly, w: row.w, h: row.h, S: row.S };
 }
 
 function textNode(text: string, x: number, y: number, anchor: string, px: number, k: number, fill: string, weight: string, halo: boolean): SvgNode {
@@ -415,8 +455,9 @@ function chipRectAt(placed: Placed, index: number, k: number): Box {
   return { x0: frame.x1 - width, y0: frame.y0, x1: frame.x1, y1: frame.y0 + height };
 }
 
-/** A robot-class Component's fitted primitive extent in world coordinates: the viewBox scaled by the fit, arms and fork included. */
+/** A robot-class Component's rendered extent in world coordinates: the neutral rectangle or fitted primitive, arms and fork included. */
 function fittedExtent(placed: Placed): Box {
+  if (placed.asset === 'generic-box') return placed.bbox;
   const { viewBox } = placed.prim;
   const fit = placed.component.size == null
     ? 1
@@ -511,9 +552,9 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     stack.add(id);
     const parent = component.parentId ? resolve(component.parentId, stack) : null;
     stack.delete(id);
-    const { name, cls, prim } = assetOf(component.assetRef);
-    const w = component.size?.width ?? prim.viewBox.width;
-    const h = component.size?.height ?? prim.viewBox.height;
+    const { name, cls, prim, unknownAsset } = assetOf(component.assetRef, component.role);
+    const w = component.size?.width ?? (name === 'generic-box' ? 8 : prim.viewBox.width);
+    const h = component.size?.height ?? (name === 'generic-box' ? 8 : prim.viewBox.height);
     const local = mul(mul(translation(component.transform.x, component.transform.y), rotation(component.transform.rotation)), scaling(component.transform.scale));
     const matrix = parent ? mul(parent.matrix, local) : local;
     const S = (parent?.S ?? 1) * component.transform.scale;
@@ -521,7 +562,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     const poly = shapeLocal(name, w, h).map(([x, y]) => apply(matrix, x, y));
     const hidden = !visible.has(component.levelId);
     const row: Placed = {
-      component, id, asset: name, cls, prim, w, h, S, worldRot, matrix, poly,
+      component, id, asset: name, cls, prim, unknownAsset, w, h, S, worldRot, matrix, poly,
       bbox: bboxOf(poly),
       center: apply(matrix, 0, 0),
       hidden,
@@ -559,6 +600,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       'data-level-id': component.levelId,
       transform: localTransform(component),
     };
+    if (row.unknownAsset) attrs['data-asset-unknown'] = 'true';
     if (row.hidden) {
       attrs['data-hidden'] = 'true';
       return el('g', attrs, kids);
@@ -568,11 +610,11 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       attrs.tabindex = '0';
       attrs.role = 'button';
       attrs['aria-pressed'] = 'false';
-      attrs['aria-label'] = `${component.label}, ${CLASS_KO[row.cls]}`;
+      attrs['aria-label'] = `${component.label}, ${CLASS_KO[row.cls]}${row.unknownAsset ? ', 알 수 없는 도형' : ''}`;
     }
     const plan = plans.get(component.id);
     return el('g', attrs, [
-      el('title', {}, [`${component.label} · ${component.id}`]),
+      el('title', {}, [`${component.label} · ${component.id}${row.unknownAsset ? ` · 알 수 없는 도형 (${component.assetRef})` : ''}`]),
       ...symbolNodes(row, plan, showLabel, k / row.S),
       ...kids,
     ]);

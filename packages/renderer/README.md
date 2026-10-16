@@ -10,6 +10,10 @@ The picture is derived. Connectivity is only what the layout states: a Physical 
 
 With a footprint, structures stretch to it. A structure body that is a `rect` is redrawn at the footprint with a 12px corner radius; other structure children (rail lines, the `tm` polygon) stretch with the viewBox. Module, holding and robot symbols scale uniformly by `min(w / viewBoxWidth, h / viewBoxHeight)` and stay centred. Without a footprint the natural viewBox is drawn at scale 1. Nothing is parsed at runtime and nothing is injected with `innerHTML`: primitives are compiled to `SvgNode` trees.
 
+### Unknown and generic assets
+
+An unknown `assetRef` draws a centred neutral rectangle with no glyph, using the Component's role for its class and its `size` when present (otherwise an 8×8 local-unit footprint). Its dashed outline, `data-asset-unknown="true"`, SVG title and interactive `aria-label` mark it as unknown. `generic-box` draws the same rectangle without the unknown markers.
+
 Default options: `labels: 'label'`, interfaces on, certainty / holding sites / capabilities off, every level visible.
 
 | Prop | Meaning |

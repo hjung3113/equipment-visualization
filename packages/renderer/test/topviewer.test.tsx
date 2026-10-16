@@ -158,6 +158,13 @@ function matrixAttr(matrix: Mat): string {
   return `matrix(${[matrix.a, matrix.b, matrix.c, matrix.d, matrix.e, matrix.f].map((value) => formatNum(value)).join(' ')})`;
 }
 
+it('appends an unknown-asset cue to the interactive aria-label', () => {
+  const layout = fixture([component({ id: 'unknown', assetRef: 'synthetic-unlisted', label: 'Unknown module', role: 'robot' })]);
+  const { svg } = mount({ layout });
+
+  expect(componentEl(svg, 'unknown').getAttribute('aria-label')?.endsWith(', 알 수 없는 도형')).toBe(true);
+});
+
 it('toggles a component once per click and clears on a second click or the board', () => {
   const onSelectedChange = vi.fn();
   const { svg } = mount({ layout, onSelectedChange });
