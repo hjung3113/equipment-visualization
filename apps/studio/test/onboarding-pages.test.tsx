@@ -49,7 +49,10 @@ afterEach(async () => {
 });
 
 const at = (path: string) => window.history.replaceState(null, '', path);
-const fleetRow = async (id: string) => (await screen.findByRole('link', { name: id })).closest('tr')!;
+// Wait for the load with a cheap text query, then query by role: a file's first *ByRole call is cold (≈0.5 s on a
+// loaded runner) and, inside findBy*, it spends the 1000 ms window that the page load needs.
+const loaded = () => waitFor(() => expect(screen.queryByText('불러오는 중…')).toBeNull());
+const fleetRow = async (id: string) => { await loaded(); return screen.getByRole('link', { name: id }).closest('tr')!; };
 
 it('lists a published equipment on /fleet with a link to its onboarding page', async () => {
   at('/fleet');

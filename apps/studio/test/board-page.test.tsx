@@ -81,13 +81,16 @@ async function assignPm9(component = 'pm-b') {
   const dialog = screen.getByRole('dialog');
   fireEvent.click(within(dialog).getAllByRole('option').find((row) => row.querySelector('code')!.textContent === component)!);
 }
+// See onboarding-pages.test.tsx: wait for the load with a text query before the file's first (cold) role query.
+const loaded = () => waitFor(() => expect(screen.queryByText('불러오는 중…')).toBeNull());
 const save = () => fireEvent.click(screen.getByRole('button', { name: '저장' }));
 
 it('mounts the Board for a direct visit and shows the fixture statuses', async () => {
   await writeDraft(root, 'eq-synth-01-layout');
   at('/onboarding/eq-synth-01/board');
   render(<App />);
-  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  await loaded();
+  screen.getByRole('heading', { name: '④ Mapping Board' });
   const status = async (alias: string) => (await option(alias)).querySelector('.eqv-ed-board-status')!.textContent;
   expect(await Promise.all(['EFEM_R1', 'LLA', 'LP1', 'PM1', 'PM2', 'PM9', 'TM_R1', 'VIRT_SCH'].map(status))).toEqual(
     ['● 확정', '● 확정', '● 확정', '● 확정', '◐ 자동', '○ 미매핑', '● 확정', '⊘ 무시']);
