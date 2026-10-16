@@ -51,19 +51,40 @@ export function hrefFor(route: Route): string {
 
 const listeners = new Set<() => void>();
 const notify = () => listeners.forEach((listener) => listener());
+let navigationBlocker: (() => boolean) | null = null;
+let lastHref: string;
 
-export function navigate(href: string, options: { replace?: boolean } = {}): void {
+export function setNavigationBlocker(blocker: (() => boolean) | null): void {
+  navigationBlocker = blocker;
+  if (blocker) lastHref = window.location.href;
+}
+
+export function navigate(href: string, options: { replace?: boolean; force?: boolean } = {}): void {
+  if (!options.force && navigationBlocker && !navigationBlocker()) return;
   if (options.replace) window.history.replaceState(null, '', href);
   else window.history.pushState(null, '', href);
+  lastHref = window.location.href;
+  notify();
+}
+
+function onPopState(): void {
+  if (navigationBlocker && !navigationBlocker()) {
+    window.history.pushState(null, '', lastHref);
+    return;
+  }
+  lastHref = window.location.href;
   notify();
 }
 
 function subscribe(listener: () => void): () => void {
+  if (listeners.size === 0) {
+    lastHref = window.location.href;
+    window.addEventListener('popstate', onPopState);
+  }
   listeners.add(listener);
-  window.addEventListener('popstate', listener);
   return () => {
     listeners.delete(listener);
-    window.removeEventListener('popstate', listener);
+    if (listeners.size === 0) window.removeEventListener('popstate', onPopState);
   };
 }
 

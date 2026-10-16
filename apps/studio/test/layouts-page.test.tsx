@@ -146,7 +146,12 @@ it('contains renderer errors and recovers when another file is opened', async ()
   expect((screen.getByRole('button', { name: '초안 저장' }) as HTMLButtonElement).disabled).toBe(false);
   expect((screen.getByLabelText(/가져오기/) as HTMLInputElement).disabled).toBe(false);
 
-  fireEvent.click(await within(list).findByRole('link', { name: 'another' }));
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  try {
+    fireEvent.click(await within(list).findByRole('link', { name: 'another' }));
+  } finally {
+    confirm.mockRestore();
+  }
   await waitFor(() => expect(componentIds(container)).toEqual(ids));
   expect(screen.queryByRole('alert')).toBeNull();
 });
@@ -310,5 +315,99 @@ it('keeps the saved viewer until a differing draft read replaces its content', a
   } finally {
     await act(async () => { release(); });
     await screen.findByRole('group', { name: 'Changed draft from disk' });
+  }
+});
+
+it('asks before discarding an unsaved import through a template link', async () => {
+  window.history.replaceState(null, '', '/layouts');
+  render(<App />);
+  const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
+  raw.id = 'unsaved-import';
+  fireEvent.change(screen.getByLabelText(/가져오기/), {
+    target: { files: [{ text: async () => JSON.stringify(raw) }] },
+  });
+  await screen.findByText('저장 안 됨');
+  const originalUrl = window.location.href;
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  try {
+    const template = await screen.findByRole('link', { name: 'cluster-single' });
+    fireEvent.click(template);
+    expect(window.location.href).toBe(originalUrl);
+    expect(screen.getByText('저장 안 됨')).toBeTruthy();
+    expect(screen.getByText('unsaved-import')).toBeTruthy();
+    expect(confirm).toHaveBeenCalledWith('저장하지 않은 가져오기 문서가 있습니다. 버리고 이동할까요?');
+
+    confirm.mockReturnValue(true);
+    fireEvent.click(template);
+    await screen.findByRole('group', { name: raw.name });
+    expect(window.location.search).toContain('cluster-single.template.json');
+    expect(screen.queryByText('저장 안 됨')).toBeNull();
+    expect(screen.queryByText('unsaved-import')).toBeNull();
+  } finally {
+    confirm.mockRestore();
+  }
+});
+
+it('saves an unsaved import without asking for confirmation', async () => {
+  window.history.replaceState(null, '', '/layouts');
+  render(<App />);
+  const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
+  raw.id = 'unsaved-import';
+  fireEvent.change(screen.getByLabelText(/가져오기/), {
+    target: { files: [{ text: async () => JSON.stringify(raw) }] },
+  });
+  await screen.findByText('저장 안 됨');
+  const originalUrl = window.location.href;
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  try {
+    fireEvent.click(screen.getByRole('link', { name: 'Fleet' }));
+    expect(window.location.href).toBe(originalUrl);
+    expect(confirm).toHaveBeenCalled();
+    confirm.mockClear();
+
+    fireEvent.click(screen.getByRole('button', { name: '초안 저장' }));
+    await waitFor(() => expect(window.location.search).toContain('draft.layout.json'));
+    await waitFor(() => expect(screen.queryByText('저장 안 됨')).toBeNull());
+    expect(confirm).not.toHaveBeenCalled();
+    expect(JSON.parse(await readFile(join(root, 'layouts/unsaved-import/draft.layout.json'), 'utf8')).id)
+      .toBe('unsaved-import');
+  } finally {
+    confirm.mockRestore();
+  }
+});
+
+it.each(['save', 'discard', 'unmount'])('prevents beforeunload only while an import is unsaved (%s)', async (finish) => {
+  window.history.replaceState(null, '', '/layouts');
+  const view = render(<App />);
+  const beforeImport = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(beforeImport);
+  expect(beforeImport.defaultPrevented).toBe(false);
+  const raw = await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8');
+  fireEvent.change(screen.getByLabelText(/가져오기/), {
+    target: { files: [{ text: async () => raw }] },
+  });
+  await screen.findByText('저장 안 됨');
+  const unsaved = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(unsaved);
+  expect(unsaved.defaultPrevented).toBe(true);
+
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  try {
+    if (finish === 'save') {
+      fireEvent.click(screen.getByRole('button', { name: '초안 저장' }));
+      await waitFor(() => expect(window.location.search).toContain('draft.layout.json'));
+      await waitFor(() => expect(screen.queryByText('저장 안 됨')).toBeNull());
+    } else if (finish === 'discard') {
+      fireEvent.click(await screen.findByRole('link', { name: 'cluster-single' }));
+      await waitFor(() => expect(screen.queryByText('저장 안 됨')).toBeNull());
+      await screen.findByRole('group', { name: JSON.parse(raw).name });
+    } else {
+      view.unmount();
+    }
+    const finished = new Event('beforeunload', { cancelable: true });
+    window.dispatchEvent(finished);
+    expect(finished.defaultPrevented).toBe(false);
+  } finally {
+    confirm.mockRestore();
   }
 });

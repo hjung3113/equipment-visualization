@@ -2,7 +2,7 @@ import { Component, useEffect, useLayoutEffect, useRef, useState, type ChangeEve
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
-import { Link, hrefFor, navigate } from './router.js';
+import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const VIEW_WIDTH = 960;
 const VIEW_HEIGHT = 600;
@@ -98,7 +98,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     return () => { activeDocumentEpoch.current = null; };
   }, [documentEpoch]);
 
-  // Opening another file discards an unsaved import and any notices tied to the previous document.
+  // After navigation is approved, opening another file clears the import and previous notices.
   if (prevFile !== file) {
     setPrevFile(file);
     if (seed?.file !== file) setDocumentEpoch(documentEpoch + 1);
@@ -110,6 +110,17 @@ export function LayoutsPage({ file }: { file: string | null }) {
     setLoaded(seed?.file === file ? { state: 'ready', ...seed.doc } : file === null ? null : { state: 'loading' });
     setSeed(null);
   }
+
+  useEffect(() => {
+    if (imported === null) return;
+    setNavigationBlocker(() => window.confirm('저장하지 않은 가져오기 문서가 있습니다. 버리고 이동할까요?'));
+    const onBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); };
+    window.addEventListener('beforeunload', onBeforeUnload);
+    return () => {
+      setNavigationBlocker(null);
+      window.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  }, [imported]);
 
   useEffect(() => {
     let cancelled = false;
@@ -201,7 +212,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
       setImported(null);
     } else {
       setSeed({ file: path, doc: current });
-      navigate(hrefFor({ name: 'layouts', file: path }));
+      navigate(hrefFor({ name: 'layouts', file: path }), { force: true });
     }
   });
 

@@ -4,6 +4,11 @@ Standalone Studio app: shell and router (`/fleet`, `/layouts`, `/onboarding/:equ
 (viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet, Onboarding and Focus are
 placeholders until #14/#15.
 
+An imported document is unsaved until its draft is saved. While it is unsaved, opening another file or leaving the
+page through Studio navigation or browser back/forward asks before discarding it. Reloading or closing the tab uses
+the browser's own leave-page prompt. Draft save proceeds without a discard prompt; choosing another import replaces
+the current import without asking.
+
 ## Run
 
 ```sh
