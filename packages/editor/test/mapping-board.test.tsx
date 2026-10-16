@@ -388,7 +388,7 @@ it('UX-12 labels draft rule ids as future rules and shows the supported keyboard
   const pane = screen.getByRole('region', { name: '선택한 항목' });
   expect(pane.textContent).toContain('초안 (저장 시 board-lp1)');
   expect(within(pane).getByText('확실성')).toBeTruthy();
-  expect(screen.getByText('j/k 이동 · Enter 확정 · A 배정 · I 무시 · ⌘Z/⇧⌘Z')).toBeTruthy();
+  expect(screen.getByText('j/k 이동 · Shift 선택 확장 · Space 선택 · Enter 확정 · A 배정 · I 무시 · R 규칙화 · / 검색 · ⌘Z/⇧⌘Z')).toBeTruthy();
 });
 
 it('UX-12 explains a missing target without appending the raw English diagnostic', () => {
@@ -428,4 +428,132 @@ it.each(['pattern', 'shared exact'] as const)('UX-5 warns when a pending exact r
   const id = kind === 'pattern' ? 'pm-pattern' : 'lp';
   expect(screen.getByRole('region', { name: '선택한 항목' }).textContent)
     .toContain(`Model 규칙 ${id}을(를) 바꿉니다: synth-maker/synth-model의 모든 설비에 적용됩니다`);
+});
+
+const markedAliases = () => Array.from(list().querySelectorAll('[aria-selected="true"]')).map((node) => node.textContent!.slice(0, node.textContent!.search(/[●◐○⊘⚠]/)).trim());
+const equipmentScope = () => fireEvent.click(screen.getByRole('radio', { name: /설비/ }));
+
+it('confirms two marked rows with the keyboard at Equipment scope and undoes them together', () => {
+  mount();
+  equipmentScope();
+  list().focus();
+  press(list(), 'j');
+  press(list(), 'j');
+  press(list(), ' ');
+  press(list(), 'j', { shiftKey: true });
+  expect(markedAliases()).toEqual(['LLA', 'LP1']);
+  expect(screen.getByText('2개 선택')).toBeTruthy();
+  press(list(), 'Enter');
+  expect(screen.getByRole('status').textContent).toBe('2건 확정');
+  expect(option('LLA').textContent).toContain('미저장');
+  press(list(), 'z', { ctrlKey: true });
+  expect(option('LLA').textContent).not.toContain('미저장');
+  expect(option('LP1').textContent).not.toContain('미저장');
+  expect(button('실행 취소').disabled).toBe(true);
+});
+
+it('marks with modifier clicks, clears with a plain click, and keeps aria-selected on the active row without marks', () => {
+  mount();
+  fireEvent.click(option('LLA'));
+  expect(markedAliases()).toEqual(['LLA']);
+  fireEvent.click(option('PM1'), { ctrlKey: true });
+  fireEvent.click(option('PM9'), { shiftKey: true });
+  expect(markedAliases()).toEqual(['PM1', 'PM2', 'PM9']);
+  fireEvent.click(option('LP1'), { metaKey: true });
+  expect(markedAliases()).toEqual(['LP1', 'PM1', 'PM2', 'PM9']);
+  fireEvent.click(option('TM_R1'));
+  expect(markedAliases()).toEqual(['TM_R1']);
+});
+
+it('bulk-ignores the marked rows and reports skips', () => {
+  mount();
+  list().focus();
+  press(list(), 'j');
+  press(list(), 'j', { shiftKey: true });
+  press(list(), 'Escape');
+  expect(markedAliases()).toEqual(['LLA']);
+  press(list(), 'j', { shiftKey: true });
+  fireEvent.click(button('일괄 무시 (I)'));
+  expect(screen.getByRole('status').textContent).toBe('2건 무시');
+});
+
+it('confirms the assumed rows at once with 자동 일괄 확정', () => {
+  mount();
+  expect(button('자동 일괄 확정 (1)').disabled).toBe(false);
+  cleanup();
+  mount(undefined, { ruleFiles: {}, layout: templateDraft() });
+  fireEvent.click(button('자동 일괄 확정 (6)'));
+  expect(screen.getByRole('status').textContent).toBe('6건 확정');
+  expect(button('자동 일괄 확정 (0)').disabled).toBe(true);
+  fireEvent.click(button('실행 취소'));
+  expect(button('자동 일괄 확정 (6)').disabled).toBe(false);
+});
+
+it('filters with / search, prunes marks of hidden rows and returns to the list on Esc', () => {
+  mount();
+  list().focus();
+  press(list(), 'j');
+  press(list(), ' ');
+  press(list(), 'j', { shiftKey: true });
+  press(list(), '/');
+  const search = screen.getByRole('searchbox', { name: 'Alias 검색' });
+  expect(document.activeElement).toBe(search);
+  fireEvent.change(search, { target: { value: 'pm' } });
+  expect(within(list()).getAllByRole('option').map((node) => node.id.split('alias-')[1])).toEqual(['PM1', 'PM2', 'PM9']);
+  expect(within(list()).queryByRole('group', { name: 'Role lp' })).toBeNull();
+  expect(markedAliases()).toEqual([]);
+  fireEvent.change(search, { target: { value: 'zzz' } });
+  expect(screen.getByText('일치하는 alias가 없습니다')).toBeTruthy();
+  press(search, 'Escape');
+  expect((search as HTMLInputElement).value).toBe('');
+  expect(document.activeElement).toBe(list());
+  expect(within(list()).getAllByRole('option')).toHaveLength(8);
+});
+
+it('previews a rule with R, refuses an overlap at Model scope and adds it at Equipment scope', () => {
+  mount();
+  list().focus();
+  fireEvent.click(option('PM1'));
+  press(list(), 'r');
+  let dialog = screen.getByRole('dialog');
+  expect(dialog.textContent).toContain('PM1에서 규칙 만들기 · 저장 범위 Model');
+  expect((within(dialog).getByLabelText(/패턴/) as HTMLInputElement).value).toBe('PM{n}');
+  expect((within(dialog).getByLabelText(/대상 component/) as HTMLInputElement).value).toBe('pm-{n:letter}');
+  expect(document.activeElement).toBe(within(dialog).getByLabelText(/패턴/));
+  expect(dialog.textContent).toContain('충돌 (pm-pattern');
+  const add = within(dialog).getByRole('button', { name: '규칙 추가' });
+  expect(add.getAttribute('aria-disabled')).toBe('true');
+  expect(document.getElementById(add.getAttribute('aria-describedby')!)!.textContent).toBe('같은 범위 규칙과 겹칩니다: pm-pattern');
+  fireEvent.click(add);
+  expect(screen.getByRole('dialog')).toBeTruthy();
+  press(dialog, 'Escape');
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(list());
+  equipmentScope();
+  list().focus();
+  press(list(), 'r');
+  dialog = screen.getByRole('dialog');
+  expect(dialog.textContent).toContain('매칭 3 · 적용 1 · 예외 1 · 대상 없음 1 · 충돌 0');
+  expect(dialog.textContent).toContain('PM2 → pm-b · 예외 (정확 규칙 pm-two-assumed)');
+  expect(dialog.textContent).toContain('PM9 → pm-i · 대상 없음 (레이아웃에 없음)');
+  const buttons = within(dialog).getAllByRole('button');
+  buttons[buttons.length - 1]!.focus();
+  press(buttons[buttons.length - 1]!, 'Tab');
+  expect(document.activeElement).toBe(within(dialog).getByLabelText(/패턴/));
+  press(within(dialog).getByLabelText(/패턴/), 'Enter');
+  expect(screen.queryByRole('dialog')).toBeNull();
+  expect(document.activeElement).toBe(list());
+  fireEvent.click(option('PM1'));
+  expect(screen.getByRole('region', { name: '선택한 항목' }).textContent).toContain('설비 · pattern-pm-n · 패턴');
+  fireEvent.click(button('실행 취소'));
+  expect(screen.getByRole('region', { name: '선택한 항목' }).textContent).toContain('Model · pm-pattern');
+});
+
+it('offers an empty rule dialog when the alias has no digits', () => {
+  mount();
+  fireEvent.click(option('VIRT_SCH'));
+  fireEvent.click(button('규칙화 (R)'));
+  const dialog = screen.getByRole('dialog');
+  expect(dialog.textContent).toContain('패턴을 제안할 숫자가 없습니다');
+  expect((within(dialog).getByLabelText(/패턴/) as HTMLInputElement).value).toBe('');
 });

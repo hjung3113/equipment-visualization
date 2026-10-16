@@ -1,9 +1,10 @@
-import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import type { AliasRulesFile } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import {
-  applyEdit, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty, paletteOptions,
-  redo, resolveBoard, undo, type BoardEdit, type BoardInput, type BoardRow, type BoardState, type SaveOutcome, type SaveScope,
+  addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
+  paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,
+  type BoardEdit, type BoardInput, type BoardRow, type BoardState, type PatternPreview, type SaveOutcome, type SaveScope,
 } from './board.js';
 
 export interface MappingBoardProps extends BoardInput {
@@ -22,6 +23,16 @@ const messageOf = (error: unknown) => error instanceof Error ? error.message : S
 const isModified = (event: KeyboardEvent) => event.ctrlKey || event.metaKey || event.altKey;
 
 type Pick = { kind: 'alias' } | { kind: 'component'; id: string | null };
+const OUTCOME_TEXT = (row: PatternPreview['rows'][number]): string => {
+  const ids = row.ruleIds.join(', ');
+  switch (row.outcome) {
+    case 'applies': return '적용';
+    case 'exception': return `예외 (정확 규칙 ${ids})`;
+    case 'missing-target': return '대상 없음 (레이아웃에 없음)';
+    case 'overlap': return `충돌 (${ids})`;
+    case 'shadowed': return `우선 규칙 ${ids}`;
+  }
+};
 
 export function MappingBoard(props: MappingBoardProps) {
   const { equipment, inventory, dictionaries, layout, ruleFiles, templates, onSave, onDirtyChange } = props;
@@ -33,11 +44,16 @@ export function MappingBoard(props: MappingBoardProps) {
   const [saving, setSaving] = useState(false);
   const [savedState, setSavedState] = useState<BoardState | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<{ state: BoardState; alias: string; scope: SaveScope; text: string } | null>(null);
+  const [notice, setNotice] = useState<{ state: BoardState; alias: string | null; scope: SaveScope; text: string } | null>(null);
+  const [marks, setMarks] = useState<ReadonlySet<string>>(new Set());
+  const [query, setQuery] = useState('');
+  const [rule, setRule] = useState<{ alias: string; pattern: string; target: string; hint: boolean } | null>(null);
   const ids = useId();
   const saveStatusRef = useRef<HTMLSpanElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLInputElement>(null);
+  const patternRef = useRef<HTMLInputElement>(null);
+  const searchRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<HTMLDivElement>(null);
   const aliveRef = useRef(true);
@@ -51,8 +67,19 @@ export function MappingBoard(props: MappingBoardProps) {
   const input = useMemo<BoardInput>(() => ({ equipment, inventory, dictionaries, layout, ruleFiles, templates }),
     [equipment, inventory, dictionaries, layout, ruleFiles, templates]);
   const view = useMemo(() => resolveBoard(input, state.present, saveScope, state.baseline), [input, state.present, state.baseline, saveScope]);
-  const rows = view.groups.flatMap((group) => group.rows);
+  const matchesQuery = (row: BoardRow, text: string) => {
+    const needle = text.trim().toLowerCase();
+    return !needle || [row.alias, row.moduleType ?? '', row.componentId ?? ''].some((value) => value.toLowerCase().includes(needle));
+  };
+  const groups = useMemo(() => view.groups.map((group) => ({ role: group.role, rows: group.rows.filter((row) => matchesQuery(row, query)) }))
+    .filter((group) => group.rows.length > 0), [view, query]);
+  const rows = groups.flatMap((group) => group.rows);
   const selected = rows.find((row) => row.alias === alias) ?? null;
+  const markedRows = rows.filter((row) => marks.has(row.alias));
+  const bulkRows = markedRows.length >= 2 || (markedRows.length === 1 && markedRows[0] !== selected) ? markedRows : null;
+  const autoRows = rows.filter((row) => row.status === 'assumed');
+  const preview = useMemo(() => rule ? previewPatternRule(input, state.present, saveScope, { pattern: rule.pattern, target: rule.target }) : null,
+    [input, state.present, saveScope, rule]);
   const confirmReason = !selected ? null : !selected.target ? '배정된 대상이 없어 확정할 수 없습니다'
     : applyEdit(input, state, saveScope, { kind: 'confirm', alias: selected.alias }) === state
       ? selected.rule?.level === saveScope ? '저장 범위에 이미 verified 정확 규칙이 있습니다'
@@ -61,6 +88,8 @@ export function MappingBoard(props: MappingBoardProps) {
   const savePayload = useMemo(() => buildSavePayload(input, state, saveScope), [input, state, saveScope]);
   const canSave = savePayload.files.length > 0;
   const paletteOpen = palette !== null;
+  const ruleOpen = rule !== null;
+  const modalOpen = paletteOpen || ruleOpen;
   const viewerId = pick.kind === 'alias' ? selected?.componentId ?? null : pick.id;
   const options = useMemo(() => palette ? paletteOptions(layout, rows.find((row) => row.alias === palette.alias)?.role ?? 'unknown', palette.filter) : [],
     [layout, rows, palette]);
@@ -76,20 +105,21 @@ export function MappingBoard(props: MappingBoardProps) {
   }, [dirty]);
   useEffect(() => {
     if (palette) filterRef.current?.focus();
+    else if (rule) patternRef.current?.focus();
     else if (restoreFocus.current) {
       restoreFocus.current = false;
       listRef.current?.focus();
     }
-  }, [paletteOpen]);
+  }, [modalOpen]);
 
   useEffect(() => {
-    if (!paletteOpen) return;
+    if (!modalOpen) return;
     const keepFocus = (event: FocusEvent) => {
-      if (event.target instanceof Node && !dialogRef.current?.contains(event.target)) filterRef.current?.focus();
+      if (event.target instanceof Node && !dialogRef.current?.contains(event.target)) (filterRef.current ?? patternRef.current)?.focus();
     };
     document.addEventListener('focusin', keepFocus);
     return () => document.removeEventListener('focusin', keepFocus);
-  }, [paletteOpen]);
+  }, [modalOpen]);
 
   const optionId = (name: string) => `${ids}-alias-${name}`;
   const paletteOptionId = (id: string) => `${ids}-component-${id}`;
@@ -105,10 +135,54 @@ export function MappingBoard(props: MappingBoardProps) {
     setAlias(name);
     setPick({ kind: 'alias' });
   };
-  const move = (step: number) => {
+  const move = (step: number, extend = false) => {
     if (!rows.length) return;
     const index = selected ? rows.indexOf(selected) : -1;
-    select(rows[Math.min(rows.length - 1, Math.max(0, index + step))]!.alias);
+    const next = rows[Math.min(rows.length - 1, Math.max(0, index + step))]!.alias;
+    if (extend) setMarks((current) => new Set([...current, ...(selected ? [selected.alias] : []), next]));
+    select(next);
+  };
+  const toggleMark = (name: string) => setMarks((current) => {
+    const next = new Set(current);
+    if (!next.delete(name)) next.add(name);
+    return next;
+  });
+  const onRowClick = (event: MouseEvent, row: BoardRow) => {
+    if (event.metaKey || event.ctrlKey) toggleMark(row.alias);
+    else if (event.shiftKey && selected) {
+      const [from, to] = [rows.indexOf(selected), rows.indexOf(row)].sort((a, b) => a - b) as [number, number];
+      setMarks((current) => new Set([...current, ...rows.slice(from, to + 1).map(({ alias: name }) => name)]));
+    } else if (event.shiftKey) setMarks((current) => new Set([...current, row.alias]));
+    else setMarks(new Set());
+    select(row.alias);
+  };
+  const changeQuery = (text: string) => {
+    setQuery(text);
+    setMarks((current) => new Set([...current].filter((name) => view.rows.some((row) => row.alias === name && matchesQuery(row, text)))));
+  };
+  const bulk = (targets: readonly BoardRow[], kind: 'confirm' | 'ignore') => {
+    if (savingRef.current || !targets.length) return;
+    const result = applyEdits(input, state, saveScope, targets.map((row) => ({ kind, alias: row.alias })));
+    const skipped = result.skipped.length
+      ? `, ${result.skipped.length}건 건너뜀 (${[...new Set(result.skipped.map(({ reason }) => reason))].join(', ')})` : '';
+    setState(result.state);
+    setNotice({ state: result.state, alias, scope: saveScope, text: `${result.applied.length}건 ${kind === 'confirm' ? '확정' : '무시'}${skipped}` });
+  };
+  const openRule = () => {
+    if (!selected || savingRef.current) return;
+    const suggestion = suggestPattern(selected.alias, selected.componentId);
+    setRule({ alias: selected.alias, pattern: suggestion?.pattern ?? '', target: suggestion?.target ?? '', hint: suggestion === null });
+  };
+  const closeRule = () => {
+    restoreFocus.current = true;
+    setRule(null);
+  };
+  const addRule = () => {
+    if (!rule || !preview || savingRef.current || preview.problems.length) return;
+    const next = addPatternRule(input, state, saveScope, { pattern: rule.pattern, target: rule.target });
+    setState(next);
+    setNotice({ state: next, alias, scope: saveScope, text: `규칙 ${preview.rule?.id} 추가${preview.removes.length ? ` · 정리 ${preview.removes.length}건` : ''}` });
+    closeRule();
   };
   const openPalette = () => {
     if (selected && !savingRef.current) setPalette({ alias: selected.alias, filter: '', active: 0 });
@@ -124,19 +198,30 @@ export function MappingBoard(props: MappingBoardProps) {
   };
 
   const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (paletteOpen || isModified(event)) return;
+    if (modalOpen || isModified(event)) return;
     const key = event.key;
-    if (key === 'j' || key === 'ArrowDown') move(1);
-    else if (key === 'k' || key === 'ArrowUp') move(-1);
-    else if (key === 'Enter') { if (selected) edit({ kind: 'confirm', alias: selected.alias }); }
-    else if (key === 'a') openPalette();
-    else if (key === 'i') { if (selected) edit({ kind: 'ignore', alias: selected.alias }); }
+    const plain = key.toLowerCase();
+    if (plain === 'j' || key === 'ArrowDown') move(1, event.shiftKey);
+    else if (plain === 'k' || key === 'ArrowUp') move(-1, event.shiftKey);
+    else if (key === 'Enter') {
+      if (bulkRows) bulk(bulkRows, 'confirm');
+      else if (selected) edit({ kind: 'confirm', alias: selected.alias });
+    }
+    else if (key === ' ') { if (selected) toggleMark(selected.alias); }
+    else if (key === 'Escape') { if (!marks.size) return; setMarks(new Set()); }
+    else if (key === '/') searchRef.current?.focus();
+    else if (plain === 'a') openPalette();
+    else if (plain === 'r') openRule();
+    else if (plain === 'i') {
+      if (bulkRows) bulk(bulkRows, 'ignore');
+      else if (selected) edit({ kind: 'ignore', alias: selected.alias });
+    }
     else return;
     event.preventDefault();
   };
 
   const onRootKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.defaultPrevented || paletteOpen || savingRef.current || !(event.metaKey || event.ctrlKey)) return;
+    if (event.defaultPrevented || modalOpen || savingRef.current || !(event.metaKey || event.ctrlKey)) return;
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest('input, textarea, select, [contenteditable], [role="dialog"]')) return;
     const key = event.key.toLowerCase();
@@ -157,13 +242,27 @@ export function MappingBoard(props: MappingBoardProps) {
       const option = options[Math.min(palette?.active ?? 0, options.length - 1)];
       if (option) assignFromPalette(option.id);
     } else if (key === 'Tab') {
-      const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('input, button') ?? []);
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (!first || !last) return;
-      if (event.shiftKey && document.activeElement === first) last.focus();
-      else if (!event.shiftKey && document.activeElement === last) first.focus();
-      else return;
+      if (!trapTab(event)) return;
+    } else return;
+    event.preventDefault();
+    event.stopPropagation();
+  };
+  const trapTab = (event: KeyboardEvent<HTMLDivElement>): boolean => {
+    const focusable = Array.from(dialogRef.current?.querySelectorAll<HTMLElement>('input, button') ?? []);
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (!first || !last) return false;
+    if (event.shiftKey && document.activeElement === first) last.focus();
+    else if (!event.shiftKey && document.activeElement === last) first.focus();
+    else return false;
+    return true;
+  };
+  const onRuleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const key = event.key;
+    if (key === 'Escape') closeRule();
+    else if (key === 'Enter' && event.target instanceof HTMLInputElement) addRule();
+    else if (key === 'Tab') {
+      if (!trapTab(event)) return;
     } else return;
     event.preventDefault();
     event.stopPropagation();
@@ -177,7 +276,7 @@ export function MappingBoard(props: MappingBoardProps) {
     const target = componentAt(event);
     const name = dragAlias.current ?? event.dataTransfer?.getData('text/plain') ?? null;
     dragAlias.current = null;
-    if (!target || !name || paletteOpen || savingRef.current || !rows.some((row) => row.alias === name)) return;
+    if (!target || !name || modalOpen || savingRef.current || !rows.some((row) => row.alias === name)) return;
     event.preventDefault();
     select(name);
     edit({ kind: 'assign', alias: name, componentId: target });
@@ -218,11 +317,11 @@ export function MappingBoard(props: MappingBoardProps) {
 
   return (
     <section className="eqv-ed-board" aria-labelledby={`${ids}-heading`} onKeyDown={onRootKeyDown}>
-      <div inert={paletteOpen} onClickCapture={(event) => {
-        if (paletteOpen) { event.preventDefault(); event.stopPropagation(); }
+      <div inert={modalOpen} onClickCapture={(event) => {
+        if (modalOpen) { event.preventDefault(); event.stopPropagation(); }
       }}>
       <h1 id={`${ids}-heading`}>④ Mapping Board</h1>
-      <p>j/k 이동 · Enter 확정 · A 배정 · I 무시 · ⌘Z/⇧⌘Z</p>
+      <p>j/k 이동 · Shift 선택 확장 · Space 선택 · Enter 확정 · A 배정 · I 무시 · R 규칙화 · / 검색 · ⌘Z/⇧⌘Z</p>
       <div className="eqv-ed-board-bar">
         <fieldset className="eqv-ed-board-scope" disabled={saving}>
           <legend>저장 범위</legend>
@@ -234,6 +333,7 @@ export function MappingBoard(props: MappingBoardProps) {
         </fieldset>
         <button type="button" className="eqv-ed-btn" disabled={saving || !canUndo(state)} onClick={() => setState(undo)}>실행 취소</button>
         <button type="button" className="eqv-ed-btn" disabled={saving || !canRedo(state)} onClick={() => setState(redo)}>다시 실행</button>
+        <button type="button" className="eqv-ed-btn" disabled={saving || autoRows.length === 0} onClick={() => bulk(autoRows, 'confirm')}>자동 일괄 확정 ({autoRows.length})</button>
         <button type="button" className="eqv-ed-btn eqv-ed-btn-primary" disabled={saving || !canSave} onClick={save}>저장</button>
         <span ref={saveStatusRef} role="status" tabIndex={-1}>{saving ? '저장 중…' : notice?.state === state && notice.alias === alias && notice.scope === saveScope ? notice.text : status}</span>
         {saveError && <span role="alert" className="eqv-ed-error">{saveError}</span>}
@@ -246,19 +346,29 @@ export function MappingBoard(props: MappingBoardProps) {
       )}
       <div className="eqv-ed-board-panes">
         <div className="eqv-ed-board-pane">
+          <input
+            ref={searchRef} type="search" aria-label="Alias 검색" placeholder="/ 검색" className="eqv-ed-board-search" value={query}
+            onChange={(event) => changeQuery(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === 'Escape') { changeQuery(''); listRef.current?.focus(); }
+              else if (event.key === 'Enter' || event.key === 'ArrowDown') listRef.current?.focus();
+              else return;
+              event.preventDefault();
+            }}
+          />
           <div
-            ref={listRef} role="listbox" tabIndex={0} aria-label="Alias 목록" className="eqv-ed-board-list"
+            ref={listRef} role="listbox" tabIndex={0} aria-label="Alias 목록" className="eqv-ed-board-list" aria-multiselectable="true"
             aria-activedescendant={selected ? optionId(selected.alias) : undefined} onKeyDown={onListKeyDown}
           >
-            {view.groups.map((group) => (
+            {groups.map((group) => (
               <div key={group.role} role="group" aria-label={`Role ${group.role}`}>
                 <div className="eqv-ed-board-group" aria-hidden="true">{group.role}</div>
                 {group.rows.map((row) => (
                   <div
-                    key={row.alias} id={optionId(row.alias)} role="option" aria-selected={row === selected} draggable={!saving}
-                    className={`eqv-ed-board-row eqv-ed-bstatus-${row.status}${row === selected ? ' eqv-ed-selected' : ''}${marked(row) ? ' eqv-ed-marked' : ''}`}
-                    aria-label={`${row.alias}, ${row.statusText}, ${row.componentId ? targetText(row) : '배정 없음'}${marked(row) ? MARKED_NAME : ''}`}
-                    onClick={() => select(row.alias)}
+                    key={row.alias} id={optionId(row.alias)} role="option" aria-selected={markedRows.length ? marks.has(row.alias) : row === selected} draggable={!saving}
+                    className={`eqv-ed-board-row eqv-ed-bstatus-${row.status}${row === selected ? ' eqv-ed-selected' : ''}${marks.has(row.alias) ? ' eqv-ed-multi' : ''}${marked(row) ? ' eqv-ed-marked' : ''}`}
+                    aria-label={`${row.alias}, ${row.statusText}, ${row.componentId ? targetText(row) : '배정 없음'}${marked(row) ? MARKED_NAME : ''}${marks.has(row.alias) ? ', 일괄 선택됨' : ''}`}
+                    onClick={(event) => onRowClick(event, row)}
                     onDragStart={(event) => {
                       dragAlias.current = row.alias;
                       event.dataTransfer?.setData('text/plain', row.alias);
@@ -269,12 +379,14 @@ export function MappingBoard(props: MappingBoardProps) {
                     <span className="eqv-ed-board-alias">{row.alias}</span>
                     <span className="eqv-ed-board-status">{row.statusText}</span>
                     <span className="eqv-ed-board-target">{targetText(row)}</span>
+                    {marks.has(row.alias) && <span className="eqv-ed-board-marker" aria-hidden="true">✓</span>}
                     {marked(row) && <span className="eqv-ed-board-marker" aria-hidden="true">◆</span>}
                   </div>
                 ))}
               </div>
             ))}
           </div>
+          {rows.length === 0 && <p>일치하는 alias가 없습니다</p>}
         </div>
         <div className="eqv-ed-board-pane eqv-ed-board-view" ref={viewRef} onDragOver={(event) => { if (dragAlias.current && componentAt(event)) event.preventDefault(); }} onDrop={onDrop}>
           <TopViewer
@@ -283,7 +395,15 @@ export function MappingBoard(props: MappingBoardProps) {
           />
         </div>
         <div className="eqv-ed-board-pane" aria-label="선택한 항목" role="region">
-          {selected ? (
+          {bulkRows ? (
+            <>
+              <h3>{bulkRows.length}개 선택</h3>
+              <div className="eqv-ed-board-actions">
+                <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => bulk(bulkRows, 'confirm')}>일괄 확정 (Enter)</button>
+                <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => bulk(bulkRows, 'ignore')}>일괄 무시 (I)</button>
+              </div>
+            </>
+          ) : selected ? (
             <>
               <h3>{selected.alias}</h3>
               <dl className="eqv-ed-board-detail">
@@ -305,6 +425,7 @@ export function MappingBoard(props: MappingBoardProps) {
                 <button type="button" className="eqv-ed-btn" disabled={saving} onClick={openPalette}>배정 (A)</button>
                 <button type="button" className="eqv-ed-btn" disabled={saving} aria-disabled={saving || !!confirmReason} aria-describedby={confirmReason ? `${ids}-confirm-reason` : undefined} onClick={() => edit({ kind: 'confirm', alias: selected.alias })}>확정 (Enter)</button>
                 <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => edit({ kind: 'ignore', alias: selected.alias })}>무시 (I)</button>
+                <button type="button" className="eqv-ed-btn" disabled={saving} onClick={openRule}>규칙화 (R)</button>
               </div>
             </>
           ) : <p>왼쪽에서 alias를 선택하세요.</p>}
@@ -339,6 +460,36 @@ export function MappingBoard(props: MappingBoardProps) {
             {options.length === 0 && <p>일치하는 component가 없습니다.</p>}
           </div>
           <button type="button" className="eqv-ed-btn" onClick={closePalette}>닫기</button>
+        </div>
+        </div>
+      )}
+      {rule && preview && (
+        <div className="eqv-ed-palette-backdrop" onMouseDown={(event) => {
+          if (!(event.target instanceof Element) || !event.target.closest('input, button')) event.preventDefault();
+        }}>
+        <div
+          ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`${ids}-rule-title`} className="eqv-ed-palette eqv-ed-rule"
+          onKeyDown={onRuleKeyDown}
+        >
+          <h3 id={`${ids}-rule-title`}>{rule.alias}에서 규칙 만들기 · 저장 범위 {LEVEL_TEXT[saveScope]}</h3>
+          {rule.hint && <p className="eqv-ed-note">패턴을 제안할 숫자가 없습니다</p>}
+          <label>패턴 <input ref={patternRef} type="text" value={rule.pattern} onChange={(event) => setRule({ ...rule, pattern: event.target.value })} /></label>
+          <label>대상 component <input type="text" value={rule.target} onChange={(event) => setRule({ ...rule, target: event.target.value })} /></label>
+          <p role="status">{preview.summary}</p>
+          <ul className="eqv-ed-rule-rows" aria-label="규칙 미리보기">
+            {preview.rows.map((row) => <li key={row.alias}>{row.alias} → {row.target} · {OUTCOME_TEXT(row)}</li>)}
+          </ul>
+          {preview.removes.length > 0 && <p>정리되는 정확 규칙: {preview.removes.join(', ')}</p>}
+          {preview.problems.length > 0 && (
+            <ul className="eqv-ed-board-issues" aria-label="규칙 문제">
+              {preview.problems.map((problem, index) => <li key={problem} id={index === 0 ? `${ids}-rule-problem` : undefined}>{problem}</li>)}
+            </ul>
+          )}
+          <button
+            type="button" className="eqv-ed-btn eqv-ed-btn-primary" disabled={saving} aria-disabled={saving || preview.problems.length > 0}
+            aria-describedby={preview.problems.length ? `${ids}-rule-problem` : undefined} onClick={addRule}
+          >규칙 추가</button>
+          <button type="button" className="eqv-ed-btn" onClick={closeRule}>닫기</button>
         </div>
         </div>
       )}

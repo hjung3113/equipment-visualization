@@ -1,5 +1,5 @@
 import {
-  buildGenericLayout, compareNatural, findMappingConflicts, proposeTemplates, resolveAliasRules, resolveRole,
+  buildGenericLayout, compareNatural, findMappingConflicts, matchAliasRule, proposeTemplates, resolveAliasRules, resolveRole, validateAliasRules,
   type AliasResolution, type AliasRule, type AliasRulesFile, type EquipmentLayoutDocument, type MappingConflict,
   type MappingEntry, type MappingIssue, type ObservedInventory, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -258,11 +258,11 @@ function upsertExact(file: AliasRulesFile, alias: string, target: AliasRule['tar
   return { ...file, rules: [...rules, { id, match: { exact: [alias] }, target, certainty }] };
 }
 
-/** One history entry per edit; an edit that changes nothing leaves the state (and its history) untouched. */
-export function applyEdit(input: BoardInput, state: BoardState, saveScope: SaveScope, edit: BoardEdit): BoardState {
-  const view = resolveBoard(input, state.present, saveScope);
+type EditResult = { file: AliasRulesFile } | { skip: string };
+function editFile(input: BoardInput, present: Pending, saveScope: SaveScope, edit: BoardEdit): EditResult {
+  const view = resolveBoard(input, present, saveScope);
   const row = view.rows.find(({ alias }) => alias === edit.alias);
-  if (!row) return state;
+  if (!row) return { skip: '알 수 없는 alias' };
   let target: AliasRule['target'];
   if (edit.kind === 'assign') {
     const slots = row.target && 'componentId' in row.target && row.target.componentId === edit.componentId ? row.target.slots : undefined;
@@ -270,13 +270,141 @@ export function applyEdit(input: BoardInput, state: BoardState, saveScope: SaveS
   } else if (edit.kind === 'ignore') {
     target = { ignore: true };
   } else {
-    if (!row.target || !row.rule) return state;
+    if (!row.target || !row.rule) return { skip: '대상 없음' };
     const pinned = row.rule.kind === 'exact' && row.certainty === 'verified' && row.rule.level === saveScope;
-    if (pinned) return state;
+    if (pinned) return { skip: '이미 확정됨' };
     target = row.target;
   }
-  const file = upsertExact(state.present[saveScope], edit.alias, target, 'verified');
-  if (same(file, state.present[saveScope])) return state;
+  const file = upsertExact(present[saveScope], edit.alias, target, 'verified');
+  return same(file, present[saveScope]) ? { skip: edit.kind === 'confirm' ? '이미 확정됨' : '변경 없음' } : { file };
+}
+
+/** Applies the edits in order to a working copy as one history entry; the state itself comes back when nothing changed. */
+export function applyEdits(input: BoardInput, state: BoardState, saveScope: SaveScope, edits: readonly BoardEdit[]):
+  { state: BoardState; applied: string[]; skipped: { alias: string; reason: string }[] } {
+  let present = state.present;
+  const applied: string[] = [];
+  const skipped: { alias: string; reason: string }[] = [];
+  for (const change of edits) {
+    const result = editFile(input, present, saveScope, change);
+    if ('skip' in result) skipped.push({ alias: change.alias, reason: result.skip });
+    else {
+      present = { ...present, [saveScope]: result.file };
+      applied.push(change.alias);
+    }
+  }
+  if (!applied.length) return { state, applied, skipped };
+  return { state: { ...state, present, past: [...state.past, state.present], future: [] }, applied, skipped };
+}
+
+/** One history entry per edit; an edit that changes nothing leaves the state (and its history) untouched. */
+export function applyEdit(input: BoardInput, state: BoardState, saveScope: SaveScope, edit: BoardEdit): BoardState {
+  return applyEdits(input, state, saveScope, [edit]).state;
+}
+
+/** Pre-fills the rule dialog from the last digit run of an alias; only a suggestion, the actor confirms it after the preview. */
+export function suggestPattern(alias: string, componentId: string | null): { pattern: string; target: string } | null {
+  if (/[{}]/.test(alias)) return null;
+  const run = Array.from(alias.matchAll(/[0-9]+/g)).at(-1);
+  if (!run) return null;
+  const pattern = `${alias.slice(0, run.index)}{n}${alias.slice(run.index + run[0].length)}`;
+  if (componentId === null) return { pattern, target: '' };
+  const digitAt = componentId.lastIndexOf(run[0]);
+  if (digitAt >= 0) return { pattern, target: `${componentId.slice(0, digitAt)}{n}${componentId.slice(digitAt + run[0].length)}` };
+  const n = Number(run[0]);
+  const letter = n >= 1 && n <= 26 ? String.fromCharCode(96 + n) : null;
+  return letter && componentId.endsWith(`-${letter}`)
+    ? { pattern, target: `${componentId.slice(0, -1)}{n:letter}` } : { pattern, target: '' };
+}
+
+export interface PatternPreview {
+  /** Schema/validator problems of the candidate rule, in Korean; non-empty disables adding. */
+  problems: string[];
+  rule: AliasRule | null;
+  rows: {
+    alias: string;
+    target: string | null;
+    outcome: 'applies' | 'exception' | 'missing-target' | 'overlap' | 'shadowed';
+    /** exception/shadowed: the winning rule id; overlap: the tied rule ids. */
+    ruleIds: string[];
+  }[];
+  /** Save-scope exact rules that become redundant and are removed when the rule is added. */
+  removes: string[];
+  summary: string;
+}
+
+/** `PM{n}` becomes `pattern-pm-n`, made unique among the ids taken. */
+export function patternRuleId(pattern: string, taken: ReadonlySet<string>): string {
+  const slug = pattern.toLowerCase().replace(/\{([a-z]+)\}/g, '-$1-').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  const base = `pattern-${slug || 'rule'}`;
+  if (!taken.has(base)) return base;
+  for (let n = 2; ; n++) if (!taken.has(`${base}-${n}`)) return `${base}-${n}`;
+}
+
+const problemText = (issue: MappingIssue): string => {
+  if (issue.code === 'unknown-capture') return `대상에 패턴에 없는 캡처가 있습니다 ({${issue.message.replace('Unknown capture ', '')}})`;
+  if (issue.code === 'schema') return issue.path.includes('pattern') ? '패턴 형식이 올바르지 않습니다'
+    : issue.path.includes('componentId') ? '대상 형식이 올바르지 않습니다' : `규칙 문제: ${issue.message}`;
+  return `규칙 문제 (${issue.code}): ${issue.message}`;
+};
+
+/** What adding the pattern at the save scope would do to every alias that matches it; resolution and matching are core's. */
+export function previewPatternRule(
+  input: BoardInput, files: Pending, saveScope: SaveScope, draft: { pattern: string; target: string },
+): PatternPreview {
+  const saveFile = files[saveScope];
+  const candidate: AliasRule = {
+    id: patternRuleId(draft.pattern, new Set(saveFile.rules.map(({ id }) => id))),
+    match: { pattern: draft.pattern }, target: { componentId: draft.target }, certainty: 'verified',
+  };
+  const checked = validateAliasRules({ ...saveFile, rules: [...saveFile.rules, candidate] });
+  const own = checked.ok ? [] : checked.issues.filter(({ path }) => path[0] === 'rules' && path[1] === saveFile.rules.length);
+  if (own.length) {
+    return { problems: [...new Set(own.map(problemText))], rule: null, rows: [], removes: [], summary: summarize([]) };
+  }
+  const aliases = input.inventory.aliases.map(({ alias }) => alias).sort(compareNatural);
+  const matched = aliases.flatMap((alias) => {
+    const target = matchAliasRule(candidate, alias);
+    return target && 'componentId' in target ? [{ alias, componentId: target.componentId }] : [];
+  });
+  const matchedTarget = new Map(matched.map(({ alias, componentId }) => [alias, componentId]));
+  const removes = saveFile.rules.filter(({ match, target }) => 'exact' in match && match.exact.length === 1 &&
+    matchedTarget.get(match.exact[0]!) !== undefined && 'componentId' in target && !target.slots &&
+    target.componentId === matchedTarget.get(match.exact[0]!)).map(({ id }) => id);
+  const withCandidate: AliasRulesFile = { ...saveFile, rules: [...saveFile.rules.filter(({ id }) => !removes.includes(id)), candidate] };
+  const byScope = { ...files, [saveScope]: withCandidate };
+  const resolved = new Map(resolveAliasRules({
+    equipmentId: input.equipment.equipmentId, maker: input.equipment.maker, model: input.equipment.model,
+    ruleFiles: [input.ruleFiles.maker, byScope.model, byScope.equipment].flatMap((file) => file ? [file] : []),
+    aliases, layout: input.layout,
+  }).aliases.map((row) => [row.alias, row]));
+  const rows = matched.map(({ alias, componentId }): PatternPreview['rows'][number] => {
+    const base = { alias, target: componentId };
+    if (!input.layout.components.some(({ id }) => id === componentId)) return { ...base, outcome: 'missing-target', ruleIds: [] };
+    const { entry, overlap } = resolved.get(alias)!;
+    if (overlap.some(({ ruleId, scope }) => ruleId === candidate.id && scope.level === saveScope)) {
+      return { ...base, outcome: 'overlap', ruleIds: overlap.map(({ ruleId }) => ruleId) };
+    }
+    if (entry?.rule.ruleId === candidate.id && entry.rule.scope.level === saveScope) return { ...base, outcome: 'applies', ruleIds: [] };
+    if (!entry) return { ...base, outcome: 'exception', ruleIds: overlap.map(({ ruleId }) => ruleId) };
+    return { ...base, outcome: entry.rule.scope.level === saveScope ? 'exception' : 'shadowed', ruleIds: [entry.rule.ruleId] };
+  });
+  const problems: string[] = [];
+  if (!rows.length) problems.push('일치하는 alias가 없습니다');
+  const tied = [...new Set(rows.filter(({ outcome }) => outcome === 'overlap').flatMap(({ ruleIds }) => ruleIds))].filter((id) => id !== candidate.id);
+  if (tied.length) problems.push(`같은 범위 규칙과 겹칩니다: ${tied.join(', ')}`);
+  return { problems, rule: candidate, rows, removes, summary: summarize(rows) };
+}
+function summarize(rows: PatternPreview['rows']): string {
+  const count = (outcome: PatternPreview['rows'][number]['outcome']) => rows.filter((row) => row.outcome === outcome).length;
+  return `매칭 ${rows.length} · 적용 ${count('applies')} · 예외 ${count('exception')} · 대상 없음 ${count('missing-target')} · 충돌 ${count('overlap')}`;
+}
+
+/** Adds the previewed pattern at the save scope and drops the exact rules it makes redundant, as one history entry. */
+export function addPatternRule(input: BoardInput, state: BoardState, saveScope: SaveScope, draft: { pattern: string; target: string }): BoardState {
+  const preview = previewPatternRule(input, state.present, saveScope, draft);
+  if (preview.problems.length || !preview.rule) return state;
+  const file = { ...state.present[saveScope], rules: [...state.present[saveScope].rules.filter(({ id }) => !preview.removes.includes(id)), preview.rule] };
   return { ...state, present: { ...state.present, [saveScope]: file }, past: [...state.past, state.present], future: [] };
 }
 

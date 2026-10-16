@@ -20,7 +20,7 @@ export type {
   MappingEntry, BindingsFile, Binding, Resolution, MappingIssue,
 } from './mapping/schema.js';
 export { resolveRole, validateTypeDictionary, validateAliasRules, validateBindings } from './mapping/validate.js';
-export { publishMapping, resolveAliasRules, verifyMappingHash } from './mapping/publish.js';
+export { publishMapping, resolveAliasRules, verifyMappingHash, matchAliasRule } from './mapping/publish.js';
 export type { AliasResolution, ResolveAliasRulesInput } from './mapping/publish.js';
 export { resolveLocation } from './mapping/resolve.js';
 
