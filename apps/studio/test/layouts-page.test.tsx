@@ -1,12 +1,24 @@
 // @vitest-environment jsdom
-import { readFile, rm, stat } from 'node:fs/promises';
+import { readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { layoutDocumentSchema, layoutRevision } from '@eqv/core';
+import type { TopViewerProps } from '@eqv/renderer';
 import { App } from '../src/App.js';
 import { createFileApi } from '../server/files.js';
 import { seedRoot } from './seed.js';
+
+vi.mock('@eqv/renderer', async (importOriginal) => {
+  const renderer = await importOriginal<typeof import('@eqv/renderer')>();
+  return {
+    ...renderer,
+    TopViewer: (props: TopViewerProps) => {
+      if (props.layout.id === 'renderer-failure') throw new Error('Synthetic renderer failure');
+      return <renderer.TopViewer {...props} />;
+    },
+  };
+});
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -72,4 +84,69 @@ it('publishes a revision and lists it', async () => {
   expect(status.textContent).toContain(revision);
   const label = revision.slice('sha256:'.length, 'sha256:'.length + 12);
   await waitFor(() => expect(within(container).getByRole('link', { name: label })).toBeTruthy());
+});
+
+it.each([
+  { action: '초안 저장', method: 'PUT' },
+  { action: 'Revision 게시', method: 'POST' },
+])('keeps a newer unsaved import after a pending $action completes', async ({ action, method }) => {
+  open('templates/cluster-single.template.json');
+  const { container } = render(<App />);
+  await waitFor(() => expect(componentIds(container).length).toBeGreaterThan(0));
+  await screen.findByRole('link', { name: 'cluster-single' });
+  const originalUrl = window.location.href;
+  const fetchFromApi = globalThis.fetch;
+  let release!: () => void;
+  let started!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const writing = new Promise<void>((resolve) => { started = resolve; });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const response = await fetchFromApi(input, init);
+    if (init?.method === method) {
+      started();
+      await pending;
+    }
+    return response;
+  });
+
+  await act(async () => {
+    fireEvent.click(screen.getByRole('button', { name: action }));
+    await writing;
+  });
+  const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
+  raw.id = 'imported-b';
+  fireEvent.change(screen.getByLabelText(/가져오기/), {
+    target: { files: [{ text: async () => JSON.stringify(raw) }] },
+  });
+  await screen.findByText('저장 안 됨');
+  await act(async () => { release(); await pending; });
+
+  expect(screen.getByText('imported-b')).toBeTruthy();
+  expect(screen.getByText('저장 안 됨')).toBeTruthy();
+  expect(screen.queryByRole('status')).toBeNull();
+  expect(window.location.href).toBe(originalUrl);
+  expect((screen.getByRole('button', { name: action }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('contains renderer errors and recovers when another file is opened', async () => {
+  open('templates/cluster-single.template.json');
+  await writeFile(join(root, 'templates/another.template.json'),
+    await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
+  const { container } = render(<App />);
+  await waitFor(() => expect(componentIds(container).length).toBeGreaterThan(0));
+  const ids = componentIds(container);
+  const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
+  raw.id = 'renderer-failure';
+  fireEvent.change(screen.getByLabelText(/가져오기/), {
+    target: { files: [{ text: async () => JSON.stringify(raw) }] },
+  });
+  expect((await screen.findByRole('alert')).textContent)
+    .toBe('이 레이아웃을 그릴 수 없습니다: Synthetic renderer failure');
+  const list = screen.getByRole('region', { name: '레이아웃 목록' });
+  expect((screen.getByRole('button', { name: '초안 저장' }) as HTMLButtonElement).disabled).toBe(false);
+  expect((screen.getByLabelText(/가져오기/) as HTMLInputElement).disabled).toBe(false);
+
+  fireEvent.click(await within(list).findByRole('link', { name: 'another' }));
+  await waitFor(() => expect(componentIds(container)).toEqual(ids));
+  expect(screen.queryByRole('alert')).toBeNull();
 });

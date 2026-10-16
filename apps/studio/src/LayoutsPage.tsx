@@ -1,4 +1,4 @@
-import { useEffect, useState, type ChangeEvent } from 'react';
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode } from 'react';
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
@@ -24,6 +24,20 @@ interface Listing {
 }
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
+
+class ViewerBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
+  state = { error: null as string | null };
+
+  static getDerivedStateFromError(error: unknown) {
+    return { error: message(error) };
+  }
+
+  render() {
+    return this.state.error !== null
+      ? <p role="alert">이 레이아웃을 그릴 수 없습니다: {this.state.error}</p>
+      : this.props.children;
+  }
+}
 
 function parseDoc(raw: unknown): { doc: Doc } | { issues: string } {
   const result = validateLayout(raw);
@@ -66,10 +80,19 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [prevFile, setPrevFile] = useState(file);
+  const [generation, setGeneration] = useState(0);
+  const activeGeneration = useRef<number | null>(generation);
+
+  useLayoutEffect(() => {
+    activeGeneration.current = generation;
+    return () => { activeGeneration.current = null; };
+  }, [generation]);
 
   // Opening another file discards an unsaved import and any notices tied to the previous document.
   if (prevFile !== file) {
     setPrevFile(file);
+    setGeneration(generation + 1);
+    setBusy(false);
     setImported(null);
     setActionError(null);
     setRevision(null);
@@ -105,9 +128,16 @@ export function LayoutsPage({ file }: { file: string | null }) {
     const input = event.currentTarget;
     const picked = input.files?.[0];
     if (!picked) return;
+    const owner = (activeGeneration.current ?? generation) + 1;
+    activeGeneration.current = owner;
+    setGeneration(owner);
+    setBusy(false);
     setRevision(null);
+    input.value = '';
     try {
-      const parsed = parseDoc(JSON.parse(await picked.text()) as unknown);
+      const raw: unknown = JSON.parse(await picked.text());
+      if (activeGeneration.current !== owner) return;
+      const parsed = parseDoc(raw);
       if ('doc' in parsed) {
         setImported(parsed.doc);
         setActionError(null);
@@ -115,9 +145,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
         setActionError(`가져오기 실패: ${parsed.issues}`);
       }
     } catch {
-      setActionError('가져오기 실패: JSON을 읽을 수 없습니다');
+      if (activeGeneration.current === owner) setActionError('가져오기 실패: JSON을 읽을 수 없습니다');
     }
-    input.value = '';
   }
 
   function onExport() {
@@ -130,27 +159,31 @@ export function LayoutsPage({ file }: { file: string | null }) {
     URL.revokeObjectURL(url);
   }
 
-  async function run(action: () => Promise<void>) {
+  async function run(action: (isActive: () => boolean) => Promise<void>) {
+    const owner = activeGeneration.current;
+    const isActive = () => owner !== null && activeGeneration.current === owner;
     setBusy(true);
     setActionError(null);
     try {
-      await action();
+      await action(isActive);
     } catch (error) {
-      setActionError(message(error));
+      if (isActive()) setActionError(message(error));
     } finally {
-      setBusy(false);
+      if (isActive()) setBusy(false);
     }
   }
 
-  const onSaveDraft = () => current && run(async () => {
+  const onSaveDraft = () => current && run(async (isActive) => {
     const path = await saveDraft(current.layout.id, current.raw);
+    if (!isActive()) return;
     setImported(null);
     setReload((count) => count + 1);
     navigate(hrefFor({ name: 'layouts', file: path }));
   });
 
-  const onPublish = () => current && run(async () => {
+  const onPublish = () => current && run(async (isActive) => {
     const result = await publishRevision(current.raw);
+    if (!isActive()) return;
     setRevision(result.revision);
     setReload((count) => count + 1);
   });
@@ -204,7 +237,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
               <code>{current.layout.id}</code>
               {imported && <> <strong>저장 안 됨</strong></>}
             </p>
-            <TopViewer layout={current.layout} width={VIEW_WIDTH} height={VIEW_HEIGHT} />
+            <ViewerBoundary key={generation}>
+              <TopViewer layout={current.layout} width={VIEW_WIDTH} height={VIEW_HEIGHT} />
+            </ViewerBoundary>
           </>
         )}
       </section>

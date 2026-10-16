@@ -223,7 +223,7 @@ export function createFileApi({ root }: { root: string }) {
         } catch {
           return { created: false, conflict: true };
         }
-        return { created: false, conflict: !isDeepStrictEqual(existing, value) };
+        return { created: false, conflict: !isDeepStrictEqual(existing, JSON.parse(text)) };
       }
     }
     const existed = await lstat(absolute).then(() => true, () => false);

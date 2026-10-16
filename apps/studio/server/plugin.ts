@@ -12,15 +12,18 @@ function readBody(req: IncomingMessage): Promise<string> {
   return new Promise((resolveBody, reject) => {
     const chunks: Buffer[] = [];
     let size = 0;
-    req.on('data', (chunk: Buffer) => {
+    const onData = (chunk: Buffer) => {
       size += chunk.length;
       if (size > MAX_BODY) {
+        chunks.length = 0;
+        req.pause();
+        req.off('data', onData);
         reject(new BodyTooLarge());
-        req.destroy();
         return;
       }
       chunks.push(chunk);
-    });
+    };
+    req.on('data', onData);
     req.on('end', () => resolveBody(Buffer.concat(chunks).toString('utf8')));
     req.on('error', reject);
   });
@@ -51,7 +54,10 @@ export function studioFiles(): Plugin {
           const result = await api.handle({ method: req.method ?? 'GET', url: req.url, headers, body });
           send(result.status, result.body);
         } catch (error) {
-          if (error instanceof BodyTooLarge) send(413, { error: 'Body exceeds 5 MiB' });
+          if (error instanceof BodyTooLarge) {
+            send(413, { error: 'Body exceeds 5 MiB' });
+            req.resume();
+          }
           else send(500, { error: 'Internal error' });
         }
       });

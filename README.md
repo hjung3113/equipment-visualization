@@ -2,7 +2,7 @@
 
 Reusable, standalone equipment Top View editor and explainable log replay toolkit for semiconductor equipment.
 
-> **Status: Design-first / research prototype (v0.3).** This repository is not yet an executable Studio, and the sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
+> **Status: Runnable Studio shell and layouts page.** Onboarding and Focus screens are pending (#14/#15). The sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
 
 ## Goals
 

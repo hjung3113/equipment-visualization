@@ -42,17 +42,21 @@ it.each([
   { name: 'absolute path', path: '/etc/x.json' },
   { name: 'nested traversal', path: 'layouts/../../x.json' },
   { name: 'backslash', path: 'layouts\\a.json' },
-  { name: 'symlink to an outside dir', path: 'layouts/link/x.json' },
+  { name: 'symlink to an outside dir', path: 'layouts/cluster-single/draft.layout.json' },
 ])('refuses an unsafe path: $name', async ({ path }) => {
   await mkdir(join(base, 'outside'));
-  await symlink(join(base, 'outside'), join(root, 'layouts/link'));
+  const outsideFile = join(base, 'outside/draft.layout.json');
+  const outsideContent = '{"outside":true}\n';
+  await writeFile(outsideFile, outsideContent);
+  await symlink(join(base, 'outside'), join(root, 'layouts/cluster-single'));
   const read = await get({ path });
   const write = await put(path, await template());
-  expect([400, 403, 404]).toContain(read.status);
-  expect(read.status).not.toBe(200);
-  expect([400, 403]).toContain(write.status);
+  const status = path === 'layouts/cluster-single/draft.layout.json' ? 403 : 400;
+  expect(read.status).toBe(status);
+  expect(write.status).toBe(status);
   expect(await readdir(base)).toEqual(['assets', 'outside']);
-  expect(await readdir(join(base, 'outside'))).toEqual([]);
+  expect(await readdir(join(base, 'outside'))).toEqual(['draft.layout.json']);
+  expect(await readFile(outsideFile, 'utf8')).toBe(outsideContent);
   expect(await exists(join(base, 'x.json'))).toBe(false);
 });
 
@@ -110,6 +114,13 @@ it('publishes an immutable revision named by its content hash', async () => {
   await writeFile(join(root, path), '{"different":true}\n');
   expect((await publish(layout)).status).toBe(409);
   expect(await readFile(join(root, path), 'utf8')).toBe('{"different":true}\n');
+
+  const negativeZeroBody = JSON.stringify({ ...layout, id: 'negative-zero-layout' }).replace(/"x":-?\d+(?:\.\d+)?/, '"x":-0');
+  const negativeZeroRequest = {
+    method: 'POST', url: '/api/layout-revisions', headers: JSON_TYPE, body: negativeZeroBody,
+  };
+  expect((await api.handle(negativeZeroRequest)).status).toBe(201);
+  expect((await api.handle(negativeZeroRequest)).status).toBe(200);
 });
 
 it('writes a mapping only at the path of its own hash', async () => {
