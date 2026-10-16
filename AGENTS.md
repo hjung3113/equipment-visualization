@@ -55,7 +55,7 @@ Test code is a liability. Fewer, sharper tests beat more tests.
 ## Workflow operations
 - Playbook for running issues with workers (briefs, launch, host verification, role-split review, ship, cleanup): the global `issue-wave-conductor` skill, with this repo's parts in `.claude/conductor/PROFILE.md`. Model routing comes from the user-level `orca-dispatch-recipes` skill (`routing.tsv`); the profile adds only the per-issue complexity criteria.
 - Workers run in Orca-managed worktrees and terminals (`orca-cli`, `orchestration`, `orca-dispatch-recipes` skills). Close every worktree and terminal you created as soon as its work is done.
-- Reviewers are chosen per issue by `.claude/conductor/scripts/review-plan.py`; agent definitions live in `.claude/agents/review-*.md`.
+- Reviewers are chosen per issue by `.claude/conductor/scripts/review-plan.py`; reviewer personas are global (`~/.agents/agents/review-*.md`), and this repo's authority, checks and invariants for them are the `Review lens` sections of `.claude/conductor/PROFILE.md`.
 - PR review priorities: domain-invariant violations (evidence fidelity, geometry vs connectivity, unknowns), package-boundary leaks, missing verification, and docs that disagree with `GLOSSARY.md` or an ADR.
 
 ## Agent docs
