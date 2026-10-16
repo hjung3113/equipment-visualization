@@ -352,6 +352,22 @@ const publishButton = () => screen.getByRole('button', { name: '게시' });
 const statusText = () => document.querySelector('.eqv-ed-publish-status')!.textContent;
 const hex12 = (hash: string) => hash.slice('sha256:'.length, 'sha256:'.length + 12);
 const inertAncestor = async () => (await list()).closest('[inert]');
+it('opens and first-publishes a draft with a valid empty bindings file', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  await writeJson(root, BINDINGS, { schemaVersion: '0.4', equipmentId: 'eq-synth-01', bindings: [] });
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  expect((screen.getByLabelText('effectiveFrom') as HTMLInputElement).value).toBe('2026-01-01T10:00:00.000');
+  await waitFor(() => expect(publishButton().getAttribute('aria-disabled')).toBe('false'));
+  fireEvent.click(publishButton());
+  await waitFor(() => expect(statusText()).toMatch(/^게시됨 · /));
+  const written = await disk(BINDINGS);
+  expect(validateBindings(written).ok).toBe(true);
+  expect(written.bindings).toHaveLength(1);
+  expect(written.bindings[0].effectiveFrom).toBe('2026-01-01T10:00:00.000');
+});
+
 async function openPublishable() {
   await writeDraft(root, 'eq-synth-01-layout');
   at('/onboarding/eq-synth-01/board');
@@ -475,4 +491,41 @@ it('keeps the publication in flight over the reload: the Board is inert, edits a
   expect(statusText()).toBe(`게시됨 · ${hex12(latest.mappingHash)} · 2026-01-01T10:30:00.000`);
   await waitFor(async () => expect(await inertAncestor()).toBeNull());
   expect(statusText()).toBe(`게시됨 · ${hex12(latest.mappingHash)} · 2026-01-01T10:30:00.000`);
+});
+
+it.each(['success', 'failure'] as const)('preserves returned A edits and its guard when an earlier visit Publish settles with %s', async (outcome) => {
+  await addEquipment(root, 'eq-b');
+  await writeDraft(root, 'eq-b-layout');
+  await openPublishable();
+  const gate = hold(BINDINGS, 'PUT');
+  let settled!: () => void;
+  const finished = new Promise<void>((resolve) => { settled = resolve; });
+  const fetchBefore = globalThis.fetch;
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const response = await fetchBefore(input, init);
+    if (init?.method === 'PUT' && input.includes(encodeURIComponent(BINDINGS))) settled();
+    return response;
+  });
+  fireEvent.click(publishButton());
+  await waitFor(() => expect(statusText()).toBe('게시 중…'));
+  act(() => navigate('/onboarding/eq-b/board'));
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  act(() => navigate('/onboarding/eq-synth-01/board'));
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  await assignPm9('pm-a');
+  await waitFor(() => expect(beforeUnloadPrevented()).toBe(true));
+  const board = await list();
+  if (outcome === 'failure') failPut = (path) => path === BINDINGS;
+  await act(async () => {
+    gate.release();
+    await finished;
+    await new Promise((done) => setTimeout(done, 50));
+  });
+  expect(await list()).toBe(board);
+  expect((await option('PM9')).textContent).toContain('pm-a');
+  expect(statusText()).toBe('');
+  expect(beforeUnloadPrevented()).toBe(true);
+  vi.spyOn(window, 'confirm').mockReturnValue(false);
+  act(() => navigate('/fleet'));
+  expect(window.location.pathname).toBe('/onboarding/eq-synth-01/board');
 });

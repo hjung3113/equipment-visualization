@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import type { BindingsFile } from '@eqv/core';
-import { DIRTY_REASON, PublishPanel, type DryRun, type PublishPanelProps } from '../src/index.js';
+import { DIRTY_REASON, planPublish, PublishPanel, type DryRun, type PublishPanelProps } from '../src/index.js';
 import { boardInput, layoutWithoutLpLl } from './board-data.js';
 import { bindings, dictionaries, inventory, mappings } from './data.js';
 
@@ -109,6 +109,31 @@ it('ignores a dry-run result that arrives after the inputs changed', async () =>
   await new Promise((resolve) => setTimeout(resolve, 20));
   expect(screen.getByRole('button', { name: /^이송 LP1 → LLA/ })).toBeTruthy();
   expect(screen.queryByText('Mapping Conflict가 없습니다.')).toBeNull();
+});
+
+it('shows only the unchanged blocker after success and restores date validation when editing resumes', async () => {
+  const initial = props();
+  const accepted = await planPublish({ ...initial.input, bindings: null, previous: null, effectiveFrom: initial.input.inventory.from });
+  expect(accepted.problems).toEqual([]);
+  const receipt = { mappingHash: accepted.mapping!.hash, effectiveFrom: initial.input.inventory.from };
+  const completed = { ...initial, bindings: accepted.bindings, previous: accepted.mapping, receipt };
+  const { rerender } = render(<PublishPanel {...completed} />);
+  // The host remounts after loading the accepted bindings.
+  expect(from().value).toBe(receipt.effectiveFrom);
+  const reason = () => document.getElementById(publishButton().getAttribute('aria-describedby')!)!.textContent!.trim();
+  await waitFor(() => expect(reason()).toBe('이전 게시와 같습니다'));
+  expect(from().getAttribute('aria-invalid')).toBe('false');
+  expect(publishButton().getAttribute('aria-disabled')).toBe('true');
+  expect(document.querySelector('.eqv-ed-publish-status')!.textContent).toBe('게시됨 · ' + receipt.mappingHash.slice(7, 19) + ' · ' + receipt.effectiveFrom);
+  rerender(<PublishPanel {...completed} input={{ ...initial.input, layout: { ...initial.input.layout, name: 'Changed draft' } }} />);
+  await waitFor(() => expect(from().getAttribute('aria-invalid')).toBe('true'));
+  expect(reason()).toContain('effectiveFrom은 마지막 binding');
+  rerender(<PublishPanel {...completed} />);
+  await waitFor(() => expect(reason()).toBe('이전 게시와 같습니다'));
+  fireEvent.change(from(), { target: { value: 'bad' } });
+  await waitFor(() => expect(from().getAttribute('aria-invalid')).toBe('true'));
+  expect(reason()).toContain('effectiveFrom 형식이 올바르지 않습니다');
+  expect(publishButton().getAttribute('aria-disabled')).toBe('true');
 });
 
 it('lists same-Model rows with host links and row errors', async () => {

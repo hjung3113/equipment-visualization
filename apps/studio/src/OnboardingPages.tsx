@@ -212,7 +212,7 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
   const [dirty, setDirty] = useState(false);
   const input = useMemo(() => ({ equipment, inventory, dictionaries, layout, ruleFiles: saved }),
     [equipment, inventory, dictionaries, layout, saved]);
-  const latest = bindings?.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a) ?? null;
+  const latest = bindings?.bindings.length ? bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a) : null;
   const previous = latest ? mappings[latest.mappingHash] ?? null : null;
 
   const onModelDryRun = async () => {
@@ -262,6 +262,8 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
 }
 
 export function BoardPage({ equipmentId }: { equipmentId: string }) {
+  const [visit, setVisit] = useState({ equipmentId, generation: 0 });
+  if (visit.equipmentId !== equipmentId) setVisit({ equipmentId, generation: visit.generation + 1 });
   // Same ownership as OnboardingPage: loaded state and the dirty flag both belong to the route's equipmentId.
   const [loaded, setLoaded] = useState<{ equipmentId: string; result: OnboardingLoad | null }>({ equipmentId, result: null });
   const [dirtyState, setDirtyState] = useState({ equipmentId, dirty: false });
@@ -273,22 +275,25 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
     { equipmentId, publishing: false, receipt: null, reloads: 0 });
   if (publicationState.equipmentId !== equipmentId) setPublicationState({ equipmentId, publishing: false, receipt: null, reloads: 0 });
   const publicationNow = publicationState.equipmentId === equipmentId ? publicationState : { equipmentId, publishing: false, receipt: null, reloads: 0 };
-  const alive = useRef({ mounted: true, equipmentId });
-  alive.current.equipmentId = equipmentId;
+  const owner = useRef<{ visit: typeof visit; operation: symbol | null } | null>(null);
   useEffect(() => {
-    alive.current.mounted = true;
-    return () => { alive.current.mounted = false; };
-  }, []);
+    owner.current = { visit, operation: null };
+    return () => { owner.current = null; };
+  }, [visit]);
 
   const run: Publication['run'] = async (plan, execute) => {
     const forId = equipmentId;
-    const current = () => alive.current.mounted && alive.current.equipmentId === forId;
+    if (owner.current?.visit !== visit) return { ok: false, error: '이전 Board 방문의 게시 요청입니다' };
+    const operation = Symbol('publication');
+    owner.current.operation = operation;
+    const current = () => owner.current?.visit === visit && owner.current.operation === operation;
     setPublicationState((previous) => ({ ...previous, equipmentId: forId, publishing: true, receipt: null }));
     const outcome = await execute();
     if (!outcome.ok) {
       if (current()) setPublicationState((previous) => ({ ...previous, publishing: false }));
       return outcome;
     }
+    if (!current()) return outcome;
     const reloaded = await loadOnboarding(forId);
     if (!current()) return outcome;
     setLoaded({ equipmentId: forId, result: reloaded });

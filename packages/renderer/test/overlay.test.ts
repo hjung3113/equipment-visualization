@@ -367,6 +367,22 @@ it('draws dashed rings and one titled line for a highlight, skipping hidden and 
   expect(shapes(partial).map((node) => node.tag)).toEqual(['rect']);
 });
 
+it('skips highlight rings and transfers touching a component on a filtered-out level', () => {
+  const { scene } = fixture([
+    component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 100, y: 100, w: 80, h: 80 }),
+    component({ id: 'hidden', assetRef: 'primitive:pm', label: 'Hidden', levelId: 'level-upper', x: 400, y: 300, w: 80, h: 80 }),
+  ], [], ['level-main']);
+  const result = overlay(scene, { selectedId: null, highlight: {
+    componentIds: ['a', 'hidden', 'missing'],
+    transfers: [
+      { from: 'a', to: 'hidden', label: 'hidden target' },
+      { from: 'hidden', to: 'a', label: 'hidden source' },
+      { from: 'a', to: 'missing', label: 'absent target' },
+    ],
+  } }).highlight;
+  expect(shapes(result).map((node) => node.tag)).toEqual(['rect']);
+});
+
 it('leaves the highlight layer empty without a highlight', () => {
   const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 100, y: 100, w: 80, h: 80 })]);
   expect(overlay(scene, { selectedId: null }).highlight.children).toEqual([]);

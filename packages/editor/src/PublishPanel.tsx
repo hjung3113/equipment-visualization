@@ -54,7 +54,7 @@ export function PublishPanel(props: PublishPanelProps) {
   const { input, bindings, previous, boardDirty, publishing, receipt, onPublish, onHighlight, onModelDryRun, renderLink } = props;
   const ids = useId();
   const prefill = defaultEffectiveFrom(input.inventory, bindings);
-  const [from, setFrom] = useState({ prefill, value: prefill });
+  const [from, setFrom] = useState({ prefill, value: receipt?.effectiveFrom ?? prefill });
   const [active, setActive] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
   const [model, setModel] = useState<{ equipmentId: string; rows: ModelDryRunRow[] | null; error: string | null; loading: boolean } | null>(null);
@@ -106,8 +106,12 @@ export function PublishPanel(props: PublishPanelProps) {
     onHighlight(next === null ? null : conflictHighlight(conflict));
   };
 
-  const effectiveError = plan?.problems.find((problem) => problem.startsWith('effectiveFrom')) ?? null;
-  const reason = boardDirty ? DIRTY_REASON : !plan ? (computeError ?? '계산 중…') : plan.problems.join(' · ') || null;
+  const completed = receipt !== null && effectiveFrom === receipt.effectiveFrom && plan?.mapping?.hash === receipt.mappingHash
+    && plan.problems.includes('이전 게시와 같습니다')
+    && plan.problems.every((problem) => problem === '이전 게시와 같습니다' || problem.startsWith('effectiveFrom'));
+  const effectiveError = completed ? null : plan?.problems.find((problem) => problem.startsWith('effectiveFrom')) ?? null;
+  const reason = boardDirty ? DIRTY_REASON : !plan ? (computeError ?? '계산 중…')
+    : completed ? '이전 게시와 같습니다' : plan.problems.join(' · ') || null;
   const blocked = reason !== null || publishing;
   const errorId = `${ids}-from-error`;
   const reasonId = `${ids}-reason`;

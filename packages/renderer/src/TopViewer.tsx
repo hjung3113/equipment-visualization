@@ -466,10 +466,11 @@ export function TopViewer({
       >
         {parts.board}
         {parts.tree}
-        {overlayNodes.interaction}
+        {!overlayNodes.highlight && overlayNodes.interaction}
         {parts.interfaces}
         {overlayNodes.capabilities}
         {overlayNodes.highlight}
+        {overlayNodes.highlight && overlayNodes.interaction}
         {parts.labels}
         {parts.badges}
         {parts.chips}
