@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import { buildGenericLayout, proposeTemplates, type ObservedInventory, type TemplateDocument, type TypeDictionaryFile } from '@eqv/core';
 import { TopView } from '@eqv/renderer';
 import { formatProposalEvidence } from './evidence.js';
@@ -7,11 +7,13 @@ export interface TemplateProposalsProps {
   inventory: ObservedInventory;
   dictionaries: readonly TypeDictionaryFile[];
   templates: readonly TemplateDocument[];
+  /** Rendered inside each card; the host decides what choosing a template or the Generic Layout does. */
+  action?: (choice: { kind: 'template'; templateId: string } | { kind: 'generic' }) => ReactNode;
 }
 
 const THUMB = { width: 160, height: 120 };
 
-export function TemplateProposals({ inventory, dictionaries, templates }: TemplateProposalsProps) {
+export function TemplateProposals({ inventory, dictionaries, templates, action }: TemplateProposalsProps) {
   const result = useMemo(() => {
     if (inventory.aliases.length === 0) return null;
     const proposals = proposeTemplates({ inventory, dictionaries: [...dictionaries], templates: [...templates] });
@@ -34,6 +36,8 @@ export function TemplateProposals({ inventory, dictionaries, templates }: Templa
                 </div>
                 <p>{formatProposalEvidence(proposal)}</p>
                 <p>설명 안 되는 alias: {proposal.unexplainedAliases.length ? proposal.unexplainedAliases.join(', ') : '없음'}</p>
+                {action?.({ kind: 'template', templateId: template.id })}
+                {action && !proposal.fits && <span className="eqv-ed-error"> 부적합 Template입니다</span>}
               </li>
             );
           })}
@@ -45,6 +49,7 @@ export function TemplateProposals({ inventory, dictionaries, templates }: Templa
                 <TopView layout={result.generic} labels="none" {...THUMB} />
               </div>
               <p>모든 형상·배정은 assumed입니다</p>
+              {action?.({ kind: 'generic' })}
             </li>
           )}
         </ol>

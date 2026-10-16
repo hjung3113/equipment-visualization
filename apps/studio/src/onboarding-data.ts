@@ -1,22 +1,32 @@
 import {
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema,
   validateAliasRules, validateBindings, validateTypeDictionary, verifyMappingHash,
-  type MappingIssue, type MappingScope, type MappingVersion, type TemplateDocument, type TypeDictionaryFile,
+  validateLayout,
+  type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type MappingIssue, type MappingScope, type MappingVersion,
+  type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
-import type { FleetData } from '@eqv/editor';
+import type { FleetData, RuleFiles } from '@eqv/editor';
 import { ApiError, listDir, readFile, type DirEntry } from './api.js';
 
 /** Read-only inputs of one equipment, validated at the read boundary (GET only parses JSON). */
 export interface LoadedEquipment extends FleetData {
   dictionaries: TypeDictionaryFile[];
+  /** The validated alias-rules files that exist, by scope level. */
+  ruleFiles: RuleFiles;
 }
+/** The equipment's layout draft: found, absent (404), underivable layout id, or unreadable/invalid. */
+export type DraftLookup =
+  | { kind: 'found'; layoutId: string; layout: EquipmentLayoutDocument }
+  | { kind: 'absent'; layoutId: string }
+  | { kind: 'no-id' }
+  | { kind: 'error'; layoutId: string; error: string };
 export type EquipmentLoad =
   | { kind: 'not-found' }
   | { kind: 'error'; error: string; record: FleetData['record'] | null }
   | { kind: 'ok'; data: LoadedEquipment };
 export type OnboardingLoad =
   | Exclude<EquipmentLoad, { kind: 'ok' }>
-  | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[] };
+  | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[]; draft: DraftLookup };
 
 /** Thrown for any content problem; the message becomes the equipment's error text. */
 class DataError extends Error {}
@@ -100,18 +110,20 @@ async function loadData(equipmentId: string): Promise<EquipmentLoad> {
       checkScope(path, file.scope, scope);
       dictionaries.push(file);
     }
-    let hasAliasRules = false;
-    const ruleScopes: [string, MappingScope][] = [
-      [`onboarding/scopes/maker/${maker}/alias-rules.json`, { level: 'maker', maker }],
-      [`onboarding/scopes/model/${maker}/${model}/alias-rules.json`, { level: 'model', maker, model }],
-      [`onboarding/scopes/equipment/${equipmentId}/alias-rules.json`, { level: 'equipment', equipmentId }],
+    const ruleFiles: RuleFiles = {};
+    const ruleScopes: [string, MappingScope, keyof RuleFiles][] = [
+      [`onboarding/scopes/maker/${maker}/alias-rules.json`, { level: 'maker', maker }, 'maker'],
+      [`onboarding/scopes/model/${maker}/${model}/alias-rules.json`, { level: 'model', maker, model }, 'model'],
+      [`onboarding/scopes/equipment/${equipmentId}/alias-rules.json`, { level: 'equipment', equipmentId }, 'equipment'],
     ];
-    for (const [path, scope] of ruleScopes) {
+    for (const [path, scope, key] of ruleScopes) {
       const raw = await readOptional(path);
       if (raw === undefined) continue;
-      checkScope(path, check(path, validateAliasRules(raw)).scope, scope);
-      hasAliasRules = true;
+      const file: AliasRulesFile = check(path, validateAliasRules(raw));
+      checkScope(path, file.scope, scope);
+      ruleFiles[key] = file;
     }
+    const hasAliasRules = Object.keys(ruleFiles).length > 0;
 
     const bindingsPath = `onboarding/bindings/${equipmentId}.bindings.json`;
     const rawBindings = await readOptional(bindingsPath);
@@ -136,7 +148,7 @@ async function loadData(equipmentId: string): Promise<EquipmentLoad> {
       if (mapping.layoutId !== latest.layoutId) throw new DataError(`${mappingPath}: layoutId(${mapping.layoutId})가 binding의 layoutId와 다릅니다`);
       mappings[mapping.hash] = mapping;
     }
-    return { kind: 'ok', data: { record, inventory, dictionaries, bindings, mappings, hasAliasRules } };
+    return { kind: 'ok', data: { record, inventory, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
   } catch (error) {
     return { kind: 'error', record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
   }
@@ -186,13 +198,42 @@ async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped
   return { templates: templates.sort((a, b) => bySource(a.id, b.id)), skipped: skipped.sort(bySource) };
 }
 
+
+/** The layout the Board edits: the latest binding's layout once published, otherwise `<equipmentId>-layout`. */
+function draftLayoutId(equipmentId: string, bindings: BindingsFile | null): string | null {
+  if (bindings && bindings.bindings.length > 0) {
+    return bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a).layoutId;
+  }
+  const id = `${equipmentId}-layout`;
+  return idSchema.safeParse(id).success ? id : null;
+}
+
+/** Never rejects. Only a 404 is "no draft"; an invalid or foreign file is an error, never silently replaced. */
+async function lookupDraft(equipmentId: string, bindings: BindingsFile | null): Promise<DraftLookup> {
+  const layoutId = draftLayoutId(equipmentId, bindings);
+  if (layoutId === null) return { kind: 'no-id' };
+  const path = `layouts/${layoutId}/draft.layout.json`;
+  try {
+    const raw = await readOptional(path);
+    if (raw === undefined) return { kind: 'absent', layoutId };
+    const result = validateLayout(raw);
+    if (!result.ok) return { kind: 'error', layoutId, error: `${path}: ${problems(result.issues)}` };
+    const { layout } = result;
+    if (layout.kind !== 'equipment-layout') return { kind: 'error', layoutId, error: `${path}: equipment-layout이 아닙니다 (${layout.kind})` };
+    if (layout.id !== layoutId) return { kind: 'error', layoutId, error: `${path}: id(${layout.id})가 ${layoutId}와 다릅니다` };
+    return { kind: 'found', layoutId, layout };
+  } catch (error) {
+    return { kind: 'error', layoutId, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+  }
+}
+
 /** Never rejects. A broken record or batch is a data error, not not-found. */
 export async function loadOnboarding(equipmentId: string): Promise<OnboardingLoad> {
   const loaded = await loadEquipment(equipmentId);
   if (loaded.kind !== 'ok') return loaded;
   try {
     const { templates, skipped } = await loadTemplates();
-    return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped };
+    return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
   } catch (error) {
     return { kind: 'error', record: loaded.data.record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
   }

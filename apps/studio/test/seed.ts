@@ -66,3 +66,9 @@ export async function publishEquipment(root: string, equipmentId: string): Promi
     bindings: [{ layoutId: mapping.layoutId, mappingHash: mapping.hash, effectiveFrom: '2026-01-01T09:00:00.000' }] });
   return mapping.hash;
 }
+
+/** Writes the synthetic cluster-single layout as `layoutId`'s draft (kind equipment-layout, id = layoutId). */
+export async function writeDraft(root: string, layoutId: string): Promise<void> {
+  const layout = JSON.parse(await readFile(join(repo, 'fixtures/cluster-single/layout.json'), 'utf8'));
+  await writeJson(root, `layouts/${layoutId}/draft.layout.json`, { ...layout, id: layoutId });
+}

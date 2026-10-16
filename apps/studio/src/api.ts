@@ -44,3 +44,15 @@ export async function saveDraft(id: string, layout: unknown): Promise<string> {
 export async function publishRevision(layout: unknown): Promise<{ path: string; revision: string }> {
   return (await request('/api/layout-revisions', json('POST', layout))) as { path: string; revision: string };
 }
+
+/** Creates the layout draft only if none exists: a 412 ApiError means someone else created it first. */
+export async function createDraft(id: string, layout: unknown): Promise<string> {
+  const path = `layouts/${id}/draft.layout.json`;
+  const init = json('PUT', layout);
+  await request(`/api/files?${new URLSearchParams({ path })}`, { ...init, headers: { ...init.headers as Record<string, string>, 'If-None-Match': '*' } });
+  return path;
+}
+
+export async function saveAliasRules(path: string, file: unknown): Promise<void> {
+  await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', file));
+}

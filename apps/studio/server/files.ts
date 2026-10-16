@@ -207,10 +207,21 @@ export function createFileApi({ root }: { root: string }) {
     }
   }
 
-  async function write(segments: string[], value: unknown, immutable: boolean): Promise<{ created: boolean; conflict: boolean }> {
+  async function write(
+    segments: string[], value: unknown, immutable: boolean, createOnly = false,
+  ): Promise<{ created: boolean; conflict: boolean; exists?: boolean }> {
     const absolute = join(root, ...segments);
     const text = `${JSON.stringify(value, null, 2)}\n`;
     await mkdir(dirname(absolute), { recursive: true });
+    if (createOnly && !immutable) {
+      try {
+        await writeFile(absolute, text, { flag: 'wx' });
+        return { created: true, conflict: false };
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+        return { created: false, conflict: false, exists: true };
+      }
+    }
     if (immutable) {
       try {
         await writeFile(absolute, text, { flag: 'wx' });
@@ -255,7 +266,9 @@ export function createFileApi({ root }: { root: string }) {
     await target.validate(body);
     await assertWritable(segments);
     const path = segments.join('/');
-    const result = await write(segments, body, target.immutable);
+    const createOnly = Object.entries(request.headers).some(([name, value]) => name.toLowerCase() === 'if-none-match' && value?.trim() === '*');
+    const result = await write(segments, body, target.immutable, createOnly);
+    if (result.exists) return { status: 412, body: { error: 'A file already exists at this path' } };
     if (result.conflict) return { status: 409, body: { error: 'A different file already exists at this path' } };
     return { status: result.created ? 201 : 200, body: { path, created: result.created } };
   }

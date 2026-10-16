@@ -110,3 +110,13 @@ it('shows a message instead of throwing for an empty Inventory', () => {
   expect(screen.getByText('관측된 alias가 없어 Template을 제안할 수 없습니다.')).toBeTruthy();
   expect(screen.queryAllByRole('listitem')).toHaveLength(0);
 });
+
+it('renders the host action inside each template card and the Generic Layout card', () => {
+  const { rerender } = render(<TemplateProposals inventory={inventory()} dictionaries={dictionaries} templates={templates()}
+    action={(choice) => <button type="button">{choice.kind === 'template' ? `시작 ${choice.templateId}` : '시작 generic'}</button>} />);
+  expect(cards().map((card) => within(card).getByRole('button').textContent)).toEqual(
+    cards().map((card) => `시작 ${within(card).getByRole('heading').textContent!.split(' ').at(-1)}`));
+  rerender(<TemplateProposals inventory={inventory()} dictionaries={dictionaries} templates={templates().filter(({ id }) => id !== 'cluster-single')}
+    action={(choice) => choice.kind === 'generic' ? <button type="button">시작 generic</button> : null} />);
+  expect(within(cards().at(-1)!).getByRole('button', { name: '시작 generic' })).toBeTruthy();
+});

@@ -139,3 +139,24 @@ it('rejects a non-JSON content type', async () => {
   const response = await put('layouts/cluster-single/draft.layout.json', await template(), { 'content-type': 'text/plain' });
   expect(response.status).toBe(415);
 });
+
+const CREATE_ONLY = { ...JSON_TYPE, 'If-None-Match': '*' };
+it('creates a mutable file only when absent under If-None-Match: *, and a plain PUT still overwrites', async () => {
+  const layout = await template();
+  const path = 'layouts/cluster-single/draft.layout.json';
+  expect((await put(path, layout, CREATE_ONLY)).status).toBe(201);
+  const before = await readFile(join(root, path), 'utf8');
+  const changed = { ...layout, name: 'Renamed' };
+  const refused = await put(path, changed, CREATE_ONLY);
+  expect(refused.status).toBe(412);
+  expect(refused.body).toEqual({ error: expect.any(String) });
+  expect(await readFile(join(root, path), 'utf8')).toBe(before);
+  expect((await put(path, changed)).status).toBe(200);
+  expect(await readJson(path)).toMatchObject({ name: 'Renamed' });
+});
+
+it('still validates a create-only write', async () => {
+  const layout = await template();
+  expect((await put('layouts/other/draft.layout.json', layout, CREATE_ONLY)).status).toBe(400);
+  expect(await exists(join(root, 'layouts/other/draft.layout.json'))).toBe(false);
+});

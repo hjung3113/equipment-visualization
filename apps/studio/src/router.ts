@@ -4,6 +4,7 @@ export type Route =
   | { name: 'fleet' }
   | { name: 'layouts'; file: string | null }
   | { name: 'onboarding'; equipmentId: string }
+  | { name: 'board'; equipmentId: string }
   | { name: 'focus'; equipmentId: string; entityType: string | null; anchor: string | null }
   | { name: 'not-found'; pathname: string };
 
@@ -23,6 +24,7 @@ export function parseRoute(pathname: string, search: string): Route {
   if (head === 'fleet' && segments.length === 1) return { name: 'fleet' };
   if (head === 'layouts' && segments.length === 1) return { name: 'layouts', file: query.get('file') };
   if (head === 'onboarding' && equipmentId && extra.length === 0) return { name: 'onboarding', equipmentId };
+  if (head === 'onboarding' && equipmentId && extra.length === 1 && extra[0] === 'board') return { name: 'board', equipmentId };
   if (head === 'focus' && equipmentId && extra.length === 0) {
     return { name: 'focus', equipmentId, entityType: query.get('entityType') || null, anchor: query.get('anchor') || null };
   }
@@ -37,6 +39,8 @@ export function hrefFor(route: Route): string {
       return route.file === null ? '/layouts' : `/layouts?${new URLSearchParams({ file: route.file })}`;
     case 'onboarding':
       return `/onboarding/${encodeURIComponent(route.equipmentId)}`;
+    case 'board':
+      return `/onboarding/${encodeURIComponent(route.equipmentId)}/board`;
     case 'focus': {
       const query = new URLSearchParams();
       if (route.entityType !== null) query.set('entityType', route.entityType);

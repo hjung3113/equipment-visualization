@@ -13,6 +13,8 @@ const NAMED: [string, string, Route][] = [
   ['/layouts', '', { name: 'layouts', file: null }],
   ['/layouts', '?file=layouts/a/draft.layout.json', { name: 'layouts', file: 'layouts/a/draft.layout.json' }],
   ['/onboarding/eq-synth-01', '', { name: 'onboarding', equipmentId: 'eq-synth-01' }],
+  ['/onboarding/eq-synth-01/board', '', { name: 'board', equipmentId: 'eq-synth-01' }],
+  ['/onboarding/a%2Fb/board', '', { name: 'board', equipmentId: 'a/b' }],
   ['/focus/eq-synth-01', '?entityType=wafer&anchor=occ-1',
     { name: 'focus', equipmentId: 'eq-synth-01', entityType: 'wafer', anchor: 'occ-1' }],
   ['/focus/eq-synth-01', '', { name: 'focus', equipmentId: 'eq-synth-01', entityType: null, anchor: null }],
@@ -25,7 +27,7 @@ it.each(NAMED)('parses %s%s', (pathname, search, route) => {
   expect(parseRoute(hrefPath, hrefSearch)).toEqual(route);
 });
 
-it.each(['/', '/nope', '/fleet/extra', '/onboarding', '/onboarding/%E0%A4%A'])('treats %s as not found', (pathname) => {
+it.each(['/', '/nope', '/fleet/extra', '/onboarding', '/onboarding/%E0%A4%A', '/onboarding/eq-synth-01/other', '/onboarding/eq-synth-01/board/x'])('treats %s as not found', (pathname) => {
   expect(parseRoute(pathname, '')).toEqual({ name: 'not-found', pathname });
 });
 

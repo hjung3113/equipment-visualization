@@ -1,7 +1,7 @@
 export const PACKAGE_NAME = '@eqv/core';
 export { siteWallClockSchema, type SiteWallClock } from './site-wall-clock.js';
 
-export { LAYOUT_SCHEMA_VERSION, layoutDocumentSchema } from './layout/schema.js';
+export { LAYOUT_SCHEMA_VERSION, layoutDocumentSchema, idSchema } from './layout/schema.js';
 export type {
   LayoutDocument, TemplateDocument, EquipmentLayoutDocument, Component, Port, HoldingSite,
   Level, SourceEvidence, Provenance, Certainty, MaterialKind, PhysicalInterfaceEdge,
@@ -20,7 +20,8 @@ export type {
   MappingEntry, BindingsFile, Binding, Resolution, MappingIssue,
 } from './mapping/schema.js';
 export { resolveRole, validateTypeDictionary, validateAliasRules, validateBindings } from './mapping/validate.js';
-export { publishMapping, verifyMappingHash } from './mapping/publish.js';
+export { publishMapping, resolveAliasRules, verifyMappingHash } from './mapping/publish.js';
+export type { AliasResolution, ResolveAliasRulesInput } from './mapping/publish.js';
 export { resolveLocation } from './mapping/resolve.js';
 
 export { observedInventorySchema } from './inventory/schema.js';
@@ -45,6 +46,7 @@ export type { Drift } from './onboarding/drift.js';
 export { proposeTemplates } from './onboarding/templates.js';
 export type { TemplateProposal } from './onboarding/templates.js';
 export { buildGenericLayout } from './onboarding/generic-layout.js';
+export { instantiateLayout } from './onboarding/instantiate.js';
 export { compareNatural } from './onboarding/order.js';
 export { equipmentRecordSchema } from './onboarding/equipment.js';
 export type { EquipmentRecord } from './onboarding/equipment.js';
