@@ -1,4 +1,6 @@
 .eqv-ed-section { margin: 0 0 24px; color: var(--eqv-ink, #101828); }
+.eqv-ed-table-scroll { max-width: 100%; overflow-x: auto; }
+.eqv-ed-table-scroll:focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 2px; }
 .eqv-ed-table { border-collapse: collapse; background: var(--eqv-board, #fbfdff); color: var(--eqv-ink, #101828); }
 .eqv-ed-table th, .eqv-ed-table td { border: 1px solid var(--eqv-border, #cbd6e6); padding: 4px 10px; text-align: left; vertical-align: top; }
 .eqv-ed-table thead th { background: var(--eqv-canvas, #f3f7fe); color: var(--eqv-secondary, #374151); }

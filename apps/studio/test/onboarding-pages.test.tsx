@@ -4,6 +4,7 @@ import { join, relative, resolve } from 'node:path';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
+import * as onboardingData from '../src/onboarding-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
 import { addEquipment, publishEquipment, record, seedOnboardingRoot, signMapping, writeJson } from './seed.js';
@@ -43,6 +44,7 @@ beforeEach(async () => {
 afterEach(async () => {
   cleanup();
   vi.unstubAllGlobals();
+  vi.restoreAllMocks();
   await rm(base, { recursive: true, force: true });
 });
 
@@ -83,7 +85,8 @@ it('shows not-found for an unknown id and a data error for a record without obse
 const entries = async (path: string) => JSON.parse(await readFile(join(root, path), 'utf8'));
 it.each<[string, (id: string) => Promise<void>]>([
   ['a record whose equipmentId differs from its file name', async (id) => {
-    await writeJson(root, `equipment/${id}.json`, record('eq-other'));
+    await addEquipment(root, id);
+    await writeJson(root, `equipment/${id}.json`, { ...await entries(`equipment/${id}.json`), equipmentId: 'eq-other' });
   }],
   ['a batch for another equipment', async (id) => {
     await addEquipment(root, id);
@@ -116,7 +119,7 @@ it.each<[string, (id: string) => Promise<void>]>([
     delete body.hash;
     await writeJson(root, path, signMapping({ ...body, entries: body.entries.slice(1) }));
   }],
-])('shows an error row without ratios for %s, next to a healthy equipment', async (_, setup) => {
+])('shows an error row without ratios for %s, next to a healthy equipment', async (scenario, setup) => {
   await setup('eq-bad');
   at('/fleet');
   render(<App />);
@@ -124,6 +127,9 @@ it.each<[string, (id: string) => Promise<void>]>([
   expect(within(healthy).getByText('● 게시됨')).toBeTruthy();
   const bad = await fleetRow('eq-bad');
   expect(within(bad).getByText(/^⚠ 오류:/)).toBeTruthy();
+  if (scenario === 'a record whose equipmentId differs from its file name') {
+    expect(bad.textContent).toContain('equipment/eq-bad.json: equipmentId(eq-other)가 파일 이름과 다릅니다');
+  }
   expect(bad.textContent).not.toMatch(/%|게시됨|초안|미착수/);
 
   navigate('/onboarding/eq-bad');
@@ -164,20 +170,27 @@ it('treats an invalid alias-metadata file as an error, not as absent', async () 
 });
 
 const renameWith = (prefix: string) => (text: string) => text.replaceAll('"PM1"', `"${prefix}_PM1"`);
-const flush = () => act(async () => { await new Promise((done) => setTimeout(done, 40)); });
 
 it.each(['ok', 'fail'] as const)('ignores a late %s result of a previous equipment id', async (outcome) => {
   await addEquipment(root, 'eq-a', { rename: renameWith('A') });
   await addEquipment(root, 'eq-b', { rename: renameWith('B') });
   const gate = hold('equipment/eq-a.json');
+  const load = onboardingData.loadOnboarding;
+  let completion!: ReturnType<typeof load>;
+  vi.spyOn(onboardingData, 'loadOnboarding').mockImplementation((id) => {
+    const pending = load(id);
+    if (id === 'eq-a') completion = pending;
+    return pending;
+  });
   at('/onboarding/eq-a');
   render(<App />);
-  await flush();
   act(() => navigate('/onboarding/eq-b'));
   await screen.findByText('B_PM1');
 
-  gate.release(outcome);
-  await flush();
+  await act(async () => {
+    gate.release(outcome);
+    await completion;
+  });
   expect(screen.getByText('B_PM1')).toBeTruthy();
   expect(screen.queryByText('A_PM1')).toBeNull();
   expect(screen.queryByRole('alert')).toBeNull();

@@ -21,6 +21,22 @@ it('renders fleet rows with status text, integer percentages, dashes and a host 
   expect(row('eq-new').getAllByRole('cell').map((cell) => cell.textContent).slice(2, 6)).toEqual(['○ 미착수', '—', '—', expect.any(String)]);
   expect(row('eq-bad').getByText(/관측 데이터 없음/)).toBeTruthy();
   expect(screen.getAllByRole('columnheader')).toHaveLength(7);
+  const table = screen.getByRole('table');
+  expect(document.getElementById(table.getAttribute('aria-describedby')!)?.textContent).toBe(
+    '커버리지: 해석된 참조 수 / 전체 참조 수(무시한 alias 제외). assumed 비율: assumed 규칙으로 해석된 참조 수 / 해석된 참조 수.');
+});
+
+
+it('contains each wide table in a focusable named region', () => {
+  render(<>
+    <FleetTable rows={[]} renderLink={(_, children) => children} />
+    <InventoryView inventory={inventory()} dictionaries={dictionaries} />
+  </>);
+  for (const [index, name] of ['Fleet 표', 'Alias 목록 표', '관측된 이송 표'].entries()) {
+    const region = screen.getByRole('region', { name });
+    expect(region.getAttribute('tabindex')).toBe('0');
+    expect(screen.getAllByRole('table')[index]!.parentElement).toBe(region);
+  }
 });
 
 const aliasRows = () => within(screen.getByRole('table', { name: 'Alias 목록' })).getAllByRole('row').slice(1)
@@ -28,12 +44,13 @@ const aliasRows = () => within(screen.getByRole('table', { name: 'Alias 목록' 
 
 it('lists unknown-Role aliases first, then Role, then alias; a missing moduleType shows a dash', () => {
   const input = inventory();
-  input.aliases = input.aliases.map((row) => row.alias === 'PM2' ? { ...row, moduleType: undefined } : row);
+  input.aliases = input.aliases.map((row) => row.alias === 'PM2' ? { ...row, moduleType: undefined } :
+    row.alias === 'PM1' ? { ...row, alias: 'PM10' } : row);
   render(<InventoryView inventory={input} dictionaries={dictionaries} />);
   const rows = aliasRows();
   expect(rows[0]!.slice(0, 3)).toEqual(['PM2', '—', 'unknown']);
   expect(rows.map(([alias, , role]) => `${role}:${alias}`)).toEqual([
-    'unknown:PM2', 'unknown:VIRT_SCH', 'll:LLA', 'lp:LP1', 'pm:PM1', 'pm:PM9', 'robot:EFEM_R1', 'robot:TM_R1',
+    'unknown:PM2', 'unknown:VIRT_SCH', 'll:LLA', 'lp:LP1', 'pm:PM9', 'pm:PM10', 'robot:EFEM_R1', 'robot:TM_R1',
   ]);
 });
 
