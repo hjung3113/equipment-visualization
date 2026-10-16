@@ -7,6 +7,7 @@ export type {
   Level, SourceEvidence, Provenance, Certainty, MaterialKind, PhysicalInterfaceEdge,
   TransferCapabilityEdge, ProcessRoute,
 } from './layout/schema.js';
+export { layoutRevision } from './layout/revision.js';
 export { validateLayout } from './layout/validate.js';
 export type { LayoutIssue, LayoutIssueCode, LayoutValidationResult } from './layout/validate.js';
 

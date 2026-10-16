@@ -170,6 +170,8 @@ assets/onboarding/
   bindings/<equipmentId>.bindings.json
 ```
 
+Studio dev 파일 API(#13)는 위 경로만 쓰며, 각 경로는 대응하는 core validator를 통과해야 한다.
+
 저장소에는 synthetic 설비만 둔다. 실제 maker/model 값은 플랫폼 배포 계층.
 
 ## 8. 권한
