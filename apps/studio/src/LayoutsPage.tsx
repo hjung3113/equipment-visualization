@@ -80,18 +80,27 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [busy, setBusy] = useState(false);
   const [reload, setReload] = useState(0);
   const [prevFile, setPrevFile] = useState(file);
-  const [generation, setGeneration] = useState(0);
-  const activeGeneration = useRef<number | null>(generation);
+  const [documentEpoch, setDocumentEpoch] = useState(0);
+  const activeDocumentEpoch = useRef<number | null>(documentEpoch);
+
+  const [importSequence, setImportSequence] = useState(0);
+  const activeImportSequence = useRef<number | null>(importSequence);
 
   useLayoutEffect(() => {
-    activeGeneration.current = generation;
-    return () => { activeGeneration.current = null; };
-  }, [generation]);
+    activeImportSequence.current = importSequence;
+    return () => { activeImportSequence.current = null; };
+  }, [importSequence]);
+
+  useLayoutEffect(() => {
+    activeDocumentEpoch.current = documentEpoch;
+    return () => { activeDocumentEpoch.current = null; };
+  }, [documentEpoch]);
 
   // Opening another file discards an unsaved import and any notices tied to the previous document.
   if (prevFile !== file) {
     setPrevFile(file);
-    setGeneration(generation + 1);
+    setDocumentEpoch(documentEpoch + 1);
+    setImportSequence(importSequence + 1);
     setBusy(false);
     setImported(null);
     setActionError(null);
@@ -128,24 +137,27 @@ export function LayoutsPage({ file }: { file: string | null }) {
     const input = event.currentTarget;
     const picked = input.files?.[0];
     if (!picked) return;
-    const owner = (activeGeneration.current ?? generation) + 1;
-    activeGeneration.current = owner;
-    setGeneration(owner);
-    setBusy(false);
-    setRevision(null);
+    const sequence = (activeImportSequence.current ?? importSequence) + 1;
+    activeImportSequence.current = sequence;
+    setImportSequence(sequence);
     input.value = '';
     try {
       const raw: unknown = JSON.parse(await picked.text());
-      if (activeGeneration.current !== owner) return;
+      if (activeImportSequence.current !== sequence) return;
       const parsed = parseDoc(raw);
       if ('doc' in parsed) {
+        const epoch = (activeDocumentEpoch.current ?? documentEpoch) + 1;
+        activeDocumentEpoch.current = epoch;
+        setDocumentEpoch(epoch);
+        setBusy(false);
+        setRevision(null);
         setImported(parsed.doc);
         setActionError(null);
       } else {
         setActionError(`가져오기 실패: ${parsed.issues}`);
       }
     } catch {
-      if (activeGeneration.current === owner) setActionError('가져오기 실패: JSON을 읽을 수 없습니다');
+      if (activeImportSequence.current === sequence) setActionError('가져오기 실패: JSON을 읽을 수 없습니다');
     }
   }
 
@@ -160,8 +172,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
   }
 
   async function run(action: (isActive: () => boolean) => Promise<void>) {
-    const owner = activeGeneration.current;
-    const isActive = () => owner !== null && activeGeneration.current === owner;
+    const owner = activeDocumentEpoch.current;
+    const isActive = () => owner !== null && activeDocumentEpoch.current === owner;
     setBusy(true);
     setActionError(null);
     try {
@@ -237,7 +249,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
               <code>{current.layout.id}</code>
               {imported && <> <strong>저장 안 됨</strong></>}
             </p>
-            <ViewerBoundary key={generation}>
+            <ViewerBoundary key={documentEpoch}>
               <TopViewer layout={current.layout} width={VIEW_WIDTH} height={VIEW_HEIGHT} />
             </ViewerBoundary>
           </>
