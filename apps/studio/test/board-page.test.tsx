@@ -529,3 +529,36 @@ it.each(['success', 'failure'] as const)('preserves returned A edits and its gua
   act(() => navigate('/fleet'));
   expect(window.location.pathname).toBe('/onboarding/eq-synth-01/board');
 });
+
+it('shows unknown publication status for a load error and counts failures without a readable maker/model', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  await addEquipment(root, 'eq-broken');
+  await writeJson(root, 'onboarding/bindings/eq-broken.bindings.json', { invalid: true });
+  await writeJson(root, 'equipment/eq-unreadable.json', { invalid: true });
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  fireEvent.click(screen.getByRole('button', { name: '같은 Model 일괄 dry-run 실행' }));
+  const table = await screen.findByRole('table', { name: 'synth-maker/synth-model 설비 2대 · 읽지 못한 설비 1대' });
+  const row = within(table).getByRole('link', { name: 'eq-broken' }).closest('tr')!;
+  expect(within(row).getAllByRole('cell')[0]!.textContent).toBe('—');
+  expect(row.textContent).toContain('bindings');
+  expect(within(table).queryByRole('link', { name: 'eq-unreadable' })).toBeNull();
+});
+
+it('uses the freshly loaded rule files for every same-Model row', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  await addEquipment(root, 'eq-synth-02');
+  await writeDraft(root, 'eq-synth-02-layout');
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  const path = 'onboarding/scopes/model/synth-maker/synth-model/alias-rules.json';
+  await writeJson(root, path, { ...await disk(path), rules: [] });
+  fireEvent.click(screen.getByRole('button', { name: '같은 Model 일괄 dry-run 실행' }));
+  const table = await screen.findByRole('table', { name: 'synth-maker/synth-model 설비 2대' });
+  for (const id of ['eq-synth-01', 'eq-synth-02']) {
+    const row = within(table).getByRole('link', { name: id }).closest('tr')!;
+    expect(within(row).getAllByRole('cell')[1]!.textContent).toBe(id === 'eq-synth-01' ? '19%' : '0%');
+  }
+});

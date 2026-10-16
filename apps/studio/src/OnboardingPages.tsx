@@ -219,11 +219,13 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
     const ids = await listEquipmentIds();
     const loads = await Promise.all(ids.map((id) => loadOnboarding(id)));
     const rows: ModelDryRunInput[] = [];
+    let unreadable = 0;
     loads.forEach((load, i) => {
       const id = ids[i]!;
-      if (load.kind === 'not-found') return;
+      if (load.kind === 'not-found') { unreadable++; return; }
       if (load.kind === 'error') {
-        if (load.record?.maker === equipment.maker && load.record.model === equipment.model) rows.push({ equipmentId: id, published: false, error: load.error });
+        if (!load.record) unreadable++;
+        else if (load.record.maker === equipment.maker && load.record.model === equipment.model) rows.push({ equipmentId: id, published: null, error: load.error });
         return;
       }
       const { data } = load;
@@ -233,14 +235,12 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
         rows.push({ equipmentId: id, published, error: `레이아웃 draft 오류: ${load.draft.error}` });
         return;
       }
-      // Every row reads the saved Model rules of this page; the Equipment rules are the row's own.
-      const ruleFilesOfRow: RuleFiles = id === equipmentId ? saved : { ...data.ruleFiles, ...(saved.model ? { model: saved.model } : {}) };
       rows.push({ equipmentId: id, published, input: {
         equipment: { equipmentId: id, maker: data.record.maker, model: data.record.model }, inventory: data.inventory,
-        dictionaries: data.dictionaries, layout: load.draft.kind === 'found' ? load.draft.layout : null, ruleFiles: ruleFilesOfRow,
+        dictionaries: data.dictionaries, layout: load.draft.kind === 'found' ? load.draft.layout : null, ruleFiles: data.ruleFiles,
       } });
     });
-    return modelDryRunRows(rows);
+    return { rows: await modelDryRunRows(rows), unreadable };
   };
 
   // While publishing the Board is inert; the capture guard keeps a synthetic or scripted event from reaching it as well.

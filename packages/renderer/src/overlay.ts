@@ -135,6 +135,7 @@ function highlightNodes(scene: Scene, highlight: Highlight | null | undefined, k
       x1: formatNum(from.center[0]), y1: formatNum(from.center[1]),
       x2: formatNum(to.center[0]), y2: formatNum(to.center[1]),
       stroke: PAINT.highlight,
+      'pointer-events': 'stroke',
       'stroke-width': formatNum(2),
       'stroke-dasharray': DASH,
       'vector-effect': 'non-scaling-stroke',

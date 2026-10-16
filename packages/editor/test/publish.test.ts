@@ -1,9 +1,9 @@
 import { expect, it } from 'vitest';
-import { computeCoverage, findMappingConflicts, layoutRevision, validateBindings, type AliasRulesFile, type BindingsFile } from '@eqv/core';
+import { layoutRevision, validateBindings, type AliasRulesFile, type BindingsFile } from '@eqv/core';
 import {
   conflictHighlight, defaultEffectiveFrom, dryRun, modelDryRunRows, planPublish, type DryRunInput, type ModelDryRunInput,
 } from '../src/publish.js';
-import { boardInput, fixtureLayout, layoutWithoutLpLl } from './board-data.js';
+import { boardInput, layoutWithoutLpLl } from './board-data.js';
 import { dictionaries, inventory } from './data.js';
 
 const base = (change: Partial<DryRunInput> = {}): DryRunInput => {
@@ -21,8 +21,11 @@ it('dry-runs the saved rule files with core coverage and conflicts, and skips bo
   const input = base();
   const run = await dryRun(input);
   expect(run.issues).toEqual([]);
-  expect(run.coverage).toEqual(computeCoverage(input.inventory, run.mapping!));
-  expect(run.conflicts).toEqual(findMappingConflicts({ inventory: input.inventory, mapping: run.mapping!, layout: input.layout, dictionaries }));
+  expect(run.coverage).toEqual({
+    references: { resolved: 41, total: 42, ratio: 41 / 42 }, aliases: { resolved: 6, total: 7, ratio: 6 / 7 },
+    ignored: { aliases: ['VIRT_SCH'], references: 1 }, assumed: { references: 8, ratio: 8 / 41 },
+    unmapped: [{ alias: 'PM9', references: 1 }],
+  });
   expect(run.conflicts).toEqual([]);
 
   const broken = await dryRun(base({ ruleFiles: { model: brokenRules() } }));
@@ -116,6 +119,8 @@ it('reports bindings that fail validation in Korean', async () => {
 it.each([
   ['without bindings', null, '2026-01-01T10:00:00.000'],
   ['with bindings', file(binding()), '2026-01-01T10:30:00.000'],
+  ['at Inventory end', file(binding({ effectiveFrom: '2026-01-01T10:30:00.000' })), ''],
+  ['after Inventory end', file(binding({ effectiveFrom: '2026-01-02T00:00:00.000' })), ''],
 ])('prefills effectiveFrom from the Inventory %s', (_name, bindings, expected) => {
   expect(defaultEffectiveFrom(inventory(), bindings)).toBe(expected);
 });
@@ -148,10 +153,9 @@ it.each([
 
 it('shows a missing draft and a load error in the row instead of numbers', async () => {
   const rows = await modelDryRunRows([
-    row('ok', { published: false }), row('nodraft', { input: { ...base(), layout: null } }), row('bad', { error: 'inventory 읽기 실패', input: undefined }),
+    row('ok', { published: false }), row('nodraft', { input: { ...base(), layout: null } }), row('bad', { published: null, error: 'inventory 읽기 실패', input: undefined }),
   ]);
   expect(rows.find(({ equipmentId }) => equipmentId === 'nodraft')).toMatchObject({ error: '레이아웃 초안 없음', referenceRatio: null, conflicts: null });
-  expect(rows.find(({ equipmentId }) => equipmentId === 'bad')).toMatchObject({ error: 'inventory 읽기 실패', blockingIssues: null });
+  expect(rows.find(({ equipmentId }) => equipmentId === 'bad')).toMatchObject({ status: '—', error: 'inventory 읽기 실패', blockingIssues: null });
   expect(rows.find(({ equipmentId }) => equipmentId === 'ok')).toMatchObject({ status: '미게시', error: null, blockingIssues: 0, referenceRatio: expect.any(Number) });
-  expect(fixtureLayout().id).toBe('eq-synth-01-layout');
 });

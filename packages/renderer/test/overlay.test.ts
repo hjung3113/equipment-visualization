@@ -358,6 +358,8 @@ it('draws dashed rings and one titled line for a highlight, skipping hidden and 
   for (const node of rings) expect(node.attrs).toMatchObject({ 'stroke-dasharray': '6 4', stroke: 'var(--eqv-highlight, #b42318)' });
   expect(lines).toHaveLength(1);
   expect(lines[0]!.attrs['stroke-dasharray']).toBe('6 4');
+  expect(drawn.filter((node) => node.attrs['pointer-events'] && node.attrs['pointer-events'] !== 'none')).toEqual(lines);
+  expect(lines[0]!.attrs['pointer-events']).toBe('stroke');
   expect(titles(lines[0]!)).toEqual([label]);
   const a = scene.components.get('a')!;
   const b = scene.components.get('b')!;

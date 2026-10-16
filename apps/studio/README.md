@@ -47,7 +47,7 @@ Only these paths are writable, and each must pass the named core validator (fail
 | `onboarding/scopes/model/<maker>/<model>/{type-dictionary,alias-rules}.json` | matching validator, model scope | overwrite |
 | `onboarding/scopes/equipment/<equipmentId>/alias-rules.json` | `validateAliasRules`, equipment scope | overwrite |
 | `onboarding/mappings/<equipmentId>/<hex>.mapping.json` | `mappingVersionSchema`, `verifyMappingHash`, `hash === sha256:<hex>`, `equipmentId` | immutable |
-| `onboarding/baselines/<equipmentId>/<hex>.inventory.json` | `observedInventorySchema`, `equipmentId` | immutable |
+| `onboarding/baselines/<equipmentId>/<hex>.inventory.json` | `observedInventorySchema`, `equipmentId`, matching Mapping Version exists (else 409) | immutable |
 | `onboarding/bindings/<equipmentId>.bindings.json` | `validateBindings`, `equipmentId` | overwrite |
 
 `templates/`, `primitives/`, `equipment/` and `observations/` are read-only (writes get 403). Fleet and Onboarding read `equipment/<equipmentId>.json`, `observations/<equipmentId>/{occurrence-batch,alias-metadata}.json` and the `onboarding/` files above, and validate each at read time. Files are written as received (`JSON.stringify(value, null, 2)` plus a newline); mutable files are replaced atomically.
@@ -78,8 +78,8 @@ Above the Mapping Board, the page shows steps ⑤ and ⑥ (ADR-0007).
   Mapping Conflicts over the loaded sample Inventory. Nothing is written and no reducer runs. A conflict button rings its components in the Board's Top View;
   a transfer conflict also draws a dashed line titled `관측 이송 <from> → <to> <count>건 (Transfer Capability 없음)`.
 - **⑥ Publish:** an `effectiveFrom` input (prefilled with the Inventory `from`, or `to` when bindings exist), the diff against the latest Mapping Version,
-  and `[게시]`. It is disabled while the Board has unsaved edits, when `publishMapping` reports issues, when `effectiveFrom` is invalid, or when nothing changed.
+  and `[게시]`. If that default is not later than the latest binding, the field starts empty with a hint and becomes an error only after typing. Date edits reuse the computed dry-run and revision, keeping the diff visible. It is disabled while the Board has unsaved edits, when `publishMapping` reports issues, when `effectiveFrom` is invalid, or when nothing changed.
 - **Write order** (the failed step is shown; a retry is idempotent): `POST /api/layout-revisions` with the draft; the Mapping Version
   `onboarding/mappings/<equipmentId>/<hex>.mapping.json`; the Baseline Inventory `onboarding/baselines/<equipmentId>/<mappingHex>.inventory.json`
-  (a 409 keeps the existing baseline); then the bindings file, which is the commit point. While it runs, and while the page reloads after it, the Board is inert.
-- **같은 Model 일괄 dry-run:** loads every equipment with the same maker/model and computes each row from its own Inventory, draft and Equipment rules plus the saved Model rules.
+  (requires the matching Mapping Version file; a baseline-content 409 keeps the existing baseline); then the bindings file, which is the commit point. While it runs, and while the page reloads after it, the Board is inert.
+- **같은 Model 일괄 dry-run:** loads every equipment with the same maker/model and computes each row from its own loaded Inventory, draft and saved rule files. Error rows show status `—`; listed equipment whose maker/model cannot be read stay outside the table and are counted in its caption as `읽지 못한 설비 N대`.

@@ -1,9 +1,9 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
-import type { BindingsFile, MappingConflict, MappingVersion } from '@eqv/core';
+import { layoutRevision, type BindingsFile, type MappingConflict, type MappingVersion } from '@eqv/core';
 import type { TopViewerProps } from '@eqv/renderer';
 import { describeConflict } from './conflict-text.js';
 import {
-  conflictHighlight, defaultEffectiveFrom, dryRun, planPublish, shortHash,
+  conflictHighlight, defaultEffectiveFrom, derivePublishPlan, dryRun, latestBinding, shortHash,
   type DryRun, type DryRunInput, type ModelDryRunRow, type PublishPlan,
 } from './publish.js';
 
@@ -22,7 +22,8 @@ export interface PublishPanelProps {
   receipt: { mappingHash: string; effectiveFrom: string } | null;
   onPublish(plan: PublishPlan): Promise<{ ok: true; mappingHash: string } | { ok: false; error: string }>;
   onHighlight(highlight: NonNullable<TopViewerProps['highlight']> | null): void;
-  onModelDryRun(): Promise<ModelDryRunRow[]>;
+  /** Hosts may report listed equipment whose maker/model could not be read. */
+  onModelDryRun(): Promise<ModelDryRunRow[] | { rows: ModelDryRunRow[]; unreadable: number }>;
   renderLink(equipmentId: string): ReactNode;
 }
 
@@ -35,11 +36,9 @@ const conflictKey = (conflict: MappingConflict) => JSON.stringify(conflict);
 type Computed<T> = { inputs: readonly unknown[]; value: T } | { inputs: readonly unknown[]; error: string };
 function useComputed<T>(inputs: readonly unknown[], compute: () => Promise<T>): Computed<T> | null {
   const [result, setResult] = useState<Computed<T> | null>(null);
-  const computeRef = useRef(compute);
-  computeRef.current = compute;
   useEffect(() => {
     let current = true;
-    computeRef.current().then(
+    compute().then(
       (value) => { if (current) setResult({ inputs, value }); },
       (error: unknown) => { if (current) setResult({ inputs, error: messageOf(error) }); },
     );
@@ -54,18 +53,20 @@ export function PublishPanel(props: PublishPanelProps) {
   const { input, bindings, previous, boardDirty, publishing, receipt, onPublish, onHighlight, onModelDryRun, renderLink } = props;
   const ids = useId();
   const prefill = defaultEffectiveFrom(input.inventory, bindings);
-  const [from, setFrom] = useState({ prefill, value: receipt?.effectiveFrom ?? prefill });
+  const [from, setFrom] = useState({ prefill, value: receipt?.effectiveFrom ?? prefill, touched: false });
   const [active, setActive] = useState<string | null>(null);
   const [failure, setFailure] = useState<string | null>(null);
-  const [model, setModel] = useState<{ equipmentId: string; rows: ModelDryRunRow[] | null; error: string | null; loading: boolean } | null>(null);
+  const [model, setModel] = useState<{ equipmentId: string; rows: ModelDryRunRow[] | null; unreadable: number; error: string | null; loading: boolean } | null>(null);
   const alive = useRef(true);
   const busy = useRef(false);
   const modelRequest = useRef(0);
   const activeRef = useRef<string | null>(null);
   const highlightRef = useRef(onHighlight);
-  highlightRef.current = onHighlight;
-  activeRef.current = active;
-  if (from.prefill !== prefill) setFrom({ prefill, value: prefill });
+  useEffect(() => {
+    highlightRef.current = onHighlight;
+    activeRef.current = active;
+  }, [onHighlight, active]);
+  if (from.prefill !== prefill) setFrom({ prefill, value: prefill, touched: false });
   const [seenReceipt, setSeenReceipt] = useState(receipt);
   if (seenReceipt !== receipt) {
     setSeenReceipt(receipt);
@@ -83,12 +84,14 @@ export function PublishPanel(props: PublishPanelProps) {
     };
   }, []);
 
-  const dry = useComputed<DryRun>(inputs, () => dryRun(input));
-  const planned = useComputed<PublishPlan>([...inputs, bindings, previous, effectiveFrom],
-    () => planPublish({ ...input, bindings, previous, effectiveFrom }));
-  const run = dry && 'value' in dry ? dry.value : null;
-  const plan = planned && 'value' in planned ? planned.value : null;
-  const computeError = (dry && 'error' in dry ? dry.error : null) ?? (planned && 'error' in planned ? planned.error : null);
+  const computed = useComputed(inputs, async () => {
+    const [run, revision] = await Promise.all([dryRun(input), layoutRevision(layout)]);
+    return { run, revision };
+  });
+  const prepared = computed && 'value' in computed ? computed.value : null;
+  const run: DryRun | null = prepared?.run ?? null;
+  const plan = prepared ? derivePublishPlan({ ...input, bindings, previous, effectiveFrom }, prepared) : null;
+  const computeError = computed && 'error' in computed ? computed.error : null;
 
   const conflicts = run?.conflicts ?? [];
   const activeConflict = active === null ? null : conflicts.find((conflict) => conflictKey(conflict) === active) ?? null;
@@ -109,10 +112,13 @@ export function PublishPanel(props: PublishPanelProps) {
   const completed = receipt !== null && effectiveFrom === receipt.effectiveFrom && plan?.mapping?.hash === receipt.mappingHash
     && plan.problems.includes('이전 게시와 같습니다')
     && plan.problems.every((problem) => problem === '이전 게시와 같습니다' || problem.startsWith('effectiveFrom'));
-  const effectiveError = completed ? null : plan?.problems.find((problem) => problem.startsWith('effectiveFrom')) ?? null;
+  const awaitingFrom = prefill === '' && !from.touched && effectiveFrom === '';
+  const fromHint = awaitingFrom ? `마지막 binding(${latestBinding(bindings)?.effectiveFrom})보다 늦은 시각을 입력하세요` : null;
+  const effectiveError = completed || awaitingFrom ? null : plan?.problems.find((problem) => problem.startsWith('effectiveFrom')) ?? null;
   const reason = boardDirty ? DIRTY_REASON : !plan ? (computeError ?? '계산 중…')
-    : completed ? '이전 게시와 같습니다' : plan.problems.join(' · ') || null;
+    : completed ? '이전 게시와 같습니다' : plan.problems.map((problem) => awaitingFrom && problem.startsWith('effectiveFrom') ? fromHint : problem).join(' · ') || null;
   const blocked = reason !== null || publishing;
+  const hintId = `${ids}-from-hint`;
   const errorId = `${ids}-from-error`;
   const reasonId = `${ids}-reason`;
 
@@ -133,12 +139,13 @@ export function PublishPanel(props: PublishPanelProps) {
   const loadModel = async () => {
     const request = ++modelRequest.current;
     const equipmentId = equipment.equipmentId;
-    setModel({ equipmentId, rows: null, error: null, loading: true });
+    setModel({ equipmentId, rows: null, unreadable: 0, error: null, loading: true });
     try {
-      const rows = await onModelDryRun();
-      if (alive.current && request === modelRequest.current) setModel({ equipmentId, rows, error: null, loading: false });
+      const result = await onModelDryRun();
+      const { rows, unreadable } = Array.isArray(result) ? { rows: result, unreadable: 0 } : result;
+      if (alive.current && request === modelRequest.current) setModel({ equipmentId, rows, unreadable, error: null, loading: false });
     } catch (error) {
-      if (alive.current && request === modelRequest.current) setModel({ equipmentId, rows: null, error: messageOf(error), loading: false });
+      if (alive.current && request === modelRequest.current) setModel({ equipmentId, rows: null, unreadable: 0, error: messageOf(error), loading: false });
     }
   };
   const modelState = model && model.equipmentId === equipment.equipmentId ? model : null;
@@ -198,10 +205,11 @@ export function PublishPanel(props: PublishPanelProps) {
             effectiveFrom{' '}
             <input
               type="text" value={effectiveFrom} spellCheck={false} aria-invalid={effectiveError !== null}
-              aria-describedby={effectiveError ? errorId : undefined}
-              onChange={(event) => setFrom({ prefill, value: event.target.value })}
+              aria-describedby={effectiveError ? errorId : fromHint ? hintId : undefined}
+              onChange={(event) => setFrom({ prefill, value: event.target.value, touched: true })}
             />
           </label>
+          {fromHint && <span id={hintId} className="eqv-ed-hint"> {fromHint}</span>}
           {effectiveError && <span id={errorId} className="eqv-ed-error"> {effectiveError}</span>}
         </p>
         {plan && (
@@ -246,7 +254,7 @@ export function PublishPanel(props: PublishPanelProps) {
         {modelState?.rows && (
           <div className="eqv-ed-table-scroll" tabIndex={0} role="region" aria-label="같은 Model dry-run 표">
             <table className="eqv-ed-table">
-              <caption>{equipment.maker}/{equipment.model} 설비 {modelState.rows.length}대</caption>
+              <caption>{equipment.maker}/{equipment.model} 설비 {modelState.rows.length}대{modelState.unreadable > 0 ? ` · 읽지 못한 설비 ${modelState.unreadable}대` : ''}</caption>
               <thead>
                 <tr>{['equipmentId', '상태', '참조 coverage', 'alias coverage', '충돌', '미매핑 참조', '막는 문제', '오류'].map((name) =>
                   <th key={name} scope="col">{name}</th>)}</tr>

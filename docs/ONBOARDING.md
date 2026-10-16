@@ -179,11 +179,11 @@ type Coverage = {
 
 - **Dry-run(D8):** 저장된 규칙 파일과 현재 레이아웃 초안으로 `publishMapping`을 실행하고(쓰지 않는다) 성공하면 불러온 샘플 Inventory로 `computeCoverage`와 `findMappingConflicts`를 계산한다. reducer는 실행하지 않는다. Board의 저장하지 않은 편집은 포함되지 않으며, 저장하지 않은 자동 초안 alias는 미매핑으로 나온다. `publishMapping` 문제는 목록으로 보이고 Publish를 막는다.
 - **충돌 강조(D11):** 충돌을 누르면 Board의 Top View에 표시한다. `transfer-without-capability`는 두 Component에 점선 링을 그리고 두 중심을 잇는 점선 한 줄을 `관측 이송 <from> → <to> <count>건 (Transfer Capability 없음)`이라는 제목으로 그린다. 이 선은 관측의 표시일 뿐 경로·궤적·Transfer Capability가 아니다. 다른 충돌은 해당 Component에 링을 그린다. 같은 충돌을 다시 누르면 해제한다.
-- **Publish 쓰기 순서(D5):** (1) 초안을 Layout Revision으로 `POST /api/layout-revisions`, (2) Mapping Version, (3) Baseline Inventory(409면 기존 파일 유지), (4) bindings 파일 덮어쓰기. 4단계가 commit point이며 실패하면 그 단계 이름을 보인다. 앞 단계는 참조되지 않는 불변 파일만 남기고 재시도는 멱등이다.
-- **Binding(D6, D7):** 새 Binding은 항상 `layoutRevision`을 채운다. `effectiveFrom`은 필수 입력(SiteWallClock)이며 binding이 없는 장비는 Inventory `from`, 있는 장비는 Inventory `to`로 채운다. 최근 Binding의 `effectiveFrom`보다 늦어야 하고, 최근 Binding이 열려 있으면 새 `effectiveFrom`으로 `effectiveTo`를 닫는다. 새 bindings 파일은 `validateBindings`를 통과해야 한다.
+- **Publish 쓰기 순서(D5):** (1) 초안을 Layout Revision으로 `POST /api/layout-revisions`, (2) Mapping Version, (3) Baseline Inventory(같은 hash의 Mapping Version 파일이 있어야 하며, 기존 baseline과의 409면 기존 파일 유지), (4) bindings 파일 덮어쓰기. 4단계가 commit point이며 실패하면 그 단계 이름을 보인다. 앞 단계는 참조되지 않는 불변 파일만 남기고 재시도는 멱등이다.
+- **Binding(D6, D7):** 새 Binding은 항상 `layoutRevision`을 채운다. `effectiveFrom`은 필수 입력(SiteWallClock)이며 binding이 없는 장비는 Inventory `from`, 있는 장비는 Inventory `to`로 채운다. 이 기본값이 최근 Binding의 `effectiveFrom`보다 늦지 않으면 빈칸으로 두고 `마지막 binding(<from>)보다 늦은 시각을 입력하세요`를 안내하며, 입력하기 전에는 오류로 표시하지 않는다. 최근 Binding의 `effectiveFrom`보다 늦어야 하고, 최근 Binding이 열려 있으면 새 `effectiveFrom`으로 `effectiveTo`를 닫는다. 새 bindings 파일은 `validateBindings`를 통과해야 한다.
 - **Publish 비활성(D9, D10):** Board에 저장하지 않은 변경이 있거나, `publishMapping` 문제가 있거나, `effectiveFrom`이 잘못되었거나, 새 Mapping hash와 Layout Revision이 최근 Binding과 같으면(`이전 게시와 같습니다`) 게시할 수 없다. Mapping Conflict는 막지 않고 diff에 건수로 보인다.
-- **Diff:** alias별 추가·삭제·변경(대상, certainty, 규칙)과 변경 없는 개수, Layout Revision 줄, Binding 줄을 보인다. `assumed` entry는 `assumed`로 표시한다.
-- **같은 Model 일괄 dry-run(D12):** 같은 maker/model 장비마다 자신의 Inventory·레이아웃 초안·Equipment 규칙과 저장된 Model 규칙으로 계산한다. 정렬은 막는 문제, 충돌 수 많은 순, 참조 coverage 낮은 순, `equipmentId`(code-unit)다. 레이아웃 초안이 없거나 읽지 못한 장비는 행에 오류를 보인다.
+- **Diff:** 날짜 입력은 이미 계산한 dry-run·Layout Revision에서 동기적으로 검증하며 diff를 유지한다. alias별 추가·삭제·변경(대상, certainty, 규칙)과 변경 없는 개수, Layout Revision 줄, Binding 줄을 보인다. `assumed` entry는 `assumed`로 표시한다.
+- **같은 Model 일괄 dry-run(D12):** 같은 maker/model 장비마다 각 조회에서 불러온 자신의 Inventory·레이아웃 초안·저장된 규칙 파일로 계산한다. 정렬은 막는 문제, 충돌 수 많은 순, 참조 coverage 낮은 순, `equipmentId`(code-unit)다. 레이아웃 초안이 없거나 읽지 못한 장비는 행에 오류를 보이고 상태는 `—`(알 수 없음)로 표시한다. maker/model을 읽지 못한 설비는 표에서 제외하고 caption에 `읽지 못한 설비 N대`를 덧붙인다.
 
 ## 7. 파일 배치 (Studio 파일 기반)
 

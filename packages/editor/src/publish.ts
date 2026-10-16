@@ -66,9 +66,14 @@ export async function dryRun(input: DryRunInput): Promise<DryRun> {
   };
 }
 
-/** D7: the Inventory start for an equipment without a binding, else its end. */
+export function latestBinding(bindings: BindingsFile | null) {
+  return [...(bindings?.bindings ?? [])].sort((a, b) => compare(a.effectiveFrom, b.effectiveFrom)).at(-1) ?? null;
+}
+
+/** D7: use the Inventory boundary only when it is later than the latest binding. */
 export function defaultEffectiveFrom(inventory: ObservedInventory, bindings: BindingsFile | null): string {
-  return bindings && bindings.bindings.length ? inventory.to : inventory.from;
+  const latest = latestBinding(bindings);
+  return latest ? inventory.to > latest.effectiveFrom ? inventory.to : '' : inventory.from;
 }
 
 function targetText(target: MappingEntry['target']): string {
@@ -99,10 +104,15 @@ const bindingIssueText = (issue: MappingIssue) => issue.code === 'binding-overla
   : issue.code === 'binding-order' ? `Binding 순서가 올바르지 않습니다: ${issue.message}` : `bindings 파일이 올바르지 않습니다 (${issue.code}): ${issue.message}`;
 
 export async function planPublish(input: PlanInput): Promise<PublishPlan> {
-  const { equipment, bindings, previous, effectiveFrom } = input;
   const [run, revision] = await Promise.all([dryRun(input), layoutRevision(input.layout)]);
+  return derivePublishPlan(input, { run, revision });
+}
+
+/** Date edits only derive a plan from the already computed dry-run and revision. */
+export function derivePublishPlan(input: PlanInput, { run, revision }: { run: DryRun; revision: string }): PublishPlan {
+  const { equipment, bindings, previous, effectiveFrom } = input;
   const problems = run.issues.map((issue) => `규칙 문제 (${issue.code}): ${issue.message}`);
-  const latest = [...(bindings?.bindings ?? [])].sort((a, b) => compare(a.effectiveFrom, b.effectiveFrom)).at(-1) ?? null;
+  const latest = latestBinding(bindings);
   let validFrom = siteWallClockSchema.safeParse(effectiveFrom).success;
   if (!validFrom) problems.push('effectiveFrom 형식이 올바르지 않습니다 (YYYY-MM-DDTHH:mm:ss.sss)');
   else if (latest && effectiveFrom <= latest.effectiveFrom) {
@@ -154,7 +164,7 @@ export function conflictHighlight(conflict: MappingConflict): Highlight {
 
 export interface ModelDryRunInput {
   equipmentId: string;
-  published: boolean;
+  published: boolean | null;
   /** A load failure; the row shows it and nothing is computed. */
   error?: string;
   /** `layout: null` means the equipment has no draft layout. */
@@ -163,7 +173,7 @@ export interface ModelDryRunInput {
 
 export interface ModelDryRunRow {
   equipmentId: string;
-  status: '게시됨' | '미게시';
+  status: '게시됨' | '미게시' | '—';
   referenceRatio: number | null;
   aliasRatio: number | null;
   conflicts: number | null;
@@ -175,7 +185,7 @@ export interface ModelDryRunRow {
 /** D12 order: blocking issues (an error row counts as one), more conflicts, lower reference coverage, then `equipmentId`. */
 export async function modelDryRunRows(rows: ModelDryRunInput[]): Promise<ModelDryRunRow[]> {
   const computed = await Promise.all(rows.map(async (row): Promise<ModelDryRunRow> => {
-    const status = row.published ? '게시됨' : '미게시';
+    const status = row.published === null ? '—' : row.published ? '게시됨' : '미게시';
     const failed = (error: string): ModelDryRunRow => ({
       equipmentId: row.equipmentId, status, referenceRatio: null, aliasRatio: null, conflicts: null,
       unmappedReferences: null, blockingIssues: null, error,
