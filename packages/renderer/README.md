@@ -1,6 +1,6 @@
 # @eqv/renderer
 
-Static read-only SVG Top View for a v0.4 Layout document (issue #12, slice S7, part 12a). Selection, focus, keyboard, pan/zoom, port marks and evidence overlays are 12b and are not in this package.
+SVG Top View for a v0.4 Layout document (issue #12, slice S7). `TopView` is the static read-only picture. `TopViewer` adds selection, keyboard focus, pan/zoom and selection-scoped Transfer Capability segments. Port marks and evidence overlays are not in this package.
 
 The picture is derived. Connectivity is only what the layout states: a Physical Interface mark is one explicit `physicalInterfaces` entry, and a Transfer Capability segment is one explicit handler endpoint. Neither is inferred from adjacency, overlap or port coordinates. Footprint and pose are illustrative. A capability segment means a transfer is possible, not that one was observed. An assumed badge is a certainty cue, not evidence.
 
@@ -23,6 +23,31 @@ Default options: `labels: 'label'`, interfaces on, certainty / holding sites / c
 
 Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then `chips`. Holding-site chips are a fifth layer; the four named layers do not include them. Labels are upright in world coordinates. `outside` labels and annotations can extend past the Components' extent, so a layout's `viewBox` should leave room for them.
 
+## TopViewer
+
+`TopViewer` takes every `TopView` prop, plus `selectedId` and `onSelectedChange`. Omit `selectedId` and the selection stays inside the viewer, starting empty. Pass `selectedId`, including `null`, to control it. `onSelectedChange` runs when a user changes the selection, in either mode. A new `layout` object resets the camera, the internal selection, hover and keyboard focus. `width` and `height` keep the zoom and the centre, then clamp the centre into the layout viewBox. `labels`, `layers` and `visibleLevelIds` keep the camera and the selection and rebuild at the current `pxPerUnit`. A `selectedId` that names nothing, or a hidden component, draws no highlight and is not cleared.
+
+Zoom is a multiple of the meet-fit scale, from 1 to 8. While it is changing, the last scene stays put and only the `viewBox` moves, so labels and fixed-px marks are briefly the wrong size. 150 ms after the last zoom change the scene rebuilds at the new `pxPerUnit`. Selection, hover and pan avoid a scene build as long as the host keeps `layout`, `layers` and `visibleLevelIds` referentially stable (memoise them); a fresh object or array rebuilds the scene.
+
+| Input | Effect |
+| --- | --- |
+| Wheel | Zoom toward the cursor: `zoom * exp(-deltaY * 0.002)`. A line delta counts as 16 px; a page delta counts as the view height. At a limit the page may scroll. |
+| Drag | Pan after the pointer moves at least 4 px. A shorter press is a click. |
+| 확대 | Zoom ×1.25 about the centre. Disabled at ×8. |
+| 축소 | Zoom ÷1.25. Disabled at ×1, whatever the centre. |
+| 맞춤 | Zoom 1 and centre on the layout. Disabled only when the view is already there. |
+| `+` `=` / `-` / `0` | Zoom in, zoom out, and fit. |
+| Arrow keys | Pan by 10% of the view. `Ctrl`, `Meta` and `Alt` are left to the browser. |
+| Click | Toggle the component under the pointer. A click on the board clears the selection. |
+| Enter / Space | Toggle the focused component. Space does not scroll the page. |
+| Escape | Clear the selection. |
+
+Focus rings are drawn only while the keyboard is what last moved the view. A click returns to pointer focus and hides them.
+
+With a visible selection, capability segments are only that selection's, whatever `layers.capabilities` says. A handler shows one segment to each component it serves. Any other component shows the handler that serves it, and that handler's partner on the other end of each capability. A component with no capability draws none, even when the toggle is on and even when it touches another component. Segments come only from explicit `transferCapabilities`, and only through the handler: never from adjacency, and never from one component straight to another. A segment means a transfer is possible, not that one was observed. With no visible selection, the capabilities toggle draws every pair, as `TopView` does.
+
+`TopViewer` does not paint the scene's own capability layer. Its order is the board, the component tree, the interaction marks, `interfaces`, the selection's capability segments, `labels`, `badges`, then `chips`.
+
 ## Caveats
 
 - Port positions are not drawn. Template port pairs are too far apart to be the interface geometry; the collar sits on the two footprints.
@@ -35,7 +60,7 @@ Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then
 
 ## Demo
 
-`pnpm --filter @eqv/renderer demo` serves `demo/` (not built, not published). `?stress=N` tiles `cluster-dual-hub` until at least N components exist. The first commit records `performance.measure('eqv-render')` and writes the duration into `#eqv-perf`.
+`pnpm --filter @eqv/renderer demo` serves `demo/` (not built, not published). It mounts `TopViewer` with an internal selection and mirrors that selection, id and label, into `#eqv-selection`. `?stress=N` tiles `cluster-dual-hub` until at least N components exist. The first commit records `performance.measure('eqv-render')` and writes the duration into `#eqv-perf`.
 
 ## Performance
 
@@ -46,4 +71,13 @@ First render of the demo's `?stress=N` layout (tiled `cluster-dual-hub`), measur
 | 1000 | 1003 | 7204 | 122 | 112–138 |
 | 2000 | 2006 | 14166 | 342 | 331–349 |
 
-Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because this is a one-time static render.
+Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because the static scene is built once per picture. With referentially stable `layout`, `layers` and `visibleLevelIds` (memoise them), selection, hover and pan avoid another scene build; a fresh object or array rebuilds it. A wheel zoom rebuilds once after it settles.
+
+Interaction cost on `?stress=2000` (2006 Components, about 14,900 SVG elements), same browser and dev build, measured 2026-10-16 on `feature/12-interactive-viewer`. Each input was dispatched after the view had settled, and main-thread long tasks (over 50 ms) were recorded for the next 120 ms. Frame-to-frame timings were not usable: in a background browser window `requestAnimationFrame` is throttled to about 1 s.
+
+| Action | Samples | Main-thread long tasks | Notes |
+| --- | --- | --- | --- |
+| select (Enter on a Component) | 3 | none | selection only updates `aria-pressed` and the overlay |
+| arrow-key pan | 3 | none | pans only move the `viewBox` |
+| wheel zoom step | 3 | none | the `viewBox` moves; labels are briefly off-size |
+| settled relayout after a zoom | 3 | one task, 283–314 ms (median 304) | the one scene rebuild, 150 ms after the last zoom change |

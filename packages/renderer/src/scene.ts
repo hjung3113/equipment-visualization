@@ -1,11 +1,12 @@
 import type { Component, LayoutDocument } from '@eqv/core';
+import { capabilitySegment, type CapabilityEnd } from './capability.js';
 import {
   apply, bboxOf, isArm, mul, polyContainsRect, polysOverlap, rayPoly, rectPoly, rectsOverlap,
   robotR, rotation, scaling, shapeLocal, translation, type Box, type Mat, type Point,
 } from './geom.js';
 import { primitives, type PrimitiveParts } from './primitives.generated.js';
 import { estimateTextWidth } from './text.js';
-import { cloneNode, el, formatExact, formatNum, type SvgNode } from './svg.js';
+import { cloneNode, el, formatExact, formatNum, withPointerEventsNone, type SvgNode } from './svg.js';
 
 export interface SceneLayers {
   interfaces: boolean;
@@ -22,11 +23,38 @@ export interface SceneOptions {
   layers?: Partial<SceneLayers>;
   /** Default: every level in the layout. */
   visibleLevelIds?: readonly string[];
+  /** Default false. When true, visible Components are selectable and overlay layers ignore hits. */
+  interactive?: boolean;
+}
+
+export interface SceneComponent {
+  id: string;
+  label: string;
+  asset: string;
+  cls: 'process' | 'holding' | 'robot' | 'structure';
+  w: number;
+  h: number;
+  S: number;
+  matrix: Mat;
+  center: Point;
+  poly: Point[];
+  bbox: Box;
+  hidden: boolean;
+  bodyStroke: string;
+}
+
+/** One explicit transfer capability. Endpoints stay paired; a flat handler/target set is not enough. */
+export interface SceneCapability {
+  handlerComponentId: string;
+  aComponentId: string;
+  bComponentId: string;
 }
 
 export interface Scene {
   node: SvgNode;
   pxPerUnit: number;
+  components: ReadonlyMap<string, SceneComponent>;
+  capabilities: readonly SceneCapability[];
 }
 
 const PAINT = {
@@ -34,11 +62,17 @@ const PAINT = {
   ink: 'var(--eqv-ink, #101828)',
   secondary: 'var(--eqv-secondary, #374151)',
   interface: 'var(--eqv-interface, #374151)',
-  capability: 'var(--eqv-capability, #8154ce)',
   detail: 'var(--eqv-detail-fill, #ffffff)',
   assumedBg: 'var(--eqv-assumed-bg, #f4ece0)',
   assumedFg: 'var(--eqv-assumed-fg, #8e5500)',
 } as const;
+
+const CLASS_KO: Record<SceneComponent['cls'], string> = {
+  process: '공정 모듈',
+  holding: '대기·출입 모듈',
+  robot: '로봇·핸들러',
+  structure: '구조물',
+};
 
 const CLASS: Record<string, 'process' | 'holding' | 'robot' | 'structure'> = {
   pm: 'process', cell: 'process', coater: 'process', developer: 'process', dry: 'process', bake: 'process',
@@ -298,40 +332,8 @@ function interfaceMark(a: Placed, b: Placed, kind: string, k: number): SvgNode |
   return el('g', {}, children);
 }
 
-function capabilitySegment(handler: Placed, target: Placed, k: number): SvgNode | null {
-  const dx = target.center[0] - handler.center[0];
-  const dy = target.center[1] - handler.center[1];
-  const len = Math.hypot(dx, dy) || 1;
-  const u: Point = [dx / len, dy / len];
-  const tIn = rayPoly(handler.center, [dx, dy], target.poly);
-  const end: Point = tIn != null
-    ? [handler.center[0] + dx * tIn, handler.center[1] + dy * tIn]
-    : target.center;
-  const r0 = robotR(handler.w, handler.h) * handler.S + 5 * k;
-  const start: Point = [handler.center[0] + u[0] * r0, handler.center[1] + u[1] * r0];
-  const stop: Point = [end[0] - u[0] * 3 * k, end[1] - u[1] * 3 * k];
-  if ((stop[0] - start[0]) * u[0] + (stop[1] - start[1]) * u[1] < 4 * k) return null;
-  const ang = Math.atan2(u[1], u[0]) * 180 / Math.PI;
-  return el('g', {}, [
-    el('title', {}, [`${handler.component.label} → ${target.component.label} · Transfer Capability (가능, 관측 아님)`]),
-    el('path', {
-      d: `M${formatNum(start[0])} ${formatNum(start[1])}L${formatNum(stop[0])} ${formatNum(stop[1])}`,
-      fill: 'none',
-      stroke: PAINT.capability,
-      'stroke-width': formatNum(2 * k),
-      'stroke-dasharray': `0 ${formatNum(5 * k)}`,
-      'stroke-linecap': 'round',
-    }),
-    el('rect', {
-      x: formatNum(stop[0] - 3 * k),
-      y: formatNum(stop[1] - 3 * k),
-      width: formatNum(6 * k),
-      height: formatNum(6 * k),
-      rx: formatNum(k),
-      fill: PAINT.capability,
-      transform: `rotate(${formatNum(ang)} ${formatNum(stop[0])} ${formatNum(stop[1])})`,
-    }),
-  ]);
+function segmentEnd(row: Placed): CapabilityEnd {
+  return { label: row.component.label, center: row.center, poly: row.poly, w: row.w, h: row.h, S: row.S };
 }
 
 function textNode(text: string, x: number, y: number, anchor: string, px: number, k: number, fill: string, weight: string, halo: boolean): SvgNode {
@@ -475,6 +477,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
   const pxPerUnit = options.pxPerUnit;
   if (!(pxPerUnit > 0)) throw new Error('pxPerUnit must be positive');
   const k = 1 / pxPerUnit;
+  const interactive = options.interactive ?? false;
   const labels = options.labels ?? 'label';
   const layers: SceneLayers = {
     interfaces: true,
@@ -559,6 +562,13 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     if (row.hidden) {
       attrs['data-hidden'] = 'true';
       return el('g', attrs, kids);
+    }
+    if (interactive) {
+      attrs.style = 'outline:none';
+      attrs.tabindex = '0';
+      attrs.role = 'button';
+      attrs['aria-pressed'] = 'false';
+      attrs['aria-label'] = `${component.label}, ${CLASS_KO[row.cls]}`;
     }
     const plan = plans.get(component.id);
     return el('g', attrs, [
@@ -688,7 +698,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
         const target = placed.get(targetId);
         if (!target) throw new Error(`transfer capability ${edge.id} references a missing component`);
         if (handler.hidden || target.hidden) continue;
-        const segment = capabilitySegment(handler, target, k);
+        const segment = capabilitySegment(segmentEnd(handler), segmentEnd(target), k);
         if (segment) capabilityNodes.push(segment);
       }
     }
@@ -726,6 +736,35 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     }
   }
 
+  const components = new Map<string, SceneComponent>();
+  for (const row of placed.values()) {
+    components.set(row.id, {
+      id: row.id,
+      label: row.component.label,
+      asset: row.asset,
+      cls: row.cls,
+      w: row.w,
+      h: row.h,
+      S: row.S,
+      matrix: row.matrix,
+      center: row.center,
+      poly: row.poly,
+      bbox: row.bbox,
+      hidden: row.hidden,
+      bodyStroke: row.prim.body.attrs.stroke ?? 'none',
+    });
+  }
+  const capabilities = layout.transferCapabilities.map((edge) => ({
+    handlerComponentId: edge.handlerComponentId,
+    aComponentId: edge.a.componentId,
+    bComponentId: edge.b.componentId,
+  }));
+
+  const layer = (name: string, children: SvgNode[]): SvgNode => {
+    const node = el('g', { 'data-layer': name }, children);
+    return interactive ? withPointerEventsNone(node) : node;
+  };
+
   const { viewBox } = layout;
   const node = el('svg', {
     xmlns: 'http://www.w3.org/2000/svg',
@@ -743,12 +782,12 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       fill: PAINT.board,
     }),
     ...roots.map(buildGroup),
-    el('g', { 'data-layer': 'interfaces' }, interfaceNodes),
-    el('g', { 'data-layer': 'capabilities' }, capabilityNodes),
-    el('g', { 'data-layer': 'labels' }, labelNodes),
-    el('g', { 'data-layer': 'badges' }, badgeNodes),
+    layer('interfaces', interfaceNodes),
+    layer('capabilities', capabilityNodes),
+    layer('labels', labelNodes),
+    layer('badges', badgeNodes),
     // Chips are not one of the four named overlay layers; they follow badges.
-    el('g', { 'data-layer': 'chips' }, chipNodes),
+    layer('chips', chipNodes),
   ]);
-  return { node, pxPerUnit };
+  return { node, pxPerUnit, components, capabilities };
 }

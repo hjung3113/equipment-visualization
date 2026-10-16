@@ -1,4 +1,4 @@
-import { createElement, type ReactNode } from 'react';
+import { createElement, type CSSProperties, type ReactNode } from 'react';
 
 /** Sanitized SVG element. Text nodes occur only as strings, and only inside `<title>`. */
 export interface SvgNode {
@@ -21,7 +21,18 @@ const REACT_ATTR: Record<string, string> = {
   'font-size': 'fontSize',
   'font-weight': 'fontWeight',
   'text-anchor': 'textAnchor',
+  tabindex: 'tabIndex',
+  'pointer-events': 'pointerEvents',
 };
+
+/** SVG `pointer-events` is inherited, so the layer group keeps its descendants from taking hits. */
+export function withPointerEventsNone(node: SvgNode): SvgNode {
+  return {
+    tag: node.tag,
+    attrs: { ...node.attrs, 'pointer-events': 'none' },
+    children: node.children,
+  };
+}
 
 /** Round derived geometry so snapshots stay stable. Layout transform numbers are not passed through this. */
 export function formatNum(n: number): string {
@@ -56,8 +67,19 @@ function reactAttr(name: string): string {
 /** Render a sanitized tree. Never uses innerHTML. */
 export function renderNode(node: SvgNode | string): ReactNode {
   if (typeof node === 'string') return node;
-  const props: Record<string, string> = {};
-  for (const [name, value] of Object.entries(node.attrs)) props[reactAttr(name)] = value;
+  const props: Record<string, string | CSSProperties> = {};
+  for (const [name, value] of Object.entries(node.attrs)) {
+    if (name === 'style') {
+      const style: Record<string, string> = {};
+      for (const declaration of value.split(';')) {
+        const colon = declaration.indexOf(':');
+        if (colon < 0) continue;
+        const property = declaration.slice(0, colon).trim().replace(/-([a-z])/g, (_, char: string) => char.toUpperCase());
+        if (property) style[property] = declaration.slice(colon + 1).trim();
+      }
+      props.style = style;
+    } else props[reactAttr(name)] = value;
+  }
   const children = node.children.map((child) => renderNode(child));
   return createElement(node.tag, props, ...children);
 }
