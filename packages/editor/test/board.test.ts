@@ -1,7 +1,8 @@
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { validateAliasRules } from '@eqv/core';
 import {
-  applyEdit, applySaveOutcome, buildSavePayload, createBoardState, dirtyScopes, isDirty, redo, resolveBoard, ruleSlug, undo,
+  addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, createBoardState, dirtyScopes, isDirty, previewPatternRule, redo,
+  resolveBoard, ruleSlug, suggestPattern, undo,
   type BoardEdit, type BoardInput, type BoardState, type SaveScope,
 } from '../src/board.js';
 import { boardInput, fixtureLayout, modelRules, templateDraft } from './board-data.js';
@@ -299,4 +300,178 @@ it('folds written drafts into the pending file once saved', () => {
   expect(buildSavePayload(input, saved, 'model').files).toEqual([]);
   const after = resolveBoard({ ...input, ruleFiles: { model: saved.present.model } }, saved.present, 'model');
   expect(after.rows.filter((r) => r.statusText === '◐ 자동')).toHaveLength(6);
+});
+
+describe('bulk edits', () => {
+  it('applies a bulk confirm as one history entry and skips what cannot change', () => {
+    const input = boardInput();
+    const state = createBoardState(input);
+    const result = applyEdits(input, state, 'model', ['PM1', 'PM9', 'LP1'].map((alias) => ({ kind: 'confirm' as const, alias })));
+    expect(result.applied).toEqual(['PM1']);
+    expect(result.skipped).toEqual([{ alias: 'PM9', reason: '대상 없음' }, { alias: 'LP1', reason: '이미 확정됨' }]);
+    expect(row(input, 'PM1', result.state)).toMatchObject({ rule: { ruleId: 'board-pm1', kind: 'exact' }, certainty: 'verified' });
+    expect(result.state.past).toHaveLength(1);
+    expect(undo(result.state).present).toEqual(state.present);
+    const none = applyEdits(input, state, 'model', ['PM9', 'LP1'].map((alias) => ({ kind: 'confirm' as const, alias })));
+    expect(none.state).toBe(state);
+  });
+});
+
+describe('suggestPattern', () => {
+  it.each([
+    ['PM1', 'pm-a', { pattern: 'PM{n}', target: 'pm-{n:letter}' }],
+    ['LP1', 'lp-a', { pattern: 'LP{n}', target: 'lp-{n:letter}' }],
+    ['CH12', 'pm-12', { pattern: 'CH{n}', target: 'pm-{n}' }],
+    ['A1B2', 'x-b', { pattern: 'A1B{n}', target: 'x-{n:letter}' }],
+    ['PM1', null, { pattern: 'PM{n}', target: '' }],
+    ['PM1', 'chamber', { pattern: 'PM{n}', target: '' }],
+    ['VIRT_SCH', null, null],
+    ['A{1}', 'a-a', null],
+  ])('%s -> %s', (alias, componentId, expected) => {
+    expect(suggestPattern(alias, componentId)).toEqual(expected);
+  });
+});
+
+describe('pattern rules', () => {
+  const draft = { pattern: 'PM{n}', target: 'pm-{n:letter}' };
+  const outcomes = (preview: ReturnType<typeof previewPatternRule>) => Object.fromEntries(preview.rows.map((r) => [r.alias, r.outcome]));
+
+  it('refuses a rule that overlaps a same-level pattern', () => {
+    const input = boardInput();
+    const state = createBoardState(input);
+    const preview = previewPatternRule(input, state.present, 'model', draft);
+    expect(outcomes(preview)).toMatchObject({ PM1: 'overlap', PM9: 'missing-target' });
+    expect(preview.rows.find((r) => r.alias === 'PM1')!.ruleIds).toContain('pm-pattern');
+    expect(preview.problems).toEqual(['같은 범위 규칙과 겹칩니다: pm-pattern']);
+    expect(addPatternRule(input, state, 'model', draft)).toBe(state);
+  });
+
+  it('classifies applies, exception and missing-target at Equipment scope', () => {
+    const input = boardInput();
+    const preview = previewPatternRule(input, createBoardState(input).present, 'equipment', draft);
+    expect(preview.rule).toMatchObject({ id: 'pattern-pm-n', certainty: 'verified', match: { pattern: 'PM{n}' } });
+    expect(outcomes(preview)).toEqual({ PM1: 'applies', PM2: 'exception', PM9: 'missing-target' });
+    expect(preview.rows.find((r) => r.alias === 'PM2')!.ruleIds).toEqual(['pm-two-assumed']);
+    expect(preview.summary).toBe('매칭 3 · 적용 1 · 예외 1 · 대상 없음 1 · 충돌 0');
+    expect(preview.removes).toEqual([]);
+    expect(preview.problems).toEqual([]);
+  });
+
+  it('keeps a narrower-scope overlap blocked without refusing the candidate', () => {
+    const base = boardInput();
+    const input = boardInput({ ruleFiles: {
+      ...base.ruleFiles,
+      model: { ...base.ruleFiles.model!, rules: [] },
+      equipment: { ...base.ruleFiles.equipment!, rules: ['eq-a', 'eq-b'].map((id) => ({
+        id, match: { pattern: 'PM{n}' }, target: { componentId: 'pm-a' }, certainty: 'verified' as const,
+      })) },
+    } });
+    const state = createBoardState(input);
+    const preview = previewPatternRule(input, state.present, 'model', draft);
+    expect(preview.rows.find((r) => r.alias === 'PM1')).toMatchObject({ outcome: 'blocked', ruleIds: ['eq-a', 'eq-b'] });
+    expect(preview.summary).toBe('매칭 3 · 적용 0 · 예외 0 · 대상 없음 1 · 충돌 2');
+    expect(preview.problems).toEqual([]);
+    const added = addPatternRule(input, state, 'model', draft);
+    expect(added.present.model.rules.map(({ id }) => id)).toEqual(['pattern-pm-n']);
+    expect(row(input, 'PM1', added).status).toBe('conflict');
+  });
+
+  it('labels a narrower-scope winner as shadowed', () => {
+    const input = boardInput();
+    const preview = previewPatternRule(input, createBoardState(input).present, 'model', draft);
+    expect(preview.rows.find((r) => r.alias === 'PM2')).toMatchObject({ outcome: 'shadowed', ruleIds: ['pm-two-assumed'] });
+  });
+
+  it.each([
+    [{ pattern: 'PM{n}', target: 'pm-{x}' }, '대상에 패턴에 없는 캡처가 있습니다 ({x})'],
+    [{ pattern: 'PM{', target: 'pm-a' }, '패턴 형식이 올바르지 않습니다'],
+    [{ pattern: 'PM{n}', target: '' }, '대상 형식이 올바르지 않습니다'],
+    [{ pattern: 'ZZ{n}', target: 'pm-{n:letter}' }, '일치하는 alias가 없습니다'],
+  ])('reports %j', (bad, text) => {
+    const input = boardInput();
+    expect(previewPatternRule(input, createBoardState(input).present, 'equipment', bad).problems).toEqual([text]);
+  });
+
+  it('removes a redundant single-alias exact rule in the same history entry', () => {
+    const input = boardInput();
+    const assigned = edit(input, createBoardState(input), 'equipment', { kind: 'assign', alias: 'PM1', componentId: 'pm-a' });
+    expect(previewPatternRule(input, assigned.present, 'equipment', draft).removes).toEqual(['board-pm1']);
+    const added = addPatternRule(input, assigned, 'equipment', draft);
+    expect(added.present.equipment.rules.map(({ id }) => id)).toEqual(['pm-two-assumed', 'pattern-pm-n']);
+    expect(added.past).toHaveLength(2);
+    expect(undo(added).present).toEqual(assigned.present);
+    expect(row(input, 'PM1', added, 'equipment')).toMatchObject({ componentId: 'pm-a', rule: { ruleId: 'pattern-pm-n', kind: 'pattern' } });
+    valid(added);
+  });
+
+  it('removes every redundant rule in file order and keeps shared rules as exceptions', () => {
+    const base = boardInput();
+    const equipment = base.ruleFiles.equipment!;
+    const input = boardInput({ ruleFiles: { ...base.ruleFiles, equipment: { ...equipment, rules: equipment.rules.map((rule) =>
+      rule.id === 'pm-two-assumed' ? { ...rule, target: { componentId: 'pm-b' } } : rule) } } });
+    const assigned = edit(input, createBoardState(input), 'equipment', { kind: 'assign', alias: 'PM1', componentId: 'pm-a' });
+    expect(previewPatternRule(input, assigned.present, 'equipment', draft).removes).toEqual(['pm-two-assumed', 'board-pm1']);
+
+    const shared = { ...equipment, rules: [{ id: 'shared', match: { exact: ['PM1', 'PM2'] }, target: { componentId: 'pm-a' }, certainty: 'verified' as const }] };
+    const sharedInput = boardInput({ ruleFiles: { ...base.ruleFiles, equipment: shared } });
+    const preview = previewPatternRule(sharedInput, createBoardState(sharedInput).present, 'equipment', draft);
+    expect(preview.removes).toEqual([]);
+    expect(preview.rows.find((r) => r.alias === 'PM1')).toMatchObject({ outcome: 'exception', ruleIds: ['shared'] });
+  });
+});
+
+
+it.each(['pm-11', 'pm-21', 'pm-12'])('does not substitute inside a larger digit run: %s', (component) => {
+  expect(suggestPattern('PM1', component)).toEqual({ pattern: 'PM{n}', target: '' });
+});
+
+it('uses the last complete matching digit run in a component', () => {
+  expect(suggestPattern('PM1', 'pm1-ch11')).toEqual({ pattern: 'PM{n}', target: 'pm{n}-ch11' });
+});
+
+it('refuses pattern addition when another save-scope rule is invalid', () => {
+  const base = boardInput();
+  const input = boardInput({ ruleFiles: { ...base.ruleFiles, equipment: {
+    ...base.ruleFiles.equipment!, rules: [{ id: 'invalid', match: { pattern: 'ZZ{n}' }, target: { componentId: 'pm-{x}' }, certainty: 'verified' }],
+  } } });
+  const state = createBoardState(input);
+  const draft = { pattern: 'PM{n}', target: 'pm-{n:letter}' };
+  expect(previewPatternRule(input, state.present, 'equipment', draft).problems).toEqual([
+    '저장 범위 파일에 규칙 문제가 있어 미리볼 수 없습니다: 대상에 패턴에 없는 캡처가 있습니다 ({x})',
+  ]);
+  expect(addPatternRule(input, state, 'equipment', draft)).toBe(state);
+});
+
+it('reports a conflicting confirmation as a rule conflict', () => {
+  const base = boardInput();
+  const input = boardInput({ ruleFiles: { ...base.ruleFiles, equipment: {
+    ...base.ruleFiles.equipment!, rules: ['first', 'second'].map((id) => ({
+      id, match: { pattern: 'PM{n}' }, target: { componentId: 'pm-a' }, certainty: 'verified' as const,
+    })),
+  } } });
+  const state = createBoardState(input);
+  const result = applyEdits(input, state, 'equipment', [{ kind: 'confirm', alias: 'PM1' }]);
+  expect(result.skipped).toEqual([{ alias: 'PM1', reason: '규칙 충돌' }]);
+  expect(result.state).toBe(state);
+});
+
+it('reports unchanged bulk results using semantic target equality', () => {
+  const input = boardInput();
+  const state = createBoardState(input);
+  const before = resolveBoard(input, state.present, 'model');
+  const pm2 = before.rows.find(({ alias }) => alias === 'PM2')!;
+  if (!pm2.target || !('componentId' in pm2.target)) throw new Error('Expected component target');
+  pm2.target = { slots: pm2.target.slots, componentId: pm2.target.componentId };
+  const result = applyEdits(input, state, 'model', [{ kind: 'ignore', alias: 'PM2' }], before);
+  expect(result.unchanged).toEqual([{ alias: 'PM2', overriddenBy: 'pm-two-assumed' }]);
+});
+
+it('makes candidate ids unique through the pattern preview', () => {
+  const input = boardInput();
+  const state = createBoardState(input);
+  const file = state.present.equipment;
+  file.rules = [...file.rules, ...['pattern-pm-n', 'pattern-pm-n-2'].map((id) => ({
+    id, match: { exact: [id] }, target: { ignore: true as const }, certainty: 'verified' as const,
+  }))];
+  expect(previewPatternRule(input, state.present, 'equipment', { pattern: 'PM{n}', target: 'pm-{n:letter}' }).rule?.id).toBe('pattern-pm-n-3');
 });

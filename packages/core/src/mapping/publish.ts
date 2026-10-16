@@ -11,7 +11,7 @@ export async function verifyMappingHash(mapping: MappingVersion): Promise<boolea
   const { hash, ...body } = mapping;
   return hash === await hashVersion(body);
 }
-function matchTarget(rule: AliasRule, alias: string): MappingEntry['target'] | undefined {
+export function matchAliasRule(rule: AliasRule, alias: string): MappingEntry['target'] | undefined {
   if ('exact' in rule.match) return rule.match.exact.includes(alias) ? rule.target : undefined;
   const names: string[] = [];
   const parts = rule.match.pattern.split(/(\{[a-z]+\})/g).map((part) => {
@@ -96,7 +96,7 @@ export function resolveAliasRules(input: ResolveAliasRulesInput): { issues: Mapp
   const aliases = [...new Set(input.aliases)].sort(compare).map((alias): AliasResolution => {
     const candidates: { entry: MappingEntry; rank: number; exact: boolean; issues: MappingIssue[] }[] = [];
     for (const { file, index } of files) file.rules.forEach((rule, j) => {
-      const target = matchTarget(rule, alias);
+      const target = matchAliasRule(rule, alias);
       if (!target) return;
       const exact = 'exact' in rule.match;
       const issues = targetIssues(input.layout, target, ['ruleFiles', index, 'rules', j, 'target']);
