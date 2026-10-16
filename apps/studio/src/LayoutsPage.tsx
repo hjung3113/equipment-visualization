@@ -78,7 +78,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [revision, setRevision] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [reload, setReload] = useState(0);
+  const [listingReload, setListingReload] = useState(0);
+  const [fileReload, setFileReload] = useState(0);
+  const [seed, setSeed] = useState<{ file: string; doc: Doc } | null>(null);
   const [prevFile, setPrevFile] = useState(file);
   const [documentEpoch, setDocumentEpoch] = useState(0);
   const activeDocumentEpoch = useRef<number | null>(documentEpoch);
@@ -99,13 +101,14 @@ export function LayoutsPage({ file }: { file: string | null }) {
   // Opening another file discards an unsaved import and any notices tied to the previous document.
   if (prevFile !== file) {
     setPrevFile(file);
-    setDocumentEpoch(documentEpoch + 1);
+    if (seed?.file !== file) setDocumentEpoch(documentEpoch + 1);
     setImportSequence(importSequence + 1);
     setBusy(false);
     setImported(null);
     setActionError(null);
     setRevision(null);
-    setLoaded(file === null ? null : { state: 'loading' });
+    setLoaded(seed?.file === file ? { state: 'ready', ...seed.doc } : file === null ? null : { state: 'loading' });
+    setSeed(null);
   }
 
   useEffect(() => {
@@ -115,7 +118,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
       (error: unknown) => { if (!cancelled) setListingError(message(error)); },
     );
     return () => { cancelled = true; };
-  }, [reload]);
+  }, [listingReload]);
 
   useEffect(() => {
     if (file === null) return;
@@ -124,12 +127,15 @@ export function LayoutsPage({ file }: { file: string | null }) {
       (raw) => {
         if (cancelled) return;
         const parsed = parseDoc(raw);
-        setLoaded('doc' in parsed ? { state: 'ready', ...parsed.doc } : { state: 'error', message: parsed.issues });
+        setLoaded((previous) => {
+          if (previous?.state === 'ready' && JSON.stringify(previous.raw) === JSON.stringify(raw)) return previous;
+          return 'doc' in parsed ? { state: 'ready', ...parsed.doc } : { state: 'error', message: parsed.issues };
+        });
       },
       (error: unknown) => { if (!cancelled) setLoaded({ state: 'error', message: message(error) }); },
     );
     return () => { cancelled = true; };
-  }, [file, reload]);
+  }, [file, fileReload]);
 
   const current: Doc | null = imported ?? (loaded?.state === 'ready' ? loaded : null);
 
@@ -188,16 +194,22 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const onSaveDraft = () => current && run(async (isActive) => {
     const path = await saveDraft(current.layout.id, current.raw);
     if (!isActive()) return;
-    setImported(null);
-    setReload((count) => count + 1);
-    navigate(hrefFor({ name: 'layouts', file: path }));
+    setListingReload((count) => count + 1);
+    setFileReload((count) => count + 1);
+    if (path === file) {
+      setLoaded({ state: 'ready', ...current });
+      setImported(null);
+    } else {
+      setSeed({ file: path, doc: current });
+      navigate(hrefFor({ name: 'layouts', file: path }));
+    }
   });
 
   const onPublish = () => current && run(async (isActive) => {
     const result = await publishRevision(current.raw);
     if (!isActive()) return;
     setRevision(result.revision);
-    setReload((count) => count + 1);
+    setListingReload((count) => count + 1);
   });
 
   const item = (entry: { path: string; label: string }) => (

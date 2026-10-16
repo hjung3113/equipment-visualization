@@ -234,3 +234,81 @@ it('preserves Component selection after rejecting malformed JSON', async () => {
     .toBe('가져오기 실패: JSON을 읽을 수 없습니다');
   expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
 });
+
+it.each([
+  { source: 'template', action: '초안 저장' },
+  { source: 'draft', action: '초안 저장' },
+  { source: 'draft', action: 'Revision 게시' },
+])('preserves selection and camera after $action from a $source', async ({ source, action }) => {
+  const template = 'templates/cluster-single.template.json';
+  const draft = 'layouts/cluster-single/draft.layout.json';
+  const raw = JSON.parse(await readFile(join(root, template), 'utf8'));
+  if (source === 'draft') await globalThis.fetch(`/api/files?${new URLSearchParams({ path: draft })}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(raw),
+  });
+  open(source === 'template' ? template : draft);
+  const { container } = render(<App />);
+  await waitFor(() => expect(componentIds(container).length).toBeGreaterThan(0));
+  const component = container.querySelector('[data-component-id][aria-pressed]')!;
+  const id = component.getAttribute('data-component-id');
+  fireEvent.click(component);
+  expect(component.getAttribute('aria-pressed')).toBe('true');
+  const fitted = container.querySelector('svg')!.getAttribute('viewBox');
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  const zoomed = container.querySelector('svg')!.getAttribute('viewBox');
+  expect(zoomed).not.toBe(fitted);
+
+  const fetchFromApi = globalThis.fetch;
+  let reread = false;
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const response = await fetchFromApi(input, init);
+    if (!init?.method && new URL(input, window.location.origin).searchParams.get('path') === draft) reread = true;
+    return response;
+  });
+  fireEvent.click(screen.getByRole('button', { name: action }));
+  if (action === '초안 저장') {
+    await waitFor(() => expect(reread).toBe(true));
+    await act(async () => {});
+    await screen.findByRole('link', { name: 'draft' });
+  } else {
+    const revision = await layoutRevision(layoutDocumentSchema.parse(raw));
+    await screen.findByRole('link', { name: revision.slice('sha256:'.length, 'sha256:'.length + 12) });
+  }
+  expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
+  expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(zoomed);
+});
+
+it('keeps the saved viewer until a differing draft read replaces its content', async () => {
+  open('templates/cluster-single.template.json');
+  const { container } = render(<App />);
+  await waitFor(() => expect(componentIds(container).length).toBeGreaterThan(0));
+  const component = container.querySelector('[data-component-id][aria-pressed]')!;
+  const id = component.getAttribute('data-component-id');
+  fireEvent.click(component);
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  const zoomed = container.querySelector('svg')!.getAttribute('viewBox');
+  const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
+  raw.name = 'Changed draft from disk';
+  const draft = 'layouts/cluster-single/draft.layout.json';
+  const fetchFromApi = globalThis.fetch;
+  let release!: () => void;
+  let reading = false;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    if (!init?.method && new URL(input, window.location.origin).searchParams.get('path') === draft) {
+      reading = true;
+      await pending;
+      await writeFile(join(root, draft), JSON.stringify(raw));
+    }
+    return fetchFromApi(input, init);
+  });
+  fireEvent.click(screen.getByRole('button', { name: '초안 저장' }));
+  await waitFor(() => expect(reading).toBe(true));
+  try {
+    expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
+    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(zoomed);
+  } finally {
+    await act(async () => { release(); });
+    await screen.findByRole('group', { name: 'Changed draft from disk' });
+  }
+});
