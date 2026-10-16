@@ -71,9 +71,13 @@ First render of the demo's `?stress=N` layout (tiled `cluster-dual-hub`), measur
 | 1000 | 1003 | 7204 | 122 | 112–138 |
 | 2000 | 2006 | 14166 | 342 | 331–349 |
 
-Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because the static scene is built once per picture. With referentially stable `layout`, `layers` and `visibleLevelIds` (memoise them), selection, hover and pan avoid another scene build; a fresh object or array rebuilds it. A wheel zoom rebuilds once after it settles. The conductor fills the rows below from a browser profile of `?stress=2000`.
+Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because the static scene is built once per picture. With referentially stable `layout`, `layers` and `visibleLevelIds` (memoise them), selection, hover and pan avoid another scene build; a fresh object or array rebuilds it. A wheel zoom rebuilds once after it settles.
 
-| Action | Median (ms) | Range (ms) |
-| --- | --- | --- |
-| select on `?stress=2000` | | |
-| wheel zoom frame on `?stress=2000` | | |
+Interaction cost on `?stress=2000` (2006 Components, about 14,900 SVG elements), same browser and dev build, measured 2026-10-16 on `feature/12-interactive-viewer`. Each input was dispatched after the view had settled, and main-thread long tasks (over 50 ms) were recorded for the next 120 ms. Frame-to-frame timings were not usable: in a background browser window `requestAnimationFrame` is throttled to about 1 s.
+
+| Action | Samples | Main-thread long tasks | Notes |
+| --- | --- | --- | --- |
+| select (Enter on a Component) | 3 | none | selection only updates `aria-pressed` and the overlay |
+| arrow-key pan | 3 | none | pans only move the `viewBox` |
+| wheel zoom step | 3 | none | the `viewBox` moves; labels are briefly off-size |
+| settled relayout after a zoom | 3 | one task, 283–314 ms (median 304) | the one scene rebuild, 150 ms after the last zoom change |
