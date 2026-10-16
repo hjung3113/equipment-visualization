@@ -37,6 +37,7 @@ export function TemplateProposals({ inventory, dictionaries, templates, action }
                 <p>{formatProposalEvidence(proposal)}</p>
                 <p>설명 안 되는 alias: {proposal.unexplainedAliases.length ? proposal.unexplainedAliases.join(', ') : '없음'}</p>
                 {action?.({ kind: 'template', templateId: template.id })}
+                {action && !proposal.fits && <span className="eqv-ed-error"> 부적합 Template입니다</span>}
               </li>
             );
           })}

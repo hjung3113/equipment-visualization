@@ -3,7 +3,7 @@ import { act, cleanup, fireEvent, render, screen, within } from '@testing-librar
 import { afterEach, expect, it, vi } from 'vitest';
 import { validateAliasRules } from '@eqv/core';
 import { MappingBoard, type MappingBoardProps, type SaveOutcome } from '../src/index.js';
-import { boardInput, equipmentRules } from './board-data.js';
+import { boardInput, equipmentRules, templateDraft } from './board-data.js';
 
 afterEach(cleanup);
 
@@ -252,4 +252,180 @@ it('shows the Korean explanation and the override notice for the selected alias'
   choose('lp-a');
   expect(pane().textContent).toMatch(/Role 불일치/);
   expect(option('PM9').textContent).toContain('⚠ 충돌');
+});
+
+it('UX-1 never marks an alias whose effective target is absent from the layout', () => {
+  const input = boardInput();
+  input.ruleFiles.model = { ...input.ruleFiles.model!, rules: input.ruleFiles.model!.rules.map((rule) =>
+    rule.id === 'lp' ? { ...rule, target: { componentId: 'missing-lp' } } : rule) };
+  mount(undefined, input);
+  fireEvent.click(option('LP1'));
+  expect(option('LP1').textContent).not.toContain('◆');
+  expect(option('LP1').getAttribute('aria-label')).not.toContain('선택한 component');
+});
+
+it('UX-2 blocks background selection and focus while the palette assigns its original alias', () => {
+  mount();
+  const other = option('LLA');
+  const aliases = list();
+  fireEvent.click(option('PM9'));
+  press(aliases, 'a');
+  const filter = screen.getByRole('combobox');
+  fireEvent.click(other);
+  expect(other.getAttribute('aria-selected')).toBe('false');
+  aliases.focus();
+  expect(document.activeElement).toBe(filter);
+  fireEvent.mouseDown(screen.getByRole('dialog').parentElement!);
+  expect(document.activeElement).toBe(filter);
+  choose('pm-b');
+  expect(option('PM9').textContent).toContain('pm-b');
+  expect(option('LLA').textContent).toContain('ll-a');
+  expect(document.activeElement).toBe(list());
+});
+
+it.each(['success', 'error'] as const)('UX-3 focuses the persistent save status during and after %s', async (outcome) => {
+  let finish!: (result: SaveOutcome) => void;
+  mount(() => new Promise<SaveOutcome>((resolve) => { finish = resolve; }));
+  fireEvent.click(option('PM9'));
+  press(list(), 'i');
+  const save = button('저장');
+  save.focus();
+  fireEvent.click(save);
+  const status = screen.getByRole('status');
+  expect(document.activeElement).toBe(status);
+  await act(async () => finish(outcome === 'success' ? { savedScopes: ['model'] } : { savedScopes: [], error: '실패' }));
+  expect(document.activeElement).toBe(status);
+  expect(status.textContent).toBe(outcome === 'success' ? '저장됨' : '저장 안 됨 · Model');
+});
+
+it('UX-4 marks only changed winning rules and names both dirty scopes, including after undo', () => {
+  mount();
+  fireEvent.click(option('PM9'));
+  press(list(), 'i');
+  expect(option('PM9').textContent).toContain('⊘ 무시 (미저장)');
+  expect(option('LP1').textContent).not.toContain('(미저장)');
+  expect(screen.getByRole('status').textContent).toBe('저장 안 됨 · Model');
+  fireEvent.click(screen.getByRole('radio', { name: /^설비/ }));
+  fireEvent.click(option('LP1'));
+  press(list(), 'i');
+  expect(option('LP1').textContent).toContain('⊘ 무시 (미저장)');
+  expect(screen.getByRole('status').textContent).toBe('저장 안 됨 · Model, 설비');
+  fireEvent.click(button('실행 취소'));
+  expect(option('LP1').textContent).not.toContain('(미저장)');
+  expect(screen.getByRole('status').textContent).toBe('저장 안 됨 · Model');
+});
+
+it.each(['model', 'equipment'] as const)('UX-5 explains saved Model replacements and missing targets at %s scope', (scope) => {
+  const input = boardInput();
+  input.ruleFiles.model = { ...input.ruleFiles.model!, rules: input.ruleFiles.model!.rules.map((rule) =>
+    rule.id === 'lp' ? { ...rule, target: { componentId: 'missing-lp' } } : rule) };
+  mount(undefined, input);
+  fireEvent.click(option('LP1'));
+  const pane = screen.getByRole('region', { name: '선택한 항목' });
+  expect(pane.textContent).toContain('이 설비만 다르면 저장 범위를 설비로 바꾸세요');
+  if (scope === 'equipment') fireEvent.click(screen.getByRole('radio', { name: /^설비/ }));
+  press(list(), 'a');
+  choose('lp-a');
+  const warning = 'Model 규칙 lp을(를) 바꿉니다: synth-maker/synth-model의 모든 설비에 적용됩니다';
+  expect(pane.textContent?.includes(warning)).toBe(scope === 'model');
+  fireEvent.click(button('실행 취소'));
+  expect(pane.textContent).not.toContain(warning);
+});
+
+it('UX-7 shows missing targets explicitly and differing component labels in the list and pane', () => {
+  const input = boardInput();
+  input.layout = { ...input.layout, components: input.layout.components.map((c) => c.id === 'pm-a' ? { ...c, label: 'PM Chamber A' } : c) };
+  input.ruleFiles.model = { ...input.ruleFiles.model!, rules: input.ruleFiles.model!.rules.map((rule) =>
+    rule.id === 'lp' ? { ...rule, target: { componentId: 'missing-lp' } } : rule) };
+  mount(undefined, input);
+  for (const [alias, text] of [['LP1', 'missing-lp (레이아웃에 없음)'], ['PM1', 'pm-a · PM Chamber A']]) {
+    fireEvent.click(option(alias!));
+    expect(option(alias!).textContent).toContain(text);
+    expect(screen.getByRole('region', { name: '선택한 항목' }).textContent).toContain(text);
+  }
+});
+
+it.each([
+  ['PM9', '배정된 대상이 없어 확정할 수 없습니다'],
+  ['LP1', '저장 범위에 이미 verified 정확 규칙이 있습니다'],
+  ['PM2', '저장 범위에 이미 같은 verified 정확 규칙이 있습니다'],
+])('UX-8 explains a no-op confirmation for %s in the pane and keyboard status', (alias, reason) => {
+  mount();
+  fireEvent.click(option(alias));
+  expect(button('확정 (Enter)').getAttribute('aria-disabled')).toBe('true');
+  expect(screen.getByRole('region', { name: '선택한 항목' }).textContent).toContain(reason);
+  press(list(), 'Enter');
+  expect(screen.getByRole('status').textContent).toBe(reason);
+  expect(button('실행 취소').disabled).toBe(true);
+});
+
+it('UX-9 distinguishes a fresh clean board from a successful save and from undoing back to clean', async () => {
+  mount();
+  expect(screen.getByRole('status').textContent).toBe('변경 없음');
+  fireEvent.click(option('PM9'));
+  press(list(), 'i');
+  fireEvent.click(button('저장'));
+  await act(async () => {});
+  expect(screen.getByRole('status').textContent).toBe('저장됨');
+  press(list(), 'i');
+  // Assigning a different target creates an edit; undo restores the saved baseline.
+  press(list(), 'a');
+  choose('pm-b');
+  fireEvent.click(button('실행 취소'));
+  expect(screen.getByRole('status').textContent).toBe('변경 없음');
+});
+
+it('UX-9 describes drafts without reporting human edits or triggering a leave guard', () => {
+  const onDirtyChange = vi.fn();
+  mount(undefined, { ruleFiles: {}, layout: templateDraft(), onDirtyChange });
+  expect(screen.getByRole('status').textContent).toBe('초안 6건 (저장하면 assumed 규칙으로 기록)');
+  expect(onDirtyChange).not.toHaveBeenCalledWith(true);
+});
+
+it('UX-12 labels draft rule ids as future rules and shows the supported keyboard legend', () => {
+  mount(undefined, { ruleFiles: {}, layout: templateDraft() });
+  fireEvent.click(option('LP1'));
+  const pane = screen.getByRole('region', { name: '선택한 항목' });
+  expect(pane.textContent).toContain('초안 (저장 시 board-lp1)');
+  expect(within(pane).getByText('확실성')).toBeTruthy();
+  expect(screen.getByText('j/k 이동 · Enter 확정 · A 배정 · I 무시 · ⌘Z/⇧⌘Z')).toBeTruthy();
+});
+
+it('UX-12 explains a missing target without appending the raw English diagnostic', () => {
+  const input = boardInput();
+  input.ruleFiles.model = { ...input.ruleFiles.model!, rules: input.ruleFiles.model!.rules.map((rule) =>
+    rule.id === 'lp' ? { ...rule, target: { componentId: 'missing-lp' } } : rule) };
+  mount(undefined, input);
+  fireEvent.click(option('LP1'));
+  const pane = screen.getByRole('region', { name: '선택한 항목' });
+  expect(pane.textContent).toContain('규칙의 대상이 레이아웃에 없습니다');
+  expect(pane.textContent).not.toContain('Unknown component');
+});
+
+it('UX-4 clears saved winning markers per scope after a partial save', async () => {
+  mount(async () => ({ savedScopes: ['equipment'], error: 'Model 실패' }));
+  fireEvent.click(option('PM9'));
+  press(list(), 'i');
+  fireEvent.click(screen.getByRole('radio', { name: /^설비/ }));
+  fireEvent.click(option('LP1'));
+  press(list(), 'i');
+  fireEvent.click(button('저장'));
+  await act(async () => {});
+  expect(option('PM9').textContent).toContain('(미저장)');
+  expect(option('LP1').textContent).not.toContain('(미저장)');
+});
+
+it.each(['pattern', 'shared exact'] as const)('UX-5 warns when a pending exact rule replaces a saved Model %s rule', (kind) => {
+  const input = boardInput();
+  if (kind === 'shared exact') {
+    input.ruleFiles.model = { ...input.ruleFiles.model!, rules: input.ruleFiles.model!.rules.map((rule) =>
+      rule.id === 'lp' ? { ...rule, match: { exact: ['LP1', 'OTHER_LP'] } } : rule) };
+  }
+  mount(undefined, input);
+  fireEvent.click(option(kind === 'pattern' ? 'PM1' : 'LP1'));
+  press(list(), 'a');
+  choose(kind === 'pattern' ? 'pm-b' : 'lp-a');
+  const id = kind === 'pattern' ? 'pm-pattern' : 'lp';
+  expect(screen.getByRole('region', { name: '선택한 항목' }).textContent)
+    .toContain(`Model 규칙 ${id}을(를) 바꿉니다: synth-maker/synth-model의 모든 설비에 적용됩니다`);
 });

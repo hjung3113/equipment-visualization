@@ -110,9 +110,12 @@ LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 
 
 구현된 범위: alias 목록·Top View·선택 항목의 3-pane, 배정(키보드 팔레트·drag)·확정(`Enter`)·무시(`I`), 실행 취소/다시 실행, 역강조, 명시적 `[저장]`. 규칙화(`R`)·일괄·다중 선택·`/` 검색·충돌 목록·이송 경로 강조·dry-run·Publish는 아직 없다(#14c).
 
-- **상태(첫 일치):** `⚠ 충돌`(같은 범위 규칙 중첩, 규칙 해석 문제 또는 `findMappingConflicts`가 alias를 지목) → `⊘ 무시` → `● 확정`(verified) → `◐ 자동`(assumed; 저장 전 초안은 `◐ 자동 (미저장)`) → `○ 미매핑`. 규칙도 초안도 없는 alias는 추측하지 않고 미매핑이다.
+- **상태(첫 일치):** `⚠ 충돌`(같은 범위 규칙 중첩, 규칙 해석 문제 또는 `findMappingConflicts`가 alias를 지목) → `⊘ 무시` → `● 확정`(verified) → `◐ 자동`(assumed; 저장 전 초안은 `◐ 자동 (미저장)`) → `○ 미매핑`. 규칙도 초안도 없는 alias는 추측하지 않고 미매핑이다. 저장된 기준과 다른 winning rule도 상태 뒤에 ` (미저장)`을 붙인다. 대상이 레이아웃에 없으면 `(레이아웃에 없음)`, label이 id와 다르면 `id · label`을 목록과 선택 항목에 표시한다.
 - **초안:** 레이아웃의 `templateId`가 가리키는 Template(`generic`이면 Generic Layout)의 `proposeTemplates`/`buildGenericLayout` 배정을 `assumed` 정확 일치 규칙으로 보여 준다. 규칙이 하나도 일치하지 않는 alias에만 적용하고, 레이아웃에 없거나 Role이 다른 component는 버린다. 초안만으로는 변경 상태가 아니다.
 - **저장:** 저장 범위(Model 기본 / 설비)의 `alias-rules.json`만 쓴다. 사람이 한 동작은 `verified`이고, 변경된 범위의 파일과 초안이 있으면 저장 범위 파일(초안은 `assumed` 규칙 `board-<alias>`)을 한 번에 저장한다. Mapping Version·Binding은 쓰지 않는다(ADR-0005). Model 범위로 저장해도 Equipment 범위 규칙이 이기면 "설비 범위 규칙(<id>)이 우선합니다"를 보여 준다.
+- **저장 안내:** 새로 열어 변경이 없으면 `변경 없음`, 초안만 있으면 `초안 N건 (저장하면 assumed 규칙으로 기록)`, 사람의 변경이 있으면 `저장 안 됨 · Model, 설비`처럼 실제 변경 범위를 나열한다. `저장됨`은 저장 성공 직후에만 표시하며, 이탈 확인은 사람의 변경에만 적용한다. 저장이 시작되면 포커스를 저장 상태로 옮기며, 상태 요소는 성공·실패 후에도 유지한다. 저장 중 버튼 비활성화로 중복 실행을 막는다.
+- **공유 규칙 안내:** Model 저장 범위에서 기존의 저장된 Model 규칙을 바꾸거나 대체하는 편집은 규칙 id와 maker/model의 모든 설비에 적용됨을 알린다. Model 규칙의 `unknown-target` 문제에는 설비 범위 사용을 안내한다. 편집의 적용 방식은 바꾸지 않는다.
+- **키보드·팔레트:** 배정 팔레트는 배경을 차단하고 포커스를 가둔다. 닫으면 alias 목록으로 포커스가 돌아온다. 확정이 미매핑 또는 이미 같은 verified 정확 규칙이라 아무 변경도 만들지 않으면 버튼에 `aria-disabled`와 이유를 표시하고, 목록의 Enter도 상태 줄로 같은 이유를 알린다.
 - **레이아웃 draft:** `layouts/<layoutId>/draft.layout.json`(`<layoutId>`는 게시된 최신 binding의 `layoutId`, 없으면 `<equipmentId>-layout`). 없으면 Onboarding 화면의 "이 템플릿으로 시작"이 `instantiateLayout`으로 만들며, 이미 있으면 덮어쓰지 않는다.
 
 ## 5. Alias Rule

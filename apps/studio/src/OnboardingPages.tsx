@@ -46,7 +46,7 @@ export function FleetPage() {
 
 type Ok = Extract<OnboardingLoad, { kind: 'ok' }>;
 type Choice = Parameters<NonNullable<ComponentProps<typeof TemplateProposals>['action']>>[0];
-type CreateState = { equipmentId: string; pending: boolean; error: string | null; exists: boolean };
+type CreateState = { pending: boolean; error: string | null; exists: boolean };
 
 function Missing({ result }: { result: Exclude<OnboardingLoad, { kind: 'ok' }> }) {
   return result.kind === 'not-found' ? (
@@ -64,7 +64,7 @@ function Missing({ result }: { result: Exclude<OnboardingLoad, { kind: 'ok' }> }
 
 function StartActions({ equipmentId, result, draft }: { equipmentId: string; result: Ok; draft: Extract<DraftLookup, { kind: 'absent' | 'no-id' }> }) {
   // The parent keys this component by equipmentId, so the state never crosses equipment.
-  const [create, setCreate] = useState<CreateState>({ equipmentId, pending: false, error: null, exists: false });
+  const [create, setCreate] = useState<CreateState>({ pending: false, error: null, exists: false });
   const active = useRef<string | null>(null);
   useEffect(() => {
     active.current = equipmentId;
@@ -73,7 +73,7 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
 
   const start = async (choice: Choice) => {
     if (draft.kind !== 'absent' || create.pending) return;
-    setCreate({ equipmentId, pending: true, error: null, exists: false });
+    setCreate({ pending: true, error: null, exists: false });
     try {
       const source: TemplateDocument | EquipmentLayoutDocument | undefined = choice.kind === 'generic'
         ? buildGenericLayout({ inventory: result.data.inventory, dictionaries: result.data.dictionaries }).layout
@@ -84,7 +84,7 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
     } catch (error) {
       if (active.current !== equipmentId) return;
       const exists = error instanceof ApiError && error.status === 412;
-      setCreate({ equipmentId, pending: false, exists,
+      setCreate({ pending: false, exists,
         error: exists ? '이미 레이아웃 draft가 있습니다' : message(error) });
     }
   };
@@ -99,7 +99,9 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
       )}
       <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates}
         action={(choice): ReactNode => (
-          <button type="button" disabled={blocked || create.pending} onClick={() => { void start(choice); }}>
+          <button type="button" className="eqv-ed-btn eqv-ed-btn-primary"
+            aria-label={choice.kind === 'generic' ? 'Generic Layout으로 시작' : `${result.templates.find(({ id }) => id === choice.templateId)!.name}으로 시작`}
+            disabled={blocked || create.pending} onClick={() => { void start(choice); }}>
             {choice.kind === 'generic' ? 'Generic Layout으로 시작' : '이 템플릿으로 시작'}
           </button>
         )} />
@@ -201,13 +203,14 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
   const { result } = loaded;
   return (
     <>
-      <h1>Mapping Board <code>{equipmentId}</code></h1>
+      {result?.kind === 'ok' && result.draft.kind === 'found'
+        ? <p>설비 <code>{equipmentId}</code></p> : <h1>Mapping Board <code>{equipmentId}</code></h1>}
+      <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : result.draft.kind === 'error' ? (
         <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>
       ) : result.draft.kind !== 'found' ? (
         <>
           <p>레이아웃 draft가 없습니다</p>
-          <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
         </>
       ) : (
         <LoadedBoard equipmentId={equipmentId} result={result} layout={result.draft.layout}

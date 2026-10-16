@@ -7,7 +7,7 @@ import { instantiateLayout, validateAliasRules, type TemplateDocument } from '@e
 import { App } from '../src/App.js';
 import { navigate, setNavigationBlocker } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
-import { addEquipment, seedOnboardingRoot, writeDraft } from './seed.js';
+import { addEquipment, seedOnboardingRoot, writeDraft, writeJson } from './seed.js';
 
 const captured = vi.hoisted(() => ({ props: [] as { equipment: { equipmentId: string }; onDirtyChange?: (dirty: boolean) => void }[] }));
 vi.mock('@eqv/editor', async (importOriginal) => {
@@ -121,7 +121,7 @@ it('creates the draft from the template and opens the Board when none exists', a
   at('/onboarding/eq-new');
   render(<App />);
   expect(screen.queryByRole('link', { name: '④ Mapping Board 열기' })).toBeNull();
-  const [start] = await screen.findAllByRole('button', { name: '이 템플릿으로 시작' });
+  const [start] = await screen.findAllByRole('button', { name: 'Radial Cluster · Single Vacuum Arm으로 시작' });
   fireEvent.click(start!);
   await screen.findByRole('heading', { name: '④ Mapping Board' });
   const template = JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8')) as TemplateDocument;
@@ -133,7 +133,7 @@ it('does not overwrite a draft created after the page loaded', async () => {
   await addEquipment(root, 'eq-new');
   at('/onboarding/eq-new');
   render(<App />);
-  const [start] = await screen.findAllByRole('button', { name: '이 템플릿으로 시작' });
+  const [start] = await screen.findAllByRole('button', { name: 'Radial Cluster · Single Vacuum Arm으로 시작' });
   await writeDraft(root, 'eq-new-layout');
   const before = await diskText('layouts/eq-new-layout/draft.layout.json');
   fireEvent.click(start!);
@@ -261,7 +261,7 @@ it('ignores a late dirty callback from the board of the previous equipment', asy
   await dirtyOnA();
   const callbackOfA = captured.props.findLast((props) => props.equipment.equipmentId === 'eq-synth-01')!.onDirtyChange!;
   act(() => navigate('/onboarding/eq-b/board'));
-  await screen.findByRole('heading', { name: 'Mapping Board eq-b' });
+  await screen.findByText('eq-b', { selector: 'code' });
   await screen.findByRole('heading', { name: '④ Mapping Board' });
   act(() => callbackOfA(true));
   expect(beforeUnloadPrevented()).toBe(false);
@@ -282,7 +282,7 @@ it('drops A at once on navigation and ignores a late result of A', async () => {
   await screen.findByRole('heading', { name: '④ Mapping Board' });
   expect((await option('B_PM1'))).toBeTruthy();
   await act(async () => { gate.release(); await gate.wait; await new Promise((done) => setTimeout(done, 50)); });
-  expect(screen.getByRole('heading', { name: 'Mapping Board eq-b' })).toBeTruthy();
+  expect(screen.getByText('eq-b', { selector: 'code' })).toBeTruthy();
   expect(within(await list()).queryByRole('option', { name: /^PM1,/ })).toBeNull();
 });
 
@@ -299,4 +299,40 @@ it('removes the previous equipment Board at once on navigation', async () => {
   expect(screen.getByText('불러오는 중…')).toBeTruthy();
   gate.release();
   await screen.findByRole('heading', { name: '④ Mapping Board' });
+});
+
+it.each(['mixed', 'generic'] as const)('UX-11 gives %s start actions distinct names, styling and unsuitable warnings', async (variant) => {
+  await addEquipment(root, 'eq-new');
+  const single = JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8')) as TemplateDocument;
+  const lithography = JSON.parse(await readFile(join(repo, 'assets/templates/lithography-dual-stage.template.json'), 'utf8')) as TemplateDocument;
+  await writeJson(root, 'templates/lithography-dual-stage.template.json', lithography);
+  if (variant === 'generic') {
+    await writeJson(root, 'templates/cluster-single.template.json', { ...single, roleCardinality: { pm: { min: 99, max: 99 } } });
+  }
+  at('/onboarding/eq-new');
+  render(<App />);
+  const starts = await screen.findAllByRole('button', { name: /으로 시작$/ });
+  expect(starts).toHaveLength(variant === 'mixed' ? 2 : 3);
+  expect(new Set(starts.map((b) => b.getAttribute('aria-label') ?? b.textContent)).size).toBe(starts.length);
+  expect(screen.getAllByText('부적합 Template입니다')).toHaveLength(variant === 'mixed' ? 1 : 2);
+  expect(screen.queryByRole('button', { name: 'Generic Layout으로 시작' }) !== null).toBe(variant === 'generic');
+  for (const start of starts) {
+    const name = start.getAttribute('aria-label')!;
+    expect([`${single.name}으로 시작`, `${lithography.name}으로 시작`, 'Generic Layout으로 시작']).toContain(name);
+    expect(start.classList.contains('eqv-ed-btn-primary')).toBe(true);
+    const card = start.closest('li')!;
+    if (card.textContent?.includes('✗ 부적합')) {
+      expect(card.textContent).toContain('부적합 Template입니다');
+      expect((start as HTMLButtonElement).disabled).toBe(false);
+    }
+  }
+});
+
+it('UX-12 gives a loaded Board one heading and a route back to its Onboarding page', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  expect(screen.getAllByRole('heading').filter((heading) => heading.textContent?.includes('Mapping Board'))).toHaveLength(1);
+  expect(screen.getByRole('link', { name: 'Onboarding으로 이동' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
 });

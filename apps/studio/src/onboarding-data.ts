@@ -1,5 +1,5 @@
 import {
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema,
   validateAliasRules, validateBindings, validateTypeDictionary, verifyMappingHash,
   validateLayout,
   type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type MappingIssue, type MappingScope, type MappingVersion,
@@ -198,8 +198,6 @@ async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped
   return { templates: templates.sort((a, b) => bySource(a.id, b.id)), skipped: skipped.sort(bySource) };
 }
 
-// Same pattern as the layout id schema in @eqv/core and the file API's LAYOUT_ID.
-const LAYOUT_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 
 /** The layout the Board edits: the latest binding's layout once published, otherwise `<equipmentId>-layout`. */
 function draftLayoutId(equipmentId: string, bindings: BindingsFile | null): string | null {
@@ -207,7 +205,7 @@ function draftLayoutId(equipmentId: string, bindings: BindingsFile | null): stri
     return bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a).layoutId;
   }
   const id = `${equipmentId}-layout`;
-  return LAYOUT_ID.test(id) ? id : null;
+  return idSchema.safeParse(id).success ? id : null;
 }
 
 /** Never rejects. Only a 404 is "no draft"; an invalid or foreign file is an error, never silently replaced. */

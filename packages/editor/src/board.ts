@@ -39,6 +39,8 @@ export interface BoardRow {
   overlap: MappingEntry['rule'][];
   /** Set when the save scope is Model and an Equipment-scope rule wins: that rule's id. */
   overriddenBy: string | null;
+  /** Saved Model rule changed or replaced by the alias's pending Model edit. */
+  changedModelRule: string | null;
 }
 
 export interface BoardView {
@@ -73,7 +75,6 @@ export type BoardEdit = { kind: 'assign'; alias: string; componentId: string } |
 const STATUS_TEXT: Record<BoardStatus, string> = {
   conflict: '⚠ 충돌', ignored: '⊘ 무시', verified: '● 확정', assumed: '◐ 자동', unmapped: '○ 미매핑',
 };
-const DRAFT_TEXT = '◐ 자동 (미저장)';
 
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 function canonical(value: unknown): string {
@@ -165,13 +166,19 @@ function conflictNames(conflict: MappingConflict, alias: string): boolean {
 const issueKey = (issue: MappingIssue) => JSON.stringify([issue.code, issue.path]);
 
 /** Resolves every Inventory alias against the pending files plus the automatic drafts, and checks the result. */
-export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveScope): BoardView {
+export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveScope, baseline: Pending = files): BoardView {
   const { equipment, inventory, layout } = input;
   const aliases = inventory.aliases.map(({ alias }) => alias);
   const resolveWith = (saveFile: AliasRulesFile) => resolveAliasRules({
     equipmentId: equipment.equipmentId, maker: equipment.maker, model: equipment.model,
     ruleFiles: allFiles(input, files, saveFile, saveScope), aliases, layout,
   });
+  const resolveModel = (file: AliasRulesFile) => resolveAliasRules({
+    equipmentId: equipment.equipmentId, maker: equipment.maker, model: equipment.model,
+    ruleFiles: [file], aliases, layout,
+  }).aliases;
+  const savedModel = new Map(resolveModel(baseline.model).map((row) => [row.alias, row.entry]));
+  const pendingModel = new Map(resolveModel(files.model).map((row) => [row.alias, row.entry]));
   const base = resolveWith(files[saveScope]);
   const { drafts, missingTemplate } = autoAssignments(input);
   const draftedBy = new Map(base.aliases.flatMap((row) => drafts.has(row.alias) && row.entry === null && row.overlap.length === 0
@@ -204,10 +211,19 @@ export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveS
     const status: BoardStatus = overlap.length > 1 || issues.length || rowConflicts.length ? 'conflict'
       : !entry ? 'unmapped' : 'ignore' in entry.target ? 'ignored' : entry.certainty === 'verified' ? 'verified' : 'assumed';
     const target = entry?.target ?? null;
+    const level = entry?.rule.scope.level;
+    const unsaved = draft || (entry && (level === 'model' || level === 'equipment') &&
+      canonical(files[level].rules.find(({ id }) => id === entry.rule.ruleId) ?? null) !==
+      canonical(baseline[level].rules.find(({ id }) => id === entry.rule.ruleId) ?? null));
+    const savedModelId = savedModel.get(item.alias)?.rule.ruleId;
+    const pendingModelId = pendingModel.get(item.alias)?.rule.ruleId;
+    const changedModelRule = savedModelId && canonical(baseline.model.rules.find(({ id }) => id === savedModelId)) !==
+      canonical(files.model.rules.find(({ id }) => id === pendingModelId)) ? savedModelId : null;
     return {
+      changedModelRule,
       alias: item.alias, moduleType: item.moduleType ?? null, slots: item.slots, status, draft,
       role: item.moduleType === undefined ? 'unknown' : resolveRole([...input.dictionaries], item.moduleType),
-      statusText: draft && status === 'assumed' ? DRAFT_TEXT : STATUS_TEXT[status],
+      statusText: `${STATUS_TEXT[status]}${unsaved ? ' (미저장)' : ''}`,
       componentId: target && 'componentId' in target ? target.componentId : null, target,
       rule: entry ? { level: entry.rule.scope.level, ruleId: entry.rule.ruleId, kind: ruleKind(entry) } : null,
       certainty: entry?.certainty ?? null, conflicts: rowConflicts, issues, overlap,
@@ -316,7 +332,7 @@ export function explainRow(row: BoardRow): string[] {
   for (const issue of row.issues) {
     lines.push(issue.code === 'same-level-overlap'
       ? `같은 범위의 규칙이 겹칩니다: ${row.overlap.map(({ ruleId }) => ruleId).join(', ')}`
-      : issue.code === 'unknown-target' ? `규칙의 대상이 layout에 없습니다 (${issue.message})` : `규칙 문제 (${issue.code}): ${issue.message}`);
+      : issue.code === 'unknown-target' ? '규칙의 대상이 레이아웃에 없습니다' : `규칙 문제 (${issue.code}): ${issue.message}`);
   }
   return lines;
 }

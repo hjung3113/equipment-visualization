@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type Keybo
 import type { AliasRulesFile } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import {
-  applyEdit, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, explainRow, isDirty, paletteOptions,
+  applyEdit, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty, paletteOptions,
   redo, resolveBoard, undo, type BoardEdit, type BoardInput, type BoardRow, type BoardState, type SaveOutcome, type SaveScope,
 } from './board.js';
 
@@ -31,8 +31,11 @@ export function MappingBoard(props: MappingBoardProps) {
   const [pick, setPick] = useState<Pick>({ kind: 'alias' });
   const [palette, setPalette] = useState<{ alias: string; filter: string; active: number } | null>(null);
   const [saving, setSaving] = useState(false);
+  const [savedState, setSavedState] = useState<BoardState | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<{ state: BoardState; alias: string; scope: SaveScope; text: string } | null>(null);
   const ids = useId();
+  const saveStatusRef = useRef<HTMLSpanElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const filterRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -47,9 +50,13 @@ export function MappingBoard(props: MappingBoardProps) {
 
   const input = useMemo<BoardInput>(() => ({ equipment, inventory, dictionaries, layout, ruleFiles, templates }),
     [equipment, inventory, dictionaries, layout, ruleFiles, templates]);
-  const view = useMemo(() => resolveBoard(input, state.present, saveScope), [input, state.present, saveScope]);
+  const view = useMemo(() => resolveBoard(input, state.present, saveScope, state.baseline), [input, state.present, state.baseline, saveScope]);
   const rows = view.groups.flatMap((group) => group.rows);
   const selected = rows.find((row) => row.alias === alias) ?? null;
+  const confirmReason = !selected ? null : !selected.target ? '배정된 대상이 없어 확정할 수 없습니다'
+    : applyEdit(input, state, saveScope, { kind: 'confirm', alias: selected.alias }) === state
+      ? selected.rule?.level === saveScope ? '저장 범위에 이미 verified 정확 규칙이 있습니다'
+        : '저장 범위에 이미 같은 verified 정확 규칙이 있습니다' : null;
   const dirty = isDirty(state);
   const savePayload = useMemo(() => buildSavePayload(input, state, saveScope), [input, state, saveScope]);
   const canSave = savePayload.files.length > 0;
@@ -75,10 +82,23 @@ export function MappingBoard(props: MappingBoardProps) {
     }
   }, [paletteOpen]);
 
+  useEffect(() => {
+    if (!paletteOpen) return;
+    const keepFocus = (event: FocusEvent) => {
+      if (event.target instanceof Node && !dialogRef.current?.contains(event.target)) filterRef.current?.focus();
+    };
+    document.addEventListener('focusin', keepFocus);
+    return () => document.removeEventListener('focusin', keepFocus);
+  }, [paletteOpen]);
+
   const optionId = (name: string) => `${ids}-alias-${name}`;
   const paletteOptionId = (id: string) => `${ids}-component-${id}`;
   const edit = (change: BoardEdit) => {
     if (savingRef.current) return;
+    if (change.kind === 'confirm' && confirmReason) {
+      setNotice({ state, alias: change.alias, scope: saveScope, text: confirmReason });
+      return;
+    }
     setState((current) => applyEdit(input, current, saveScope, change));
   };
   const select = (name: string) => {
@@ -104,7 +124,7 @@ export function MappingBoard(props: MappingBoardProps) {
   };
 
   const onListKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    if (isModified(event)) return;
+    if (paletteOpen || isModified(event)) return;
     const key = event.key;
     if (key === 'j' || key === 'ArrowDown') move(1);
     else if (key === 'k' || key === 'ArrowUp') move(-1);
@@ -116,7 +136,7 @@ export function MappingBoard(props: MappingBoardProps) {
   };
 
   const onRootKeyDown = (event: KeyboardEvent<HTMLElement>) => {
-    if (event.defaultPrevented || savingRef.current || !(event.metaKey || event.ctrlKey)) return;
+    if (event.defaultPrevented || paletteOpen || savingRef.current || !(event.metaKey || event.ctrlKey)) return;
     const target = event.target instanceof Element ? event.target : null;
     if (target?.closest('input, textarea, select, [contenteditable], [role="dialog"]')) return;
     const key = event.key.toLowerCase();
@@ -157,7 +177,7 @@ export function MappingBoard(props: MappingBoardProps) {
     const target = componentAt(event);
     const name = dragAlias.current ?? event.dataTransfer?.getData('text/plain') ?? null;
     dragAlias.current = null;
-    if (!target || !name || savingRef.current || !rows.some((row) => row.alias === name)) return;
+    if (!target || !name || paletteOpen || savingRef.current || !rows.some((row) => row.alias === name)) return;
     event.preventDefault();
     select(name);
     edit({ kind: 'assign', alias: name, componentId: target });
@@ -165,6 +185,7 @@ export function MappingBoard(props: MappingBoardProps) {
 
   const save = async () => {
     if (savingRef.current || !canSave) return;
+    saveStatusRef.current?.focus();
     const payload = savePayload;
     savingRef.current = true;
     setSaving(true);
@@ -178,18 +199,30 @@ export function MappingBoard(props: MappingBoardProps) {
       savingRef.current = false;
     }
     if (!aliveRef.current) return;
-    setState((current) => applySaveOutcome(current, payload, outcome));
+    const next = applySaveOutcome(state, payload, outcome);
+    setState(next);
+    setSavedState(!outcome.error && payload.files.every(({ scope }) => outcome.savedScopes.includes(scope)) ? next : null);
     setSaveError(outcome.error ?? null);
     setSaving(false);
   };
 
   const lines = selected ? explainRow(selected) : [];
-  const status = saveError ? null : canSave ? '저장 안 됨' : '저장됨';
-  const marked = (row: BoardRow) => viewerId !== null && row.componentId === viewerId;
+  const status = dirty ? `저장 안 됨 · ${dirtyScopes(state).map((scope) => LEVEL_TEXT[scope]).join(', ')}` : view.drafts.length ? `초안 ${view.drafts.length}건 (저장하면 assumed 규칙으로 기록)` : state === savedState ? '저장됨' : '변경 없음';
+  const targetText = (row: BoardRow) => {
+    if (!row.componentId) return '—';
+    const component = layout.components.find(({ id }) => id === row.componentId);
+    if (!component) return `${row.componentId} (레이아웃에 없음)`;
+    return component.label === component.id ? component.id : `${component.id} · ${component.label}`;
+  };
+  const marked = (row: BoardRow) => viewerId !== null && layout.components.some(({ id }) => id === viewerId) && row.componentId === viewerId;
 
   return (
     <section className="eqv-ed-board" aria-labelledby={`${ids}-heading`} onKeyDown={onRootKeyDown}>
-      <h2 id={`${ids}-heading`}>④ Mapping Board</h2>
+      <div inert={paletteOpen} onClickCapture={(event) => {
+        if (paletteOpen) { event.preventDefault(); event.stopPropagation(); }
+      }}>
+      <h1 id={`${ids}-heading`}>④ Mapping Board</h1>
+      <p>j/k 이동 · Enter 확정 · A 배정 · I 무시 · ⌘Z/⇧⌘Z</p>
       <div className="eqv-ed-board-bar">
         <fieldset className="eqv-ed-board-scope" disabled={saving}>
           <legend>저장 범위</legend>
@@ -202,7 +235,8 @@ export function MappingBoard(props: MappingBoardProps) {
         <button type="button" className="eqv-ed-btn" disabled={saving || !canUndo(state)} onClick={() => setState(undo)}>실행 취소</button>
         <button type="button" className="eqv-ed-btn" disabled={saving || !canRedo(state)} onClick={() => setState(redo)}>다시 실행</button>
         <button type="button" className="eqv-ed-btn eqv-ed-btn-primary" disabled={saving || !canSave} onClick={save}>저장</button>
-        {saveError ? <span role="alert" className="eqv-ed-error">{saveError}</span> : <span role="status">{saving ? '저장 중…' : status}</span>}
+        <span ref={saveStatusRef} role="status" tabIndex={-1}>{saving ? '저장 중…' : notice?.state === state && notice.alias === alias && notice.scope === saveScope ? notice.text : status}</span>
+        {saveError && <span role="alert" className="eqv-ed-error">{saveError}</span>}
       </div>
       {view.missingTemplate && <p className="eqv-ed-note">Template {view.missingTemplate}을(를) 찾을 수 없어 자동 배정이 없습니다.</p>}
       {view.unattributed.length > 0 && (
@@ -223,7 +257,7 @@ export function MappingBoard(props: MappingBoardProps) {
                   <div
                     key={row.alias} id={optionId(row.alias)} role="option" aria-selected={row === selected} draggable={!saving}
                     className={`eqv-ed-board-row eqv-ed-bstatus-${row.status}${row === selected ? ' eqv-ed-selected' : ''}${marked(row) ? ' eqv-ed-marked' : ''}`}
-                    aria-label={`${row.alias}, ${row.statusText}, ${row.componentId ?? '배정 없음'}${marked(row) ? MARKED_NAME : ''}`}
+                    aria-label={`${row.alias}, ${row.statusText}, ${row.componentId ? targetText(row) : '배정 없음'}${marked(row) ? MARKED_NAME : ''}`}
                     onClick={() => select(row.alias)}
                     onDragStart={(event) => {
                       dragAlias.current = row.alias;
@@ -234,7 +268,7 @@ export function MappingBoard(props: MappingBoardProps) {
                   >
                     <span className="eqv-ed-board-alias">{row.alias}</span>
                     <span className="eqv-ed-board-status">{row.statusText}</span>
-                    <span className="eqv-ed-board-target">{row.componentId ?? '—'}</span>
+                    <span className="eqv-ed-board-target">{targetText(row)}</span>
                     {marked(row) && <span className="eqv-ed-board-marker" aria-hidden="true">◆</span>}
                   </div>
                 ))}
@@ -257,23 +291,30 @@ export function MappingBoard(props: MappingBoardProps) {
                 <dt>Role</dt><dd>{selected.role}</dd>
                 <dt>slots</dt><dd>{selected.slots.length ? selected.slots.join(', ') : '—'}</dd>
                 <dt>상태</dt><dd>{selected.statusText}</dd>
-                <dt>대상 component</dt><dd>{selected.componentId ?? '—'}</dd>
+                <dt>대상 component</dt><dd>{targetText(selected)}</dd>
                 <dt>규칙</dt>
-                <dd>{selected.rule ? `${LEVEL_TEXT[selected.rule.level] ?? selected.rule.level} · ${selected.rule.ruleId} · ${selected.rule.kind === 'exact' ? '정확' : '패턴'}` : '—'}</dd>
-                <dt>certainty</dt><dd>{selected.certainty ?? '—'}</dd>
+                <dd>{selected.draft ? `초안 (저장 시 ${selected.rule?.ruleId})` : selected.rule ? `${LEVEL_TEXT[selected.rule.level] ?? selected.rule.level} · ${selected.rule.ruleId} · ${selected.rule.kind === 'exact' ? '정확' : '패턴'}` : '—'}</dd>
+                <dt>확실성</dt><dd>{selected.certainty ?? '—'}</dd>
               </dl>
-              {selected.overriddenBy && <p className="eqv-ed-note">설비 범위 규칙({selected.overriddenBy})이 우선합니다</p>}
+              {saveScope === 'model' && selected.changedModelRule && <p className="eqv-ed-note">Model 규칙 {selected.changedModelRule}을(를) 바꿉니다: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
+              {selected.rule?.level === 'model' && selected.issues.some(({ code }) => code === 'unknown-target') && <p className="eqv-ed-note">이 설비만 다르면 저장 범위를 설비로 바꾸세요</p>}
+              {selected.overriddenBy && <p className="eqv-ed-note">설비 범위 규칙({selected.overriddenBy})이 우선합니다. 확정하려면 저장 범위를 설비로 바꾸세요.</p>}
               {lines.length > 0 && <ul className="eqv-ed-board-issues" aria-label="충돌과 문제">{lines.map((line) => <li key={line}>{line}</li>)}</ul>}
+              {confirmReason && <p id={`${ids}-confirm-reason`} className="eqv-ed-note">{confirmReason}</p>}
               <div className="eqv-ed-board-actions">
                 <button type="button" className="eqv-ed-btn" disabled={saving} onClick={openPalette}>배정 (A)</button>
-                <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => edit({ kind: 'confirm', alias: selected.alias })}>확정 (Enter)</button>
+                <button type="button" className="eqv-ed-btn" disabled={saving} aria-disabled={saving || !!confirmReason} aria-describedby={confirmReason ? `${ids}-confirm-reason` : undefined} onClick={() => edit({ kind: 'confirm', alias: selected.alias })}>확정 (Enter)</button>
                 <button type="button" className="eqv-ed-btn" disabled={saving} onClick={() => edit({ kind: 'ignore', alias: selected.alias })}>무시 (I)</button>
               </div>
             </>
           ) : <p>왼쪽에서 alias를 선택하세요.</p>}
         </div>
       </div>
+      </div>
       {palette && (
+        <div className="eqv-ed-palette-backdrop" onMouseDown={(event) => {
+          if (!(event.target instanceof Element) || !event.target.closest('input, button')) event.preventDefault();
+        }}>
         <div
           ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`${ids}-palette-title`} className="eqv-ed-palette"
           onKeyDown={onDialogKeyDown}
@@ -298,6 +339,7 @@ export function MappingBoard(props: MappingBoardProps) {
             {options.length === 0 && <p>일치하는 component가 없습니다.</p>}
           </div>
           <button type="button" className="eqv-ed-btn" onClick={closePalette}>닫기</button>
+        </div>
         </div>
       )}
     </section>

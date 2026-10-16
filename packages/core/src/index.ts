@@ -1,7 +1,7 @@
 export const PACKAGE_NAME = '@eqv/core';
 export { siteWallClockSchema, type SiteWallClock } from './site-wall-clock.js';
 
-export { LAYOUT_SCHEMA_VERSION, layoutDocumentSchema } from './layout/schema.js';
+export { LAYOUT_SCHEMA_VERSION, layoutDocumentSchema, idSchema } from './layout/schema.js';
 export type {
   LayoutDocument, TemplateDocument, EquipmentLayoutDocument, Component, Port, HoldingSite,
   Level, SourceEvidence, Provenance, Certainty, MaterialKind, PhysicalInterfaceEdge,
