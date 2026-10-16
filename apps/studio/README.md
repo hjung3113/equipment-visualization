@@ -1,8 +1,8 @@
 # @eqv/studio
 
 Standalone Studio app: shell and router (`/fleet`, `/layouts`, `/onboarding/:equipmentId`, `/focus/:equipmentId`), a layouts page
-(viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet, Onboarding and Focus are
-placeholders until #14/#15.
+(viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet and Onboarding (read-only
+Inventory and Template proposals, #14a) are implemented; Focus is still a placeholder until #15.
 
 An imported document is unsaved until its draft is saved. While it is unsaved, opening another file or leaving the
 page through Studio navigation or browser back/forward asks before discarding it. Reloading or closing the tab uses
@@ -48,4 +48,4 @@ Only these paths are writable, and each must pass the named core validator (fail
 | `onboarding/mappings/<equipmentId>/<hex>.mapping.json` | `mappingVersionSchema`, `verifyMappingHash`, `hash === sha256:<hex>`, `equipmentId` | immutable |
 | `onboarding/bindings/<equipmentId>.bindings.json` | `validateBindings`, `equipmentId` | overwrite |
 
-`templates/` and `primitives/` are read-only. Files are written as received (`JSON.stringify(value, null, 2)` plus a newline); mutable files are replaced atomically.
+`templates/`, `primitives/`, `equipment/` and `observations/` are read-only (writes get 403). Fleet and Onboarding read `equipment/<equipmentId>.json`, `observations/<equipmentId>/{occurrence-batch,alias-metadata}.json` and the `onboarding/` files above, and validate each at read time. Files are written as received (`JSON.stringify(value, null, 2)` plus a newline); mutable files are replaced atomically.

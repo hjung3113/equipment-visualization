@@ -8,7 +8,8 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
-    }
+    },
+    "./editor.css": "./src/editor.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

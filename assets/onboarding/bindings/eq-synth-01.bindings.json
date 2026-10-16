@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-synth-01",
+  "bindings": [
+    {
+      "layoutId": "eq-synth-01-layout",
+      "mappingHash": "sha256:30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2",
+      "effectiveFrom": "2026-01-01T09:00:00.000",
+      "effectiveTo": "2026-01-01T10:04:30.000"
+    },
+    {
+      "layoutId": "eq-synth-01-layout",
+      "mappingHash": "sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef",
+      "effectiveFrom": "2026-01-01T10:04:30.000"
+    }
+  ]
+}
