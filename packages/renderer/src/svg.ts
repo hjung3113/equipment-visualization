@@ -21,7 +21,21 @@ const REACT_ATTR: Record<string, string> = {
   'font-size': 'fontSize',
   'font-weight': 'fontWeight',
   'text-anchor': 'textAnchor',
+  tabindex: 'tabIndex',
+  'pointer-events': 'pointerEvents',
 };
+
+/**
+ * `pointer-events` is not inherited, and a shape's initial value is `visiblePainted`,
+ * so a group attribute alone does not keep a label or mark from taking the hit.
+ */
+export function withPointerEventsNone(node: SvgNode): SvgNode {
+  return {
+    tag: node.tag,
+    attrs: { ...node.attrs, 'pointer-events': 'none' },
+    children: node.children.map((child) => (typeof child === 'string' ? child : withPointerEventsNone(child))),
+  };
+}
 
 /** Round derived geometry so snapshots stay stable. Layout transform numbers are not passed through this. */
 export function formatNum(n: number): string {

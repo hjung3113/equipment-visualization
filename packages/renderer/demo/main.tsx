@@ -1,7 +1,7 @@
 import { layoutDocumentSchema, type LayoutDocument } from '@eqv/core';
-import { useLayoutEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { TopView } from '../src/index.js';
+import { TopViewer } from '../src/index.js';
 
 const ORDER = [
   'cluster-single', 'cluster-dual-hub', 'wet-linear', 'track-stacked',
@@ -103,6 +103,7 @@ function App() {
   const [holdingSites, setHoldingSites] = useState(false);
   const [capabilities, setCapabilities] = useState(false);
   const [upper, setUpper] = useState(true);
+  const [mirror, setMirror] = useState('');
 
   useLayoutEffect(() => {
     performance.mark('eqv-render-end');
@@ -113,9 +114,22 @@ function App() {
   }, []);
 
   const selected = templates.find((template) => template.id === templateId) ?? templates[0];
-  if (!selected) return null;
-  const layout = stress > 0 ? stressLayout(stress) : selected;
-  const visibleLevelIds = upper ? undefined : layout.levels.filter((level) => level.id !== 'level-upper').map((level) => level.id);
+  const layout = useMemo(() => {
+    if (stress > 0) return stressLayout(stress);
+    if (!selected) throw new Error('missing template');
+    return selected;
+  }, [selected]);
+  const stageLayers = useMemo(
+    () => ({ interfaces, capabilities, certainty, holdingSites }),
+    [interfaces, capabilities, certainty, holdingSites],
+  );
+  const visibleLevelIds = useMemo(
+    () => (upper ? undefined : layout.levels.filter((level) => level.id !== 'level-upper').map((level) => level.id)),
+    [upper, layout],
+  );
+  useEffect(() => {
+    setMirror('');
+  }, [layout]);
   const stageW = STAGE_W;
   const stageH = Math.max(1, Math.round(stageW * (layout.viewBox.height / layout.viewBox.width)));
 
@@ -123,7 +137,7 @@ function App() {
     <>
       <header>
         {stress > 0 ? <strong>stress {stress} ({layout.components.length} components)</strong> : ORDER.map((id) => (
-          <button key={id} type="button" aria-pressed={id === templateId} onClick={() => setTemplateId(id)}>{id}</button>
+          <button key={id} type="button" aria-pressed={id === templateId} onClick={() => { setTemplateId(id); }}>{id}</button>
         ))}
         <label>labels
           <select value={labels} onChange={(event) => setLabels(event.target.value as 'label' | 'id' | 'none')}>
@@ -139,14 +153,23 @@ function App() {
         <label><input type="checkbox" checked={upper} onChange={(event) => setUpper(event.target.checked)} />level-upper</label>
       </header>
       <div id="stage">
-        <TopView
+        <TopViewer
           layout={layout}
           width={stageW}
           height={stageH}
           labels={labels}
-          layers={{ interfaces, capabilities, certainty, holdingSites }}
+          layers={stageLayers}
           visibleLevelIds={visibleLevelIds}
+          onSelectedChange={(id) => {
+            if (!id) {
+              setMirror('');
+              return;
+            }
+            const item = layout.components.find((component) => component.id === id);
+            setMirror(item ? `${item.id} ${item.label}` : id);
+          }}
         />
+        <output id="eqv-selection" aria-label={mirror}>{mirror}</output>
       </div>
     </>
   );
