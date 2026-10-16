@@ -180,6 +180,13 @@ export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveS
   const savedModel = new Map(resolveModel(baseline.model).map((row) => [row.alias, row.entry]));
   const pendingModel = new Map(resolveModel(files.model).map((row) => [row.alias, row.entry]));
   const base = resolveWith(files[saveScope]);
+  const saved = resolveAliasRules({
+    equipmentId: equipment.equipmentId, maker: equipment.maker, model: equipment.model,
+    ruleFiles: allFiles(input, baseline, baseline[saveScope], saveScope), aliases, layout,
+  });
+  const savedEntries = new Map(saved.aliases.map((row) => [row.alias, row.entry]));
+  const entrySnapshot = (entry: MappingEntry | null) => canonical(entry
+    ? { target: entry.target, certainty: entry.certainty, rule: entry.rule } : null);
   const { drafts, missingTemplate } = autoAssignments(input);
   const draftedBy = new Map(base.aliases.flatMap((row) => drafts.has(row.alias) && row.entry === null && row.overlap.length === 0
     ? [[row.alias, drafts.get(row.alias)!] as const] : []));
@@ -211,10 +218,7 @@ export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveS
     const status: BoardStatus = overlap.length > 1 || issues.length || rowConflicts.length ? 'conflict'
       : !entry ? 'unmapped' : 'ignore' in entry.target ? 'ignored' : entry.certainty === 'verified' ? 'verified' : 'assumed';
     const target = entry?.target ?? null;
-    const level = entry?.rule.scope.level;
-    const unsaved = draft || (entry && (level === 'model' || level === 'equipment') &&
-      canonical(files[level].rules.find(({ id }) => id === entry.rule.ruleId) ?? null) !==
-      canonical(baseline[level].rules.find(({ id }) => id === entry.rule.ruleId) ?? null));
+    const unsaved = draft || entrySnapshot(entry) !== entrySnapshot(savedEntries.get(item.alias) ?? null);
     const savedModelId = savedModel.get(item.alias)?.rule.ruleId;
     const pendingModelId = pendingModel.get(item.alias)?.rule.ruleId;
     const changedModelRule = savedModelId && canonical(baseline.model.rules.find(({ id }) => id === savedModelId)) !==

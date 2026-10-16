@@ -274,6 +274,22 @@ it('moves a baseline to the submitted contents even when pending changed meanwhi
   expect(dirtyScopes(saved)).toEqual(['model']);
 });
 
+it.each([
+  { scope: 'model', alias: 'PM1', componentId: 'pm-a', ruleId: 'pm-pattern', statusText: '● 확정' },
+  { scope: 'equipment', alias: 'PM1', componentId: 'pm-a', ruleId: 'pm-pattern', statusText: '● 확정' },
+  { scope: 'model', alias: 'PM9', componentId: null, ruleId: null, statusText: '○ 미매핑' },
+] as const)('restores the unsaved marker after saving and undoing $scope $alias, then clears it on redo', ({ scope, alias, componentId, ruleId, statusText }) => {
+  const input = boardInput();
+  const changed = edit(input, createBoardState(input), scope, { kind: 'assign', alias, componentId: 'pm-b' });
+  const saved = applySaveOutcome(changed, buildSavePayload(input, changed, scope), { savedScopes: [scope] });
+  const savedRow = (state: BoardState) => resolveBoard(input, state.present, scope, state.baseline).rows.find((r) => r.alias === alias)!;
+  expect(savedRow(saved).statusText).toBe('● 확정');
+  const undone = undo(saved);
+  expect(savedRow(undone)).toMatchObject({ componentId, rule: ruleId ? { ruleId } : null });
+  expect(savedRow(undone).statusText).toBe(`${statusText} (미저장)`);
+  expect(savedRow(redo(undone)).statusText).toBe('● 확정');
+});
+
 it('folds written drafts into the pending file once saved', () => {
   const input = noRules();
   const state = createBoardState(input);
