@@ -4,6 +4,7 @@ import { millisToWallClock, wallClockToMillis, type SiteWallClock } from '../sit
 import { assertReplayInput, seekSceneState, type ReplayInput } from './reduce.js';
 
 export type TimelineRange = { from: SiteWallClock; to: SiteWallClock };
+// `to` is clipped to `range.to`; whether an Occurrence is open or ended there comes from the batch (join on `occurrenceId`).
 type Span = { from: SiteWallClock; to: SiteWallClock };
 export type MaterialSpan = Span & Omit<SceneMaterial, 'lastObservedAt'>;
 export type ActivitySpan = Span & SceneComponent;
