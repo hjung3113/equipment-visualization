@@ -1,25 +1,16 @@
 import { useEffect } from 'react';
 import { LayoutsPage } from './LayoutsPage.js';
+import { FleetPage, OnboardingPage } from './OnboardingPages.js';
 import { Link, hrefFor, navigate, useLocation, useRoute, type Route } from './router.js';
 
 function Page({ route }: { route: Route }) {
   switch (route.name) {
     case 'fleet':
-      return (
-        <>
-          <h1>Fleet</h1>
-          <p>설비 표는 Onboarding(#14)과 함께 제공됩니다.</p>
-        </>
-      );
+      return <FleetPage />;
     case 'layouts':
       return <LayoutsPage file={route.file} />;
     case 'onboarding':
-      return (
-        <>
-          <h1>Onboarding</h1>
-          <p>설비: <code>{route.equipmentId}</code></p>
-        </>
-      );
+      return <OnboardingPage equipmentId={route.equipmentId} />;
     case 'focus':
       return (
         <>

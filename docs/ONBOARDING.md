@@ -1,6 +1,6 @@
 # Onboarding — 로그 관측으로 레이아웃·매핑 만들기 v0.4
 
-**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); UI·편집·Template 승격은 제안 단계다. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
+**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면은 Studio에 구현됨(#14a); 편집·Template 승격은 제안 단계다. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
 Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다.
 
@@ -66,7 +66,7 @@ type InventoryAlias = {
 4. **순위:** `rolesOutOfRange` 오름차순 → 이송 `ratio` 내림차순(null은 마지막) → 설명되지 않는 alias 수 오름차순 → `exactRoleMatches` 내림차순 → Template ID code-unit 오름차순의 사전식 비교다. `exactRoleMatches`는 범위 안이며 관측 수와 `drawn`이 같은 Role 수다. `rank`는 1부터 시작한다.
 5. **금지·정렬:** Component ID나 label이 alias와 같다는 사실을 매핑 근거로 쓰지 않는다. 자연 정렬은 최대 숫자·비숫자 run을 비교하고 숫자끼리는 정확한 `BigInt`, 나머지는 code-unit 순을 쓴다. run 목록이 접두사면 짧은 목록이 먼저며, 마지막 동률은 원문 code-unit 순이다(`PM2 < PM10`, `PM01 < PM1`). 배정 결과도 alias 자연 정렬 순이다.
 
-**근거 문장:** Role을 대문자로 표기한다. 범위 안이고 관측 수가 `drawn`과 같으면 `ROLE 관측/도형 ✓`, 범위 안이지만 다르면 `ROLE 관측 (최소–최대) ✓`, 범위 밖이면 `ROLE 관측 (최소–최대) ✗`다. 이어 `이송 explained/total ✓`(`explained < total`이면 `✗`), 이송이 없으면 `이송 없음`, 마지막은 `설명 안 되는 alias n`이다. 각 항목은 `, `로 잇고 범위에는 en dash(`–`)를 쓴다. synthetic cluster fixture의 `cluster-single` 제안:
+**근거 문장:** Role을 대문자로 표기한다. 범위 안이고 관측 수가 `drawn`과 같으면 `ROLE 관측/도형 ✓`, 범위 안이지만 다르면 `ROLE 관측 (최소–최대) ✓`, 범위 밖이면 `ROLE 관측 (최소–최대) ✗`다. 이어 `이송 explained/total ✓`(`explained < total`이면 `✗`), 이송이 없으면 `이송 없음`, 마지막은 `설명 안 되는 alias n`이다. 각 항목은 `, `로 잇고 범위에는 en dash(`–`)를 쓴다. 문장은 표시용이며 `@eqv/editor`의 `formatProposalEvidence(proposal)`이 `roleFit`·`transfers`·`unexplainedAliases`로 만든다(core의 `evidence` 필드는 deprecated). synthetic cluster fixture의 `cluster-single` 제안:
 
 ```text
 LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2
@@ -161,6 +161,10 @@ type Coverage = {
 ## 7. 파일 배치 (Studio 파일 기반)
 
 ```text
+assets/equipment/<equipmentId>.json                      # 설비 기록: equipmentId, maker, model
+assets/observations/<equipmentId>/
+  occurrence-batch.json                                  # 읽기 전용 관측
+  alias-metadata.json                                    # 선택
 assets/onboarding/
   scopes/global/type-dictionary.json
   scopes/maker/<maker>/{type-dictionary,alias-rules}.json
@@ -171,6 +175,8 @@ assets/onboarding/
 ```
 
 Studio dev 파일 API(#13)는 위 경로만 쓰며, 각 경로는 대응하는 core validator를 통과해야 한다.
+
+설비 기록(`equipmentRecordSchema`, `schemaVersion: "0.4"`, `equipmentId`·`maker`·`model`)은 파일 이름이 `equipmentId`와 같아야 하며, `maker`/`model`이 적용되는 Scope를 정한다. `equipment/`와 `observations/`는 Studio에서 읽기 전용이다(쓰기는 403). Studio는 읽을 때 각 파일을 core validator로 다시 검사하며, 404만 "없음"으로 취급하고 그 외 실패나 잘못된 내용은 해당 설비의 오류로 표시한다.
 
 저장소에는 synthetic 설비만 둔다. 실제 maker/model 값은 플랫폼 배포 계층.
 

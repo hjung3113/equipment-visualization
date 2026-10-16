@@ -45,3 +45,6 @@ export type { Drift } from './onboarding/drift.js';
 export { proposeTemplates } from './onboarding/templates.js';
 export type { TemplateProposal } from './onboarding/templates.js';
 export { buildGenericLayout } from './onboarding/generic-layout.js';
+export { compareNatural } from './onboarding/order.js';
+export { equipmentRecordSchema } from './onboarding/equipment.js';
+export type { EquipmentRecord } from './onboarding/equipment.js';

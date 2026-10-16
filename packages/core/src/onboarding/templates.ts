@@ -14,6 +14,7 @@ export type TemplateProposal = {
   unexplainedAliases: string[];
   exactRoleMatches: number;
   assignments: { alias: string; componentId: string; certainty: 'assumed'; basis: AssignmentBasis }[];
+  /** @deprecated Presentation text; use formatProposalEvidence in @eqv/editor. */
   evidence: string;
 };
 

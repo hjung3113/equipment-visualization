@@ -443,3 +443,7 @@ Background references only:
 - <https://www.asml.com/en/company/stories/2021/twinscan-20-years-innovation>
 - <https://www.semes.com/en/product/process>
 - <https://www.tel.com/product/lithius.html>
+
+## assets/equipment, assets/observations, assets/onboarding
+
+Synthetic copies of the `fixtures/cluster-single/` fixture (#14), used as read-only Studio seed data for the equipment `eq-synth-01`: `observations/eq-synth-01/occurrence-batch.json` and `alias-metadata.json`, and the `onboarding/{scopes,mappings,bindings}` tree are byte copies; `equipment/eq-synth-01.json` is the equipment record. They contain no OEM, customer or measured data.
