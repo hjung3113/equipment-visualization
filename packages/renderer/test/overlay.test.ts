@@ -136,37 +136,6 @@ function overlay(scene: Scene, state: Partial<OverlayState> & Pick<OverlayState,
   }, 1 / scene.pxPerUnit);
 }
 
-function selectionTitles(layout: LayoutDocument, scene: Scene, selectedId: string): string[] {
-  const labels = new Map(layout.components.map((item) => [item.id, item.label]));
-  const asHandler = layout.transferCapabilities.some((edge) => edge.handlerComponentId === selectedId);
-  const seen = new Set<string>();
-  const out: string[] = [];
-  const add = (handlerId: string, targetId: string) => {
-    const key = `${handlerId}\0${targetId}`;
-    if (handlerId === targetId || seen.has(key)) return;
-    seen.add(key);
-    const handler = scene.components.get(handlerId);
-    const target = scene.components.get(targetId);
-    if (!handler || !target || handler.hidden || target.hidden) return;
-    out.push(`${labels.get(handlerId)} → ${labels.get(targetId)} · ${CAPABILITY}`);
-  };
-  if (asHandler) {
-    for (const edge of layout.transferCapabilities) {
-      if (edge.handlerComponentId !== selectedId) continue;
-      add(edge.handlerComponentId, edge.a.componentId);
-      add(edge.handlerComponentId, edge.b.componentId);
-    }
-  } else {
-    for (const edge of layout.transferCapabilities) {
-      if (edge.a.componentId !== selectedId && edge.b.componentId !== selectedId) continue;
-      const partner = edge.a.componentId === selectedId ? edge.b.componentId : edge.a.componentId;
-      add(edge.handlerComponentId, selectedId);
-      add(edge.handlerComponentId, partner);
-    }
-  }
-  return out;
-}
-
 it.each(TEMPLATE_IDS)('%s draws the 12a capability pairs only with no visible selection', (id) => {
   const layout = templates[id];
   const width = layout.viewBox.width;
@@ -182,29 +151,34 @@ it.each(TEMPLATE_IDS)('%s draws the 12a capability pairs only with no visible se
   expect(on.interaction.children).toHaveLength(0);
 });
 
+// Literal endpoint sets read from the two template JSON files.
 it.each([
-  ['cluster-single', 'robot-2'],
-  ['cluster-dual-hub', 'robot-3'],
-] as const)('%s selection %s draws handler segments, not a flattened pair set', (id, handlerId) => {
+  ['cluster-single', 'robot-2', [
+    'Vac Robot → PM1', 'Vac Robot → PM2', 'Vac Robot → PM3',
+    'Vac Robot → PM4', 'Vac Robot → LL-A', 'Vac Robot → LL-B',
+  ]],
+  ['cluster-single', 'pm-a', [
+    'Vac Robot → PM1', 'Vac Robot → PM2', 'Vac Robot → PM3',
+    'Vac Robot → PM4', 'Vac Robot → LL-A', 'Vac Robot → LL-B',
+  ]],
+  ['cluster-dual-hub', 'robot-3', [
+    'Single Arm → Buffer', 'Single Arm → PM3', 'Single Arm → PM4',
+    'Single Arm → PM5', 'Single Arm → PM6',
+  ]],
+  ['cluster-dual-hub', 'buffer-1', [
+    'Dual Arm → LL-1', 'Dual Arm → LL-2', 'Dual Arm → Buffer',
+    'Dual Arm → PM1', 'Dual Arm → PM2',
+    'Single Arm → Buffer', 'Single Arm → PM3', 'Single Arm → PM4',
+    'Single Arm → PM5', 'Single Arm → PM6',
+  ]],
+] as const)('%s selection %s draws its literal handler endpoints', (id, selectedId, endpoints) => {
   const layout = templates[id];
   const scene = buildScene(layout, {
     width: layout.viewBox.width, height: layout.viewBox.height, pxPerUnit: 1,
   });
-  const handlers = new Set(layout.transferCapabilities.map((edge) => edge.handlerComponentId));
-  const endpoint = layout.transferCapabilities
-    .filter((edge) => edge.handlerComponentId === handlerId)
-    .flatMap((edge) => [edge.a.componentId, edge.b.componentId])
-    .find((componentId) => !handlers.has(componentId));
-  if (!endpoint) throw new Error(`no endpoint for ${handlerId}`);
-  const endpointLabel = layout.components.find((item) => item.id === endpoint)?.label;
   for (const showAllCapabilities of [true, false]) {
-    const asHandler = titles(overlay(scene, { selectedId: handlerId, showAllCapabilities }).capabilities);
-    const asEndpoint = titles(overlay(scene, { selectedId: endpoint, showAllCapabilities }).capabilities);
-    expect(asHandler.sort()).toEqual(selectionTitles(layout, scene, handlerId).sort());
-    expect(asEndpoint.sort()).toEqual(selectionTitles(layout, scene, endpoint).sort());
-    expect(asHandler.length).toBeGreaterThan(0);
-    expect(asEndpoint.length).toBeGreaterThan(1);
-    expect(asEndpoint.some((title) => title.startsWith(`${endpointLabel} →`))).toBe(false);
+    expect(titles(overlay(scene, { selectedId, showAllCapabilities }).capabilities).sort())
+      .toEqual(endpoints.map((endpoint) => `${endpoint} · ${CAPABILITY}`).sort());
   }
 });
 
@@ -374,6 +348,7 @@ it.each(TEMPLATE_IDS)('%s is byte-identical when interactive is omitted or false
   const markup = (interactive?: boolean) => renderToStaticMarkup(renderNode(buildScene(layout, {
     width, height, pxPerUnit: 1, interactive,
   }).node));
+  expect(markup(false)).not.toContain('style=');
   expect(markup(false)).toBe(markup(undefined));
   expect(markup(undefined)).toBe(renderToStaticMarkup(createElement(TopView, { layout, width, height })));
 });
@@ -405,6 +380,7 @@ it('makes visible components buttons and keeps overlay layers from taking the hi
     const node = found.get(id);
     const label = scene.components.get(id)?.label;
     expect(node?.attrs['data-hidden']).toBeUndefined();
+    expect(node?.attrs.style).toBe('outline:none');
     expect(node?.attrs.tabindex).toBe('0');
     expect(node?.attrs.role).toBe('button');
     expect(node?.attrs['aria-pressed']).toBe('false');
@@ -412,10 +388,6 @@ it('makes visible components buttons and keeps overlay layers from taking the hi
   }
   for (const name of ['interfaces', 'capabilities', 'labels', 'badges', 'chips']) {
     const node = layer(scene.node, name);
-    const visit = (current: SvgNode) => {
-      expect(current.attrs['pointer-events']).toBe('none');
-      for (const child of current.children) if (typeof child !== 'string') visit(child);
-    };
-    visit(node);
+    expect(node.attrs['pointer-events']).toBe('none');
   }
 });

@@ -127,6 +127,7 @@ function pointer(target: Element, type: 'pointerdown' | 'pointermove' | 'pointer
   });
 }
 
+// Dispatches to the original target; does not model browser pointer-capture retargeting.
 function clickAt(target: Element, x = 0, y = 0) {
   pointer(target, 'pointerdown', x, y);
   pointer(target, 'pointerup', x, y);
@@ -189,6 +190,40 @@ it('toggles a component once per click and clears on a second click or the board
   expect(mod.getAttribute('aria-pressed')).toBe('false');
 });
 
+it('selects the pointerdown component when pointerup and click are retargeted to the svg', () => {
+  const { svg } = mount({ layout });
+  const mod = componentEl(svg, 'mod');
+  pointer(mod.querySelector('rect') ?? mod, 'pointerdown', 20, 20);
+  pointer(svg, 'pointerup', 20, 20);
+  fireEvent.click(svg);
+  expect(mod.getAttribute('aria-pressed')).toBe('true');
+
+  pointer(boardOf(svg), 'pointerdown', 20, 20);
+  pointer(svg, 'pointerup', 20, 20);
+  fireEvent.click(mod);
+  expect(mod.getAttribute('aria-pressed')).toBe('false');
+
+  fireEvent.click(mod);
+  expect(mod.getAttribute('aria-pressed')).toBe('true');
+});
+
+it.each(['pointerup', 'pointercancel'] as const)('captures only after the drag threshold and releases on %s', (end) => {
+  const { svg } = mount({ layout });
+  let captured = false;
+  svg.setPointerCapture = () => { captured = true; };
+  svg.hasPointerCapture = () => captured;
+  svg.releasePointerCapture = () => { captured = false; };
+
+  pointer(componentEl(svg, 'mod'), 'pointerdown', 20, 20);
+  expect(captured).toBe(false);
+  pointer(svg, 'pointermove', 23, 20);
+  expect(captured).toBe(false);
+  pointer(svg, 'pointermove', 24, 20);
+  expect(captured).toBe(true);
+  pointer(svg, end, 24, 20);
+  expect(captured).toBe(false);
+});
+
 it('toggles the focused component with Enter and Space and clears it with Escape', () => {
   const onSelectedChange = vi.fn();
   const { svg } = mount({ layout, onSelectedChange });
@@ -228,6 +263,17 @@ it('pans after 4px and swallows the click, and pointercancel does not click', ()
   expect(componentEl(svg, 'other').getAttribute('aria-pressed')).toBe('false');
   expect(svg.getAttribute('viewBox')).not.toBe(zoomed);
   expect(onSelectedChange).toHaveBeenCalledTimes(1);
+
+  const beforeReturn = svg.getAttribute('viewBox');
+  pointer(svg, 'pointerdown', 20, 20);
+  pointer(svg, 'pointermove', 28, 20);
+  expect(svg.getAttribute('viewBox')).not.toBe(beforeReturn);
+  pointer(svg, 'pointermove', 20, 20);
+  expect(svg.getAttribute('viewBox')).toBe(beforeReturn);
+  pointer(svg, 'pointerup', 20, 20);
+  fireEvent.click(componentEl(svg, 'other'));
+  expect(componentEl(svg, 'mod').getAttribute('aria-pressed')).toBe('true');
+  expect(componentEl(svg, 'other').getAttribute('aria-pressed')).toBe('false');
 
   pointer(componentEl(svg, 'other'), 'pointerdown', 0, 0);
   pointer(componentEl(svg, 'other'), 'pointermove', 8, 0);
@@ -279,11 +325,13 @@ it('keeps aria-pressed through a settled relayout and a level that is hidden and
   expect(onSelectedChange).not.toHaveBeenCalled();
 });
 
-it('draws focus rings for keyboard focus and not for pointer focus', () => {
+it('draws focus rings when keyboard input follows pointer focus', () => {
   const { svg } = mount({ layout });
   const mod = componentEl(svg, 'mod');
-  key(mod, 'Tab');
+  pointer(mod, 'pointerdown', 0, 0);
   fireEvent.focusIn(mod);
+  expect(svg.querySelector('[data-layer="interaction"] [stroke*="--eqv-board"]')).toBeNull();
+  key(mod, 'Tab');
   const shapes = Array.from(svg.querySelectorAll('[data-layer="interaction"] rect'));
   expect(shapes).toHaveLength(2);
   expect(shapes.some((shape) => shape.getAttribute('stroke')?.includes('--eqv-board'))).toBe(true);
@@ -302,13 +350,30 @@ it('still draws focus rings when keyboard focus follows a pointerdown that did n
   expect(marks).not.toContain(matrixAttr(scene.components.get('other')!.matrix));
 });
 
-it('draws focus rings when a key is pressed on a component that pointer focus already placed', () => {
+it('restores focus rings on handled keyboard input after a layout replacement retains native focus', () => {
+  const viewed = mount({ layout });
+  const mod = componentEl(viewed.svg, 'mod') as SVGElement;
+  key(viewed.svg, 'Tab');
+  act(() => mod.focus());
+  expect(viewed.svg.querySelector('[data-layer="interaction"] [stroke*="--eqv-board"]')).not.toBeNull();
+
+  viewed.update({ layout: { ...layout, name: 'Replacement' } });
+  expect(componentEl(viewed.svg, 'mod')).toBe(mod);
+  expect(document.activeElement).toBe(mod);
+  expect(viewed.svg.querySelector('[data-layer="interaction"] [stroke*="--eqv-board"]')).toBeNull();
+  key(mod, 'Enter');
+  expect(viewed.svg.querySelector('[data-layer="interaction"] [stroke*="--eqv-board"]')).not.toBeNull();
+  expect(document.activeElement).toBe(mod);
+});
+
+it('removes the native outline from a focused interactive group while keeping the svg focus cue', () => {
   const { svg } = mount({ layout });
-  const mod = componentEl(svg, 'mod');
-  fireEvent.focusIn(mod);
-  expect(svg.querySelector('[data-layer="interaction"] [stroke*="--eqv-board"]')).toBeNull();
-  key(mod, 'Tab');
-  expect(svg.querySelector('[data-layer="interaction"] [stroke*="--eqv-board"]')).not.toBeNull();
+  const mod = componentEl(svg, 'mod') as SVGElement;
+  act(() => mod.focus());
+  expect(document.activeElement).toBe(mod);
+  expect(mod.style.outline).toBe('none');
+  expect(getComputedStyle(mod).outlineStyle).toBe('none');
+  expect(svg.style.outline).toBe('');
 });
 
 it('zooms from the wheel toward the cursor, lets a limit through, and drops the listener on unmount', () => {

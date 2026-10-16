@@ -564,6 +564,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       return el('g', attrs, kids);
     }
     if (interactive) {
+      attrs.style = 'outline:none';
       attrs.tabindex = '0';
       attrs.role = 'button';
       attrs['aria-pressed'] = 'false';

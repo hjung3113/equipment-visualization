@@ -40,7 +40,6 @@ function ring(comp: SceneComponent, dPx: number, stroke: string, strokePx: numbe
     stroke,
     'stroke-width': formatNum(strokePx),
     'vector-effect': 'non-scaling-stroke',
-    'pointer-events': 'none',
   };
   if (isArm(comp.asset)) {
     return el('circle', { ...attrs, cx: '0', cy: '0', r: formatNum(robotR(comp.w, comp.h) + d) });
@@ -65,7 +64,7 @@ function ring(comp: SceneComponent, dPx: number, stroke: string, strokePx: numbe
 }
 
 function mark(comp: SceneComponent, shapes: SvgNode[]): SvgNode {
-  return el('g', { transform: matrixAttr(comp.matrix), 'pointer-events': 'none' }, shapes);
+  return el('g', { transform: matrixAttr(comp.matrix) }, shapes);
 }
 
 function capabilityNodes(scene: Scene, selectedId: string | null, showAll: boolean, k: number): SvgNode[] {

@@ -20,6 +20,8 @@ export interface TopViewerProps extends TopViewProps {
 
 interface Drag {
   pointerId: number;
+  componentId: string | null;
+  captured: boolean;
   x: number;
   y: number;
   cx: number;
@@ -166,6 +168,7 @@ export function TopViewer({
   const cameraRef = useRef(viewCamera);
   const viewRef = useRef<ViewState>({ width, height, frame: layout.viewBox });
   const dragRef = useRef<Drag | null>(null);
+  const clickTargetRef = useRef<Pick<Drag, 'componentId'> | null>(null);
   const suppressClick = useRef(false);
   const pressedRef = useRef<string | null>(null);
   const relayoutTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -208,6 +211,7 @@ export function TopViewer({
     if (layoutSeen.current !== layout) {
       layoutSeen.current = layout;
       dragRef.current = null;
+      clickTargetRef.current = null;
     }
   });
 
@@ -297,17 +301,17 @@ export function TopViewer({
   const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
     const key = event.key;
+    if (!['Tab', 'Escape', 'Enter', ' ', '+', '=', '-', '0', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(key)) return;
+    setFocusedId(componentIdFrom(event.target, svgRef.current));
+    setModality('keyboard');
     if (key === 'Tab') {
-      setModality('keyboard');
       return;
     }
     if (key === 'Escape') {
-      setModality('keyboard');
       commit(null);
       return;
     }
     if (key === 'Enter' || key === ' ') {
-      setModality('keyboard');
       const id = componentIdFrom(event.target, svgRef.current);
       if (!id) return;
       if (key === ' ') event.preventDefault();
@@ -315,7 +319,6 @@ export function TopViewer({
       return;
     }
     if (key === '+' || key === '=' || key === '-' || key === '0' || key.startsWith('Arrow')) {
-      setModality('keyboard');
       event.preventDefault();
       if (key === '+' || key === '=') zoomBy(ZOOM_STEP);
       else if (key === '-') zoomBy(1 / ZOOM_STEP);
@@ -330,12 +333,10 @@ export function TopViewer({
   const onPointerDown = (event: PointerEvent<SVGSVGElement>) => {
     setModality('pointer');
     suppressClick.current = false;
-    const svg = svgRef.current;
-    if (svg && typeof svg.setPointerCapture === 'function') {
-      try { svg.setPointerCapture(event.pointerId); } catch { /* setPointerCapture is missing or throws in jsdom */ }
-    }
     dragRef.current = {
       pointerId: event.pointerId,
+      componentId: componentIdFrom(event.target, svgRef.current),
+      captured: false,
       x: event.clientX,
       y: event.clientY,
       cx: viewCamera.cx,
@@ -344,14 +345,22 @@ export function TopViewer({
       px: pxPerUnit(viewCamera, { width, height }, layout.viewBox),
       moved: false,
     };
+    clickTargetRef.current = dragRef.current;
   };
 
   const onPointerMove = (event: PointerEvent<SVGSVGElement>) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
-    if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return;
     if (!drag.moved) {
+      if (Math.hypot(event.clientX - drag.x, event.clientY - drag.y) < 4) return;
       drag.moved = true;
+      const svg = svgRef.current;
+      if (svg && typeof svg.setPointerCapture === 'function') {
+        try {
+          svg.setPointerCapture(event.pointerId);
+          drag.captured = true;
+        } catch { /* setPointerCapture is missing or throws in jsdom */ }
+      }
       setHoverId(null);
     }
     const next = clampCenter({
@@ -368,7 +377,7 @@ export function TopViewer({
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
     const svg = svgRef.current;
-    if (svg && typeof svg.releasePointerCapture === 'function') {
+    if (drag.captured && svg && typeof svg.releasePointerCapture === 'function') {
       try {
         if (typeof svg.hasPointerCapture !== 'function' || svg.hasPointerCapture(event.pointerId)) {
           svg.releasePointerCapture(event.pointerId);
@@ -379,11 +388,13 @@ export function TopViewer({
   };
 
   const onClick = (event: MouseEvent<SVGSVGElement>) => {
+    const target = clickTargetRef.current;
+    clickTargetRef.current = null;
     if (suppressClick.current) {
       suppressClick.current = false;
       return;
     }
-    const id = componentIdFrom(event.target, svgRef.current);
+    const id = target ? target.componentId : componentIdFrom(event.target, svgRef.current);
     commit(id == null || id === selection ? null : id);
   };
 

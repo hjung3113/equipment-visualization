@@ -27,7 +27,7 @@ Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then
 
 `TopViewer` takes every `TopView` prop, plus `selectedId` and `onSelectedChange`. Omit `selectedId` and the selection stays inside the viewer, starting empty. Pass `selectedId`, including `null`, to control it. `onSelectedChange` runs when a user changes the selection, in either mode. A new `layout` object resets the camera, the internal selection, hover and keyboard focus. `width` and `height` keep the zoom and the centre, then clamp the centre into the layout viewBox. `labels`, `layers` and `visibleLevelIds` keep the camera and the selection and rebuild at the current `pxPerUnit`. A `selectedId` that names nothing, or a hidden component, draws no highlight and is not cleared.
 
-Zoom is a multiple of the meet-fit scale, from 1 to 8. While it is changing, the last scene stays put and only the `viewBox` moves, so labels and fixed-px marks are briefly the wrong size. 150 ms after the last zoom change the scene rebuilds at the new `pxPerUnit`. Panning does not rebuild.
+Zoom is a multiple of the meet-fit scale, from 1 to 8. While it is changing, the last scene stays put and only the `viewBox` moves, so labels and fixed-px marks are briefly the wrong size. 150 ms after the last zoom change the scene rebuilds at the new `pxPerUnit`. Selection, hover and pan avoid a scene build as long as the host keeps `layout`, `layers` and `visibleLevelIds` referentially stable (memoise them); a fresh object or array rebuilds the scene.
 
 | Input | Effect |
 | --- | --- |
@@ -71,7 +71,7 @@ First render of the demo's `?stress=N` layout (tiled `cluster-dual-hub`), measur
 | 1000 | 1003 | 7204 | 122 | 112–138 |
 | 2000 | 2006 | 14166 | 342 | 331–349 |
 
-Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because the static scene is built once per picture. Selection, hover and pan must not build another, and a wheel zoom rebuilds once after it settles. The conductor fills the rows below from a browser profile of `?stress=2000`.
+Doubling the Components almost triples the time, so part of `buildScene` grows faster than linearly in the Component count. The label and annotation collision checks are the likely cause. It hasn't been tuned, because the static scene is built once per picture. With referentially stable `layout`, `layers` and `visibleLevelIds` (memoise them), selection, hover and pan avoid another scene build; a fresh object or array rebuilds it. A wheel zoom rebuilds once after it settles. The conductor fills the rows below from a browser profile of `?stress=2000`.
 
 | Action | Median (ms) | Range (ms) |
 | --- | --- | --- |
