@@ -47,7 +47,12 @@ const BUTTON_STYLE = {
   borderWidth: 1,
   font: 'inherit',
   padding: '4px 8px',
+  cursor: 'pointer',
 } as const;
+
+function buttonStyle(disabled: boolean) {
+  return disabled ? { ...BUTTON_STYLE, opacity: 0.4, cursor: 'default' } : BUTTON_STYLE;
+}
 
 function viewBoxAttr(camera: Camera, view: Size, frame: Frame): string {
   const box = viewBoxOf(camera, view, frame);
@@ -430,6 +435,8 @@ export function TopViewer({
   };
 
   const home = defaultCamera(layout.viewBox);
+  const zoomInDisabled = viewCamera.zoom >= ZOOM_MAX;
+  const zoomOutDisabled = viewCamera.zoom <= ZOOM_MIN;
   const fitDisabled = viewCamera.zoom === ZOOM_MIN && viewCamera.cx === home.cx && viewCamera.cy === home.cy;
 
   return (
@@ -464,9 +471,9 @@ export function TopViewer({
         {parts.chips}
       </svg>
       <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
-        <button type="button" aria-label="확대" disabled={viewCamera.zoom >= ZOOM_MAX} style={BUTTON_STYLE} onClick={() => zoomBy(ZOOM_STEP)}>확대</button>
-        <button type="button" aria-label="축소" disabled={viewCamera.zoom <= ZOOM_MIN} style={BUTTON_STYLE} onClick={() => zoomBy(1 / ZOOM_STEP)}>축소</button>
-        <button type="button" aria-label="맞춤" disabled={fitDisabled} style={BUTTON_STYLE} onClick={fit}>맞춤</button>
+        <button type="button" aria-label="확대" disabled={zoomInDisabled} style={buttonStyle(zoomInDisabled)} onClick={() => zoomBy(ZOOM_STEP)}>확대</button>
+        <button type="button" aria-label="축소" disabled={zoomOutDisabled} style={buttonStyle(zoomOutDisabled)} onClick={() => zoomBy(1 / ZOOM_STEP)}>축소</button>
+        <button type="button" aria-label="맞춤" disabled={fitDisabled} style={buttonStyle(fitDisabled)} onClick={fit}>맞춤</button>
       </div>
     </div>
   );

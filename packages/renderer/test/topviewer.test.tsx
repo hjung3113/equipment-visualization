@@ -422,6 +422,9 @@ it('zooms and fits from the toolbar the way the camera does', () => {
   expect(zoomIn.hasAttribute('disabled')).toBe(false);
   expect(zoomOut.hasAttribute('disabled')).toBe(true);
   expect(fit.hasAttribute('disabled')).toBe(true);
+  expect(zoomOut.style.opacity).toBe('0.4');
+  expect(fit.style.opacity).toBe('0.4');
+  expect(Number(zoomIn.style.opacity || 1)).toBeGreaterThanOrEqual(1);
 
   let camera = defaultCamera(frame);
   fireEvent.click(zoomIn);
@@ -429,14 +432,18 @@ it('zooms and fits from the toolbar the way the camera does', () => {
   expect(svg.getAttribute('viewBox')).toBe(viewBoxAttr(camera, view, frame));
   expect(zoomOut.hasAttribute('disabled')).toBe(false);
   expect(fit.hasAttribute('disabled')).toBe(false);
+  expect(Number(zoomOut.style.opacity || 1)).toBeGreaterThanOrEqual(1);
+  expect(Number(fit.style.opacity || 1)).toBeGreaterThanOrEqual(1);
 
   fireEvent.click(zoomOut);
   camera = zoomAtPoint(camera, camera.zoom / 1.25, { x: camera.cx, y: camera.cy }, frame);
   expect(svg.getAttribute('viewBox')).toBe(viewBoxAttr(camera, view, frame));
   expect(fit.hasAttribute('disabled')).toBe(true);
+  expect(fit.style.opacity).toBe('0.4');
 
   for (let i = 0; i < 12 && !zoomIn.hasAttribute('disabled'); i += 1) fireEvent.click(zoomIn);
   expect(zoomIn.hasAttribute('disabled')).toBe(true);
+  expect(zoomIn.style.opacity).toBe('0.4');
   const capped = svg.getAttribute('viewBox');
   fireEvent.click(zoomIn);
   expect(svg.getAttribute('viewBox')).toBe(capped);
