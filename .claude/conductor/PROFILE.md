@@ -70,13 +70,73 @@ bound to `<label>.localhost`, and a second one from the wave baseline worktree (
 - Flags go into every reviewer task: `boundary` (check the package boundary first), `replay`, `schema` (and
   `schema_without_adr`), `instructions` (`.claude/**`, `skills/**`, `AGENTS.md`, `CLAUDE.md`; global step 7a).
 - Rules: `review-final` → `templates/review-rules.md`, copied to `.review/00-REVIEW-RULES.md`; `review-ux` →
-  `.claude/agents/review-ux.md`; `review-quality` → `.claude/agents/review-quality.md`.
+  global `~/.agents/agents/review-ux.md` with § Review lens: UX; `review-quality` → global
+  `~/.agents/agents/review-quality.md` with § Review lens: quality.
 - Perf: no measurement tool and no `review-perf` rules yet; put any performance angle in the code reviewer's task.
 - Conflict order starts with AGENTS.md invariants (package boundary, evidence fidelity, geometry ≠ connectivity,
   unknown stays unknown), then ADRs and recorded owner decisions.
 - Value-gate critical defects here: wrong state shown, interpolation labelled `observed`, a boundary leak.
 - Same-slice overlap is wider than the global rule: when an earlier PR in the slice touched the same **package**,
   schema or doc section, the code reviewer's task names that PR and asks for the combined behaviour.
+
+## Review lens: UX
+
+Read first by the global `review-ux` persona. Report in English.
+
+- **What runs:** the Studio — the semantic Top View viewer, the layout editor and log replay.
+- **Previews:** `branch` and `main`, each on its own host (`http://<label>.localhost:<port>`), both serving synthetic
+  fixtures. There is no login and no backend; no persona or role switch.
+- **Viewport:** about 1440 wide; check one narrow width only when the task touches layout.
+- **Authority:**
+  - root `AGENTS.md` (evidence labels, geometry vs connectivity, unknowns) and `README.md` boundaries;
+  - `docs/VIEWS.md` → screen modes (Focus: Top View · Gantt · Occurrence list sharing one cursor; Aggregate;
+    Journey), `docs/ONBOARDING.md` → Mapping Board flow and keyboard model, and `docs/DELIVERY-PLAN.md` acceptance
+    tests;
+  - `docs/REPLAY-CONTRACT.md` for what replay may and may not show; `docs/DELIVERY-PLAN.md` Fidelity Tiers (F0–F3);
+  - visual style: semi-flat technical schematic, restrained outlines and fills, no fake 3D; theme tokens, not raw
+    colours (platform tokens are injected only by the adapter);
+  - generic lenses only where the project is silent: `.claude/skills/impeccable/reference/critique.md` (heuristics)
+    and `.claude/skills/impeccable/reference/audit.md` (accessibility).
+- **Project checks:**
+  - **Evidence honesty (blocker class):** every replayed state shows its fidelity (`observed`, `derived`,
+    `illustrative`, `unknown`); illustrative motion is visibly distinct and off by default; nothing animates a
+    wafer, robot or path the fixture's events do not support; unmapped aliases appear in an unknown list, not on the
+    diagram.
+  - **Uncertainty:** unknown kinematics, dimensions (`not to scale`) and hidden parts are shown as unknown, not drawn
+    as fact.
+  - **Selection and sync:** selecting a component, port, level or holding site updates the detail slot; timeline and
+    event grid stay in sync on seek, play and click; multi-level components are individually selectable.
+  - **States:** empty layout, no events, unmapped events, very long names, many components or events.
+  - **Keyboard:** arrow-key or zoom controls where the brief defines them.
+  - **Editor (when touched):** undo/redo, snap, move/rotate keep stable IDs and ports; publish shows a change
+    preview.
+  - **Evidence:** SVG DOMs are large — read only the values you need with `page.evaluate(...)`.
+- **Severity examples:** `blocker` includes the wrong component or state shown, or inferred motion presented as
+  observed.
+
+## Review lens: quality
+
+Read first by the global `review-quality` persona. Report in English.
+
+- **Range:** the slice start commit `..origin/develop` (the tip the release PR will ship), in a disposable worktree
+  detached at `origin/develop`.
+- **Authority:** root `AGENTS.md` (Architecture constraints, Change quality gates, Integration rules); `GLOSSARY.md`,
+  `docs/DESIGN-v0.4.md` (domain model), `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`, ADRs under `docs/adr/`,
+  and nested `AGENTS.md` files on touched paths. A section marked **Proposed** is design, not a contract the code
+  must already meet; flag code that contradicts it, not code that has not built it yet.
+- **Boundary leaks:** `@ap/*`, analytics-platform or parser imports outside `packages/platform-adapter`; platform
+  concerns (auth, scope, menus, permissions, routing) inside core, renderer, editor or replay; renderer or editor
+  owning domain rules that belong in `packages/core`; replay depending on renderer or editor, or core depending on
+  any of them.
+- **Invariants:** meaning read back out of SVG geometry instead of structured data; connectivity, ports or
+  trajectories inferred from adjacency; arm and blade counts coupled, or unknown kinematics, units or stacking
+  filled with defaults; fidelity labels missing, or interpolation that can surface as `observed`; non-deterministic
+  reducer code (clock, randomness, I/O, iteration order of unordered maps).
+- **Test liability, project cases:** brittle snapshots of whole SVGs where a semantic assertion would do; fixtures
+  that are not synthetic or that encode one OEM's layout.
+- **Doc drift, project cases:** a design doc, contract or README package status.
+- **release-blocker:** a domain-invariant or package-boundary violation that would ship wrong evidence, wrong state
+  or a platform dependency.
 
 ## Fold scope
 
