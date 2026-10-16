@@ -3,7 +3,8 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vitest';
 import {
-  layoutDocumentSchema, type Component, type LayoutDocument, type PhysicalInterfaceEdge, type Port,
+  buildGenericLayout, layoutDocumentSchema, observedInventorySchema, typeDictionaryFileSchema,
+  type Component, type LayoutDocument, type PhysicalInterfaceEdge, type Port,
 } from '@eqv/core';
 import { buildScene, TopView, type SceneOptions, type SvgNode } from '../src/index.js';
 import { apply, bboxOf, mul, rectsOverlap, rotation, scaling, translation, type Box, type Mat } from '../src/geom.js';
@@ -28,6 +29,21 @@ function load(id: string): LayoutDocument {
   return layoutDocumentSchema.parse(JSON.parse(readFileSync(new URL(`assets/templates/${id}.template.json`, root), 'utf8')));
 }
 
+function loadClusterLayout(): LayoutDocument {
+  return layoutDocumentSchema.parse(JSON.parse(readFileSync(new URL('fixtures/cluster-single/layout.json', root), 'utf8')));
+}
+
+function firstRect(node: SvgNode): SvgNode | undefined {
+  if (node.tag === 'rect') return node;
+  for (const child of node.children) {
+    if (typeof child !== 'string') {
+      const found = firstRect(child);
+      if (found) return found;
+    }
+  }
+  return undefined;
+}
+
 const templates = Object.fromEntries(TEMPLATE_IDS.map((id) => [id, load(id)])) as Record<(typeof TEMPLATE_IDS)[number], LayoutDocument>;
 
 const TOKENS = new Set([...readFileSync(new URL('assets/primitives/README.md', root), 'utf8')
@@ -46,6 +62,56 @@ function render(layout: LayoutDocument, options: Partial<SceneOptions> = {}) {
   }));
   return { scene, markup, pxPerUnit };
 }
+
+it('renders unknown cluster assetRefs as role-classed dashed neutral boxes', () => {
+  const layout = loadClusterLayout();
+  const { scene } = render(layout);
+  const groups = componentsOf(scene.node);
+
+  expect(groups.size).toBe(layout.components.length);
+  for (const component of layout.components) {
+    const group = groups.get(component.id)?.node;
+    expect(group?.attrs['data-asset-unknown']).toBe('true');
+    expect(firstRect(group!)?.attrs['stroke-dasharray']).toBeDefined();
+    const title = group?.children.find((child) => typeof child !== 'string' && child.tag === 'title');
+    const titleText = title && typeof title !== 'string' ? title.children.join('') : '';
+    expect(titleText.endsWith(` · 알 수 없는 도형 (${component.assetRef})`)).toBe(true);
+    expect(hasGlyph(group!)).toBe(false);
+  }
+  expect([...scene.components.values()].every(({ w, h }) => w === 8 && h === 8)).toBe(true);
+  expect(scene.components.get('pm-a')?.cls).toBe('process');
+  expect(scene.components.get('ll-a')?.cls).toBe('holding');
+  expect(scene.components.get('efem-robot')?.poly).toHaveLength(4);
+});
+
+it('renders Generic Layout generic-box assets without unknown markers', () => {
+  const inventory = observedInventorySchema.parse(JSON.parse(readFileSync(new URL('fixtures/cluster-single/expected-inventory.json', root), 'utf8')));
+  const dictionary = typeDictionaryFileSchema.parse(JSON.parse(readFileSync(
+    new URL('fixtures/cluster-single/onboarding/scopes/model/synth-maker/synth-model/type-dictionary.json', root), 'utf8',
+  )));
+  const { layout } = buildGenericLayout({ inventory, dictionaries: [dictionary] });
+  const { scene } = render(layout);
+  const groups = componentsOf(scene.node);
+
+  expect(groups.size).toBe(layout.components.length);
+  for (const component of layout.components) {
+    expect(groups.get(component.id)?.node.attrs['data-asset-unknown']).toBeUndefined();
+    expect(scene.components.get(component.id)).toMatchObject({ w: 8, h: 8 });
+  }
+});
+
+it.each([
+  { assetRef: 'synthetic-unlisted', unknown: true },
+  { assetRef: 'generic-box', unknown: false },
+])('uses the declared footprint for $assetRef', ({ assetRef, unknown }) => {
+  const layout = fixture([component({ id: 'box', assetRef, label: 'Box', w: 14, h: 10 })]);
+  const { scene } = render(layout);
+  const group = componentsOf(scene.node).get('box')?.node;
+
+  expect(scene.components.get('box')).toMatchObject({ w: 14, h: 10 });
+  expect(firstRect(group!)).toMatchObject({ attrs: { x: '-7', y: '-5', width: '14', height: '10' } });
+  expect(group?.attrs['data-asset-unknown']).toBe(unknown ? 'true' : undefined);
+});
 
 function componentsOf(node: SvgNode): Map<string, { node: SvgNode; parentId: string | null }> {
   const out = new Map<string, { node: SvgNode; parentId: string | null }>();
