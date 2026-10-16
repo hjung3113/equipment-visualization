@@ -10,6 +10,7 @@ import { buildScene, TopView, type SceneOptions, type SvgNode } from '../src/ind
 import { apply, bboxOf, mul, rectsOverlap, rotation, scaling, translation, type Box, type Mat } from '../src/geom.js';
 import { estimateTextWidth } from '../src/text.js';
 import { primitives } from '../src/primitives.generated.js';
+import { buildOverlay } from '../src/overlay.js';
 
 const root = new URL('../../../', import.meta.url);
 const TEMPLATE_IDS = [
@@ -97,6 +98,53 @@ it('renders Generic Layout generic-box assets without unknown markers', () => {
   for (const component of layout.components) {
     expect(groups.get(component.id)?.node.attrs['data-asset-unknown']).toBeUndefined();
     expect(scene.components.get(component.id)).toMatchObject({ w: 8, h: 8 });
+  }
+});
+
+it.each([
+  { role: 'constructor', assetRef: 'synthetic-unlisted', cls: 'process' },
+  { role: 'toString', assetRef: 'synthetic-unlisted', cls: 'process' },
+  { role: 'll', assetRef: 'constructor', cls: 'holding' },
+  { role: 'robot', assetRef: 'primitive:toString', cls: 'robot' },
+])('uses own catalog entries for role=$role and assetRef=$assetRef', ({ role, assetRef, cls }) => {
+  const layout = fixture([component({ id: 'box', assetRef, role, label: 'Box' })]);
+  const { scene } = render(layout, { interactive: true });
+  expect(scene.components.get('box')?.cls).toBe(cls);
+  expect(componentsOf(scene.node).get('box')?.node.attrs['data-asset-unknown']).toBe('true');
+  const overlay = buildOverlay(scene, {
+    selectedId: 'box', hoveredId: 'box', focusedId: 'box', showAllCapabilities: false,
+  }, 1);
+  expect(overlay.interaction.children).toHaveLength(3);
+});
+
+it.each(['synthetic-unlisted', 'generic-box'])('keeps chips and capability starts outside a non-square neutral robot (%s)', (assetRef) => {
+  const layout = fixture([
+    component({
+      id: 'robot', assetRef, label: 'Robot', role: 'robot', x: 200, y: 300, w: 80, h: 20,
+      holdingSites: [site('blade')],
+    }),
+    component({ id: 'pm', assetRef: 'primitive:pm', label: 'PM', x: 500, y: 300, w: 96, h: 100, holdingSites: [site('slot')] }),
+  ], {
+    transferCapabilities: [{
+      id: 'cap', handlerComponentId: 'robot',
+      a: { componentId: 'robot', holdingSiteId: 'blade' },
+      b: { componentId: 'pm', holdingSiteId: 'slot' },
+      provenance: { certainty: 'assumed', sourceEvidence: [] },
+    }],
+  });
+  const { scene } = render(layout, { labels: 'none', layers: { holdingSites: true, capabilities: true } });
+  const body = firstRect(componentsOf(scene.node).get('robot')!.node)!;
+  expect(body.attrs).toMatchObject({ x: '-40', y: '-10', width: '80', height: '20' });
+  const chip = chipRects(scene.node).find(({ id }) => id === 'robot')!.box;
+  expect.soft(rectsOverlap(chip, { x0: 160, x1: 240, y0: 290, y1: 310 })).toBe(false);
+  expect.soft(chip.x0).toBe(240);
+  const overlay = buildOverlay(scene, {
+    selectedId: 'robot', hoveredId: null, focusedId: null, showAllCapabilities: false,
+  }, 1);
+  for (const capabilities of [layer(scene.node, 'capabilities'), overlay.capabilities]) {
+    const segments: string[] = [];
+    walkWorld(capabilities, (node) => { if (node.tag === 'path') segments.push(node.attrs.d!); });
+    expect.soft(segments).toEqual(['M245 300L449 300']);
   }
 });
 
