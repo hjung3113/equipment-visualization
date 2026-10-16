@@ -3,6 +3,7 @@ import {
   type AliasResolution, type AliasRule, type AliasRulesFile, type EquipmentLayoutDocument, type MappingConflict,
   type MappingEntry, type MappingIssue, type ObservedInventory, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
+import { describeConflict } from './conflict-text.js';
 
 /** Scope level whose alias-rules file the Board edits; the maker file is read-only context. */
 export type SaveScope = 'model' | 'equipment';
@@ -465,20 +466,7 @@ export function paletteOptions(layout: EquipmentLayoutDocument, role: string, fi
 
 /** One Korean line per conflict, resolution issue or overlap of a row. */
 export function explainRow(row: BoardRow): string[] {
-  const lines = row.conflicts.map((conflict): string => {
-    switch (conflict.kind) {
-      case 'transfer-without-capability':
-        return `이송 ${conflict.from} → ${conflict.to} (${conflict.count}건): ${conflict.fromComponentId}와 ${conflict.toComponentId} 사이에 Transfer Capability가 없습니다`;
-      case 'slot-exceeds-sites':
-        return `slot ${conflict.slots.join(', ')}에 해당하는 Holding Site가 ${conflict.componentId}에 없습니다`;
-      case 'role-mismatch':
-        return `Role 불일치: ${conflict.moduleType}은(는) ${conflict.expectedRole}이어야 하지만 ${conflict.componentId}는 ${conflict.componentRole}입니다`;
-      case 'port-flag-mismatch':
-        return `Port 표시 불일치: 관측된 isPort=${conflict.isPort}이(가) ${conflict.componentId}의 Holding Site 구성과 다릅니다`;
-      case 'robot-flag-mismatch':
-        return `Robot 표시 불일치: 관측된 isRobot=${conflict.isRobot}이(가) ${conflict.componentId}의 Role과 다릅니다`;
-    }
-  });
+  const lines = row.conflicts.map(describeConflict);
   for (const issue of row.issues) {
     lines.push(issue.code === 'same-level-overlap'
       ? `같은 범위의 규칙이 겹칩니다: ${row.overlap.map(({ ruleId }) => ruleId).join(', ')}`

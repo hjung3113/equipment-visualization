@@ -63,6 +63,7 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 - **이어지는 상태:** 관측된 상태는 다음 근거까지 원래 등급을 유지하되 `lastObservedAt`을 보존하고, Watermark상 근거가 끊긴 구간에서는 `unknown`으로 강등.
 - **Binding 경계:** 재생 구간이 Binding 유효기간 경계를 넘으면 segment로 나누고 경계 마커를 표시. 경계 이후 Material Location은 `unknown`으로 초기화하며 옛 이력을 새 레이아웃에 끼워 맞추지 않는다.
 - **결정론:** `Replay Key = (Layout Revision, Mapping Version, Ruleset Version, Data Generation, 관측 집합 해시, t)`가 같으면 같은 SceneState. 브라우저 프레임률과 무관. 구현된 key는 활성 Binding, Layout Revision 대신 레이아웃 내용 해시(아직 revision 필드 없음), 제공된 Mapping Version의 hash, Watermark를 포함한 전체 batch의 해시를 사용한다.
+- **Binding의 `layoutRevision`:** Binding은 선택 필드 `layoutRevision`(`sha256:<hex>`, Publish가 계산한 Layout Revision)을 가질 수 있고 없는 기존 bindings도 유효하다. Replay는 계속 `layoutId`로 Layout을 찾으며, Revision으로 찾는 것은 #53에서 다룬다(ADR-0007).
 - **재생 속도:** Pause/speed x0.25, x0.5, x1, x2, x4 는 **화면 시간** 변화. 예시 모션은 이벤트가 겹칠 때 drawing order만 다르고 source 순서를 재배열하지 않음.
 - **이동 표시:** 원천 시각 근거가 없다면 이동은 **discrete jump** 또는 `unknown`. '동작 중' 블레이드 실루엣을 임의 회전시키지 않음.
 - **이송 중:** Get 종료와 Put 종료 사이 Material의 Location은 Handler Component(`derived`). Holding Site는 Mapping이 arm slot을 해석할 때만.

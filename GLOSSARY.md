@@ -84,6 +84,9 @@ _Avoid_: archetype(구조 분류 이름으로만), model(장비 모델)
 **Drift**:
 Publish 이후 처음 보는 alias·slot 또는 Transfer Capability 없는 이송이 관측된 상태.
 
+**Baseline Inventory**:
+Mapping Version 게시 때 함께 저장한 기준 Observed Inventory. Drift는 이것과 현재 관측을 비교한다.
+
 ## Views
 
 **Focus**:

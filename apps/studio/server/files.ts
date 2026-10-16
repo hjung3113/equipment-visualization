@@ -2,7 +2,7 @@ import { lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile 
 import { dirname, join, sep } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
-  layoutRevision, mappingVersionSchema, validateAliasRules, validateBindings, validateLayout,
+  layoutRevision, mappingVersionSchema, observedInventorySchema, validateAliasRules, validateBindings, validateLayout,
   validateTypeDictionary, verifyMappingHash,
 } from '@eqv/core';
 
@@ -47,7 +47,7 @@ interface Target {
 }
 
 /** Maps a relative path onto its write pattern, or throws 403 when the path is not writable. */
-function writeTarget(segments: string[]): Target {
+function writeTarget(segments: string[], requireMapping: (equipmentId: string, hex: string) => Promise<void>): Target {
   const [area, ...rest] = segments;
   const file = rest.at(-1) ?? '';
   const mutable = (validate: (value: unknown) => Promise<void> | void): Target => ({
@@ -100,6 +100,18 @@ function writeTarget(segments: string[]): Target {
           if (!await verifyMappingHash(parsed.data)) fail(400, 'Mapping hash does not match its content');
           if (parsed.data.hash !== `sha256:${hex}`) fail(400, 'Mapping hash does not match the file name');
           if (parsed.data.equipmentId !== equipmentId) fail(400, 'equipmentId does not match the path');
+        },
+      };
+    }
+    const baseline = /^baselines\/([^/]+)\/([^/]+)\.inventory\.json$/.exec(key);
+    if (baseline && NAME.test(baseline[1]!) && HEX.test(baseline[2]!)) {
+      return {
+        immutable: true,
+        validate: async (value) => {
+          const parsed = observedInventorySchema.safeParse(value);
+          if (!parsed.success) return fail(400, 'Invalid inventory', parsed.error.issues);
+          if (parsed.data.equipmentId !== baseline[1]) fail(400, 'equipmentId does not match the path');
+          await requireMapping(baseline[1]!, baseline[2]!);
         },
       };
     }
@@ -262,7 +274,15 @@ export function createFileApi({ root }: { root: string }) {
   async function put(request: FileApiRequest, query: URLSearchParams): Promise<FileApiResponse> {
     const segments = relativeSegments(query.get('path'), 'file');
     const body = parseBody(request);
-    const target = writeTarget(segments);
+    const target = writeTarget(segments, async (equipmentId, hex) => {
+      try {
+        const { real } = await readTarget(['onboarding', 'mappings', equipmentId, `${hex}.mapping.json`]);
+        if (!(await stat(real)).isFile()) fail(409, 'Mapping Version이 없습니다');
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) fail(409, 'Mapping Version이 없습니다');
+        throw error;
+      }
+    });
     await target.validate(body);
     await assertWritable(segments);
     const path = segments.join('/');

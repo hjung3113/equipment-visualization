@@ -72,3 +72,15 @@
 
 .eqv-ed-board-row.eqv-ed-selected { outline-style: solid; outline-width: 2px; outline-color: var(--eqv-selection, #1428a0); outline-offset: -2px; }
 .eqv-ed-palette { box-sizing: border-box; max-width: calc(100vw - 32px); }
+/* 14d: validate and publish */
+.eqv-ed-publish { color: var(--eqv-ink, #101828); }
+.eqv-ed-publish :focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 2px; }
+.eqv-ed-hint { color: var(--eqv-secondary, #374151); }
+.eqv-ed-error { color: var(--eqv-conflict-fg, #b42318); font-weight: 600; }
+.eqv-ed-conflicts { margin: 0 0 8px; padding: 0; list-style: none; }
+.eqv-ed-conflicts li { margin: 0 0 4px; }
+.eqv-ed-conflicts .eqv-ed-btn { text-align: left; }
+.eqv-ed-conflicts .eqv-ed-btn[aria-pressed="true"] { border-color: var(--eqv-conflict-fg, #b42318); border-style: dashed; background: var(--eqv-selection-fill, #e4e8f6); font-weight: 600; }
+.eqv-ed-publish input[type="text"] { min-width: 17em; padding: 4px 8px; font: inherit; font-variant-numeric: tabular-nums; }
+.eqv-ed-publish input[aria-invalid="true"] { border: 2px solid var(--eqv-conflict-fg, #b42318); }
+.eqv-ed-publish-status { min-height: 1.5em; font-weight: 600; }

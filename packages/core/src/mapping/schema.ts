@@ -48,7 +48,7 @@ export const mappingVersionSchema = z.strictObject({
   entries: z.array(mappingEntrySchema), hash: hashSchema,
 });
 const bindingSchema = z.strictObject({
-  layoutId: idSchema, mappingHash: hashSchema,
+  layoutId: idSchema, mappingHash: hashSchema, layoutRevision: hashSchema.optional(),
   effectiveFrom: siteWallClockSchema, effectiveTo: siteWallClockSchema.optional(),
 });
 export const bindingsFileSchema = z.strictObject({

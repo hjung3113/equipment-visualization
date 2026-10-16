@@ -56,3 +56,12 @@ export async function createDraft(id: string, layout: unknown): Promise<string> 
 export async function saveAliasRules(path: string, file: unknown): Promise<void> {
   await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', file));
 }
+
+/** Writes an immutable file; an existing file with different content is an ApiError with status 409. */
+export async function putImmutable(path: string, value: unknown): Promise<void> {
+  await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', value));
+}
+
+export async function saveBindings(equipmentId: string, file: unknown): Promise<void> {
+  await request(`/api/files?${new URLSearchParams({ path: `onboarding/bindings/${equipmentId}.bindings.json` })}`, json('PUT', file));
+}

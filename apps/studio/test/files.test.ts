@@ -135,6 +135,20 @@ it('writes a mapping only at the path of its own hash', async () => {
   expect(await exists(join(root, wrong))).toBe(false);
 });
 
+it('writes a baseline Inventory immutably at a hex path of its own equipment', async () => {
+  const mappings = await readdir(join(root, 'onboarding/mappings/eq-synth-01'));
+  const hex = mappings[0]!.replace('.mapping.json', '');
+  const dir = 'onboarding/baselines/eq-synth-01';
+  const inventory = { equipmentId: 'eq-synth-01', from: '2026-01-01T10:00:00.000', to: '2026-01-01T10:30:00.000', aliases: [], transfers: [] };
+  expect(await put(`${dir}/${hex}.inventory.json`, inventory)).toEqual({ status: 201, body: { path: `${dir}/${hex}.inventory.json`, created: true } });
+  expect((await put(`${dir}/${hex}.inventory.json`, inventory)).status).toBe(200);
+  expect((await put(`${dir}/${hex}.inventory.json`, { ...inventory, to: '2026-01-01T11:00:00.000' })).status).toBe(409);
+  expect((await put(`${dir}/${'b'.repeat(64)}.inventory.json`, { ...inventory, equipmentId: 'eq-other' })).status).toBe(400);
+  expect((await put(`${dir}/${'c'.repeat(64)}.inventory.json`, { ...inventory, aliases: 'x' })).status).toBe(400);
+  expect((await put(`${dir}/not-hex.inventory.json`, inventory)).status).toBe(403);
+  expect(await readJson(`${dir}/${hex}.inventory.json`)).toEqual(inventory);
+});
+
 it('rejects a non-JSON content type', async () => {
   const response = await put('layouts/cluster-single/draft.layout.json', await template(), { 'content-type': 'text/plain' });
   expect(response.status).toBe(415);
@@ -159,4 +173,12 @@ it('still validates a create-only write', async () => {
   const layout = await template();
   expect((await put('layouts/other/draft.layout.json', layout, CREATE_ONLY)).status).toBe(400);
   expect(await exists(join(root, 'layouts/other/draft.layout.json'))).toBe(false);
+});
+
+
+it('refuses a baseline without a matching Mapping Version and leaves no file', async () => {
+  const path = `onboarding/baselines/eq-synth-01/${'0'.repeat(64)}.inventory.json`;
+  const inventory = { equipmentId: 'eq-synth-01', from: '2026-01-01T10:00:00.000', to: '2026-01-01T10:30:00.000', aliases: [], transfers: [] };
+  expect(await put(path, inventory)).toEqual({ status: 409, body: { error: 'Mapping Version이 없습니다' } });
+  expect(await exists(join(root, path))).toBe(false);
 });

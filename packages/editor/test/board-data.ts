@@ -17,3 +17,9 @@ export const boardInput = (change: Partial<BoardInput> = {}): BoardInput => ({
   inventory: inventory(), dictionaries, layout: fixtureLayout(), templates: fixtureTemplates(),
   ruleFiles: { model: modelRules(), equipment: equipmentRules() }, ...change,
 });
+
+/** The fixture draft without the LP↔LL Transfer Capabilities, so the observed LP1 → LLA transfer is a Mapping Conflict. */
+export const layoutWithoutLpLl = (): EquipmentLayoutDocument => {
+  const layout = fixtureLayout();
+  return { ...layout, transferCapabilities: layout.transferCapabilities.filter(({ id }) => id !== 'lp-slot-1-ll' && id !== 'lp-slot-2-ll') };
+};

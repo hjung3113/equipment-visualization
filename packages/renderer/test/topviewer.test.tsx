@@ -592,3 +592,11 @@ it('stacks interaction under the overlays and does not repeat the scene capabili
   ]);
   expect(direct.filter((item) => item === 'capabilities')).toHaveLength(1);
 });
+
+it('stacks capabilities, highlight, then interaction when a highlight is present', () => {
+  const id = layout.components[0]!.id;
+  const { svg } = mount({ layout, selectedId: id, highlight: { componentIds: [id] } });
+  const layers = Array.from(svg.children).map((node) => node.getAttribute('data-layer'));
+  expect(layers.filter((layer) => ['capabilities', 'highlight', 'interaction'].includes(layer ?? '')))
+    .toEqual(['capabilities', 'highlight', 'interaction']);
+});

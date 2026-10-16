@@ -10,14 +10,23 @@ export interface OverlayState {
   focusedId: string | null;
   /** Draw every visible capability pair. Ignored while a selection is visible. */
   showAllCapabilities: boolean;
+  /** Components to ring and observed transfers to mark as dashed lines. Display only: it is not a path or a capability. */
+  highlight?: Highlight | null;
 }
 
+export interface Highlight {
+  componentIds: readonly string[];
+  transfers?: readonly { from: string; to: string; label: string }[];
+}
+
+const DASH = '6 4';
 const RAD: Record<SceneComponent['cls'], number> = { process: 8, holding: 8, robot: 8, structure: 12 };
 
 const PAINT = {
   selection: 'var(--eqv-selection, #1428a0)',
   selectionFill: 'var(--eqv-selection-fill, #e4e8f6)',
   board: 'var(--eqv-board, #fbfdff)',
+  highlight: 'var(--eqv-highlight, #b42318)',
 } as const;
 
 function matrixAttr(matrix: Mat): string {
@@ -32,7 +41,7 @@ function visible(scene: Scene, id: string | null): SceneComponent | null {
 }
 
 /** Stroke-only outline in the component's local frame. `dPx` and `strokePx` are screen pixels. */
-function ring(comp: SceneComponent, dPx: number, stroke: string, strokePx: number, k: number): SvgNode {
+function ring(comp: SceneComponent, dPx: number, stroke: string, strokePx: number, k: number, dash?: string): SvgNode {
   const kLocal = k / comp.S;
   const d = dPx * kLocal;
   const attrs: Record<string, string> = {
@@ -41,6 +50,7 @@ function ring(comp: SceneComponent, dPx: number, stroke: string, strokePx: numbe
     'stroke-width': formatNum(strokePx),
     'vector-effect': 'non-scaling-stroke',
   };
+  if (dash) attrs['stroke-dasharray'] = dash;
   if (isArm(comp.asset)) {
     return el('circle', { ...attrs, cx: '0', cy: '0', r: formatNum(robotR(comp.w, comp.h) + d) });
   }
@@ -107,8 +117,35 @@ function capabilityNodes(scene: Scene, selectedId: string | null, showAll: boole
   return nodes;
 }
 
-/** Hover, selection and focus shapes, plus the capability segments for this selection. No React and no DOM. */
-export function buildOverlay(scene: Scene, state: OverlayState, k: number): { interaction: SvgNode; capabilities: SvgNode } {
+function highlightNodes(scene: Scene, highlight: Highlight | null | undefined, k: number): SvgNode[] {
+  if (!highlight) return [];
+  const nodes: SvgNode[] = [];
+  const seen = new Set<string>();
+  for (const id of highlight.componentIds) {
+    const comp = visible(scene, id);
+    if (!comp || seen.has(id)) continue;
+    seen.add(id);
+    nodes.push(mark(comp, [ring(comp, 4, PAINT.highlight, 2, k, DASH)]));
+  }
+  for (const transfer of highlight.transfers ?? []) {
+    const from = visible(scene, transfer.from);
+    const to = visible(scene, transfer.to);
+    if (!from || !to) continue;
+    nodes.push(el('line', {
+      x1: formatNum(from.center[0]), y1: formatNum(from.center[1]),
+      x2: formatNum(to.center[0]), y2: formatNum(to.center[1]),
+      stroke: PAINT.highlight,
+      'pointer-events': 'stroke',
+      'stroke-width': formatNum(2),
+      'stroke-dasharray': DASH,
+      'vector-effect': 'non-scaling-stroke',
+    }, [el('title', {}, [transfer.label])]));
+  }
+  return nodes;
+}
+
+/** Hover, selection and focus shapes, the capability segments for this selection and the highlight. No React and no DOM. */
+export function buildOverlay(scene: Scene, state: OverlayState, k: number): { interaction: SvgNode; capabilities: SvgNode; highlight: SvgNode } {
   const shapes: SvgNode[] = [];
   const hovered = visible(scene, state.hoveredId);
   const selected = visible(scene, state.selectedId);
@@ -129,5 +166,6 @@ export function buildOverlay(scene: Scene, state: OverlayState, k: number): { in
   return {
     interaction: withPointerEventsNone(el('g', { 'data-layer': 'interaction' }, shapes)),
     capabilities: withPointerEventsNone(el('g', { 'data-layer': 'capabilities' }, capabilityNodes(scene, state.selectedId, state.showAllCapabilities, k))),
+    highlight: withPointerEventsNone(el('g', { 'data-layer': 'highlight' }, highlightNodes(scene, state.highlight, k))),
   };
 }

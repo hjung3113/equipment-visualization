@@ -23,6 +23,10 @@
             "type": "string",
             "pattern": "^sha256:[0-9a-f]{64}$"
           },
+          "layoutRevision": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
           "effectiveFrom": {
             "type": "string",
             "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}$"

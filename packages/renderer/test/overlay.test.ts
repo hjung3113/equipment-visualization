@@ -318,12 +318,13 @@ it('uses only documented paints for selection, hover, focus and capabilities', (
   ], [capability('link', 'arm', 'mod', 'chamber')]);
   const result = overlay(scene, {
     selectedId: 'mod', hoveredId: 'arm', focusedId: 'chamber', showAllCapabilities: true,
+    highlight: { componentIds: ['arm', 'mod'], transfers: [{ from: 'arm', to: 'mod', label: 'x' }] },
   });
   expect(titles(result.capabilities).length).toBeGreaterThan(0);
   expect(result.interaction.attrs['pointer-events']).toBe('none');
   expect(result.capabilities.attrs['pointer-events']).toBe('none');
   const paints: string[] = [];
-  for (const group of [result.interaction, result.capabilities]) {
+  for (const group of [result.interaction, result.capabilities, result.highlight]) {
     const walk = (node: SvgNode) => {
       expect(node.attrs['data-component-id']).toBeUndefined();
       for (const name of ['fill', 'stroke']) {
@@ -339,6 +340,55 @@ it('uses only documented paints for selection, hover, focus and capabilities', (
     expect(paint).toMatch(/^(?:none|var\(--eqv-[a-z-]+, #[0-9a-f]{6}\))$/);
     if (paint !== 'none') expect(TOKENS.has(paint.match(/--eqv-[a-z-]+/)?.[0] ?? '')).toBe(true);
   }
+});
+
+it('draws dashed rings and one titled line for a highlight, skipping hidden and absent ids', () => {
+  const { scene } = fixture([
+    component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 100, y: 100, w: 80, h: 80 }),
+    component({ id: 'b', assetRef: 'primitive:pm', label: 'B', x: 400, y: 300, w: 80, h: 80 }),
+  ]);
+  const label = '관측 이송 LP1 → LLA 3건 (Transfer Capability 없음)';
+  const result = overlay(scene, { selectedId: null, highlight: { componentIds: ['a', 'b'], transfers: [{ from: 'a', to: 'b', label }] } }).highlight;
+  expect(result.attrs['data-layer']).toBe('highlight');
+  expect(result.attrs['pointer-events']).toBe('none');
+  const drawn = shapes(result);
+  const rings = drawn.filter((node) => node.tag === 'rect');
+  const lines = drawn.filter((node) => node.tag === 'line');
+  expect(rings).toHaveLength(2);
+  for (const node of rings) expect(node.attrs).toMatchObject({ 'stroke-dasharray': '6 4', stroke: 'var(--eqv-highlight, #b42318)' });
+  expect(lines).toHaveLength(1);
+  expect(lines[0]!.attrs['stroke-dasharray']).toBe('6 4');
+  expect(drawn.filter((node) => node.attrs['pointer-events'] && node.attrs['pointer-events'] !== 'none')).toEqual(lines);
+  expect(lines[0]!.attrs['pointer-events']).toBe('stroke');
+  expect(titles(lines[0]!)).toEqual([label]);
+  const a = scene.components.get('a')!;
+  const b = scene.components.get('b')!;
+  expect(lines[0]!.attrs).toMatchObject({ x1: String(round(a.center[0])), y1: String(round(a.center[1])), x2: String(round(b.center[0])), y2: String(round(b.center[1])) });
+
+  const partial = overlay(scene, { selectedId: null, highlight: { componentIds: ['a', 'missing'], transfers: [{ from: 'a', to: 'missing', label }] } }).highlight;
+  expect(shapes(partial).map((node) => node.tag)).toEqual(['rect']);
+});
+
+it('skips highlight rings and transfers touching a component on a filtered-out level', () => {
+  const { scene } = fixture([
+    component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 100, y: 100, w: 80, h: 80 }),
+    component({ id: 'hidden', assetRef: 'primitive:pm', label: 'Hidden', levelId: 'level-upper', x: 400, y: 300, w: 80, h: 80 }),
+  ], [], ['level-main']);
+  const result = overlay(scene, { selectedId: null, highlight: {
+    componentIds: ['a', 'hidden', 'missing'],
+    transfers: [
+      { from: 'a', to: 'hidden', label: 'hidden target' },
+      { from: 'hidden', to: 'a', label: 'hidden source' },
+      { from: 'a', to: 'missing', label: 'absent target' },
+    ],
+  } }).highlight;
+  expect(shapes(result).map((node) => node.tag)).toEqual(['rect']);
+});
+
+it('leaves the highlight layer empty without a highlight', () => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 100, y: 100, w: 80, h: 80 })]);
+  expect(overlay(scene, { selectedId: null }).highlight.children).toEqual([]);
+  expect(overlay(scene, { selectedId: null, highlight: null }).highlight.children).toEqual([]);
 });
 
 it.each(TEMPLATE_IDS)('%s is byte-identical when interactive is omitted or false', (id) => {

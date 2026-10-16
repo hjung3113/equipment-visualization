@@ -17,8 +17,8 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 | ② Inventory | alias 목록 + 관측 이송 그래프 | alias별 ModuleType·Role·Port/Robot 여부·slot 집합·활동 배지(PRC/FNC/XFR/Carrier)·건수·처음/마지막 관측. 관측 이송 쌍(A→B, 건수)은 공간 정보 없는 node-link |
 | ③ Template 제안 | 상위 3개 썸네일 비교 | 점수와 근거 문장("PM 4/4 ✓, LL 2/2 ✓, TM robot ✓, 설명 안 되는 alias 1"). 맞는 것이 없으면 Generic Layout |
 | ④ Mapping Board | alias 목록 · Top View · 선택 상세 (§4) | 배정·규칙화·무시·충돌 해결 |
-| ⑤ 검증 | 샘플 기간 dry-run replay | 커버리지, Mapping Conflict 목록, 미매핑 영향도. 충돌 클릭 → SVG 강조 |
-| ⑥ Publish | 이전 버전 diff | 규칙 평탄화 → 불변 Mapping Version + Binding(effectiveFrom) |
+| ⑤ 검증 | 샘플 기간 dry-run replay | 커버리지, Mapping Conflict 목록, 미매핑 영향도. 충돌 클릭 → SVG 강조. 구현: #14d (샘플 기간 조정은 #60, reducer 실행 없음) |
+| ⑥ Publish | 이전 버전 diff | 규칙 평탄화 → 불변 Mapping Version + Binding(effectiveFrom). 구현: #14d |
 | ⑦ Drift | Fleet 상태 배지 + 검토 대기열 | 게시 후 새 alias·slot, Transfer Capability 없는 관측 이송 |
 
 ## 2. Observed Inventory
@@ -173,6 +173,18 @@ type Coverage = {
 
 `detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`와 영향도로 표시하며 외부 알림은 플랫폼 통합 단계다.
 
+### 검증과 Publish (#14d)
+
+구현 규칙은 ADR-0007을 따른다.
+
+- **Dry-run(D8):** 저장된 규칙 파일과 현재 레이아웃 초안으로 `publishMapping`을 실행하고(쓰지 않는다) 성공하면 불러온 샘플 Inventory로 `computeCoverage`와 `findMappingConflicts`를 계산한다. reducer는 실행하지 않는다. Board의 저장하지 않은 편집은 포함되지 않으며, 저장하지 않은 자동 초안 alias는 미매핑으로 나온다. `publishMapping` 문제는 목록으로 보이고 Publish를 막는다.
+- **충돌 강조(D11):** 충돌을 누르면 Board의 Top View에 표시한다. `transfer-without-capability`는 두 Component에 점선 링을 그리고 두 중심을 잇는 점선 한 줄을 `관측 이송 <from> → <to> <count>건 (Transfer Capability 없음)`이라는 제목으로 그린다. 이 선은 관측의 표시일 뿐 경로·궤적·Transfer Capability가 아니다. 다른 충돌은 해당 Component에 링을 그린다. 같은 충돌을 다시 누르면 해제한다.
+- **Publish 쓰기 순서(D5):** (1) 초안을 Layout Revision으로 `POST /api/layout-revisions`, (2) Mapping Version, (3) Baseline Inventory(같은 hash의 Mapping Version 파일이 있어야 하며, 기존 baseline과의 409면 기존 파일 유지), (4) bindings 파일 덮어쓰기. 4단계가 commit point이며 실패하면 그 단계 이름을 보인다. 앞 단계는 참조되지 않는 불변 파일만 남기고 재시도는 멱등이다.
+- **Binding(D6, D7):** 새 Binding은 항상 `layoutRevision`을 채운다. `effectiveFrom`은 필수 입력(SiteWallClock)이며 binding이 없는 장비는 Inventory `from`, 있는 장비는 Inventory `to`로 채운다. 이 기본값이 최근 Binding의 `effectiveFrom`보다 늦지 않으면 빈칸으로 두고 `마지막 binding(<from>)보다 늦은 시각을 입력하세요`를 안내하며, 입력하기 전에는 오류로 표시하지 않는다. 최근 Binding의 `effectiveFrom`보다 늦어야 하고, 최근 Binding이 열려 있으면 새 `effectiveFrom`으로 `effectiveTo`를 닫는다. 새 bindings 파일은 `validateBindings`를 통과해야 한다.
+- **Publish 비활성(D9, D10):** Board에 저장하지 않은 변경이 있거나, `publishMapping` 문제가 있거나, `effectiveFrom`이 잘못되었거나, 새 Mapping hash와 Layout Revision이 최근 Binding과 같으면(`이전 게시와 같습니다`) 게시할 수 없다. Mapping Conflict는 막지 않고 diff에 건수로 보인다.
+- **Diff:** 날짜 입력은 이미 계산한 dry-run·Layout Revision에서 동기적으로 검증하며 diff를 유지한다. alias별 추가·삭제·변경(대상, certainty, 규칙)과 변경 없는 개수, Layout Revision 줄, Binding 줄을 보인다. `assumed` entry는 `assumed`로 표시한다.
+- **같은 Model 일괄 dry-run(D12):** 같은 maker/model 장비마다 각 조회에서 불러온 자신의 Inventory·레이아웃 초안·저장된 규칙 파일로 계산한다. 정렬은 막는 문제, 충돌 수 많은 순, 참조 coverage 낮은 순, `equipmentId`(code-unit)다. 레이아웃 초안이 없거나 읽지 못한 장비는 행에 오류를 보이고 상태는 `—`(알 수 없음)로 표시한다. maker/model을 읽지 못한 설비는 표에서 제외하고 caption에 `읽지 못한 설비 N대`를 덧붙인다.
+
 ## 7. 파일 배치 (Studio 파일 기반)
 
 ```text
@@ -186,7 +198,8 @@ assets/onboarding/
   scopes/model/<maker>/<model>/{type-dictionary,alias-rules}.json
   scopes/equipment/<equipmentId>/alias-rules.json        # 예외 덮어쓰기
   mappings/<equipmentId>/<version>.mapping.json          # 평탄화·불변, 내용 hash 포함
-  bindings/<equipmentId>.bindings.json
+  baselines/<equipmentId>/<mappingHex>.inventory.json    # Mapping Version을 게시한 기준 Inventory(불변, Drift 비교용)
+  bindings/<equipmentId>.bindings.json                   # Binding의 선택 필드 layoutRevision(sha256:<hex>)을 Publish가 채운다
 assets/layouts/<layoutId>/draft.layout.json             # Mapping Board가 배정하는 Equipment Layout draft (§4)
 ```
 
