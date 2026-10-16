@@ -447,3 +447,7 @@ Background references only:
 ## assets/equipment, assets/observations, assets/onboarding
 
 Synthetic copies of the `fixtures/cluster-single/` fixture (#14), used as read-only Studio seed data for the equipment `eq-synth-01`: `observations/eq-synth-01/occurrence-batch.json` and `alias-metadata.json`, and the `onboarding/{scopes,mappings,bindings}` tree are byte copies; `equipment/eq-synth-01.json` is the equipment record. They contain no OEM, customer or measured data.
+
+## assets/layouts
+
+`layouts/eq-synth-01-layout/draft.layout.json` is a byte copy of `fixtures/cluster-single/layout.json` (#14b): the synthetic Equipment Layout draft of `eq-synth-01` that the Studio Mapping Board edits aliases onto. It is not an OEM drawing and carries no measured data.

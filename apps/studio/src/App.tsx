@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { LayoutsPage } from './LayoutsPage.js';
-import { FleetPage, OnboardingPage } from './OnboardingPages.js';
+import { BoardPage, FleetPage, OnboardingPage } from './OnboardingPages.js';
 import { Link, hrefFor, navigate, useLocation, useRoute, type Route } from './router.js';
 
 function Page({ route }: { route: Route }) {
@@ -11,6 +11,8 @@ function Page({ route }: { route: Route }) {
       return <LayoutsPage file={route.file} />;
     case 'onboarding':
       return <OnboardingPage equipmentId={route.equipmentId} />;
+    case 'board':
+      return <BoardPage equipmentId={route.equipmentId} />;
     case 'focus':
       return (
         <>

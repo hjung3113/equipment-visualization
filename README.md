@@ -2,7 +2,7 @@
 
 Reusable, standalone equipment Top View editor and explainable log replay toolkit for semiconductor equipment.
 
-> **Status: Runnable Studio shell and layouts page.** Onboarding and Focus screens are pending (#14/#15). The sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
+> **Status: Runnable Studio shell and layouts page.** Onboarding steps ①–④ (Fleet, Inventory, Template proposals, Mapping Board) are in; Onboarding dry-run/Publish and Focus screens are pending (#14c/#15). The sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
 
 ## Goals
 
@@ -23,7 +23,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 ## Planned packages
 
 ```
-apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, import/export, draft, Layout Revision publish), dev-only file API (present); Onboarding and Focus screens pending (#14/#15)
+apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–④ incl. the Mapping Board (present); dry-run/Publish (#14c) and Focus (#15) pending
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
 packages/renderer/            # Static read-only Top View (`TopView`, `buildScene`): fitted primitives, labels, Physical Interface marks, Transfer Capability segments, Holding Site counts, Certainty badges
 packages/editor/              # Semantic Top View editor (planned)
@@ -91,7 +91,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); the Onboarding and Focus screens (#14/#15) and the replay app are still pending (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
+**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); the Onboarding dry-run/Publish (#14c), the Focus screen (#15) and the replay app are still pending (tracked as M1/M2). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
 
 ## Roadmap
 

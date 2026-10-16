@@ -23,7 +23,7 @@ export function componentsLinked(layout: LayoutDocument, aId: string, bId: strin
   });
 }
 
-type Input = { inventory: ObservedInventory; mapping: MappingVersion; layout: EquipmentLayoutDocument };
+type Input = { inventory: ObservedInventory; mapping: Omit<MappingVersion, 'hash'>; layout: EquipmentLayoutDocument };
 export function transfersWithoutCapability({ inventory, mapping, layout }: Input): TransferConflict[] {
   const components = new Map(layout.components.map((component) => [component.id, component]));
   const entries = new Map(mapping.entries.map((entry) => [entry.alias, entry.target]));

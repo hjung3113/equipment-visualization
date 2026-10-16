@@ -220,6 +220,7 @@ const COPIES = async () => {
   const pairs: [string, string][] = [
     ['fixtures/cluster-single/occurrence-batch.json', 'assets/observations/eq-synth-01/occurrence-batch.json'],
     ['fixtures/cluster-single/onboarding/alias-metadata.json', 'assets/observations/eq-synth-01/alias-metadata.json'],
+    ['fixtures/cluster-single/layout.json', 'assets/layouts/eq-synth-01-layout/draft.layout.json'],
   ];
   for (const file of await walk(onboarding)) {
     const inside = relative(onboarding, file);
@@ -229,7 +230,7 @@ const COPIES = async () => {
 };
 it('keeps every assets/ seed copy byte-identical to its fixture', async () => {
   const pairs = await COPIES();
-  expect(pairs.length).toBe(8);
+  expect(pairs.length).toBe(9);
   for (const [source, copy] of pairs) {
     expect(await readFile(join(repo, copy)), copy).toEqual(await readFile(join(repo, source)));
   }

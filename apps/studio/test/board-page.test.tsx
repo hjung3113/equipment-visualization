@@ -1,0 +1,302 @@
+// @vitest-environment jsdom
+import { readFile, rm } from 'node:fs/promises';
+import { join, resolve } from 'node:path';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { instantiateLayout, validateAliasRules, type TemplateDocument } from '@eqv/core';
+import { App } from '../src/App.js';
+import { navigate, setNavigationBlocker } from '../src/router.js';
+import { createFileApi } from '../server/files.js';
+import { addEquipment, seedOnboardingRoot, writeDraft } from './seed.js';
+
+const captured = vi.hoisted(() => ({ props: [] as { equipment: { equipmentId: string }; onDirtyChange?: (dirty: boolean) => void }[] }));
+vi.mock('@eqv/editor', async (importOriginal) => {
+  const original = await importOriginal<typeof import('@eqv/editor')>();
+  return {
+    ...original,
+    MappingBoard: (props: Parameters<typeof original.MappingBoard>[0]) => {
+      captured.props.push(props);
+      return original.MappingBoard(props);
+    },
+  };
+});
+
+declare global {
+  var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
+}
+globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+const repo = resolve(process.cwd(), '../..');
+let base: string;
+let root: string;
+let holds: { prefix: string; release: () => void; wait: Promise<void> }[];
+let failPut: ((path: string) => boolean) | null;
+
+const hold = (prefix: string) => {
+  let release!: () => void;
+  const wait = new Promise<void>((done) => { release = done; });
+  const entry = { prefix, release, wait };
+  holds.push(entry);
+  return entry;
+};
+
+beforeEach(async () => {
+  holds = [];
+  failPut = null;
+  captured.props = [];
+  ({ base, root } = await seedOnboardingRoot());
+  const api = createFileApi({ root });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const path = new URL(input, 'http://studio.test').searchParams.get('path') ?? '';
+    await holds.find(({ prefix }) => path.startsWith(prefix))?.wait;
+    if (init?.method === 'PUT' && failPut?.(path)) return new Response(JSON.stringify({ error: '거부됨' }), { status: 400 });
+    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
+    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
+    return new Response(JSON.stringify(result.body), { status: result.status });
+  });
+});
+afterEach(async () => {
+  cleanup();
+  setNavigationBlocker(null);
+  vi.unstubAllGlobals();
+  vi.restoreAllMocks();
+  await rm(base, { recursive: true, force: true });
+});
+
+const at = (path: string) => window.history.replaceState(null, '', path);
+const disk = async (path: string) => JSON.parse(await readFile(join(root, path), 'utf8'));
+const diskText = (path: string) => readFile(join(root, path), 'utf8');
+const MODEL_RULES = 'onboarding/scopes/model/synth-maker/synth-model/alias-rules.json';
+const EQUIPMENT_RULES = 'onboarding/scopes/equipment/eq-synth-01/alias-rules.json';
+const list = () => screen.findByRole('listbox', { name: 'Alias 목록' });
+const option = async (alias: string) => within(await list()).getByRole('option', { name: new RegExp(`^${alias},`) });
+const beforeUnloadPrevented = () => {
+  const event = new Event('beforeunload', { cancelable: true });
+  window.dispatchEvent(event);
+  return event.defaultPrevented;
+};
+async function assignPm9(component = 'pm-b') {
+  fireEvent.click(await option('PM9'));
+  fireEvent.click(screen.getByRole('button', { name: '배정 (A)' }));
+  const dialog = screen.getByRole('dialog');
+  fireEvent.click(within(dialog).getAllByRole('option').find((row) => row.querySelector('code')!.textContent === component)!);
+}
+const save = () => fireEvent.click(screen.getByRole('button', { name: '저장' }));
+
+it('mounts the Board for a direct visit and shows the fixture statuses', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  const status = async (alias: string) => (await option(alias)).querySelector('.eqv-ed-board-status')!.textContent;
+  expect(await Promise.all(['EFEM_R1', 'LLA', 'LP1', 'PM1', 'PM2', 'PM9', 'TM_R1', 'VIRT_SCH'].map(status))).toEqual(
+    ['● 확정', '● 확정', '● 확정', '● 확정', '◐ 자동', '○ 미매핑', '● 확정', '⊘ 무시']);
+});
+
+it('reads the shipped synthetic draft', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  expect(await disk('layouts/eq-synth-01-layout/draft.layout.json')).toEqual(
+    JSON.parse(await readFile(join(repo, 'assets/layouts/eq-synth-01-layout/draft.layout.json'), 'utf8')));
+});
+
+it('opens the Board from the onboarding page link, which replaces the start buttons when a draft exists', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/onboarding/eq-synth-01');
+  render(<App />);
+  fireEvent.click(await screen.findByRole('link', { name: '④ Mapping Board 열기' }));
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  expect(window.location.pathname).toBe('/onboarding/eq-synth-01/board');
+});
+
+it('shows no start buttons when a draft exists', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/onboarding/eq-synth-01');
+  render(<App />);
+  await screen.findByRole('link', { name: '④ Mapping Board 열기' });
+  expect(screen.queryByRole('button', { name: /으로 시작$/ })).toBeNull();
+});
+
+it('creates the draft from the template and opens the Board when none exists', async () => {
+  await addEquipment(root, 'eq-new');
+  at('/onboarding/eq-new');
+  render(<App />);
+  expect(screen.queryByRole('link', { name: '④ Mapping Board 열기' })).toBeNull();
+  const [start] = await screen.findAllByRole('button', { name: '이 템플릿으로 시작' });
+  fireEvent.click(start!);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  const template = JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8')) as TemplateDocument;
+  expect(await disk('layouts/eq-new-layout/draft.layout.json')).toEqual(instantiateLayout(template, 'eq-new-layout'));
+  expect(window.location.pathname).toBe('/onboarding/eq-new/board');
+});
+
+it('does not overwrite a draft created after the page loaded', async () => {
+  await addEquipment(root, 'eq-new');
+  at('/onboarding/eq-new');
+  render(<App />);
+  const [start] = await screen.findAllByRole('button', { name: '이 템플릿으로 시작' });
+  await writeDraft(root, 'eq-new-layout');
+  const before = await diskText('layouts/eq-new-layout/draft.layout.json');
+  fireEvent.click(start!);
+  const alert = await screen.findByRole('alert');
+  expect(alert.textContent).toContain('이미 레이아웃 draft가 있습니다');
+  expect(within(alert).getByRole('link', { name: '④ Mapping Board 열기' })).toBeTruthy();
+  expect(await diskText('layouts/eq-new-layout/draft.layout.json')).toBe(before);
+  expect(window.location.pathname).toBe('/onboarding/eq-new');
+});
+
+it('disables the start buttons when the layout id cannot be derived', async () => {
+  await addEquipment(root, 'Eq_Bad');
+  at('/onboarding/Eq_Bad');
+  render(<App />);
+  expect(await screen.findByText('설비 id로 레이아웃 id를 만들 수 없습니다')).toBeTruthy();
+  for (const button of screen.getAllByRole('button', { name: /으로 시작$/ })) expect((button as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('says so when the equipment has no draft', async () => {
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByText('레이아웃 draft가 없습니다');
+  expect(screen.getByRole('link', { name: 'Onboarding으로 이동' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
+});
+
+it.each([
+  ['Model', MODEL_RULES, null],
+  ['설비', EQUIPMENT_RULES, /^설비/],
+] as const)('writes the %s alias-rules file on disk when saving', async (_name, path, radio) => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  const other = path === MODEL_RULES ? EQUIPMENT_RULES : MODEL_RULES;
+  const otherBefore = await diskText(other);
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  if (radio) fireEvent.click(screen.getByRole('radio', { name: radio }));
+  await assignPm9();
+  save();
+  await waitFor(async () => expect((await disk(path)).rules.map((rule: { id: string }) => rule.id)).toContain('board-pm9'));
+  expect(validateAliasRules(await disk(path)).ok).toBe(true);
+  expect(await screen.findByText('저장됨')).toBeTruthy();
+  expect(await diskText(other)).toBe(otherBefore);
+});
+
+it('shows the alert and stays dirty when a PUT fails', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  failPut = (path) => path === MODEL_RULES;
+  const before = await diskText(MODEL_RULES);
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  await assignPm9();
+  save();
+  expect((await screen.findByRole('alert')).textContent).toBe('거부됨');
+  expect(await diskText(MODEL_RULES)).toBe(before);
+  act(() => navigate('/fleet'));
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(window.location.pathname).toBe('/onboarding/eq-synth-01/board');
+});
+
+it('asks before leaving with unsaved edits and stops asking after a save', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  expect(beforeUnloadPrevented()).toBe(false);
+  await assignPm9();
+  await waitFor(() => expect(beforeUnloadPrevented()).toBe(true));
+  act(() => navigate('/fleet'));
+  expect(confirm).toHaveBeenCalledWith('저장하지 않은 매핑 변경이 있습니다. 버리고 이동할까요?');
+  expect(window.location.pathname).toBe('/onboarding/eq-synth-01/board');
+  save();
+  await screen.findByText('저장됨');
+  await waitFor(() => expect(beforeUnloadPrevented()).toBe(false));
+  confirm.mockClear();
+  act(() => navigate('/fleet'));
+  expect(confirm).not.toHaveBeenCalled();
+  expect(window.location.pathname).toBe('/fleet');
+});
+
+async function dirtyOnA() {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  await assignPm9();
+  await waitFor(() => expect(beforeUnloadPrevented()).toBe(true));
+}
+
+it.each([
+  ['while B is still loading', async () => { await addEquipment(root, 'eq-b'); await writeDraft(root, 'eq-b-layout'); return hold('equipment/eq-b.json'); }],
+  ['to an equipment without a draft', async () => { await addEquipment(root, 'eq-b'); return null; }],
+])('drops the leave guard of A as soon as the user accepts leaving for B %s', async (_name, prepare) => {
+  const gate = await prepare();
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await dirtyOnA();
+  act(() => navigate('/onboarding/eq-b/board'));
+  expect(confirm).toHaveBeenCalledTimes(1);
+  expect(window.location.pathname).toBe('/onboarding/eq-b/board');
+  await waitFor(() => expect(beforeUnloadPrevented()).toBe(false));
+  confirm.mockClear();
+  act(() => navigate('/fleet'));
+  expect(confirm).not.toHaveBeenCalled();
+  gate?.release();
+});
+
+it('keeps A and its guard when leaving is declined', async () => {
+  await addEquipment(root, 'eq-b');
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  await dirtyOnA();
+  act(() => navigate('/onboarding/eq-b/board'));
+  expect(window.location.pathname).toBe('/onboarding/eq-synth-01/board');
+  expect(beforeUnloadPrevented()).toBe(true);
+  expect((await option('PM9')).textContent).toContain('pm-b');
+  act(() => navigate('/fleet'));
+  expect(confirm).toHaveBeenCalledTimes(2);
+});
+
+it('ignores a late dirty callback from the board of the previous equipment', async () => {
+  await addEquipment(root, 'eq-b');
+  await writeDraft(root, 'eq-b-layout');
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  await dirtyOnA();
+  const callbackOfA = captured.props.findLast((props) => props.equipment.equipmentId === 'eq-synth-01')!.onDirtyChange!;
+  act(() => navigate('/onboarding/eq-b/board'));
+  await screen.findByRole('heading', { name: 'Mapping Board eq-b' });
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  act(() => callbackOfA(true));
+  expect(beforeUnloadPrevented()).toBe(false);
+  confirm.mockClear();
+  act(() => navigate('/fleet'));
+  expect(confirm).not.toHaveBeenCalled();
+});
+
+it('drops A at once on navigation and ignores a late result of A', async () => {
+  await addEquipment(root, 'eq-b', { rename: (text) => text.replaceAll('PM1', 'B_PM1') });
+  await writeDraft(root, 'eq-b-layout');
+  await writeDraft(root, 'eq-synth-01-layout');
+  const gate = hold('equipment/eq-synth-01.json');
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  expect(screen.getByText('불러오는 중…')).toBeTruthy();
+  act(() => navigate('/onboarding/eq-b/board'));
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  expect((await option('B_PM1'))).toBeTruthy();
+  await act(async () => { gate.release(); await gate.wait; await new Promise((done) => setTimeout(done, 50)); });
+  expect(screen.getByRole('heading', { name: 'Mapping Board eq-b' })).toBeTruthy();
+  expect(within(await list()).queryByRole('option', { name: /^PM1,/ })).toBeNull();
+});
+
+it('removes the previous equipment Board at once on navigation', async () => {
+  await addEquipment(root, 'eq-b');
+  await writeDraft(root, 'eq-b-layout');
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/onboarding/eq-synth-01/board');
+  render(<App />);
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+  const gate = hold('equipment/eq-b.json');
+  act(() => navigate('/onboarding/eq-b/board'));
+  expect(screen.queryByRole('listbox', { name: 'Alias 목록' })).toBeNull();
+  expect(screen.getByText('불러오는 중…')).toBeTruthy();
+  gate.release();
+  await screen.findByRole('heading', { name: '④ Mapping Board' });
+});

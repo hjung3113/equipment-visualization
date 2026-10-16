@@ -20,7 +20,8 @@ export type {
   MappingEntry, BindingsFile, Binding, Resolution, MappingIssue,
 } from './mapping/schema.js';
 export { resolveRole, validateTypeDictionary, validateAliasRules, validateBindings } from './mapping/validate.js';
-export { publishMapping, verifyMappingHash } from './mapping/publish.js';
+export { publishMapping, resolveAliasRules, verifyMappingHash } from './mapping/publish.js';
+export type { AliasResolution, ResolveAliasRulesInput } from './mapping/publish.js';
 export { resolveLocation } from './mapping/resolve.js';
 
 export { observedInventorySchema } from './inventory/schema.js';
@@ -45,6 +46,7 @@ export type { Drift } from './onboarding/drift.js';
 export { proposeTemplates } from './onboarding/templates.js';
 export type { TemplateProposal } from './onboarding/templates.js';
 export { buildGenericLayout } from './onboarding/generic-layout.js';
+export { instantiateLayout } from './onboarding/instantiate.js';
 export { compareNatural } from './onboarding/order.js';
 export { equipmentRecordSchema } from './onboarding/equipment.js';
 export type { EquipmentRecord } from './onboarding/equipment.js';
