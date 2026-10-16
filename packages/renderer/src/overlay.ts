@@ -1,6 +1,8 @@
+import type { SceneState } from '@eqv/core';
 import { capabilitySegment } from './capability.js';
 import { isArm, robotR, shapeLocal, type Mat } from './geom.js';
 import type { Scene, SceneComponent } from './scene.js';
+import { estimateTextWidth } from './text.js';
 import { el, formatNum, withPointerEventsNone, type SvgNode } from './svg.js';
 
 export interface OverlayState {
@@ -19,6 +21,21 @@ export interface Highlight {
   transfers?: readonly { from: string; to: string; label: string }[];
 }
 
+/** One example-motion ghost, already computed by the host. The renderer only draws it; it is never log evidence. */
+export interface IllustrativeGhost {
+  materialKey: string;
+  label: string;
+  fromComponentId: string;
+  toComponentId: string;
+  fraction: number;
+}
+
+/** Cursor-time scene state plus illustrative ghosts. The renderer never runs the reducer, decides evidence or computes motion. */
+export interface ReplayOverlay {
+  state: SceneState;
+  illustrative?: readonly IllustrativeGhost[];
+}
+
 const DASH = '6 4';
 const RAD: Record<SceneComponent['cls'], number> = { process: 8, holding: 8, robot: 8, structure: 12 };
 
@@ -27,7 +44,23 @@ const PAINT = {
   selectionFill: 'var(--eqv-selection-fill, #e4e8f6)',
   board: 'var(--eqv-board, #fbfdff)',
   highlight: 'var(--eqv-highlight, #b42318)',
+  evidence: 'var(--eqv-evidence, #374151)',
+  materialFill: 'var(--eqv-material-fill, #f7e4cd)',
+  materialStroke: 'var(--eqv-material-stroke, #b45309)',
+  ink: 'var(--eqv-ink, #101828)',
 } as const;
+
+type StateMaterial = SceneState['materials'][number];
+type StateEvidence = StateMaterial['locationEvidence'];
+type StateActivity = Exclude<SceneState['components'][number]['activity'], 'no recorded activity'>;
+
+const DASH_UNKNOWN = '2 3';
+const EVIDENCE_DASH: Record<StateEvidence, string | undefined> = { observed: undefined, derived: DASH, unknown: DASH_UNKNOWN };
+const EVIDENCE_KO: Record<StateEvidence, string> = { observed: '관측', derived: '파생', unknown: '미확인' };
+const ACTIVITY_KO: Record<StateActivity, string> = { processing: '처리 중', 'post-processing': '후처리', function: '기능' };
+const TOKEN_PX = 8;
+const TOKEN_GAP_PX = 3;
+const TOKENS_PER_ROW = 6;
 
 function matrixAttr(matrix: Mat): string {
   return `matrix(${formatNum(matrix.a)} ${formatNum(matrix.b)} ${formatNum(matrix.c)} ${formatNum(matrix.d)} ${formatNum(matrix.e)} ${formatNum(matrix.f)})`;
@@ -75,6 +108,10 @@ function ring(comp: SceneComponent, dPx: number, stroke: string, strokePx: numbe
 
 function mark(comp: SceneComponent, shapes: SvgNode[]): SvgNode {
   return el('g', { transform: matrixAttr(comp.matrix) }, shapes);
+}
+
+function titled(node: SvgNode, text: string): SvgNode {
+  return { ...node, children: [el('title', {}, [text])] };
 }
 
 function capabilityNodes(scene: Scene, selectedId: string | null, showAll: boolean, k: number): SvgNode[] {
@@ -168,4 +205,138 @@ export function buildOverlay(scene: Scene, state: OverlayState, k: number): { in
     capabilities: withPointerEventsNone(el('g', { 'data-layer': 'capabilities' }, capabilityNodes(scene, state.selectedId, state.showAllCapabilities, k))),
     highlight: withPointerEventsNone(el('g', { 'data-layer': 'highlight' }, highlightNodes(scene, state.highlight, k))),
   };
+}
+
+function materialToken(material: StateMaterial, cx: number, cy: number, kLocal: number): SvgNode[] {
+  const attrs: Record<string, string> = {
+    fill: PAINT.materialFill,
+    stroke: PAINT.materialStroke,
+    'stroke-width': formatNum(1),
+    'vector-effect': 'non-scaling-stroke',
+  };
+  const dash = EVIDENCE_DASH[material.locationEvidence];
+  if (dash) attrs['stroke-dasharray'] = dash;
+  const title = el('title', {}, [
+    `${material.id ?? '익명'} · ${material.location?.holdingSiteId ?? '위치 Component 단위'} · 위치 ${EVIDENCE_KO[material.locationEvidence]} · 식별 ${EVIDENCE_KO[material.identityEvidence]}`,
+  ]);
+  const half = TOKEN_PX / 2 * kLocal;
+  const token = material.kind === 'wafer' || material.kind === 'reticle'
+    ? el('circle', { ...attrs, cx: formatNum(cx), cy: formatNum(cy), r: formatNum(half) }, [title])
+    : el('rect', {
+      ...attrs,
+      x: formatNum(cx - half),
+      y: formatNum(cy - half),
+      width: formatNum(TOKEN_PX * kLocal),
+      height: formatNum(TOKEN_PX * kLocal),
+      rx: formatNum(2 * kLocal),
+    }, [title]);
+  if (material.identityEvidence !== 'unknown' && material.locationEvidence !== 'unknown') return [token];
+  return [token, el('text', {
+    x: formatNum(cx),
+    y: formatNum(cy + 0.35 * TOKEN_PX * kLocal),
+    'text-anchor': 'middle',
+    'font-family': 'inherit',
+    'font-size': formatNum(TOKEN_PX * kLocal),
+    fill: PAINT.evidence,
+  }, ['?'])];
+}
+
+/** One row of tokens on the component's bottom edge, centred; screen-pixel sizes through `kLocal`. */
+function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[], k: number): SvgNode[] {
+  const kLocal = k / comp.S;
+  const shown = materials.slice(0, TOKENS_PER_ROW);
+  const overflow = materials.length - shown.length;
+  const plus = overflow > 0 ? `+${overflow}` : null;
+  const rowPx = shown.length * TOKEN_PX + (shown.length - 1) * TOKEN_GAP_PX
+    + (plus ? TOKEN_GAP_PX + estimateTextWidth(plus, TOKEN_PX, false) : 0);
+  const cy = comp.h / 2 - TOKEN_PX / 2 * kLocal;
+  const nodes: SvgNode[] = [];
+  let xPx = -rowPx / 2 + TOKEN_PX / 2;
+  for (const material of shown) {
+    nodes.push(...materialToken(material, xPx * kLocal, cy, kLocal));
+    xPx += TOKEN_PX + TOKEN_GAP_PX;
+  }
+  if (plus) {
+    nodes.push(el('text', {
+      x: formatNum((xPx - TOKEN_PX / 2) * kLocal),
+      y: formatNum(cy + 0.35 * TOKEN_PX * kLocal),
+      'font-family': 'inherit',
+      'font-size': formatNum(TOKEN_PX * kLocal),
+      fill: PAINT.ink,
+    }, [plus]));
+  }
+  return nodes;
+}
+
+function ghostNodes(scene: Scene, ghosts: readonly IllustrativeGhost[], k: number): SvgNode[] {
+  const nodes: SvgNode[] = [];
+  for (const ghost of ghosts) {
+    const from = visible(scene, ghost.fromComponentId);
+    const to = visible(scene, ghost.toComponentId);
+    if (!from || !to) continue;
+    const fraction = Math.min(1, Math.max(0, ghost.fraction));
+    const cx = from.center[0] + fraction * (to.center[0] - from.center[0]);
+    const cy = from.center[1] + fraction * (to.center[1] - from.center[1]);
+    const r = TOKEN_PX / 2 * k;
+    nodes.push(el('circle', {
+      'data-illustrative': 'true',
+      cx: formatNum(cx),
+      cy: formatNum(cy),
+      r: formatNum(r),
+      fill: 'none',
+      stroke: PAINT.materialStroke,
+      'stroke-width': formatNum(1),
+      'vector-effect': 'non-scaling-stroke',
+      'stroke-dasharray': DASH,
+    }, [el('title', {}, [`${ghost.label} · 예시 이동 (관측 아님)`])]));
+    nodes.push(el('text', {
+      x: formatNum(cx + r + 2 * k),
+      y: formatNum(cy + 0.35 * TOKEN_PX * k),
+      'font-family': 'inherit',
+      'font-size': formatNum(TOKEN_PX * k),
+      fill: PAINT.materialStroke,
+    }, ['예시 이동']));
+  }
+  return nodes;
+}
+
+/**
+ * Cursor-time replay layer: activity rings, material tokens, occupancy-conflict rings and illustrative
+ * ghosts. The state and the ghosts are given (D4); nothing here pairs occurrences, decides evidence
+ * or computes motion. `k = 1 / scene.pxPerUnit`, the same `k` as `buildOverlay`.
+ */
+export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number): SvgNode {
+  const nodes: SvgNode[] = [];
+  const byComponent = new Map<string, StateMaterial[]>();
+  for (const material of replay.state.materials) {
+    if (!material.location) continue;
+    const row = byComponent.get(material.location.componentId);
+    if (row) row.push(material);
+    else byComponent.set(material.location.componentId, [material]);
+  }
+  for (const state of replay.state.components) {
+    const comp = visible(scene, state.componentId);
+    if (!comp) continue;
+    const parts: SvgNode[] = [];
+    if (state.activity !== 'no recorded activity') {
+      parts.push(titled(
+        ring(comp, 6, PAINT.evidence, 2, k, EVIDENCE_DASH[state.activityEvidence]),
+        `${ACTIVITY_KO[state.activity]} · ${EVIDENCE_KO[state.activityEvidence]}`,
+      ));
+    }
+    const located = byComponent.get(state.componentId);
+    if (located) parts.push(...materialTokens(comp, located, k));
+    if (parts.length > 0) nodes.push(mark(comp, parts));
+  }
+  for (const marker of replay.state.markers) {
+    if (marker.kind !== 'occupancy-conflict') continue;
+    const comp = visible(scene, marker.componentId);
+    if (!comp) continue;
+    nodes.push(mark(comp, [titled(
+      ring(comp, 9, PAINT.highlight, 2, k, DASH_UNKNOWN),
+      `점유 충돌: ${marker.holdingSiteId} — ${marker.materialKeys.join(', ')}`,
+    )]));
+  }
+  nodes.push(...ghostNodes(scene, replay.illustrative ?? [], k));
+  return withPointerEventsNone(el('g', { 'data-layer': 'replay', 'aria-hidden': 'true' }, nodes));
 }

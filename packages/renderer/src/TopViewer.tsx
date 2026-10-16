@@ -6,7 +6,7 @@ import {
   bringIntoView, clampCenter, defaultCamera, fitScale, panByFraction, pxPerUnit, screenToLayout,
   viewBoxOf, zoomAtPoint, zoomFromWheel, ZOOM_MAX, ZOOM_MIN, type Camera, type Frame, type Size,
 } from './camera.js';
-import { buildOverlay, type Highlight } from './overlay.js';
+import { buildOverlay, buildReplayLayer, type Highlight, type ReplayOverlay } from './overlay.js';
 import { buildScene, type Scene } from './scene.js';
 import { formatNum, renderNode } from './svg.js';
 import type { TopViewProps } from './TopView.js';
@@ -18,6 +18,8 @@ export interface TopViewerProps extends TopViewProps {
   onSelectedChange?: (id: string | null) => void;
   /** Rings the listed components and draws a dashed line per observed transfer. Display only. */
   highlight?: Highlight | null;
+  /** Cursor-time replay layer: activity rings, material tokens, conflicts, illustrative ghosts. Given, never computed here. */
+  replay?: ReplayOverlay | null;
 }
 
 interface Drag {
@@ -123,7 +125,7 @@ function staticParts(scene: Scene): {
  * updates `aria-pressed` and the overlay, so a click does not rebuild the picture.
  */
 export function TopViewer({
-  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight,
+  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay,
 }: TopViewerProps) {
   const controlled = selectedId !== undefined;
   const [internalSelection, setInternalSelection] = useState<string | null>(null);
@@ -202,6 +204,10 @@ export function TopViewer({
     capabilities: renderNode(overlay.capabilities),
     highlight: overlay.highlight.children.length ? renderNode(overlay.highlight) : null,
   }), [overlay]);
+  const replayNodes = useMemo(
+    () => (replay ? renderNode(buildReplayLayer(scene, replay, 1 / scene.pxPerUnit)) : null),
+    [scene, replay],
+  );
 
   const queueRelayout = () => {
     if (relayoutTimer.current != null) clearTimeout(relayoutTimer.current);
@@ -469,6 +475,7 @@ export function TopViewer({
         {!overlayNodes.highlight && overlayNodes.interaction}
         {parts.interfaces}
         {overlayNodes.capabilities}
+        {replayNodes}
         {overlayNodes.highlight}
         {overlayNodes.highlight && overlayNodes.interaction}
         {parts.labels}

@@ -2,11 +2,11 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { expect, it } from 'vitest';
-import { layoutDocumentSchema, type Component, type LayoutDocument } from '@eqv/core';
+import { layoutDocumentSchema, type Component, type LayoutDocument, type SceneState } from '@eqv/core';
 import { buildScene, TopView, type Scene, type SceneComponent, type SvgNode } from '../src/index.js';
-import { buildOverlay, type OverlayState } from '../src/overlay.js';
+import { buildOverlay, buildReplayLayer, type IllustrativeGhost, type OverlayState } from '../src/overlay.js';
 import { robotR, shapeLocal } from '../src/geom.js';
-import { renderNode } from '../src/svg.js';
+import { formatNum, renderNode } from '../src/svg.js';
 
 const root = new URL('../../../', import.meta.url);
 const TEMPLATE_IDS = [
@@ -310,7 +310,7 @@ it.each([
   check(focusRing, 5, 2, 'var(--eqv-selection, #1428a0)');
 });
 
-it('uses only documented paints for selection, hover, focus and capabilities', () => {
+it('uses only documented paints for selection, hover, focus, capabilities and replay', () => {
   const { scene } = fixture([
     component({ id: 'arm', assetRef: 'primitive:robot-single', label: 'Arm', x: 240, y: 300, w: 80, h: 80, role: 'robot' }),
     component({ id: 'mod', assetRef: 'primitive:pm', label: 'PM', x: 400, y: 180, w: 80, h: 80 }),
@@ -320,13 +320,32 @@ it('uses only documented paints for selection, hover, focus and capabilities', (
     selectedId: 'mod', hoveredId: 'arm', focusedId: 'chamber', showAllCapabilities: true,
     highlight: { componentIds: ['arm', 'mod'], transfers: [{ from: 'arm', to: 'mod', label: 'x' }] },
   });
+  const materials = Array.from({ length: 7 }, (_, i) => stateMaterial({
+    key: `m:wafer:W${i + 1}`, kind: 'wafer', id: `W${i + 1}`,
+    location: { componentId: 'mod' }, locationEvidence: 'observed',
+    identityEvidence: i === 0 ? 'unknown' : 'observed',
+  }));
+  const replayPaint = buildReplayLayer(scene, {
+    state: replayState({
+      materials,
+      components: [
+        { componentId: 'mod', activity: 'processing', activityEvidence: 'derived', occurrenceIds: [] },
+        { componentId: 'arm', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] },
+      ],
+      markers: [{ kind: 'occupancy-conflict', componentId: 'chamber', holdingSiteId: 'slot', materialKeys: ['m:wafer:W1'] }],
+    }),
+    illustrative: [{ materialKey: 'm:wafer:W1', label: 'W1 → mod', fromComponentId: 'arm', toComponentId: 'mod', fraction: 0.5 }],
+  }, 1 / scene.pxPerUnit);
   expect(titles(result.capabilities).length).toBeGreaterThan(0);
   expect(result.interaction.attrs['pointer-events']).toBe('none');
   expect(result.capabilities.attrs['pointer-events']).toBe('none');
+  expect(replayPaint.attrs['aria-hidden']).toBe('true');
+  expect(replayPaint.attrs['pointer-events']).toBe('none');
   const paints: string[] = [];
-  for (const group of [result.interaction, result.capabilities, result.highlight]) {
+  for (const group of [result.interaction, result.capabilities, result.highlight, replayPaint]) {
     const walk = (node: SvgNode) => {
       expect(node.attrs['data-component-id']).toBeUndefined();
+      if (node.tag === 'text') expect(node.attrs.fill).toBeDefined();
       for (const name of ['fill', 'stroke']) {
         const paint = node.attrs[name];
         if (paint != null) paints.push(paint);
@@ -440,4 +459,254 @@ it('makes visible components buttons and keeps overlay layers from taking the hi
     const node = layer(scene.node, name);
     expect(node.attrs['pointer-events']).toBe('none');
   }
+});
+
+// --- Replay layer (15b): activity, materials, conflicts, illustrative ghosts ---
+
+type StateMaterial = SceneState['materials'][number];
+type StateEvidence = StateMaterial['locationEvidence'];
+
+function stateMaterial(partial: Pick<StateMaterial, 'key' | 'kind' | 'id' | 'location' | 'locationEvidence' | 'identityEvidence'>): StateMaterial {
+  return {
+    lotId: undefined,
+    alias: { moduleAlias: 'PM' },
+    occurrenceId: `o:${partial.key}`,
+    lastObservedAt: null,
+    ...partial,
+  };
+}
+
+function replayState(parts: Pick<SceneState, 'materials' | 'components'> & Partial<Pick<SceneState, 'markers'>>): SceneState {
+  return {
+    equipmentId: 'EQ-FX',
+    at: '2026-10-17T09:00:00.000',
+    appliedSeq: 4,
+    binding: { layoutId: 'fixture', mappingHash: `sha256:${'a'.repeat(64)}` },
+    markers: [],
+    ...parts,
+  };
+}
+
+function replayLayer(scene: Scene, state: SceneState, illustrative?: readonly IllustrativeGhost[]): SvgNode {
+  return buildReplayLayer(scene, { state, illustrative }, 1 / scene.pxPerUnit);
+}
+
+function markOf(node: SvgNode, comp: SceneComponent): SvgNode {
+  const m = comp.matrix;
+  const transform = `matrix(${[m.a, m.b, m.c, m.d, m.e, m.f].map((value) => formatNum(value)).join(' ')})`;
+  const found = node.children.find((child) => typeof child !== 'string' && child.tag === 'g' && child.attrs.transform === transform);
+  if (!found || typeof found === 'string') throw new Error(`missing mark for ${comp.id}`);
+  return found;
+}
+
+const EVIDENCE_ORDER = ['observed', 'derived', 'unknown'] as const;
+const EVIDENCE_KO = { observed: '관측', derived: '파생', unknown: '미확인' } as const;
+const TOKEN_TITLE = (id: string, site: string | undefined, locationEvidence: StateEvidence, identityEvidence: StateEvidence) =>
+  `${id} · ${site ?? '위치 Component 단위'} · 위치 ${EVIDENCE_KO[locationEvidence]} · 식별 ${EVIDENCE_KO[identityEvidence]}`;
+
+it.each([...EVIDENCE_ORDER].flatMap((locationEvidence) => EVIDENCE_ORDER.map((identityEvidence) => ({ locationEvidence, identityEvidence }))))(
+  '$locationEvidence location × $identityEvidence identity: token dash follows location, ? on either unknown',
+  ({ locationEvidence, identityEvidence }) => {
+    const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+    const state = replayState({
+      materials: [stateMaterial({
+        key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' }, locationEvidence, identityEvidence,
+      })],
+      components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+    });
+    const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+    const token = drawn.find((node) => node.tag === 'circle');
+    if (!token) throw new Error('missing token');
+    expect(token.attrs.fill).toBe('var(--eqv-material-fill, #f7e4cd)');
+    expect(token.attrs.stroke).toBe('var(--eqv-material-stroke, #b45309)');
+    expect(token.attrs['stroke-dasharray']).toBe(locationEvidence === 'observed' ? undefined : locationEvidence === 'derived' ? '6 4' : '2 3');
+    expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join('')))
+      .toEqual(identityEvidence === 'unknown' || locationEvidence === 'unknown' ? ['?'] : []);
+  },
+);
+
+it.each([
+  { activity: 'processing', evidence: 'observed', title: '처리 중 · 관측', dash: undefined },
+  { activity: 'processing', evidence: 'derived', title: '처리 중 · 파생', dash: '6 4' },
+  { activity: 'post-processing', evidence: 'unknown', title: '후처리 · 미확인', dash: '2 3' },
+  { activity: 'function', evidence: 'unknown', title: '기능 · 미확인', dash: '2 3' },
+] as const)('activity ring dash follows $evidence activityEvidence only and has no ?', ({ activity, evidence, title, dash }) => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const state = replayState({
+    materials: [stateMaterial({
+      key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' },
+      locationEvidence: 'observed', identityEvidence: 'unknown',
+    })],
+    components: [{ componentId: 'a', activity, activityEvidence: evidence, occurrenceIds: [] }],
+  });
+  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+  const ring = drawn.find((node) => node.tag === 'rect');
+  if (!ring) throw new Error('missing activity ring');
+  expect(ring.attrs.stroke).toBe('var(--eqv-evidence, #374151)');
+  expect(ring.attrs['stroke-dasharray']).toBe(dash);
+  expect(titles(ring)).toEqual([title]);
+  expect(ring.children).toHaveLength(1);
+  expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['?']);
+});
+
+it.each([
+  { kind: 'wafer', tag: 'circle' },
+  { kind: 'reticle', tag: 'circle' },
+  { kind: 'carrier', tag: 'rect' },
+  { kind: 'batch', tag: 'rect' },
+  { kind: 'boat', tag: 'rect' },
+] as const)('$kind token is a $tag', ({ kind, tag }) => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const state = replayState({
+    materials: [stateMaterial({
+      key: `m:${kind}:M1`, kind, id: 'M1', location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed',
+    })],
+    components: [{ componentId: 'a', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+  });
+  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+  expect(drawn.find((node) => node.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)')?.tag).toBe(tag);
+});
+
+it('titles a material token with id, holding site and both evidence facets', () => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const state = replayState({
+    materials: [
+      stateMaterial({
+        key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a', holdingSiteId: 'slot-2' },
+        locationEvidence: 'derived', identityEvidence: 'unknown',
+      }),
+      stateMaterial({
+        key: 'o:occ-9', kind: 'carrier', id: null, location: { componentId: 'a' },
+        locationEvidence: 'observed', identityEvidence: 'observed',
+      }),
+    ],
+    components: [{ componentId: 'a', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+  });
+  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+  expect(titles({ tag: 'g', attrs: {}, children: drawn.filter((node) => node.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)') }))
+    .toEqual([TOKEN_TITLE('W1', 'slot-2', 'derived', 'unknown'), TOKEN_TITLE('익명', undefined, 'observed', 'observed')]);
+});
+
+it('draws nothing for no recorded activity, location null, a filtered-out level and an absent id', () => {
+  const { scene } = fixture([
+    component({ id: 'idle', assetRef: 'primitive:pm', label: 'Idle', x: 200, y: 300, w: 96, h: 100 }),
+    component({ id: 'secret', assetRef: 'primitive:pm', label: 'Secret', x: 600, y: 300, w: 96, h: 100, levelId: 'level-upper' }),
+  ], [], ['level-main']);
+  const state = replayState({
+    materials: [
+      stateMaterial({ key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: null, locationEvidence: 'observed', identityEvidence: 'observed' }),
+      stateMaterial({ key: 'm:wafer:W2', kind: 'wafer', id: 'W2', location: { componentId: 'secret' }, locationEvidence: 'observed', identityEvidence: 'observed' }),
+      stateMaterial({ key: 'm:wafer:W3', kind: 'wafer', id: 'W3', location: { componentId: 'missing' }, locationEvidence: 'observed', identityEvidence: 'observed' }),
+    ],
+    components: [
+      { componentId: 'idle', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] },
+      { componentId: 'secret', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] },
+      { componentId: 'missing', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] },
+    ],
+  });
+  const result = replayLayer(scene, state);
+  expect(result.attrs['data-layer']).toBe('replay');
+  expect(result.children).toEqual([]);
+});
+
+it('caps a component at six tokens in state order and labels the rest with +N', () => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const state = replayState({
+    materials: Array.from({ length: 7 }, (_, i) => stateMaterial({
+      key: `m:wafer:W${i + 1}`, kind: 'wafer', id: `W${i + 1}`,
+      location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed',
+    })),
+    components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+  });
+  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+  const tokens = drawn.filter((node) => node.tag === 'circle');
+  expect(tokens).toHaveLength(6);
+  expect(tokens.map((node) => titles(node)[0])).toEqual(['W1', 'W2', 'W3', 'W4', 'W5', 'W6'].map((id) => TOKEN_TITLE(id, undefined, 'observed', 'observed')));
+  const texts = drawn.filter((node) => node.tag === 'text');
+  expect(texts.map((node) => node.children.join(''))).toEqual(['+1']);
+  expect(texts[0]!.attrs.fill).toBe('var(--eqv-ink, #101828)');
+});
+
+it('rings an occupancy conflict with its holding site and material keys', () => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const state = replayState({
+    materials: [],
+    components: [{ componentId: 'a', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+    markers: [{ kind: 'occupancy-conflict', componentId: 'a', holdingSiteId: 'slot-3', materialKeys: ['m:wafer:W1', 'm:wafer:W2'] }],
+  });
+  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+  const conflict = drawn.filter((node) => node.tag === 'rect');
+  expect(conflict).toHaveLength(1);
+  expect(conflict[0]!.attrs).toMatchObject({ stroke: 'var(--eqv-highlight, #b42318)', 'stroke-dasharray': '2 3' });
+  expect(titles(conflict[0]!)).toEqual(['점유 충돌: slot-3 — m:wafer:W1, m:wafer:W2']);
+});
+
+function ghostFixture(): Scene {
+  const { scene } = fixture([
+    component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 100, y: 100, w: 96, h: 100 }),
+    component({ id: 'b', assetRef: 'primitive:pm', label: 'B', x: 500, y: 380, w: 96, h: 100 }),
+    component({ id: 'secret', assetRef: 'primitive:pm', label: 'Secret', x: 700, y: 80, w: 80, h: 80, levelId: 'level-upper' }),
+  ], [], ['level-main']);
+  return scene;
+}
+
+it.each([
+  { name: 'absent', illustrative: undefined },
+  { name: 'empty', illustrative: [] },
+] as const)('draws no ghost when illustrative is $name', ({ illustrative }) => {
+  const result = replayLayer(ghostFixture(), replayState({ materials: [], components: [] }), illustrative);
+  expect(shapes(result).filter((node) => node.attrs['data-illustrative'])).toEqual([]);
+  expect(shapes(result).filter((node) => node.tag === 'text')).toEqual([]);
+});
+
+it('draws hollow dashed ghost circles between centres, clamped, skipping hidden ends, keeping the real token', () => {
+  const scene = ghostFixture();
+  const a = scene.components.get('a')!;
+  const b = scene.components.get('b')!;
+  const state = replayState({
+    materials: [stateMaterial({
+      key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' },
+      locationEvidence: 'observed', identityEvidence: 'observed',
+    })],
+    components: [{ componentId: 'a', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+  });
+  const result = replayLayer(scene, state, [
+    { materialKey: 'm:wafer:W1', label: 'W1 → B', fromComponentId: 'a', toComponentId: 'b', fraction: 0.5 },
+    { materialKey: 'm:wafer:W2', label: 'clamped', fromComponentId: 'a', toComponentId: 'b', fraction: 2 },
+    { materialKey: 'm:wafer:W3', label: 'hidden end', fromComponentId: 'a', toComponentId: 'secret', fraction: 0.5 },
+  ]);
+  const ghosts = shapes(result).filter((node) => node.attrs['data-illustrative'] === 'true');
+  expect(ghosts).toHaveLength(2);
+  expect(ghosts[0]!.attrs).toMatchObject({
+    cx: String(round((a.center[0] + b.center[0]) / 2)),
+    cy: String(round((a.center[1] + b.center[1]) / 2)),
+    fill: 'none',
+    stroke: 'var(--eqv-material-stroke, #b45309)',
+    'stroke-dasharray': '6 4',
+  });
+  expect(ghosts[1]!.attrs).toMatchObject({ cx: String(round(b.center[0])), cy: String(round(b.center[1])) });
+  expect(titles(ghosts[0]!)).toEqual(['W1 → B · 예시 이동 (관측 아님)']);
+  expect(shapes(result).filter((node) => node.tag === 'text').map((node) => node.children.join('')).filter((text) => text === '예시 이동')).toHaveLength(2);
+  expect(shapes(result).some((node) => node.tag === 'line' || node.tag === 'path')).toBe(false);
+  const token = shapes(markOf(result, a)).find((node) => node.tag === 'circle');
+  expect(titles(token ?? { tag: 'x', attrs: {}, children: [] })).toEqual([TOKEN_TITLE('W1', undefined, 'observed', 'observed')]);
+});
+
+it('scales a token to about 8 screen px under a parent scaled by 2', () => {
+  const { scene } = fixture([
+    component({ id: 'frame', assetRef: 'primitive:housing', label: 'Frame', x: 400, y: 300, scale: 2, w: 700, h: 400, role: 'housing' }),
+    component({ id: 'mod', assetRef: 'primitive:pm', label: 'PM', parentId: 'frame', x: 0, y: 40, w: 70, h: 76 }),
+  ]);
+  const comp = scene.components.get('mod')!;
+  expect(comp.S).toBe(2);
+  const state = replayState({
+    materials: [stateMaterial({
+      key: 'm:carrier:C1', kind: 'carrier', id: 'C1', location: { componentId: 'mod' },
+      locationEvidence: 'observed', identityEvidence: 'observed',
+    })],
+    components: [{ componentId: 'mod', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+  });
+  const token = shapes(markOf(replayLayer(scene, state), comp)).find((node) => node.tag === 'rect');
+  if (!token) throw new Error('missing token');
+  expect(Number(token.attrs.width) * comp.S / (1 / scene.pxPerUnit)).toBeCloseTo(8, 5);
 });
