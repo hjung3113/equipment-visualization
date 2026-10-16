@@ -33,10 +33,14 @@
       "label": "lp-a",
       "levelId": "level-main",
       "transform": {
-        "x": 0,
-        "y": 0,
+        "x": 50,
+        "y": 90,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 16,
+        "height": 8
       },
       "ports": [
         {
@@ -121,6 +125,12 @@
           "sourceEvidence": [
             "src-synthetic"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
         }
       }
     },
@@ -131,10 +141,14 @@
       "label": "efem-1",
       "levelId": "level-main",
       "transform": {
-        "x": 10,
-        "y": 0,
+        "x": 50,
+        "y": 72,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 60,
+        "height": 16
       },
       "ports": [
         {
@@ -195,6 +209,12 @@
           "sourceEvidence": [
             "src-synthetic"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
         }
       }
     },
@@ -209,6 +229,10 @@
         "y": 0,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 8,
+        "height": 8
       },
       "ports": [],
       "holdingSites": [
@@ -256,6 +280,12 @@
             "src-synthetic"
           ]
         },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
         "parentId": {
           "certainty": "assumed",
           "sourceEvidence": [
@@ -272,10 +302,14 @@
       "label": "ll-a",
       "levelId": "level-main",
       "transform": {
-        "x": 20,
-        "y": 0,
+        "x": 50,
+        "y": 54,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 12,
+        "height": 10
       },
       "ports": [
         {
@@ -361,6 +395,12 @@
           "sourceEvidence": [
             "src-synthetic"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
         }
       }
     },
@@ -371,10 +411,14 @@
       "label": "tm-1",
       "levelId": "level-main",
       "transform": {
-        "x": 30,
-        "y": 0,
+        "x": 50,
+        "y": 32,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 24,
+        "height": 24
       },
       "ports": [
         {
@@ -448,6 +492,12 @@
           "sourceEvidence": [
             "src-synthetic"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
         }
       }
     },
@@ -462,6 +512,10 @@
         "y": 0,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 10,
+        "height": 10
       },
       "ports": [],
       "holdingSites": [
@@ -521,6 +575,12 @@
             "src-synthetic"
           ]
         },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
         "parentId": {
           "certainty": "assumed",
           "sourceEvidence": [
@@ -537,10 +597,14 @@
       "label": "pm-a",
       "levelId": "level-main",
       "transform": {
-        "x": 40,
-        "y": 0,
+        "x": 24,
+        "y": 32,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 18,
+        "height": 18
       },
       "ports": [
         {
@@ -601,6 +665,12 @@
           "sourceEvidence": [
             "src-synthetic"
           ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
         }
       }
     },
@@ -611,10 +681,14 @@
       "label": "pm-b",
       "levelId": "level-main",
       "transform": {
-        "x": 50,
-        "y": 0,
+        "x": 76,
+        "y": 32,
         "rotation": 0,
         "scale": 1
+      },
+      "size": {
+        "width": 18,
+        "height": 18
       },
       "ports": [
         {
@@ -683,6 +757,12 @@
           ]
         },
         "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic"
+          ]
+        },
+        "size": {
           "certainty": "assumed",
           "sourceEvidence": [
             "src-synthetic"

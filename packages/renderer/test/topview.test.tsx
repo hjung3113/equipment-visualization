@@ -79,7 +79,9 @@ it('renders unknown cluster assetRefs as role-classed dashed neutral boxes', () 
     expect(titleText.endsWith(` · 알 수 없는 도형 (${component.assetRef})`)).toBe(true);
     expect(hasGlyph(group!)).toBe(false);
   }
-  expect([...scene.components.values()].every(({ w, h }) => w === 8 && h === 8)).toBe(true);
+  for (const component of layout.components) {
+    expect(scene.components.get(component.id)).toMatchObject({ w: component.size?.width, h: component.size?.height });
+  }
   expect(scene.components.get('pm-a')?.cls).toBe('process');
   expect(scene.components.get('ll-a')?.cls).toBe('holding');
   expect(scene.components.get('efem-robot')?.poly).toHaveLength(4);
