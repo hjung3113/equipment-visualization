@@ -1,5 +1,5 @@
 export const PACKAGE_NAME = '@eqv/core';
-export { siteWallClockSchema, type SiteWallClock } from './site-wall-clock.js';
+export { siteWallClockSchema, wallClockToMillis, millisToWallClock, type SiteWallClock } from './site-wall-clock.js';
 
 export { LAYOUT_SCHEMA_VERSION, layoutDocumentSchema, idSchema } from './layout/schema.js';
 export type {
@@ -30,6 +30,8 @@ export { sceneStateSchema } from './scene/schema.js';
 export type { SceneState, SceneMaterial, SceneComponent, SceneMarker } from './scene/schema.js';
 export { RULESET_VERSION, assertReplayInput, seekSceneState, stepSceneState } from './replay/reduce.js';
 export type { ReplayInput } from './replay/reduce.js';
+export { replayTimeline } from './replay/timeline.js';
+export type { TimelineRange, MaterialSpan, ActivitySpan, MarkerSpan, ReplayTimeline } from './replay/timeline.js';
 export { replayKey, sceneStateHash } from './replay/replay-key.js';
 export type { ReplayKey } from './replay/replay-key.js';
 
