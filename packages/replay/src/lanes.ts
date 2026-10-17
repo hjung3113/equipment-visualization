@@ -38,10 +38,16 @@ function stack(bars: Bar[]): Bar[][] {
 
 /**
  * Gantt lanes in Layout Component order, then Components the timeline names that this Layout lacks, then `위치 미확인`.
+ * Without a cursor Layout there are no Component lanes: only `위치 미확인`, holding the spans whose location is null.
  * Material bars sit in their Holding Site sublane only while that Component is expanded; otherwise in the Component lane.
  */
 export function buildLanes(timeline: ReplayTimeline, layout: EquipmentLayoutDocument | null, expanded: ReadonlySet<string>): Lane[] {
-  const components = layout?.components ?? [];
+  if (layout === null) {
+    const bars = timeline.materials.filter((m) => !m.location).map((m): Bar => ({ id: `m:${m.key}:${m.from}`, kind: 'material',
+      occurrenceIds: [m.occurrenceId], from: m.from, to: m.to, evidence: m.locationEvidence, what: m.kind, materialId: m.id, identityEvidence: m.identityEvidence }));
+    return [{ id: '?', label: UNKNOWN_LANE, componentId: null, rows: stack(bars) }];
+  }
+  const components = layout.components;
   const known = new Set(components.map((c) => c.id));
   const foreign = new Set<string>();
   for (const span of [...timeline.activities, ...timeline.materials]) {

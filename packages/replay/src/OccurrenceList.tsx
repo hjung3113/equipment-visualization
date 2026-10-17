@@ -41,6 +41,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
     const sibling = event.key === 'ArrowDown' ? event.currentTarget.nextElementSibling : event.key === 'ArrowUp' ? event.currentTarget.previousElementSibling : null;
     if (sibling instanceof HTMLElement) { event.preventDefault(); sibling.focus(); }
   };
+  const hasSelected = rows.some((o) => o.id === selectedOccurrenceId);
   if (rows.length === 0) return <p className="eqv-rp-empty">이 구간에 겹치는 Occurrence가 없습니다</p>;
   return (
     <div className="eqv-rp-table-scroll" role="region" aria-label="Occurrence 목록 표" tabIndex={0}>
@@ -57,7 +58,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
             const running = appliedSeq !== null && o.start.seq <= appliedSeq && (o.end === null || o.end.seq > appliedSeq);
             const issues = issuesOf(o.id);
             return (
-              <tr key={o.id} data-occurrence-id={o.id} aria-selected={selected} tabIndex={selected || (selectedOccurrenceId === null && i === 0) ? 0 : -1}
+              <tr key={o.id} data-occurrence-id={o.id} aria-selected={selected} tabIndex={selected || (!hasSelected && i === 0) ? 0 : -1}
                 className={selected ? 'eqv-rp-row eqv-rp-row-selected' : 'eqv-rp-row'}
                 onClick={() => onSelectOccurrence(o.id)} onKeyDown={(event) => onKey(event, o.id)}>
                 <td>

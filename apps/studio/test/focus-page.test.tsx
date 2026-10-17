@@ -166,6 +166,14 @@ it('loadFocus reads every Binding\'s Mapping Version and Layout and reports the 
   expect(await loadFocus('eq-synth-01')).toMatchObject({ kind: 'error', error: expect.stringContaining(MAPPING_OLD) });
   await writeJson(root, MAPPING_OLD, old);
 
+  const serve = globalThis.fetch;
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    if (decodeURIComponent(input).includes(MAPPING_OLD)) throw new Error('boom');
+    return serve(input, init);
+  });
+  expect(await loadFocus('eq-synth-01')).toMatchObject({ kind: 'error', error: expect.stringContaining(`${MAPPING_OLD}: `) });
+  vi.stubGlobal('fetch', serve);
+
   const layout = JSON.parse(await readFile(join(repo, 'fixtures/cluster-single/layout.json'), 'utf8'));
   await writeJson(root, 'layouts/eq-synth-01-layout/draft.layout.json', { ...layout, id: 'other-layout' });
   expect(await loadFocus('eq-synth-01')).toMatchObject({ kind: 'error', error: expect.stringContaining('layouts/eq-synth-01-layout/draft.layout.json: id(') });

@@ -1,7 +1,6 @@
 import { expect, it } from 'vitest';
-import { replayTimeline } from '@eqv/core';
 import { buildLanes } from '../src/index.js';
-import { batch, equipmentLayout, input, timeline } from './data.js';
+import { equipmentLayout, timeline } from './data.js';
 
 const ids = (expanded: string[]) => buildLanes(timeline, equipmentLayout, new Set(expanded));
 const bars = (lane: ReturnType<typeof ids>[number]) => lane.rows.flat();
@@ -33,6 +32,9 @@ it('keeps materials of a collapsed Component, and Component-level wafers, in the
 it('puts materials without a location in 위치 미확인 and builds no Component lanes without a Layout', () => {
   const unknown = ids([]).find((l) => l.id === '?')!;
   expect(bars(unknown).length).toBeGreaterThan(0);
-  const unbound = replayTimeline({ ...input, bindings: { ...input.bindings, bindings: [] } }, { from: batch.from, to: batch.to });
-  expect(buildLanes(unbound, null, new Set()).map((l) => l.id)).toEqual(['?']);
+  const noLayout = buildLanes(timeline, null, new Set());
+  expect(noLayout.map((l) => l.id)).toEqual(['?']);
+  expect(bars(noLayout[0]!).length).toBeGreaterThan(0);
+  const nullLocated = new Set(timeline.materials.filter((m) => !m.location).map((m) => m.occurrenceId));
+  for (const bar of bars(noLayout[0]!)) expect(nullLocated.has(bar.occurrenceIds[0]!)).toBe(true);
 });

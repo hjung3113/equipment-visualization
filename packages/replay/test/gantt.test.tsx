@@ -55,6 +55,17 @@ it('seeks on pointer down over the axis', () => {
   expect(onCursorChange).toHaveBeenCalledWith(time('10:15:00'));
 });
 
+it('ignores moves after a press released elsewhere, and keeps the Gantt at its design width inside a labelled scroller', () => {
+  const { onCursorChange, svg } = setup();
+  const slider = screen.getByRole('slider', { name: '커서 시각' });
+  slider.getBoundingClientRect = () => ({ left: 100, width: 800, top: 0, height: 20, right: 900, bottom: 20, x: 100, y: 0, toJSON: () => ({}) });
+  fireEvent.pointerDown(slider, { clientX: 500, pointerId: 1, buttons: 1 });
+  fireEvent.pointerMove(slider, { clientX: 700, pointerId: 1, buttons: 0 });
+  expect(onCursorChange).toHaveBeenCalledTimes(1);
+  expect(svg.style.minWidth).toBe('972px');
+  expect(svg.closest('[role="region"]')?.getAttribute('aria-label')).toBe('Gantt 차트');
+});
+
 it('selects an Occurrence on a bar click without moving the cursor, and marks open Occurrences with an open end', () => {
   const { onCursorChange, onSelectOccurrence, svg } = setup(time('10:26:00'));
   const bar = Array.from(svg.querySelectorAll('[data-bar="material"][data-occurrence-id="occ-open"]')).at(-1)!;

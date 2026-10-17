@@ -16,7 +16,7 @@ const list = (at: string, over: Partial<Parameters<typeof OccurrenceList>[0]> = 
 const row = (id: string) => within(document.querySelector(`tr[data-occurrence-id="${id}"]`) as HTMLElement);
 
 it('lists Occurrences overlapping the range in Record Sequence order, including those without a time', () => {
-  list('10:06:00');
+  list('10:06:00', { batch: { ...batch, occurrences: [...batch.occurrences].reverse() } });
   const ids = Array.from(document.querySelectorAll('tbody tr')).map((tr) => tr.getAttribute('data-occurrence-id'));
   const seqs = ids.map((id) => batch.occurrences.find((o) => o.id === id)!.start.seq);
   expect(seqs).toEqual([...seqs].sort((a, b) => a - b));
@@ -55,6 +55,10 @@ it('selects a row on click and marks the selected row', () => {
   cleanup();
   list('10:06:00', { selectedOccurrenceId: 'occ-pm1-process' });
   expect(document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id')).toBe('occ-pm1-process');
+  cleanup();
+  list('10:06:00', { selectedOccurrenceId: 'occ-not-in-rows' });
+  expect(document.querySelector('tbody tr')?.getAttribute('tabindex')).toBe('0');
+  expect(document.querySelectorAll('tbody tr[tabindex="0"]')).toHaveLength(1);
 });
 
 it('lists Data Quality Issues and selects the related Occurrence', () => {

@@ -24,9 +24,18 @@ export type FocusLoad =
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const NO_BINDING = '게시된 Binding 없음';
 
+/** A rejected read (not a 404) names the path it failed on. */
+async function read(path: string): Promise<unknown | undefined> {
+  try {
+    return await readOptional(path);
+  } catch (error) {
+    throw new DataError(`${path}: ${message(error)}`);
+  }
+}
+
 async function loadBatch(equipmentId: string): Promise<OccurrenceBatch> {
   const path = `observations/${equipmentId}/occurrence-batch.json`;
-  const raw = await readOptional(path);
+  const raw = await read(path);
   if (raw === undefined) throw new DataError('관측 데이터 없음');
   const parsed = occurrenceBatchSchema.safeParse(raw);
   if (!parsed.success) throw new DataError(`${path}: ${problems(parsed.error.issues)}`);
@@ -36,7 +45,7 @@ async function loadBatch(equipmentId: string): Promise<OccurrenceBatch> {
 
 async function loadMapping(equipmentId: string, binding: Binding): Promise<MappingVersion> {
   const path = `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
-  const raw = await readOptional(path);
+  const raw = await read(path);
   if (raw === undefined) throw new DataError(`${path}: Mapping Version 파일 없음`);
   const parsed = mappingVersionSchema.safeParse(raw);
   if (!parsed.success) throw new DataError(`${path}: ${problems(parsed.error.issues)}`);
@@ -52,7 +61,7 @@ async function loadLayout(layoutId: string, revision: string | undefined, notice
   const path = revision === undefined ? `layouts/${layoutId}/draft.layout.json`
     : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
   if (revision === undefined) notices.push(`게시된 Layout Revision이 없어 초안 레이아웃으로 표시합니다 (${layoutId})`);
-  const raw = await readOptional(path);
+  const raw = await read(path);
   if (raw === undefined) throw new DataError(`${path}: Layout 파일 없음`);
   const result = validateLayout(raw);
   if (!result.ok) throw new DataError(`${path}: ${problems(result.issues)}`);

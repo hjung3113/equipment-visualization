@@ -84,6 +84,7 @@ export function FocusGantt({
   const onPointerMove = (event: PointerEvent<SVGRectElement>) => {
     const current = drag.current;
     if (!current || current.pointerId !== event.pointerId) return;
+    if (event.buttons === 0) { drag.current = null; return; }
     if (!current.captured) {
       if (Math.abs(event.clientX - current.x) < DRAG_THRESHOLD) return;
       current.captured = true;
@@ -99,6 +100,7 @@ export function FocusGantt({
       try { event.currentTarget.releasePointerCapture(event.pointerId); } catch { /* already released */ }
     }
   };
+  const onPointerLeave = () => { if (drag.current && !drag.current.captured) drag.current = null; };
   const onSliderKey = (event: KeyboardEvent<SVGRectElement>) => {
     let next: SiteWallClock | undefined;
     if (event.key === 'ArrowLeft') next = [...timeline.breakpoints].reverse().find((t) => wallClockToMillis(t) < cursorMs);
@@ -123,7 +125,8 @@ export function FocusGantt({
   let componentLabel = '';
   return (
     <div className="eqv-rp-gantt">
-      <svg viewBox={`0 0 ${WIDTH} ${plotBottom + PAD}`} width="100%" role="group" aria-label="Component lane Gantt" className="eqv-rp-svg">
+      <div className="eqv-rp-gantt-scroll" role="region" aria-label="Gantt 차트" tabIndex={0}>
+      <svg viewBox={`0 0 ${WIDTH} ${plotBottom + PAD}`} width="100%" style={{ minWidth: WIDTH }} role="group" aria-label="Component lane Gantt" className="eqv-rp-svg">
         <defs>
           <pattern id={`${prefix}-observed`} width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="none" /></pattern>
           <pattern id={`${prefix}-derived`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -256,8 +259,9 @@ export function FocusGantt({
         <rect className="eqv-rp-axis" role="slider" tabIndex={0} aria-label="커서 시각" aria-orientation="horizontal"
           aria-valuemin={fromMs} aria-valuemax={lastMs} aria-valuenow={cursorMs} aria-valuetext={millisToWallClock(cursorMs)}
           x={LABEL_W} y={0} width={PLOT_W} height={AXIS_H - 14} onKeyDown={onSliderKey}
-          onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} />
+          onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onPointerLeave={onPointerLeave} />
       </svg>
+      </div>
       <ul className="eqv-rp-legend" aria-label="범례">
         {EVIDENCES.map((evidence) => (
           <li key={evidence}>
