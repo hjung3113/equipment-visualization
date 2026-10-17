@@ -1,6 +1,6 @@
 import { resolve } from 'node:path';
 import { ESLint } from 'eslint';
-import { expect, it } from 'vitest';
+import { beforeAll, expect, it } from 'vitest';
 
 const repoRoot = resolve(import.meta.dirname, '..');
 
@@ -20,8 +20,14 @@ interface Variant {
   rule: BoundaryRule | null;
 }
 
+const eslint = new ESLint({ cwd: repoRoot });
+
+// The first lint loads the config and the TypeScript parser; under a loaded gate that alone passed 5 s (#75).
+beforeAll(async () => {
+  await eslint.lintText('', { filePath: 'packages/core/src/x.ts' });
+}, 30_000);
+
 async function lint(filePath: string, code: string): Promise<(string | null)[]> {
-  const eslint = new ESLint({ cwd: repoRoot });
   const [result] = await eslint.lintText(code, { filePath });
   return result?.messages.map((message) => message.ruleId) ?? [];
 }
