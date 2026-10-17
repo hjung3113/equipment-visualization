@@ -135,6 +135,21 @@ it.each<Variant>([
     rule: null,
   },
   {
+    code: "import { DataTable } from '@eqv/ui';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export const dep = await import('@eqv/ui');",
+    filePath: 'packages/renderer/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "import { DataTable } from '@eqv/ui';",
+    filePath: 'packages/replay/src/x.tsx',
+    rule: null,
+  },
+  {
     // Negative control: the boundary pattern must not over-match.
     code: "import x from 'apple'; import('@apx/kernel');",
     filePath: 'packages/core/src/x.ts',

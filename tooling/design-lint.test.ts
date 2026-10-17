@@ -26,6 +26,11 @@ it.each([
     'import { Button } from "@fops/ui"; export const X = () => <Button className="bg-surface-card">x</Button>;',
     ['shadcn/no-restyle'],
   ],
+  [
+    'apps/studio/src/x.tsx',
+    'import { DataTable } from "@eqv/ui"; export const X = () => <DataTable className="bg-surface-card" label="x" columns={[]}>{null}</DataTable>;',
+    ['shadcn/no-restyle'],
+  ],
   ['packages/editor/src/x.tsx', 'export const X = () => <div className="p-[13px]" />;', ['shadcn/no-arbitrary-values']],
   [
     'apps/studio/src/x.tsx',
