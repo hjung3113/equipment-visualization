@@ -129,6 +129,9 @@ export function OnboardingPage({ equipmentId }: { equipmentId: string }) {
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : (
         <>
           <p>{result.data.record.maker} / {result.data.record.model}</p>
+          {(result.data.bindings?.bindings.length ?? 0) > 0 && (
+            <p><Link href={hrefFor({ name: 'focus', equipmentId, entityType: null, anchor: null })}>Focus 열기</Link></p>
+          )}
           {result.skippedTemplates.length > 0 && <p role="status">건너뛴 Template: {result.skippedTemplates.join(', ')}</p>}
           <InventoryView inventory={result.data.inventory} dictionaries={result.data.dictionaries} />
           {result.draft.kind === 'error' && <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>}

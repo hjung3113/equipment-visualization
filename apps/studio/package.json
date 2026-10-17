@@ -13,6 +13,7 @@
     "@eqv/core": "workspace:*",
     "@eqv/editor": "workspace:*",
     "@eqv/renderer": "workspace:*",
+    "@eqv/replay": "workspace:*",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },
