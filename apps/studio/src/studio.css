@@ -1,3 +1,44 @@
+@import "tailwindcss";
+@import "@fops/ui/styles/tokens.css" layer(base);
+@import "@fops/ui/styles/semantic.css" layer(base);
+@import "@fops/ui/styles/theme.css";
+@import "@fops/ui/styles/compat.css";
+@source "../../../external/feedbackops/packages/ui/src";
+@source ".";
+
+/* ADR-0008: --eqv-* rows whose platform token @fops/ui defines; undeclared rows fall back to the asset hex. */
+:root {
+  --eqv-canvas: rgb(var(--surface-canvas));
+  --eqv-board: rgb(var(--surface-card));
+  --eqv-border: rgb(var(--border-subtle));
+  --eqv-ink: rgb(var(--text-primary));
+  --eqv-secondary: rgb(var(--text-secondary));
+  --eqv-interface: rgb(var(--text-secondary));
+  --eqv-evidence: rgb(var(--text-secondary));
+  --eqv-detail-fill: rgb(var(--surface-field-filled));
+  --eqv-assumed-fg: rgb(var(--text-warning-label));
+}
+
+/* Stopgap (UX-1/UX-2): restore cues Tailwind Preflight erases, until slice c replaces these controls with @fops/ui primitives. */
+@layer base {
+  h1, h2, h3 { font-weight: 600; }
+  main ul, main ol { padding-left: 1.5em; }
+  main ul { list-style: disc; }
+  main ol { list-style: decimal; }
+  main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea,
+    button:not([role='tab']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])) {
+    border: 1px solid rgb(var(--border-strong));
+    border-radius: var(--radius-sm);
+    background: rgb(var(--surface-field-filled));
+    padding: 2px 8px;
+  }
+  main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea,
+    button:not([role='tab']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])):disabled {
+    color: rgb(var(--text-disabled));
+    cursor: not-allowed;
+  }
+}
+
 body { margin: 0; background: var(--eqv-canvas, #f3f7fe); color: var(--eqv-ink, #101828); font-family: system-ui, sans-serif; }
 nav[aria-label='Studio'] { display: flex; gap: 16px; padding: 10px 24px; border-bottom: 1px solid var(--eqv-border, #cbd6e6); background: var(--eqv-board, #fbfdff); }
 nav[aria-label='Studio'] a { color: var(--eqv-secondary, #374151); text-decoration: none; padding: 2px 4px; }

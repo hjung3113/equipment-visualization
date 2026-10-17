@@ -7,6 +7,14 @@
     "VITEST_MIN_FORKS",
     "VITEST_MIN_THREADS"
   ],
+  "globalDependencies": [
+    "external/feedbackops/packages/ui/**",
+    "external/feedbackops/packages/shared/**",
+    "!external/feedbackops/packages/*/.turbo/**",
+    "!external/feedbackops/packages/*/dist/**",
+    "!external/feedbackops/packages/*/coverage/**",
+    "!external/feedbackops/packages/*/**/*.tsbuildinfo"
+  ],
   "tasks": {
     "typecheck": {
       "dependsOn": ["^build"]

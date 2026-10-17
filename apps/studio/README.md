@@ -18,6 +18,10 @@ page through Studio navigation or browser back/forward asks before discarding it
 the browser's own leave-page prompt. Draft save proceeds without a discard prompt; choosing another import replaces
 the current import without asking.
 
+## Styling
+
+Studio uses Tailwind v4 (`@tailwindcss/vite`) and the `@fops/ui` theme from the `external/feedbackops` submodule (ADR-0008). The `@import` order at the top of `src/studio.css` (tailwindcss, tokens and semantic in `layer(base)`, theme, compat) is an invariant; `test/theme-tokens.test.ts` pins it. The `--eqv-*` rows in `:root` are declared only where `@fops/ui` defines the platform token, wrapped as `rgb(var(--token))`; every other `--eqv-*` row stays undeclared so the asset fallback hex applies.
+
 ## Run
 
 ```sh

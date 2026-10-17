@@ -104,6 +104,37 @@ it.each<Variant>([
     rule: null,
   },
   {
+    code: "import { Button } from '@fops/ui';",
+    filePath: 'packages/core/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export const dep = await import('@fops/ui');",
+    filePath: 'packages/renderer/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "export type T = import('@fops/ui').ButtonProps;",
+    filePath: 'packages/renderer/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    // Guards the flat-config override: the core/renderer block must keep the @ap rule.
+    code: "import x from '@ap/kernel';",
+    filePath: 'packages/renderer/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "import { Button } from '@fops/ui';",
+    filePath: 'packages/replay/src/x.tsx',
+    rule: null,
+  },
+  {
+    code: "import { Button } from '@fops/ui';",
+    filePath: 'apps/studio/src/x.tsx',
+    rule: null,
+  },
+  {
     // Negative control: the boundary pattern must not over-match.
     code: "import x from 'apple'; import('@apx/kernel');",
     filePath: 'packages/core/src/x.ts',
