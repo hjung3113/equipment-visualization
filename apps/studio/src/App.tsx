@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { FocusPage } from './FocusPage.js';
 import { LayoutsPage } from './LayoutsPage.js';
 import { BoardPage, FleetPage, OnboardingPage } from './OnboardingPages.js';
 import { Link, hrefFor, navigate, useLocation, useRoute, type Route } from './router.js';
@@ -14,15 +15,7 @@ function Page({ route }: { route: Route }) {
     case 'board':
       return <BoardPage equipmentId={route.equipmentId} />;
     case 'focus':
-      return (
-        <>
-          <h1>Focus</h1>
-          <p>설비: <code>{route.equipmentId}</code></p>
-          {route.entityType !== null && route.anchor !== null
-            ? <p>진입 키: <code>{route.entityType}</code> / <code>{route.anchor}</code></p>
-            : <p>진입 키 없음</p>}
-        </>
-      );
+      return <FocusPage equipmentId={route.equipmentId} entityType={route.entityType} anchor={route.anchor} />;
     case 'not-found':
       return (
         <>

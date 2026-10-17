@@ -2,7 +2,14 @@
 
 Standalone Studio app: shell and router (`/fleet`, `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`), a layouts page
 (viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet and Onboarding (read-only
-Inventory and Template proposals, #14a) and the Mapping Board (#14b) are implemented; Focus is still a placeholder until #15.
+Inventory and Template proposals, #14a) and the Mapping Board (#14b) are implemented.
+
+Focus (`/focus/:equipmentId?entityType=&anchor=`, #15c) is the first analysis mode: a Top View with the cursor-time replay
+layer, a text equivalent of that layer, a Component-lane Gantt and Occurrence list / Data Quality / evidence detail tabs, all
+sharing one page-local cursor. `anchor` is read as an Occurrence id (`entityType` is shown, not interpreted); the default range
+is that Occurrence widened by a margin, or the whole batch with a notice. `loadFocus` (`src/focus-data.ts`) reads and checks
+the batch, every Mapping Version a Binding names and each Binding's Layout (its published Layout Revision, else the draft with
+a notice); it never rejects. Playback and the illustrative toggle are #15d.
 
 An imported document is unsaved until its draft is saved. While it is unsaved, opening another file or leaving the
 page through Studio navigation or browser back/forward asks before discarding it. Reloading or closing the tab uses

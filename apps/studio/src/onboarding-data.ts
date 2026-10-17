@@ -29,14 +29,14 @@ export type OnboardingLoad =
   | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[]; draft: DraftLookup };
 
 /** Thrown for any content problem; the message becomes the equipment's error text. */
-class DataError extends Error {}
+export class DataError extends Error {}
 
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
-const problems = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
+export const problems = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
   issues.map(({ path, message }) => `${path.map(String).join('.') || '(root)'}: ${message}`).join('; ');
 
 /** Only a 404 is absence; every other failure propagates. */
-async function readOptional(path: string): Promise<unknown | undefined> {
+export async function readOptional(path: string): Promise<unknown | undefined> {
   try {
     return await readFile(path);
   } catch (error) {
