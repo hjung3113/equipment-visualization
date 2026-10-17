@@ -21,6 +21,17 @@ it.each([
   ['packages/editor/src/x.tsx', 'export const X = () => <div className="bg-red-500" />;', ['shadcn/no-raw-colors']],
   ['apps/studio/src/x.tsx', 'export const X = () => <div className="eqv-made-up" />;', ['shadcn/no-unknown-classes']],
   ['apps/studio/src/x.tsx', 'export const X = () => <div className="flex gap-2 text-text-secondary" />;', []],
+  [
+    'packages/replay/src/x.tsx',
+    'import { Button } from "@fops/ui"; export const X = () => <Button className="bg-surface-card">x</Button>;',
+    ['shadcn/no-restyle'],
+  ],
+  ['packages/editor/src/x.tsx', 'export const X = () => <div className="p-[13px]" />;', ['shadcn/no-arbitrary-values']],
+  [
+    'apps/studio/src/x.tsx',
+    'import { Button } from "@fops/ui"; export const X = ({ c }: { c: string }) => <Button className={`mt-${c}`}>x</Button>;',
+    ['shadcn/require-static-classes'],
+  ],
   ['packages/renderer/src/x.tsx', 'export const X = () => <div style={{ color: "red" }} />;', []],
 ])('%s: %s', async (filePath, code, expected) => {
   expect(await shadcnRules(filePath, code)).toEqual(expected);
