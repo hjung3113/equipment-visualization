@@ -27,7 +27,8 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
   - creates an Orca worktree from `origin/develop` and renames its branch to `feature/<n>-<slug>`;
   - copies `templates/impl-rules.md` and `templates/review-rules.md` into `.review/` and writes `.review/W-<n>-TASK.md`
     (the rules pointer, then `$WAVE_BRIEFS/<n>-task.md`);
-  - closes setup shells, runs `pnpm install --frozen-lockfile` when a lockfile exists, applies `PRE_ADD`;
+  - initialises submodules (`external/feedbackops`, ADR-0008), closes setup shells, runs `pnpm install
+    --frozen-lockfile` when a lockfile exists, applies `PRE_ADD`;
   - delegates to shared `worker-launch.sh` (role `WORKER_ROLE`, default `impl`; overrides `WORKER_MODEL` /
     `WORKER_EFFORT`).
 - Needs `WAVE_STATE`, `WAVE_BRIEFS`, `EV_MAIN`.
@@ -197,5 +198,7 @@ server, and a perf role is added only once the Studio has a measured interaction
   `.pnpm-store/`, which makes `orca worktree rm` refuse; in `$EV_MAIN`, trashing that store broke `node_modules`
   links (reinstall with `--config.confirmModulesPurge=false`).
 - Packages built with `tsc` need `.js` relative import specifiers, or `dist` fails under Node ESM.
+- A worktree created by hand (`orca worktree create`, `git worktree add`) has no submodules: run `git submodule update
+  --init` before `pnpm install`, or Studio cannot resolve `@fops/ui` (2026-10-18).
 - `orca worktree create --issue` accepts only numbers; launch split issues (11a/11b) under the plain number and
   archive the earlier brief and state.

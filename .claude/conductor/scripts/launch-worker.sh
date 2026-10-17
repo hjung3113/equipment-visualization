@@ -20,6 +20,8 @@ orca worktree create --repo path:"$EV_MAIN" --name "$N-$SLUG" --base-branch orig
 W=$(git -C "$EV_MAIN" worktree list --porcelain | awk -v n="/$N-$SLUG" '/^worktree / { p = substr($0, 10); if (substr(p, length(p) - length(n) + 1) == n) print p }' | tail -1)
 [ -n "$W" ] && cd "$W" || { echo "created worktree $N-$SLUG not found in git worktree list"; exit 1; }
 git branch -m "feature/$N-$SLUG"; mkdir -p .review
+# A new worktree has no submodules; external/feedbackops (ADR-0008) must exist before pnpm install.
+git submodule update --init --quiet < /dev/null || { echo "git submodule update failed"; exit 1; }
 cp "$CONDUCTOR/templates/impl-rules.md" .review/00-IMPL-RULES.md
 cp "$CONDUCTOR/templates/review-rules.md" .review/00-REVIEW-RULES.md
 # The shared launcher reads only the task; include the copied rules without moving its final sentinel.
