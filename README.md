@@ -44,6 +44,7 @@ Prerequisites:
 - pnpm 11.1.1, the version pinned by the `packageManager` field in `package.json` (e.g. `npm install -g pnpm`; `corepack enable pnpm` also works on Node versions that ship corepack).
 
 ```sh
+git clone --recurse-submodules https://github.com/hjung3113/equipment-visualization.git   # or, in an existing clone: git submodule update --init
 pnpm install
 pnpm lint        # ESLint flat config across all packages (incl. the @ap/* boundary rule)
 pnpm typecheck   # turbo run typecheck
@@ -52,6 +53,8 @@ pnpm build       # turbo run build
 pnpm dev         # builds core/renderer, then starts the Studio dev server (see apps/studio/README.md)
 git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
 ```
+
+`external/feedbackops` is the FeedbackOps submodule that provides `@fops/ui` (ADR-0008); it must be checked out before `pnpm install`. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) because `--filter='!@fops/*'` alone still schedules `@fops/*#build` through `dependsOn: ["^build"]`, and `@fops/*` is not this repo's to build.
 
 Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 

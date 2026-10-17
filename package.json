@@ -7,11 +7,11 @@
     "node": ">=26.7.0"
   },
   "scripts": {
-    "dev": "turbo run build --filter=@eqv/studio^... && pnpm --filter @eqv/studio dev",
+    "dev": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && pnpm --filter @eqv/studio dev",
     "lint": "eslint .",
-    "typecheck": "turbo run typecheck",
-    "test": "turbo run test",
-    "build": "turbo run build"
+    "typecheck": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run typecheck --filter='!@fops/*' --only",
+    "test": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run test --filter='!@fops/*' --only",
+    "build": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run build --filter=@eqv/studio --only"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
