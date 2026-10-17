@@ -8,7 +8,7 @@ declare global {
 
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 import { afterEach, expect, it, vi } from 'vitest';
-import type { Component, LayoutDocument } from '@eqv/core';
+import type { Component, LayoutDocument, SceneState } from '@eqv/core';
 import { TopViewer, buildScene, type TopViewerProps } from '../src/index.js';
 import {
   defaultCamera, panByFraction, viewBoxOf, zoomAtPoint, type Camera, type Frame, type Size,
@@ -599,4 +599,32 @@ it('stacks capabilities, highlight, then interaction when a highlight is present
   const layers = Array.from(svg.children).map((node) => node.getAttribute('data-layer'));
   expect(layers.filter((layer) => ['capabilities', 'highlight', 'interaction'].includes(layer ?? '')))
     .toEqual(['capabilities', 'highlight', 'interaction']);
+});
+
+it('draws a replay layer only when replay is set, between capabilities and highlight, and keeps click selection', () => {
+  const bare = mount({ layout });
+  expect(bare.svg.querySelector('[data-layer="replay"]')).toBeNull();
+
+  const state: SceneState = {
+    equipmentId: 'EQ-FX',
+    at: '2026-10-17T09:00:00.000',
+    appliedSeq: 1,
+    binding: { layoutId: 'fixture', mappingHash: `sha256:${'a'.repeat(64)}` },
+    materials: [],
+    components: [{ componentId: 'mod', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+    markers: [],
+  };
+  const withReplay = mount({ layout, replay: { state } });
+  const replayEl = withReplay.svg.querySelector('[data-layer="replay"]');
+  expect(replayEl).not.toBeNull();
+  expect(replayEl?.getAttribute('aria-hidden')).toBe('true');
+  expect(replayEl?.getAttribute('pointer-events')).toBe('none');
+  const mod = componentEl(withReplay.svg, 'mod');
+  clickAt(mod);
+  expect(mod.getAttribute('aria-pressed')).toBe('true');
+
+  const highlighted = mount({ layout, replay: { state }, highlight: { componentIds: ['mod'] } });
+  const order = Array.from(highlighted.svg.children).map((node) => node.getAttribute('data-layer'))
+    .filter((name): name is string => ['capabilities', 'replay', 'highlight', 'interaction'].includes(name ?? ''));
+  expect(order).toEqual(['capabilities', 'replay', 'highlight', 'interaction']);
 });

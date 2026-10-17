@@ -1,6 +1,6 @@
 # @eqv/renderer
 
-SVG Top View for a v0.4 Layout document (issue #12, slice S7). `TopView` is the static read-only picture. `TopViewer` adds selection, keyboard focus, pan/zoom and selection-scoped Transfer Capability segments. Port marks and evidence overlays are not in this package.
+SVG Top View for a v0.4 Layout document (issue #12, slice S7). `TopView` is the static read-only picture. `TopViewer` adds selection, keyboard focus, pan/zoom and selection-scoped Transfer Capability segments. Port marks are not in this package.
 
 The picture is derived. Connectivity is only what the layout states: a Physical Interface mark is one explicit `physicalInterfaces` entry, and a Transfer Capability segment is one explicit handler endpoint. Neither is inferred from adjacency, overlap or port coordinates. Footprint and pose are illustrative. A capability segment means a transfer is possible, not that one was observed. An assumed badge is a certainty cue, not evidence.
 
@@ -29,7 +29,7 @@ Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then
 
 ## TopViewer
 
-`TopViewer` takes every `TopView` prop, plus `selectedId` and `onSelectedChange`. Omit `selectedId` and the selection stays inside the viewer, starting empty. Pass `selectedId`, including `null`, to control it. `onSelectedChange` runs when a user changes the selection, in either mode. A new `layout` object resets the camera, the internal selection, hover and keyboard focus. `width` and `height` keep the zoom and the centre, then clamp the centre into the layout viewBox. `labels`, `layers` and `visibleLevelIds` keep the camera and the selection and rebuild at the current `pxPerUnit`. A `selectedId` that names nothing, or a hidden component, draws no highlight and is not cleared.
+`TopViewer` takes every `TopView` prop, plus `selectedId`, `onSelectedChange`, `highlight` and `replay`. Omit `selectedId` and the selection stays inside the viewer, starting empty. Pass `selectedId`, including `null`, to control it. `onSelectedChange` runs when a user changes the selection, in either mode. `replay` is optional; absent or `null` draws no replay layer. A new `layout` object resets the camera, the internal selection, hover and keyboard focus. `width` and `height` keep the zoom and the centre, then clamp the centre into the layout viewBox. `labels`, `layers` and `visibleLevelIds` keep the camera and the selection and rebuild at the current `pxPerUnit`. A `selectedId` that names nothing, or a hidden component, draws no highlight and is not cleared.
 
 Zoom is a multiple of the meet-fit scale, from 1 to 8. While it is changing, the last scene stays put and only the `viewBox` moves, so labels and fixed-px marks are briefly the wrong size. 150 ms after the last zoom change the scene rebuilds at the new `pxPerUnit`. Selection, hover and pan avoid a scene build as long as the host keeps `layout`, `layers` and `visibleLevelIds` referentially stable (memoise them); a fresh object or array rebuilds the scene.
 
@@ -50,7 +50,7 @@ Focus rings are drawn only while the keyboard is what last moved the view. A cli
 
 With a visible selection, capability segments are only that selection's, whatever `layers.capabilities` says. A handler shows one segment to each component it serves. Any other component shows the handler that serves it, and that handler's partner on the other end of each capability. A component with no capability draws none, even when the toggle is on and even when it touches another component. Segments come only from explicit `transferCapabilities`, and only through the handler: never from adjacency, and never from one component straight to another. A segment means a transfer is possible, not that one was observed. With no visible selection, the capabilities toggle draws every pair, as `TopView` does.
 
-`TopViewer` does not paint the scene's own capability layer. Its order is the board, the component tree, the interaction marks, `interfaces`, the selection's capability segments, `labels`, `badges`, then `chips`.
+`TopViewer` does not paint the scene's own capability layer. Its order is the board, the component tree, the interaction marks (only when there is no highlight), `interfaces`, the selection's capability segments, the replay layer (only when `replay` is set), the highlight (only when set), the interaction marks again (when a highlight is present), `labels`, `badges`, then `chips`.
 
 ## Caveats
 
