@@ -24,7 +24,7 @@ EV의 모든 화면은 독립 Studio에서 돌 때도 analytics-platform(AP)과 
   @source "<external/feedbackops/packages/ui/src까지의 상대 경로>";
   @source "<apps/studio/src>";
   ```
-  `--eqv-*` 값은 `@fops/ui`가 **정의하는** 변수에서만 정한다. FeedbackOps 토큰은 RGB 채널 목록이므로 `rgb(var(--surface-canvas))`처럼 감싼다. 정의되지 않은 변수를 가리키면 SVG fallback이 구해 주지 않는다(`assets/primitives/README.md`).
+  `--eqv-*` 값은 `@fops/ui`가 **정의하는** 변수에서만 정한다. FeedbackOps 토큰은 RGB 채널 목록이므로 `rgb(var(--surface-canvas))`처럼 감싼다. 감싸지 않고 채널 목록(`37 119 204`)을 그대로 넣으면, 값이 정의돼 있지만 색이 아니어서 SVG fallback이 적용되지 않는다(`assets/primitives/README.md`).
   셸은 AP ADR-0011 구조다. 치수의 원본은 `@fops/ui` 레이아웃 토큰이다: 레일 `--rail-width` 52px, 사이드바 `--sidebar-width`/`--sidebar-width-collapsed` 240/56px, 상단 바 없음, 페이지 머리 `--toolbar-height` 50px. 표 행 최소 32px는 `@fops/ui` 토큰이 아니라 AP `DESIGN.md` `table-density`와 AP `06_platform_ui_contract.md` §15가 정한다. `@fops/ui`의 `--row-height-*`(44/60/96px)는 쓰지 않는다. AP의 셸 컴포넌트(`@ap/shell`)는 import할 수 없으므로, 같은 구조를 `@fops/ui` 위에서 Studio 안에 짓는다.
 - **플랫폼 확장 토큰**: 차트·카테고리 색, `surface-sunken`, `accent-*-soft`는 AP가 소유한다(AP `packages/ui/src/styles/tokens.css`). EV는 그 파일을 복사하지 않는다. EV가 필요한 값은 `--eqv-*` 변수로 두고 AP 값을 fallback으로 적는다(`assets/primitives/README.md` 표). Studio는 이 행들을 `var(--…)`로 가리키지 않고 fallback hex를 그대로 쓴다. `--chart-*-stroke`, `--icon-*-soft`, `--surface-sunken`, `--accent-*-soft`, `--cat-amber-stroke`, `--border-control` 같은 이름은 `@fops/ui`에 없다. 플랫폼 안에서는 `platform-adapter`가 실제 값을 주입한다.
 
