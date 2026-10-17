@@ -111,7 +111,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     setSeed(null);
   }
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (imported === null) return;
     setNavigationBlocker(() => window.confirm('저장하지 않은 가져오기 문서가 있습니다. 버리고 이동할까요?'));
     const onBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); };

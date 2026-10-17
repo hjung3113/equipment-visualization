@@ -74,7 +74,7 @@ it('goes from load to onSave with the keyboard alone', async () => {
   // PM2 already has its own exact Model rule: confirming pins the equipment rule's target there, in place.
   expect(rules.find(({ id }) => id === 'pm-two')).toMatchObject({ target: equipmentRules().rules[0]!.target, certainty: 'verified' });
   expect(screen.getByRole('status').textContent).toBe('저장됨');
-});
+}, 20_000); // #78: first test of the file absorbs jsdom warm-up on a loaded CI runner
 
 it('assigns by dropping an alias row on a component of the Top View', () => {
   const { container } = mount();
