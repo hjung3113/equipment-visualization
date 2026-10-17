@@ -1,12 +1,15 @@
 import type { SceneState } from '@eqv/core';
+import type { IllustrativeGhost } from './ghosts.js';
 import { ACTIVITY_KO, EVIDENCE_KO, UNKNOWN_LANE } from './words.js';
 
 export interface CursorStateListProps {
   state: SceneState;
+  /** Example-motion ghosts, passed only while the page's illustrative toggle is on. */
+  illustrative?: readonly IllustrativeGhost[];
 }
 
 /** Text equivalent of the Top View replay layer at the cursor (the SVG layer is `aria-hidden`). */
-export function CursorStateList({ state }: CursorStateListProps) {
+export function CursorStateList({ state, illustrative = [] }: CursorStateListProps) {
   const active = state.components.filter((c) => c.activity !== 'no recorded activity');
   return (
     <section className="eqv-rp-state" aria-label="커서 시점 상태">
@@ -33,6 +36,16 @@ export function CursorStateList({ state }: CursorStateListProps) {
             </li>
           ))}
         </ul>
+      )}
+      {illustrative.length > 0 && (
+        <>
+          <h4>예시 이동</h4>
+          <ul>
+            {illustrative.map((ghost) => (
+              <li key={ghost.materialKey}>{ghost.label}: {ghost.fromComponentId} → {ghost.toComponentId} · 예시 이동 (관측 아님)</li>
+            ))}
+          </ul>
+        </>
       )}
       {state.markers.length > 0 && (
         <>

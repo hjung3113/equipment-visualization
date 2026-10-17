@@ -3,7 +3,10 @@ import { readFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { seekSceneState, type ReplayInput } from '@eqv/core';
+import { CursorStateList, type PlaybackScheduler } from '@eqv/replay';
 import { App } from '../src/App.js';
+import { FocusPage } from '../src/FocusPage.js';
 import { loadFocus } from '../src/focus-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
@@ -177,4 +180,87 @@ it('loadFocus reads every Binding\'s Mapping Version and Layout and reports the 
   const layout = JSON.parse(await readFile(join(repo, 'fixtures/cluster-single/layout.json'), 'utf8'));
   await writeJson(root, 'layouts/eq-synth-01-layout/draft.layout.json', { ...layout, id: 'other-layout' });
   expect(await loadFocus('eq-synth-01')).toMatchObject({ kind: 'error', error: expect.stringContaining('layouts/eq-synth-01-layout/draft.layout.json: id(') });
+});
+
+// Playback and sequence stepping (#15d). The scheduler is the page's test seam; real timers are never used.
+const manualClock = () => {
+  let now = 0;
+  let pending: (() => void) | null = null;
+  const scheduler: PlaybackScheduler = { now: () => now, request: (cb) => { pending = cb; return 1; }, cancel: () => { pending = null; } };
+  return { scheduler, frame: (gap: number) => { now += gap; const cb = pending; pending = null; act(() => cb?.()); } };
+};
+const applyRange = (from: string, to = '2026-01-01T10:30:00.000') => {
+  const [a, b] = screen.getAllByRole('textbox') as HTMLInputElement[];
+  fireEvent.change(a!, { target: { value: from } });
+  fireEvent.change(b!, { target: { value: to } });
+  fireEvent.click(screen.getByRole('button', { name: '적용' }));
+};
+const stateList = () => screen.getByRole('region', { name: '커서 시점 상태' });
+const sequenceStatus = () => screen.queryByText(/^Sequence step · Record Sequence/);
+
+it('playing frames show the same state as a direct seek to that cursor', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  const loadedFocus = await loadFocus('eq-synth-01');
+  if (loadedFocus.kind !== 'ok') throw new Error('Expected the fixture to load');
+  const data: ReplayInput = { batch: loadedFocus.batch, layouts: loadedFocus.layouts, bindings: loadedFocus.bindings, mappings: loadedFocus.mappings };
+  const clock = manualClock();
+  render(<FocusPage equipmentId="eq-synth-01" entityType={null} anchor={null} scheduler={clock.scheduler} />);
+  await loaded();
+  applyRange('2026-01-01T10:01:20.000', '2026-01-01T10:02:30.000');
+  fireEvent.change(screen.getByRole('combobox', { name: '속도' }), { target: { value: '4' } });
+  fireEvent.click(screen.getByRole('button', { name: '재생' }));
+  for (let i = 0; i < 15; i += 1) clock.frame(250);
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:35.000)');
+  const played = stateList().textContent;
+  cleanup();
+  render(<CursorStateList state={seekSceneState(data, '2026-01-01T10:01:35.000')} />);
+  expect(played).toBe(stateList().textContent);
+  screen.getByText(/wafer W01: efem-robot/);
+});
+
+it('sequence mode shows the record-ordered state; the previous record differs from the seek at the same time; a slider key leaves it', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at('/focus/eq-synth-01');
+  render(<App />);
+  await loaded();
+  applyRange('2026-01-01T10:02:00.000');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
+  screen.getByText(/wafer W01: ll-a \/ slot-1 · 위치 근거 관측/);
+  fireEvent.click(screen.getByRole('button', { name: 'Sequence step' }));
+  expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 7 · 2026-01-01T10:02:00.000');
+  fireEvent.click(screen.getByRole('button', { name: '이전 record' }));
+  expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 6 · 2026-01-01T10:02:00.000');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
+  expect(screen.queryByText(/wafer W01: ll-a/)).toBeNull();
+  expect((screen.getByRole('button', { name: '이전 record' }) as HTMLButtonElement).disabled).toBe(true);
+  const slider = screen.getByRole('slider', { name: '커서 시각' });
+  slider.focus();
+  fireEvent.keyDown(slider, { key: 'ArrowRight' });
+  expect(sequenceStatus()).toBeNull();
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:03:00.000)');
+});
+
+it('the example-motion toggle is off by default, badges and draws one ghost at 10:01:30, and resets on an equipment change', async () => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  await addEquipment(root, 'eq-synth-02');
+  at('/focus/eq-synth-01');
+  render(<App />);
+  await loaded();
+  applyRange('2026-01-01T10:01:30.000');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:30.000)');
+  const badge = () => document.querySelector('.eqv-rp-illustrative-badge');
+  const toggle = () => screen.getByRole('checkbox', { name: '예시 이동 표시' }) as HTMLInputElement;
+  expect([toggle().checked, document.querySelectorAll('[data-illustrative]').length, badge()]).toEqual([false, 0, null]);
+  expect(screen.queryByText(/예시 이동 \(관측 아님\)/)).toBeNull();
+  fireEvent.click(toggle());
+  expect(badge()!.textContent).toBe('예시 이동');
+  expect(document.querySelectorAll('[data-illustrative="true"]')).toHaveLength(1);
+  screen.getByText('wafer W01: lp-a → ll-a · 예시 이동 (관측 아님)');
+  fireEvent.click(toggle());
+  expect([document.querySelectorAll('[data-illustrative]').length, badge()]).toEqual([0, null]);
+  fireEvent.click(toggle());
+  act(() => navigate('/focus/eq-synth-02'));
+  await screen.findByRole('heading', { name: 'Focus · eq-synth-02' });
+  await loaded();
+  expect([toggle().checked, badge()]).toEqual([false, null]);
 });

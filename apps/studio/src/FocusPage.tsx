@@ -1,9 +1,12 @@
 import { useEffect, useId, useMemo, useState, type KeyboardEvent } from 'react';
 import {
-  replayTimeline, seekSceneState, siteWallClockSchema, wallClockToMillis, type ReplayInput, type ReplayTimeline, type SceneState, type SiteWallClock,
+  replayTimeline, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis, type ReplayInput, type ReplayTimeline, type SceneState, type SiteWallClock,
 } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
-import { CursorStateList, DataQualityList, EvidenceDetail, FocusGantt, focusRange, OccurrenceList } from '@eqv/replay';
+import {
+  CursorStateList, DataQualityList, EvidenceDetail, FocusGantt, focusRange, illustrativeGhosts, OccurrenceList, PlaybackControls, recordSteps,
+  usePlayback, type PlaybackScheduler,
+} from '@eqv/replay';
 import { loadFocus, type FocusLoad } from './focus-data.js';
 import { Link, hrefFor } from './router.js';
 
@@ -21,6 +24,10 @@ type View = {
   selectedOccurrenceId: string | null;
   selectedComponentId: string | null;
   expanded: ReadonlySet<string>;
+  /** `sequence`: every view shows `stepSceneState` at that Record Sequence instead of the time cursor's seek. */
+  mode: { kind: 'time' } | { kind: 'sequence'; seq: number };
+  /** Example-motion ghosts; page-local, off by default. */
+  illustrative: boolean;
 };
 type Tab = 'list' | 'quality' | 'detail';
 const TABS: { id: Tab; label: string }[] = [
@@ -63,17 +70,21 @@ function Tabs({ base, active, onChange }: { base: string; active: Tab; onChange:
   );
 }
 
-export function FocusPage({ equipmentId, entityType, anchor }: { equipmentId: string; entityType: string | null; anchor: string | null }) {
+export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
+  equipmentId: string; entityType: string | null; anchor: string | null;
+  /** Frame clock for playback; tests only, the browser's by default. */
+  scheduler?: PlaybackScheduler;
+}) {
   const entryKey = JSON.stringify([entityType, anchor]);
   const fresh = (): View => ({ equipmentId, entryKey, result: null, applied: null, draft: null, rangeError: null, cursor: null,
-    selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set() });
+    selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [tab, setTab] = useState<Tab>('list');
   const tabsId = useId();
   // Everything below belongs to the route's equipmentId and entry key: a change clears it during render, and a late
   // result of a previous id is dropped by the effect cleanup.
   if (view.equipmentId !== equipmentId) setView(fresh());
-  else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null });
+  else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, mode: { kind: 'time' } });
 
   useEffect(() => {
     let cancelled = false;
@@ -100,14 +111,17 @@ export function FocusPage({ equipmentId, entityType, anchor }: { equipmentId: st
     }
   }, [ok, range]);
   const timelineInput = computed && !('error' in computed) ? computed : null;
+  const steps = useMemo(() => ok && range ? recordSteps(ok.batch, range) : [], [ok, range]);
+  const { mode } = view;
+  const sequenceSeq = mode.kind === 'sequence' && steps.some((s) => s.seq === mode.seq) ? mode.seq : null;
   const sceneState = useMemo((): SceneState | { error: string } | null => {
     if (!timelineInput || !cursor) return null;
     try {
-      return seekSceneState(timelineInput.input, cursor);
+      return sequenceSeq !== null ? stepSceneState(timelineInput.input, sequenceSeq) : seekSceneState(timelineInput.input, cursor);
     } catch (error) {
       return { error: message(error) };
     }
-  }, [timelineInput, cursor]);
+  }, [timelineInput, cursor, sequenceSeq]);
   const state = sceneState && !('error' in sceneState) ? sceneState : null;
   const layout = ok && state?.binding ? ok.layouts.find((l) => l.id === state.binding!.layoutId) ?? null : null;
   const selectedId = view.selectedOccurrenceId;
@@ -119,20 +133,39 @@ export function FocusPage({ equipmentId, entityType, anchor }: { equipmentId: st
     ];
     return ids.length ? { componentIds: [...new Set(ids)] } : null;
   }, [state, selectedId]);
-  const replay = useMemo(() => state ? { state } : null, [state]);
+  const ghosts = useMemo(
+    () => view.illustrative && timelineInput && state ? illustrativeGhosts(timelineInput.input, state, layout) : null,
+    [view.illustrative, timelineInput, state, layout]);
+  const replay = useMemo(() => state ? { state, ...(ghosts ? { illustrative: ghosts } : {}) } : null, [state, ghosts]);
 
   const patch = (changes: Partial<View>) => setView((previous) => ({ ...previous, ...changes }));
+  const playback = usePlayback({ cursor, range, onCursorChange: (at) => patch({ cursor: at }), resetKey: JSON.stringify([equipmentId, entryKey]), scheduler });
+  const shownAt = state?.at ?? null;
+  const breakpoints = timelineInput?.timeline.breakpoints ?? [];
+  const previousBreakpoint = shownAt === null ? undefined : [...breakpoints].reverse().find((t) => t < shownAt);
+  const nextBreakpoint = shownAt === null ? undefined : breakpoints.find((t) => t > shownAt);
+  const toTime = (at: SiteWallClock) => patch({ cursor: at, mode: { kind: 'time' } });
+  const stepBreakpoint = (at: SiteWallClock) => { playback.pause(); toTime(at); };
+  const stepIndex = sequenceSeq === null ? -1 : steps.findIndex((s) => s.seq === sequenceSeq);
+  const enterSequence = () => {
+    if (!state) return;
+    const found = state.appliedSeq === null ? steps[0] : steps.filter((s) => s.seq <= state.appliedSeq!).at(-1);
+    if (!found) return;
+    playback.pause();
+    patch({ mode: { kind: 'sequence', seq: found.seq } });
+  };
+  const moveStep = (index: number) => { const step = steps[index]; if (step) patch({ mode: { kind: 'sequence', seq: step.seq } }); };
   const draft = view.draft ?? (range ? { from: range.from, to: range.to } : { from: '', to: '' });
   const apply = () => {
     const parsed = parseRange(draft.from, draft.to);
     if ('error' in parsed) { patch({ rangeError: parsed.error }); return; }
     const outside = cursor === null || cursor < parsed.range.from || cursor >= parsed.range.to;
-    patch({ applied: parsed.range, draft: null, rangeError: null, ...(outside ? { cursor: parsed.range.from } : {}) });
+    patch({ applied: parsed.range, draft: null, rangeError: null, mode: { kind: 'time' }, ...(outside ? { cursor: parsed.range.from } : {}) });
   };
   const select = (id: string, moveCursor: boolean) => {
     const start = ok?.batch.occurrences.find((o) => o.id === id)?.start.at ?? null;
     const move = moveCursor && start !== null && range !== null && start >= range.from && start < range.to;
-    patch({ selectedOccurrenceId: id, ...(move ? { cursor: start } : {}) });
+    patch({ selectedOccurrenceId: id, ...(move ? { cursor: start, mode: { kind: 'time' } } : {}) });
   };
 
   return (
@@ -165,20 +198,32 @@ export function FocusPage({ equipmentId, entityType, anchor }: { equipmentId: st
           {sceneState && 'error' in sceneState && <p role="alert">Replay 오류: {sceneState.error}</p>}
           {timelineInput && state && cursor && (
             <>
+              <PlaybackControls playing={playback.playing} onPlay={() => { patch({ mode: { kind: 'time' } }); playback.play(); }} onPause={playback.pause}
+                speed={playback.speed} onSpeedChange={playback.setSpeed}
+                onPreviousBreakpoint={previousBreakpoint === undefined ? null : () => stepBreakpoint(previousBreakpoint)}
+                onNextBreakpoint={nextBreakpoint === undefined ? null : () => stepBreakpoint(nextBreakpoint)}
+                sequence={{ available: steps.length > 0, active: sequenceSeq !== null,
+                  onToggle: () => sequenceSeq !== null ? patch({ mode: { kind: 'time' } }) : enterSequence(),
+                  onPrevious: stepIndex > 0 ? () => moveStep(stepIndex - 1) : null,
+                  onNext: stepIndex >= 0 && stepIndex < steps.length - 1 ? () => moveStep(stepIndex + 1) : null,
+                  step: sequenceSeq === null ? null : { seq: sequenceSeq, at: state.at } }} />
+              <label className="focus-illustrative">
+                <input type="checkbox" checked={view.illustrative} onChange={(event) => patch({ illustrative: event.target.checked })} /> 예시 이동 표시
+              </label>
               <div className="focus-top">
                 <section aria-label="Top View">
-                  <h2>Top View</h2>
+                  <h2>Top View{view.illustrative && <span className="eqv-rp-illustrative-badge">예시 이동</span>}</h2>
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}
                       selectedId={view.selectedComponentId} onSelectedChange={(id) => patch({ selectedComponentId: id })} />
                   ) : <p>이 시점에 적용된 Binding이 없어 Top View를 표시할 수 없습니다</p>}
                 </section>
-                <CursorStateList state={state} />
+                <CursorStateList state={state} {...(ghosts ? { illustrative: ghosts } : {})} />
               </div>
               <section aria-label="Gantt">
                 <h2>Gantt</h2>
-                <FocusGantt timeline={timelineInput.timeline} layout={layout} batch={ok!.batch} cursor={cursor}
-                  onCursorChange={(at) => patch({ cursor: at })} selectedOccurrenceId={selectedId}
+                <FocusGantt timeline={timelineInput.timeline} layout={layout} batch={ok!.batch} cursor={state.at}
+                  onCursorChange={toTime} selectedOccurrenceId={selectedId}
                   onSelectOccurrence={(id) => select(id, false)} selectedComponentId={view.selectedComponentId}
                   expanded={view.expanded} onToggleExpand={(id) => setView((previous) => {
                     const expanded = new Set(previous.expanded);

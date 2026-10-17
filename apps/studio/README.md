@@ -9,7 +9,9 @@ layer, a text equivalent of that layer, a Component-lane Gantt and Occurrence li
 sharing one page-local cursor. `anchor` is read as an Occurrence id (`entityType` is shown, not interpreted); the default range
 is that Occurrence widened by a margin, or the whole batch with a notice. `loadFocus` (`src/focus-data.ts`) reads and checks
 the batch, every Mapping Version a Binding names and each Binding's Layout (its published Layout Revision, else the draft with
-a notice); it never rejects. Playback and the illustrative toggle are #15d.
+a notice); it never rejects. Playback (#15d) moves only the cursor: play/pause, speed x0.25–x4 (screen time), previous/next breakpoint, and a debug
+Sequence step that shows the state after a chosen Record Sequence instead of the cursor's seek. `예시 이동 표시` (off by default,
+page-local) adds badged example-motion ghosts between two observed boundaries of an open TRANSFER; they are never log evidence.
 
 An imported document is unsaved until its draft is saved. While it is unsaved, opening another file or leaving the
 page through Studio navigation or browser back/forward asks before discarding it. Reloading or closing the tab uses
