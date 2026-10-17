@@ -1,4 +1,5 @@
 import type { HTMLAttributes, KeyboardEvent, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from 'react';
+import { cn } from '@fops/ui';
 
 export interface DataTableProps extends Omit<HTMLAttributes<HTMLTableElement>, 'aria-label' | 'children'> {
   /** Accessible name of the table; also names its scroll region. */
@@ -20,10 +21,10 @@ export interface DataTableCellProps extends TdHTMLAttributes<HTMLTableCellElemen
 }
 
 /** Dense table, AP `table-density`: 32px minimum row and header height, 4px 12px cell padding. */
-export function DataTable({ label, columns, children, ...rest }: DataTableProps) {
+export function DataTable({ label, columns, children, className, ...rest }: DataTableProps) {
   return (
     <div role="region" aria-label={label} tabIndex={0} className="overflow-x-auto">
-      <table aria-label={label} className="w-full border-collapse text-sm text-text-primary" {...rest}>
+      <table aria-label={label} className={cn('w-full border-collapse text-sm text-text-primary', className)} {...rest}>
         <thead>
           <tr className="h-8 border-b border-border-subtle">
             {columns.map((name) => (
@@ -39,7 +40,7 @@ export function DataTable({ label, columns, children, ...rest }: DataTableProps)
   );
 }
 
-function Row({ onActivate, selected, onKeyDown, children, ...rest }: DataTableRowProps) {
+function Row({ onActivate, selected, onKeyDown, className, children, ...rest }: DataTableRowProps) {
   const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
     onKeyDown?.(event);
     if (onActivate === undefined || event.defaultPrevented) return;
@@ -54,19 +55,19 @@ function Row({ onActivate, selected, onKeyDown, children, ...rest }: DataTableRo
       {...(selected === undefined ? {} : { 'aria-selected': selected })}
       {...rest}
       onKeyDown={handleKeyDown}
-      className="h-8 border-b border-border-subtle hover:bg-surface-row-hover aria-selected:bg-surface-row-selected"
+      className={cn('h-8 border-b border-border-subtle hover:bg-surface-row-hover aria-selected:bg-surface-row-selected', className)}
     >
       {children}
     </tr>
   );
 }
 
-function Cell({ rowHeader = false, children, ...rest }: DataTableCellProps) {
-  const className = 'min-h-8 px-3 py-1 text-left align-top font-normal';
+function Cell({ rowHeader = false, className, children, ...rest }: DataTableCellProps) {
+  const cellClassName = cn('min-h-8 px-3 py-1 text-left align-top font-normal', className);
   return rowHeader ? (
-    <th scope="row" className={className} {...(rest as ThHTMLAttributes<HTMLTableCellElement>)}>{children}</th>
+    <th scope="row" className={cellClassName} {...(rest as ThHTMLAttributes<HTMLTableCellElement>)}>{children}</th>
   ) : (
-    <td className={className} {...rest}>{children}</td>
+    <td className={cellClassName} {...rest}>{children}</td>
   );
 }
 

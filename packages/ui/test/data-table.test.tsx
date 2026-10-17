@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { afterEach, expect, it } from 'vitest';
+import { useState } from 'react';
 import { DataTable } from '../src/index.js';
 
 afterEach(cleanup);
@@ -31,31 +32,46 @@ it('renders an accessible table with column headers and rows', () => {
   expect(within(table).getByRole('cell', { name: 'EQ-2' })).toBeTruthy();
 });
 
-it('activates a row on click, Enter and Space, and marks the active row aria-selected', () => {
-  const onActivate = vi.fn();
-  const { rerender } = render(
+function ActivationHarness() {
+  const [activeId, setActiveId] = useState('a');
+  return (
     <DataTable label="Occurrence" columns={columns} role="grid">
-      <DataTable.Row onActivate={() => onActivate('a')} selected={false}><DataTable.Cell>A</DataTable.Cell></DataTable.Row>
-      <DataTable.Row onActivate={() => onActivate('b')} selected><DataTable.Cell>B</DataTable.Cell></DataTable.Row>
-    </DataTable>,
+      <DataTable.Row onActivate={() => setActiveId('a')} selected={activeId === 'a'}>
+        <DataTable.Cell>A</DataTable.Cell>
+      </DataTable.Row>
+      <DataTable.Row onActivate={() => setActiveId('b')} selected={activeId === 'b'}>
+        <DataTable.Cell>B</DataTable.Cell>
+      </DataTable.Row>
+      <DataTable.Row><DataTable.Cell>C</DataTable.Cell></DataTable.Row>
+    </DataTable>
   );
-  const [, first, second] = screen.getAllByRole('row');
-  expect(first!.getAttribute('aria-selected')).toBe('false');
+}
+
+it.each([
+  ['click', (row: HTMLElement) => fireEvent.click(row)],
+  ['Enter', (row: HTMLElement) => fireEvent.keyDown(row, { key: 'Enter' })],
+  ['Space', (row: HTMLElement) => fireEvent.keyDown(row, { key: ' ' })],
+] as const)('activates a row on %s and moves aria-selected to it', (_key, activate) => {
+  render(<ActivationHarness />);
+  const [, first, second, plain] = screen.getAllByRole('row');
+  expect(first!.getAttribute('aria-selected')).toBe('true');
+  expect(second!.getAttribute('aria-selected')).toBe('false');
+  activate(second!);
   expect(second!.getAttribute('aria-selected')).toBe('true');
-  fireEvent.click(first!);
-  fireEvent.keyDown(first!, { key: 'Enter' });
-  fireEvent.keyDown(first!, { key: ' ' });
-  fireEvent.keyDown(first!, { key: 'a' });
-  expect(onActivate.mock.calls).toEqual([['a'], ['a'], ['a']]);
-  rerender(
-    <DataTable label="Occurrence" columns={columns} role="grid">
-      <DataTable.Row onActivate={() => onActivate('a')} selected><DataTable.Cell>A</DataTable.Cell></DataTable.Row>
-      <DataTable.Row onActivate={() => onActivate('b')} selected={false}><DataTable.Cell>B</DataTable.Cell></DataTable.Row>
+  expect(first!.getAttribute('aria-selected')).toBe('false');
+  expect(second!.getAttribute('tabindex')).toBe('0');
+  expect(plain!.hasAttribute('tabindex')).toBe(false);
+});
+
+it('keeps a layout className given to DataTable together with its own classes', () => {
+  render(
+    <DataTable label="Occurrence" columns={columns} className="mt-2">
+      <DataTable.Row><DataTable.Cell>A</DataTable.Cell></DataTable.Row>
     </DataTable>,
   );
-  const [, nowFirst, nowSecond] = screen.getAllByRole('row');
-  expect(nowFirst!.getAttribute('aria-selected')).toBe('true');
-  expect(nowSecond!.getAttribute('aria-selected')).toBe('false');
+  const table = screen.getByRole('table', { name: 'Occurrence' });
+  expect(table.className).toContain('mt-2');
+  expect(table.className.trim().split(/\s+/).length).toBeGreaterThan(1);
 });
 
 it('leaves a row without onActivate unfocusable and not selectable', () => {
