@@ -63,7 +63,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          patterns: ['@ap', '@ap/*', 'analytics-platform', 'analytics-platform/*', '@fops', '@fops/*'],
+          patterns: ['@ap', '@ap/*', 'analytics-platform', 'analytics-platform/*', '@fops', '@fops/*', '@eqv/ui', '@eqv/ui/*'],
         },
       ],
       'no-restricted-syntax': [
@@ -86,6 +86,14 @@ export default defineConfig([
           selector: 'TSImportType[source.value=/^@fops(\\/|$)/]',
           message: "ADR-0008: core and renderer do not import the design system ('@fops/*').",
         },
+        {
+          selector: 'ImportExpression[source.value=/^@eqv\\/ui(\\/|$)/]',
+          message: "ADR-0008: core and renderer do not import the EV components ('@eqv/ui').",
+        },
+        {
+          selector: 'TSImportType[source.value=/^@eqv\\/ui(\\/|$)/]',
+          message: "ADR-0008: core and renderer do not import the EV components ('@eqv/ui').",
+        },
       ],
     },
   },
@@ -97,11 +105,11 @@ export default defineConfig([
     },
   },
   {
-    files: ['packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
+    files: ['packages/ui/src/**/*.tsx', 'packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
     plugins: { shadcn },
     settings: {
       shadcn: {
-        componentImports: ['^@fops/ui(/|$)'],
+        componentImports: ['^@fops/ui(/|$)', '^@eqv/ui(/|$)'],
         note: 'ADR-0008: use @fops/ui primitives and FeedbackOps tokens; a pattern @fops/ui lacks gets an EV component first.',
       },
     },
