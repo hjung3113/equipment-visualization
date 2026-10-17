@@ -1,6 +1,30 @@
 import js from '@eslint/js';
+import { plugin as shadcn } from '@shadcn/lint';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
+
+// ADR-0008: design-system rules (@shadcn/lint) for the packages that draw DOM UI. The options mirror
+// FeedbackOps' .oxlintrc.json (FeedbackOps ADR-0062), copied as analytics-platform does in
+// tooling/eslint/src/index.js: screens add only layout to a component, containers also spacing, the 50px
+// headers never a height. The theme is the Studio Tailwind entry named by the root components.json. Findings
+// that predate the rules live in eslint-suppressions.json until #73 slices b–c fix them; never add new ones.
+// core and renderer stay design-system-free (SVG reads only --eqv-*), so they are not in scope.
+const RESTYLE_CONTRACTS = [
+  {
+    pattern: '^(Card|EmptyState|PanelTitleBlock|ListToolbar)$|(Content|Header|Footer|Group|Panel|List|SectionTitle)$',
+    allow: ['layout', 'spacing'],
+  },
+  {
+    pattern:
+      '^(TabsList|ToggleGroup|RadioGroup|DialogFooter|AlertDialogFooter|TooltipContent|SelectContent|DropdownMenuContent|DropdownMenuSubContent|PopoverContent|HoverCardContent)$',
+    allow: ['layout'],
+  },
+  {
+    pattern: '^(DetailPanelHeader|ShellHeader|ListToolbar)$',
+    allow: ['layout', 'spacing'],
+    deny: ['h-*', 'min-h-*', 'max-h-*', 'size-*'],
+  },
+];
 
 export default defineConfig([
   js.configs.recommended,
@@ -70,6 +94,24 @@ export default defineConfig([
     rules: {
       'no-restricted-imports': 'off',
       'no-restricted-syntax': 'off',
+    },
+  },
+  {
+    files: ['packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
+    plugins: { shadcn },
+    settings: {
+      shadcn: {
+        componentImports: ['^@fops/ui(/|$)'],
+        note: 'ADR-0008: use @fops/ui primitives and FeedbackOps tokens; a pattern @fops/ui lacks gets an EV component first.',
+      },
+    },
+    rules: {
+      'shadcn/no-restyle': ['error', { allow: ['layout'], contracts: RESTYLE_CONTRACTS }],
+      'shadcn/no-raw-colors': ['error', { scanAllStrings: true }],
+      'shadcn/no-arbitrary-values': ['error', { allow: ['layout'], scanAllStrings: true }],
+      'shadcn/no-inline-styles': 'error',
+      'shadcn/no-unknown-classes': 'error',
+      'shadcn/require-static-classes': 'error',
     },
   },
   globalIgnores([

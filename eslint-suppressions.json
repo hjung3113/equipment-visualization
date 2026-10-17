@@ -1,0 +1,70 @@
+{
+  "apps/studio/src/FocusPage.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 1
+    }
+  },
+  "apps/studio/src/OnboardingPages.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 2
+    }
+  },
+  "packages/editor/src/FleetTable.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 5
+    }
+  },
+  "packages/editor/src/InventoryView.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 9
+    }
+  },
+  "packages/editor/src/MappingBoard.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 63
+    }
+  },
+  "packages/editor/src/PublishPanel.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 23
+    }
+  },
+  "packages/editor/src/TemplateProposals.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 8
+    }
+  },
+  "packages/replay/src/CursorStateList.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 1
+    }
+  },
+  "packages/replay/src/DataQualityList.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 5
+    }
+  },
+  "packages/replay/src/EvidenceDetail.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 3
+    }
+  },
+  "packages/replay/src/FocusGantt.tsx": {
+    "shadcn/no-inline-styles": {
+      "count": 1
+    },
+    "shadcn/no-unknown-classes": {
+      "count": 28
+    }
+  },
+  "packages/replay/src/OccurrenceList.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 8
+    }
+  },
+  "packages/replay/src/PlaybackControls.tsx": {
+    "shadcn/no-unknown-classes": {
+      "count": 9
+    }
+  }
+}
