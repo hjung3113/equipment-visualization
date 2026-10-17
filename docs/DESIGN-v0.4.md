@@ -43,7 +43,7 @@
 
 ### v0.4 (설계 grilling 확정)
 
-1. **통합 형태:** 독립 패키지가 정본, 플랫폼은 얇은 소비자. renderer는 자체 `--eqv-*` 토큰을 소유하고 `platform-adapter`가 플랫폼 토큰을 주입 (ADR-0001).
+1. **통합 형태:** 독립 패키지가 정본, 플랫폼은 얇은 소비자. renderer는 자체 `--eqv-*` 토큰을 소유하고 `platform-adapter`가 플랫폼 토큰을 주입 (ADR-0001). 화면(Studio 포함)은 AP와 같은 FeedbackOps `@fops/ui` 디자인 시스템을 쓴다 (ADR-0008).
 2. **Replay 입력:** 원천이 짝지은 Occurrence + Data Quality Issue. Core는 Start/End를 짝짓지 않고, 순서는 Record Sequence (ADR-0002, `REPLAY-CONTRACT.md`).
 3. **근거 등급:** `observed | derived | illustrative | unknown`, facet별. `reconstructed`/`confidence` 폐기 (ADR-0003).
 4. **Station 폐지:** station은 하위 Component. 특수 leaf는 Holding Site 하나. Location = Component + 선택적 Holding Site.
@@ -148,7 +148,7 @@ P0+P1의 6종이 conformance fixture 대상이며 P2 2종은 설계 검토용이
 - 1차 편집: move/resize/rotate, group hierarchy, port snapping, arrow routing, undo/redo, level selector, ID/property panel, color token override.
 - 2차 편집: custom path editing, reference-image overlay alignment, layer-specific editing.
 - Custom SVG 수용 시 스크립트/외부 href/event-handler/foreignObject/remote CSS 차단; 선언적 허용 요소만 통과.
-- Style tokens: renderer는 자체 semantic CSS 변수(`--eqv-*`)와 fallback 값을 소유한다. 플랫폼 `DESIGN.md`/`@ap/ui` 토큰은 `platform-adapter`가 `--eqv-*`에 매핑해 주입하며, renderer는 이를 직접 참조하지 않는다 (ADR-0001).
+- Style tokens: renderer는 자체 semantic CSS 변수(`--eqv-*`)와 fallback 값을 소유한다. 플랫폼 `DESIGN.md`/`@ap/ui` 토큰은 `platform-adapter`가 `--eqv-*`에 매핑해 주입하며, renderer는 이를 직접 참조하지 않는다 (ADR-0001). Studio에서는 `--eqv-*` 값을 FeedbackOps 토큰에서 정하고, `replay`·`editor`의 DOM 컨트롤은 `@fops/ui` 프리미티브로 그린다 (ADR-0008).
 - 이동 경로의 수작업 자유 그림보다 `port-to-port` connector/waypoint를 우선. 물리 연결은 선 하나의 픽셀 근접만으로 판정 불가.
 
 ### Studio 저장 (M1)

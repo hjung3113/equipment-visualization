@@ -6,7 +6,7 @@ Geometry is generated from the prototype’s symbol-only primitive-sheet recipe 
 
 ## Theme tokens
 
-The standalone assets read only `--eqv-*` custom properties with the approved light fallback below. The optional platform adapter injects the listed platform token values; the primitives have no platform dependency. Tokens for canvas, overlays and labels are listed for the shared renderer theme even where the primitive symbols do not use them. Robot and material fills are literal approved palette values with no corresponding prototype platform token.
+The standalone assets read only `--eqv-*` custom properties with the approved light fallback below. Inside analytics-platform the platform adapter injects the listed platform token values; the standalone Studio sets them from FeedbackOps `@fops/ui` tokens (ADR-0008). The primitives have no platform or design-system dependency. Tokens for canvas, overlays and labels are listed for the shared renderer theme even where the primitive symbols do not use them. Robot and material fills are literal approved palette values with no corresponding prototype platform token.
 
 The adapter must inject complete CSS colours. analytics-platform tokens hold RGB channel lists (for example `--chart-blue-stroke: 37 119 204`), so map them as `--eqv-process-stroke: rgb(var(--chart-blue-stroke)); --eqv-process-fill: rgb(var(--icon-blue-soft));`. A defined custom property with the wrong value type is not rescued by the SVG fallback.
 
