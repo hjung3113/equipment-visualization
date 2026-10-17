@@ -94,7 +94,11 @@ Read first by the global `review-ux` persona. Report in English.
     tests;
   - `docs/REPLAY-CONTRACT.md` for what replay may and may not show; `docs/DELIVERY-PLAN.md` Fidelity Tiers (F0–F3);
   - visual style: semi-flat technical schematic, restrained outlines and fills, no fake 3D; theme tokens, not raw
-    colours (platform tokens are injected only by the adapter);
+    colours;
+  - design system (ADR-0008): every screen, the standalone Studio included, must look like analytics-platform —
+    FeedbackOps `@fops/ui` controls and tokens, the platform shell (rail, sidebar, 50px page head, 32px table rows).
+    Compare side by side with the analytics-platform screen of the same kind; a default browser control or an
+    unstyled table is a finding, not a nit;
   - generic lenses only where the project is silent: `.claude/skills/impeccable/reference/critique.md` (heuristics)
     and `.claude/skills/impeccable/reference/audit.md` (accessibility).
 - **Project checks:**

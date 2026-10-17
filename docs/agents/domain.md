@@ -5,7 +5,7 @@ How engineering skills should consume this repo's domain documentation.
 ## Before exploring, read these
 
 - **`GLOSSARY.md`** at the repo root — domain glossary. Terms listed under `_Avoid_` must not appear in code, tests, issue titles or docs.
-- **`docs/adr/`** — architectural decisions (0001 package boundary, 0002 Occurrence input, 0003 facet Evidence Levels, 0004 three layout graphs, 0005 scoped alias rules). Read those touching the area you work in.
+- **`docs/adr/`** — architectural decisions (0001 package boundary, 0002 Occurrence input, 0003 facet Evidence Levels, 0004 three layout graphs, 0005 scoped alias rules, 0006 component footprint size, 0007 Publish write order, 0008 platform design system). Read those touching the area you work in.
 - The subject documents: `docs/DESIGN-v0.4.md` (domain model), `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`.
 - Per-directory `AGENTS.md` files once packages exist.
 

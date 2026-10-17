@@ -18,7 +18,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 2. Preserve structured `Layout + Component Catalog + Topology + Mapping Version + Observations` as authoritative data; SVG is a derived artifact.
 3. Evidence must be explicit: observed vs derived vs illustrative animation vs unknown (see [ADR-0003](docs/adr/0003-facet-evidence-levels.md)).
 4. No confidential factory images/logs may be added here. Test with synthetic fixtures and public references only.
-5. Follow platform design tokens **only in the platform adapter**, using theme injection rather than copying platform UI components.
+5. Every screen, the standalone Studio included, uses the analytics-platform design system: FeedbackOps `@fops/ui` from a git submodule, never copied, with the platform shell structure ([ADR-0008](docs/adr/0008-platform-design-system-fops-ui.md)). `core` and the renderer stay design-system-free and read only `--eqv-*`; inside the platform, the adapter injects platform token values.
 
 ## Planned packages
 
