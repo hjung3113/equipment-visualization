@@ -2,5 +2,8 @@ packages:
   - apps/*
   - packages/*
   - tooling
+  # ADR-0008: only FeedbackOps packages/ui and its dependency packages/shared join this workspace.
+  - external/feedbackops/packages/ui
+  - external/feedbackops/packages/shared
 allowBuilds:
   esbuild: true
