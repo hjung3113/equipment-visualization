@@ -13,9 +13,20 @@ EV의 모든 화면은 독립 Studio에서 돌 때도 analytics-platform(AP)과 
 ## 패키지별 범위
 
 - **`core`·`renderer`**: 디자인 시스템을 모른다. SVG는 계속 `--eqv-*` 변수와 fallback만 읽는다. `@fops/*`를 import하지 않는다(ESLint 경계 규칙으로 강제, 구현 슬라이스 a).
-- **`replay`·`editor`**: DOM 컨트롤(버튼, 탭, select, checkbox, 표, 배지)은 `@fops/ui` 프리미티브로 그린다. `@fops/ui`는 peer dependency다. 호스트가 한 벌을 준다. AP 안에서는 AP 워크스페이스의 같은 패키지다. Gantt·Top View 같은 SVG 그림은 계속 `--eqv-*`를 쓴다.
-- **Studio**: AP `@ap/ui/styles.css`와 같은 층 순서로 Tailwind v4와 `@fops/ui` 스타일을 들인다. 순서는 `tokens.css`·`semantic.css`(base 층), `theme.css`, `compat.css`다. `--eqv-*` 값은 FeedbackOps 토큰에서 정한다. 셸은 AP ADR-0011 구조다. 레일 52px, 사이드바 240/56px, 상단 바 없음, 페이지 머리 50px, 표 행 최소 32px이며, 치수의 원본은 `@fops/ui` 레이아웃 토큰이다. AP의 셸 컴포넌트(`@ap/shell`)는 import할 수 없으므로, 같은 구조를 `@fops/ui` 위에서 Studio 안에 짓는다.
-- **플랫폼 확장 토큰**: 차트·카테고리 색, `surface-sunken`, `accent-*-soft`는 AP가 소유한다(AP `packages/ui/src/styles/tokens.css`). EV는 그 파일을 복사하지 않는다. EV가 필요한 값은 `--eqv-*` 변수로 두고 AP 값을 fallback으로 적는다(`assets/primitives/README.md` 표). 플랫폼 안에서는 `platform-adapter`가 실제 값을 주입한다.
+- **`replay`·`editor`**: DOM 컨트롤(버튼, 탭, select, checkbox, 표, 배지)은 `@fops/ui` 프리미티브로 그린다. `@fops/ui`는 peer dependency다(`workspace:*`, 패키지가 `private` `0.0.0`이다). 호스트가 한 벌을 준다. AP 안에서는 AP 워크스페이스의 같은 패키지다. 두 패키지는 **자체 Tailwind 유틸리티 클래스를 쓰지 않는다.** 자체 스타일은 패키지 CSS에서 FeedbackOps 변수(`rgb(var(--…))`)와 `--eqv-*`로 쓴다. 그래야 호스트가 이 패키지 트리를 `@source`로 훑지 않아도 된다. Gantt·Top View 같은 SVG 그림은 계속 `--eqv-*`를 쓴다.
+- **Studio**: `@fops/ui` `theme.css` 머리 주석의 소비자 순서를 그대로 따른다. 이 순서는 FeedbackOps ADR-0058의 불변 조건이다. 순서가 바뀌면 base 토큰이 theme 층에 진다.
+  ```css
+  @import "tailwindcss";
+  @import "@fops/ui/styles/tokens.css" layer(base);
+  @import "@fops/ui/styles/semantic.css" layer(base);
+  @import "@fops/ui/styles/theme.css";
+  @import "@fops/ui/styles/compat.css";
+  @source "<external/feedbackops/packages/ui/src까지의 상대 경로>";
+  @source "<apps/studio/src>";
+  ```
+  `--eqv-*` 값은 `@fops/ui`가 **정의하는** 변수에서만 정한다. FeedbackOps 토큰은 RGB 채널 목록이므로 `rgb(var(--surface-canvas))`처럼 감싼다. 정의되지 않은 변수를 가리키면 SVG fallback이 구해 주지 않는다(`assets/primitives/README.md`).
+  셸은 AP ADR-0011 구조다. 치수의 원본은 `@fops/ui` 레이아웃 토큰이다: 레일 `--rail-width` 52px, 사이드바 `--sidebar-width`/`--sidebar-width-collapsed` 240/56px, 상단 바 없음, 페이지 머리 `--toolbar-height` 50px. 표 행 최소 32px는 `@fops/ui` 토큰이 아니라 AP `DESIGN.md` `table-density`와 AP `06_platform_ui_contract.md` §15가 정한다. `@fops/ui`의 `--row-height-*`(44/60/96px)는 쓰지 않는다. AP의 셸 컴포넌트(`@ap/shell`)는 import할 수 없으므로, 같은 구조를 `@fops/ui` 위에서 Studio 안에 짓는다.
+- **플랫폼 확장 토큰**: 차트·카테고리 색, `surface-sunken`, `accent-*-soft`는 AP가 소유한다(AP `packages/ui/src/styles/tokens.css`). EV는 그 파일을 복사하지 않는다. EV가 필요한 값은 `--eqv-*` 변수로 두고 AP 값을 fallback으로 적는다(`assets/primitives/README.md` 표). Studio는 이 행들을 `var(--…)`로 가리키지 않고 fallback hex를 그대로 쓴다. `--chart-*-stroke`, `--icon-*-soft`, `--surface-sunken`, `--accent-*-soft`, `--cat-amber-stroke`, `--border-control` 같은 이름은 `@fops/ui`에 없다. 플랫폼 안에서는 `platform-adapter`가 실제 값을 주입한다.
 
 ## 서브모듈
 
@@ -40,7 +51,7 @@ EV의 모든 화면은 독립 Studio에서 돌 때도 analytics-platform(AP)과 
 - ADR-0001의 결과 문장 "renderer는 `DESIGN.md`/`@ap/ui` 토큰을 직접 참조하지 않는다"는 그대로 유효하다. "플랫폼 토큰은 adapter가 주입"은 플랫폼 호스트에 대한 문장으로 남는다. Studio 기본값은 이 ADR이 정한다.
 - 화면 변경의 UX 리뷰는 같은 종류의 AP 화면과 나란히 비교한다. 기본 컨트롤이나 스타일 없는 컨트롤은 그 자체로 지적 대상이다.
 - 열린 점(슬라이스 a에서 확인)이 셋 있다.
-  - `@fops/ui`는 TS 소스(`main: ./src/index.ts`)를 낸다. EV의 `tsc` 빌드·타입 검사가 그 소스를 EV 설정으로 읽을 때 통과하는지 확인한다.
+  - `@fops/ui`는 TS 소스(`main: ./src/index.ts`)를 낸다. EV의 `tsc` 빌드·타입 검사가 그 소스를 EV 설정으로 읽을 때 통과하는지 확인한다. `replay`·`editor`의 `tsconfig.build.json`은 `rootDir: "src"`에 `declaration: true`라서, `src/`가 그 파일을 import하면 TS6059가 날 수 있다. 의존 `.ts`를 내보내지 않는 빌드 설정은 슬라이스 c에서 정한다.
   - vitest(jsdom)가 `@fops/ui` 컴포넌트를 그대로 렌더하는지 확인한다.
   - 설치 크기를 기록한다.
 - AP#396(공통 SDK)이 셸을 패키지로 내면, Studio 셸을 그쪽으로 옮길지 다시 정한다.
