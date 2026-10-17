@@ -40,7 +40,7 @@ Build a reusable semantic equipment Top View and explainable log replay framewor
 - Every change: lint, typecheck, tests, build (when the package exists).
 - Asset/schema changes: validate XML/JSON, unique IDs, source/target ports, valid levels, no cycles in hierarchy, viewBox, no executable SVG content, snapshots.
 - Replay changes: deterministic reducer, ties, open occurrences (`end=null`), Data Quality Issues, Time Anomalies, Watermark and Binding boundaries, invalid mappings, duplicate wafer occupancy, evidence fidelity.
-- UI changes: browser interaction, keyboard/a11y, variants review. In analytics-platform, honor its `?variant=` prototype approval and E2E gates.
+- UI changes: browser interaction, keyboard/a11y, variants review, and the analytics-platform design system (ADR-0008): `@fops/ui` controls and tokens, the platform shell structure, compared side by side with a platform screen of the same kind; default browser controls fail it. In analytics-platform, honor its `?variant=` prototype approval and E2E gates.
 - Report unrun checks honestly; run reviewer pass for major design, auth, data trust or package boundary changes.
 - For behaviour changes and bug fixes, write or update the failing test first, then make the smallest change that passes it. If TDD is not practical, say why and still verify the touched behaviour.
 - Docs-only changes (Markdown under `docs/`, `AGENTS.md`/`CLAUDE.md`, `GLOSSARY.md`, `.claude/**/*.md`) need no gate run; confirm that every path, script and symbol they name exists. Scripts and settings under `.claude/` are code: run their tests or say why not.
