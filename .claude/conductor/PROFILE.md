@@ -144,6 +144,16 @@ Files in the issue's diff or the same package; never another package. No format,
 mapping-flatten, undo or lifecycle code only when the file is already in the diff and the issue gets the fix-diff
 check.
 
+## Deferrals
+
+- The record is one open grouped issue per slice, titled `[<Area>] Deferred items (<slice issues>)` with the
+  `needs-triage` label; the Studio slice (#13–#15) uses #60. There is no backlog doc.
+- One table row per item: `Item | Source | Reason | Reopen when`. Source names the review finding ID and PR, or the
+  issue decision. Every row is **not implemented**. Edit the issue body (`gh issue edit <n> --body-file`) so the
+  table stays one table; append all of a PR's rows in one edit.
+- At slice close, file each row that met its reopen condition, and move the rest to the next slice's issue. Close
+  the grouped issue when it has no rows left.
+
 ## Slice close
 
 - `review-quality` range: slice start (or the previous release merge)`...origin/develop`.
