@@ -10,8 +10,10 @@ export interface PlaybackControlsProps {
   onPreviousBreakpoint: (() => void) | null;
   onNextBreakpoint: (() => void) | null;
   sequence: {
-    /** The sequence-step toggle can be pressed (a kept step exists). */
+    /** The sequence-step toggle can be pressed (the entry step exists) or the mode is already active. */
     available: boolean;
+    /** Shown next to the disabled toggle. */
+    unavailableReason?: string;
     active: boolean;
     onToggle: () => void;
     /** Previous / next Record Sequence step; null at the ends. */
@@ -37,6 +39,7 @@ export function PlaybackControls({ playing, onPlay, onPause, speed, onSpeedChang
       <span className="eqv-rp-controls-sep" role="group" aria-label="Sequence step (debug)">
         <button type="button" className="eqv-rp-btn" aria-pressed={sequence.active} disabled={!sequence.available && !sequence.active}
           onClick={sequence.onToggle}>Sequence step</button>
+        {!sequence.available && !sequence.active && sequence.unavailableReason && <span>{sequence.unavailableReason}</span>}
         <button type="button" className="eqv-rp-btn" disabled={!sequence.active || sequence.onPrevious === null} onClick={() => sequence.onPrevious?.()}>이전 record</button>
         <button type="button" className="eqv-rp-btn" disabled={!sequence.active || sequence.onNext === null} onClick={() => sequence.onNext?.()}>다음 record</button>
         <span role="status" className="eqv-rp-controls-status">

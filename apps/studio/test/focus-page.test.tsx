@@ -248,6 +248,8 @@ it('the example-motion toggle is off by default, badges and draws one ghost at 1
   await loaded();
   applyRange('2026-01-01T10:01:30.000');
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:30.000)');
+  expect((screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement).disabled).toBe(true);
+  screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다');
   const badge = () => document.querySelector('.eqv-rp-illustrative-badge');
   const toggle = () => screen.getByRole('checkbox', { name: '예시 이동 표시' }) as HTMLInputElement;
   expect([toggle().checked, document.querySelectorAll('[data-illustrative]').length, badge()]).toEqual([false, 0, null]);

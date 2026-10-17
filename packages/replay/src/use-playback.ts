@@ -53,8 +53,11 @@ export function usePlayback({ cursor, range, onCursorChange, resetKey, scheduler
   }, []);
   const pause = useCallback(() => setPlaying(false), []);
 
+  // Losing a valid input pauses; recovery never restarts playback, only an explicit play() does.
+  useEffect(() => { if (!ready) setPlaying(false); }, [ready]);
+
   useEffect(() => {
-    if (!playing || !ready) return undefined;
+    if (!playing) return undefined;
     let previous = scheduler.now();
     let handle = 0;
     let active = true;
@@ -88,7 +91,7 @@ export function usePlayback({ cursor, range, onCursorChange, resetKey, scheduler
       scheduler.cancel(handle);
       document.removeEventListener('visibilitychange', onVisibility);
     };
-  }, [playing, ready, scheduler]);
+  }, [playing, scheduler]);
 
   return { playing, speed, play, pause, setSpeed };
 }

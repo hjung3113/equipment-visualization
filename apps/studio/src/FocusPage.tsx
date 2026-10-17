@@ -147,12 +147,11 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
   const toTime = (at: SiteWallClock) => patch({ cursor: at, mode: { kind: 'time' } });
   const stepBreakpoint = (at: SiteWallClock) => { playback.pause(); toTime(at); };
   const stepIndex = sequenceSeq === null ? -1 : steps.findIndex((s) => s.seq === sequenceSeq);
+  const entryStep = !state ? undefined : state.appliedSeq === null ? steps[0] : steps.filter((s) => s.seq <= state.appliedSeq!).at(-1);
   const enterSequence = () => {
-    if (!state) return;
-    const found = state.appliedSeq === null ? steps[0] : steps.filter((s) => s.seq <= state.appliedSeq!).at(-1);
-    if (!found) return;
+    if (!entryStep) return;
     playback.pause();
-    patch({ mode: { kind: 'sequence', seq: found.seq } });
+    patch({ mode: { kind: 'sequence', seq: entryStep.seq } });
   };
   const moveStep = (index: number) => { const step = steps[index]; if (step) patch({ mode: { kind: 'sequence', seq: step.seq } }); };
   const draft = view.draft ?? (range ? { from: range.from, to: range.to } : { from: '', to: '' });
@@ -202,7 +201,8 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
                 speed={playback.speed} onSpeedChange={playback.setSpeed}
                 onPreviousBreakpoint={previousBreakpoint === undefined ? null : () => stepBreakpoint(previousBreakpoint)}
                 onNextBreakpoint={nextBreakpoint === undefined ? null : () => stepBreakpoint(nextBreakpoint)}
-                sequence={{ available: steps.length > 0, active: sequenceSeq !== null,
+                sequence={{ available: entryStep !== undefined || sequenceSeq !== null,
+                  unavailableReason: '이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다', active: sequenceSeq !== null,
                   onToggle: () => sequenceSeq !== null ? patch({ mode: { kind: 'time' } }) : enterSequence(),
                   onPrevious: stepIndex > 0 ? () => moveStep(stepIndex - 1) : null,
                   onNext: stepIndex >= 0 && stepIndex < steps.length - 1 ? () => moveStep(stepIndex + 1) : null,

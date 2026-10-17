@@ -109,6 +109,25 @@ it('schedules nothing without a cursor or range, and resetKey pauses and restore
   rerender({ key: 'b' });
 });
 
+it.each([['cursor', null, range], ['range', range.from, null]] as const)('losing the %s pauses without restarting on recovery; an explicit play() then advances', (_lost, cursor, spanless) => {
+  const clock = manual();
+  const onCursorChange = vi.fn();
+  const valid = { cursor: range.from as SiteWallClock | null, range: range as typeof range | null };
+  const { result, rerender } = renderHook((props: typeof valid) => usePlayback({ ...props, onCursorChange, scheduler: clock.scheduler }), { initialProps: valid });
+  act(() => result.current.play());
+  const leftover = clock.stale()!;
+  rerender({ cursor, range: spanless });
+  expect(result.current.playing).toBe(false);
+  onCursorChange.mockClear();
+  act(() => leftover());
+  expect(onCursorChange).not.toHaveBeenCalled();
+  rerender(valid);
+  expect(result.current.playing).toBe(false);
+  act(() => result.current.play());
+  clock.frame(100);
+  expect(onCursorChange).toHaveBeenCalledWith('2026-01-01T10:00:00.100');
+});
+
 const controls = (over: Partial<PlaybackControlsProps> = {}, sequence: Partial<PlaybackControlsProps['sequence']> = {}) => {
   const props: PlaybackControlsProps = { playing: false, onPlay: vi.fn(), onPause: vi.fn(), speed: 1, onSpeedChange: vi.fn(),
     onPreviousBreakpoint: vi.fn(), onNextBreakpoint: vi.fn(),
@@ -140,4 +159,8 @@ it('PlaybackControls: record buttons are disabled at the ends; the status names 
   cleanup();
   controls();
   expect(screen.getByRole('status').textContent).toBe('');
+  cleanup();
+  controls({}, { available: false, unavailableReason: '이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다' });
+  expect((screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다').getAttribute('role')).toBeNull();
 });
