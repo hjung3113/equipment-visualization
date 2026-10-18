@@ -1,6 +1,6 @@
 # Onboarding — 로그 관측으로 레이아웃·매핑 만들기 v0.4
 
-**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면은 Studio에 구현됨(#14a); 편집·Template 승격은 제안 단계다. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
+**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면, Mapping Board, 샘플 기간 dry-run, Publish(Layout Revision·Mapping Version·Baseline Inventory·Binding, [ADR-0007](adr/0007-publish-writes-revision-mapping-baseline-binding.md))는 Studio에 구현됨; 데이터 가져오기(설비 등록, Sample Window, [ADR-0010](adr/0010-studio-data-import.md))는 승인되었으나 아직 구현되지 않았다(구현: #97–#103). 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
 Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다.
 
@@ -24,7 +24,7 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 ## 2. Observed Inventory
 
 - 계약은 `ObservedInventory` DTO. core는 기준 구현 `buildInventory(batch: OccurrenceBatch, metadata?: AliasMetadataFile): ObservedInventory`를 제공하며(#11a, 독립 실행·synthetic fixture), 선택 입력 `AliasMetadataFile`은 같은 `equipmentId`의 adapter metadata(`moduleType`/`isPort`/`isRobot`)만 공급한다. 다른 장비 metadata, batch와 다른 `equipmentId`의 Occurrence·DQI record, 중복 Record Sequence는 `RangeError`이며(replay와 같은 검사, #42) batch에 없는 alias는 추가하지 않는다. `computeCoverage`·`findMappingConflicts`·`detectDrift`는 Inventory와 Mapping Version의 `equipmentId`, Layout과 `mapping.layoutId`가 다르면 `RangeError`를 던진다(#39). 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
-- 샘플 기간 기본 **최근 30일**, 사용자 조정 가능. 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
+- 샘플 기간은 선택한 **Sample Window의 구간**이다(ADR-0010, 구현: #99/#103; 지금은 설비당 batch 파일 하나). 기본 **최근 30일**, 사용자 조정 가능. 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
 - Role은 Type Dictionary로 `ModuleType` → Role 변환. 사전에 없는 ModuleType은 Role `unknown`이고 목록 최상단에 표시.
 
 ### ObservedInventory 계약 (#9b)
@@ -190,7 +190,8 @@ type Coverage = {
 ```text
 assets/equipment/<equipmentId>.json                      # 설비 기록: equipmentId, maker, model
 assets/observations/<equipmentId>/
-  occurrence-batch.json                                  # 읽기 전용 관측
+  occurrence-batch.json                                  # 읽기 전용 관측 (지금; windows/로 대체됨, 구현: #99)
+  windows/<from>_<to>_<hex>.batch.json                   # Sample Window: 불변, append-only (ADR-0010, 구현: #99/#100)
   alias-metadata.json                                    # 선택
 assets/onboarding/
   scopes/global/type-dictionary.json
@@ -205,9 +206,9 @@ assets/layouts/<layoutId>/draft.layout.json             # Mapping Board가 배�
 
 Studio dev 파일 API(#13)는 위 경로만 쓰며, 각 경로는 대응하는 core validator를 통과해야 한다.
 
-설비 기록(`equipmentRecordSchema`, `schemaVersion: "0.4"`, `equipmentId`·`maker`·`model`)은 파일 이름이 `equipmentId`와 같아야 하며, `maker`/`model`이 적용되는 Scope를 정한다. `equipment/`와 `observations/`는 Studio에서 읽기 전용이다(쓰기는 403). Studio는 읽을 때 각 파일을 core validator로 다시 검사하며, 404만 "없음"으로 취급하고 그 외 실패나 잘못된 내용은 해당 설비의 오류로 표시한다.
+설비 기록(`equipmentRecordSchema`, `schemaVersion: "0.4"`, `equipmentId`·`maker`·`model`)은 파일 이름이 `equipmentId`와 같아야 하며, `maker`/`model`이 적용되는 Scope를 정한다. `equipment/`와 `observations/`는 일반 파일 API로는 쓰지 않는다(쓰기는 403). 지금은 읽기 전용이다. 승인된 규칙(ADR-0010, 구현: #100): 가져오기 endpoint(`/api/import/*`)로만 쓴다. 설비 기록은 create-only, Sample Window는 불변 추가(겹치는 구간은 거부, 대체·폐기 없음), alias metadata는 확인 후 교체다. 데이터 루트(`EQV_STUDIO_ASSETS`)가 이 저장소 안이면 가져오기를 거부하고, 다른 git 작업 트리 안이면 경고한다. Studio는 읽을 때 각 파일을 core validator로 다시 검사하며, 404만 "없음"으로 취급하고 그 외 실패나 잘못된 내용은 해당 설비의 오류로 표시한다.
 
-저장소에는 synthetic 설비만 둔다. 실제 maker/model 값은 플랫폼 배포 계층.
+저장소에는 synthetic 설비만 둔다. 실제 maker/model 값은 플랫폼 배포 계층. 가져온 데이터는 저장소 밖 데이터 루트에 있다(구현: #100).
 
 ## 8. 권한
 

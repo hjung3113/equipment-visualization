@@ -127,6 +127,10 @@ _Avoid_: parserRevision
 같은 설비·구간의 관측 데이터가 정정·재처리로 바뀔 때 올라가는 세대 값.
 _Avoid_: ingestionGeneration, eventGeneration, generation
 
+**Sample Window**:
+한 설비에 대해 가져온 완전한 OccurrenceBatch 하나와 그 조회 구간 `[from, to)`. 불변이며 Inventory와 Replay의 단위다. Studio는 window를 합치지 않는다(ADR-0010, 구현: #99/#100).
+_Avoid_: Observation(입력 단위로서), snapshot
+
 **Replay Key**:
 `(Layout Revision, Mapping Version, Ruleset Version, Data Generation, 관측 집합 해시, t)`. 같으면 Scene State가 같아야 한다.
 
@@ -163,7 +167,7 @@ _Avoid_: event(점 이벤트를 뜻할 때만 사용), Observation(입력 단위
 Record Sequence 순서와 timestamp 순서가 어긋난 경계. 영향 받은 객체는 그 구간에서 `unknown`이 된다.
 
 **Site Wall-clock**:
-설비 사이트 기준 timezone 없는 시각 값. 어떤 단계에서도 로컬 timezone이나 UTC로 변환하지 않는다.
+설비 사이트 기준 timezone 없는 시각 값. 어떤 단계에서도 로컬 timezone이나 UTC로 변환하지 않는다. 소수초는 정확히 3자리이며, 더 정밀한 원천 시각은 자르지 않고 거부한다(ADR-0009).
 _Avoid_: timestamp(UTC instant로 오해될 때), local time
 
 **Watermark**:

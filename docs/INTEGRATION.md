@@ -7,8 +7,8 @@
 1. `README.md`: 플랫폼 FE는 `pnpm` workspace, `apps/platform-web`, `packages`, `menus` 구조. 서버는 현재 mock. Parser Postgres를 소비하는 분석 플랫폼.
 2. `AGENTS.md`, `docs/integration/platform-packages.md`: `packages/contracts → kernel/ui → components → shell → apps` 의존; 메뉴끼리 import 금지. 플랫폼 핵심 계층에 equipment-specific logic 금지.
 3. `packages/contracts/src/adapter.ts`: 도메인 조회는 공통 `PlatformAdapter.menuQuery`; 임의 `fetchEquipmentReplay()` 같은 포트 메서드 추가 금지.
-4. `menus/equipment/src/index.ts`: `equipment-detail`은 `/equipment/:equipmentId` 라우트를 이미 제공, navHidden; `equipment:view` 권한 사용.
-5. `menus/analytics/src/endpoints.ts`: 분석 Context는 시간 apply, occurrence 상세 키는 equipmentId+anchor. `docs/14_drilldown_platform.md`: context link 및 returnTo 패턴.
+4. `menus/analytics/equipment/src/index.ts`: `equipment-detail`은 `/equipment/:equipmentId` 라우트를 이미 제공, navHidden; `equipment:view` 권한 사용.
+5. `menus/analytics/analytics/src/endpoints.ts`: 분석 Context는 시간 apply, occurrence 상세 키는 equipmentId+anchor. `docs/14_drilldown_platform.md`: context link 및 returnTo 패턴.
 6. `DESIGN.md`: FeedbackOps 시각 primitive와 플랫폼 extension tokens의 소유권 명확. 별도 로봇용 색상 체계로 교체 금지.
 7. `docs/01_architecture_and_data_contract.md`: Parser 원본은 view/mart를 거쳐 API가 소비; late correction/rebuild 및 time-domain 규칙 존재. 조회는 범위/반환량 제한.
 
@@ -19,7 +19,7 @@
 ### 플랫폼 쪽 소비자 구조
 
 ```text
-menus/equipment/src/
+menus/analytics/equipment/src/
   pages/EquipmentTopView.tsx     # 이 저장소 renderer/replay 패키지 조립 (lazy)
   pages/EquipmentReplay.tsx
   endpoints.ts                   # menuQuery 선언: equipment.topview.definition / .events / .metrics / .inventory
@@ -30,7 +30,7 @@ packages/platform-adapter (이 저장소)
   theme.ts                       # 플랫폼 토큰 → --eqv-* CSS 변수 매핑·주입
   context.ts                     # URL/Scope/time/권한 → viewer/replay props
 
-menus/analytics/src/
+menus/analytics/analytics/src/
   pages/...                      # Top View 이동은 `linkTo('equipment-topview', ..)` 사용
 ```
 
@@ -38,6 +38,8 @@ menus/analytics/src/
 - `equipment-detail`에 viewer tab을 추가하는 옵션이 가장 작은 UI 변경. `replay`의 시각화 면적이 크면 `equipment-topview` 별도 페이지를 lazy로 추가; IA 리뷰에서 확정.
 - 패키지 소비 방식은 submodule pin이며 private 저장소 접근 CI 게이트(analytics-platform #332) 결정 후 진행.
 - 원천 parser Result → Occurrence 변환은 플랫폼 **서버** read view(`equipment.topview.events`)의 책임이다([ADR-0002](adr/0002-occurrence-input-contract.md)). 클라이언트와 이 저장소에는 원천 parser 코드·어휘를 두지 않는다.
+- 플랫폼 호스트에는 데이터 가져오기가 없다([ADR-0010](adr/0010-studio-data-import.md)). 설비 식별은 플랫폼 설비 마스터가 소유하고, Occurrence는 `equipment.topview.events`가 준다. 가져오기(Sample Window)는 Studio 전용이다.
+- 호스트(`menus/analytics/equipment`)는 assembly와 location adapter를 `platform-adapter`/viewer에 props로 주입한다. 플랫폼 코드에 설비별 로직을 두지 않는다.
 
 ## UI / Information Architecture
 
@@ -105,7 +107,7 @@ Equipment Management
 
 ### 관련 실제 파일 URL
 - https://github.com/hjung3113/analytics-platform/blob/main/docs/integration/platform-packages.md
-- https://github.com/hjung3113/analytics-platform/blob/main/menus/equipment/src/index.ts
-- https://github.com/hjung3113/analytics-platform/blob/main/menus/analytics/src/endpoints.ts
+- https://github.com/hjung3113/analytics-platform/blob/main/menus/analytics/equipment/src/index.ts
+- https://github.com/hjung3113/analytics-platform/blob/main/menus/analytics/analytics/src/endpoints.ts
 - https://github.com/hjung3113/analytics-platform/blob/main/docs/01_architecture_and_data_contract.md
 - https://github.com/hjung3113/analytics-platform/blob/main/DESIGN.md
