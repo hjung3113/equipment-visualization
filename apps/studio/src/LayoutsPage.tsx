@@ -80,7 +80,12 @@ function useColumnWidth(ref: RefObject<HTMLElement | null>): number {
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element || typeof ResizeObserver === 'undefined') return;
-    const measure = () => { if (element.clientWidth > 0) setWidth(Math.min(VIEW_WIDTH, element.clientWidth)); };
+    // Content box: clientWidth includes the card padding, which would push the viewer past the card border.
+    const measure = () => {
+      const style = getComputedStyle(element);
+      const inner = element.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+      if (inner > 0) setWidth(Math.min(VIEW_WIDTH, Math.floor(inner)));
+    };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(element);

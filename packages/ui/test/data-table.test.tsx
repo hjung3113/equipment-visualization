@@ -72,6 +72,12 @@ it('keeps a layout className given to DataTable together with its own classes', 
   const table = screen.getByRole('table', { name: 'Occurrence' });
   expect(table.className).toContain('mt-2');
   expect(table.className.trim().split(/\s+/).length).toBeGreaterThan(1);
+  // AP table section: framed card region, filled header, transparent cells so row hover/selected fills show.
+  const region = screen.getByRole('region', { name: 'Occurrence' });
+  expect(region.className).toMatch(/\bborder\b/);
+  expect(region.className).toContain('bg-surface-card');
+  expect(screen.getByRole('columnheader', { name: columns[0] }).className).toContain('bg-surface-card-elevated');
+  expect(screen.getByRole('cell', { name: 'A' }).className).not.toMatch(/\bbg-/);
 });
 
 it('leaves a row without onActivate unfocusable and not selectable', () => {
