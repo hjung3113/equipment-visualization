@@ -1,7 +1,18 @@
+import type { EquipmentRecord } from '@eqv/core';
+
 export class ApiError extends Error {
-  constructor(message: string, readonly status: number | null = null) {
+  /** `body` is the parsed response body (`null` when there was none); a write endpoint reads `issues` and the like from it. */
+  constructor(message: string, readonly status: number | null = null, readonly body: unknown = null) {
     super(message);
   }
+}
+
+export interface ImportStatus {
+  enabled: boolean;
+  reason?: string;
+  insideGitWorkTree: boolean;
+  catalog: 'data-root' | 'bundled';
+  maxWindowBytes: number;
 }
 
 export interface DirEntry {
@@ -19,7 +30,7 @@ async function request(input: string, init?: RequestInit): Promise<unknown> {
   const body: unknown = await response.json().catch(() => null);
   if (!response.ok) {
     const message = (body as { error?: unknown } | null)?.error;
-    throw new ApiError(typeof message === 'string' ? message : `요청 실패 (${response.status})`, response.status);
+    throw new ApiError(typeof message === 'string' ? message : `요청 실패 (${response.status})`, response.status, body);
   }
   return body;
 }
@@ -64,4 +75,11 @@ export async function putImmutable(path: string, value: unknown): Promise<void> 
 
 export async function saveBindings(equipmentId: string, file: unknown): Promise<void> {
   await request(`/api/files?${new URLSearchParams({ path: `onboarding/bindings/${equipmentId}.bindings.json` })}`, json('PUT', file));
+}
+
+export const importStatus = async (): Promise<ImportStatus> => (await request('/api/import/status')) as ImportStatus;
+
+/** Creates the equipment record; the write is create-only, so an existing record is an ApiError (409 field collision, 412 same id). */
+export async function registerEquipment(record: EquipmentRecord): Promise<{ path: string; created: true }> {
+  return (await request('/api/import/equipment', json('POST', record))) as { path: string; created: true };
 }

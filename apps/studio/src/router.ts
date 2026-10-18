@@ -2,10 +2,12 @@ import { createElement, useSyncExternalStore, type AnchorHTMLAttributes, type Mo
 
 export type Route =
   | { name: 'fleet' }
+  | { name: 'equipment-new' }
+  | { name: 'equipment'; equipmentId: string }
   | { name: 'layouts'; file: string | null }
-  | { name: 'onboarding'; equipmentId: string }
+  | { name: 'onboarding'; equipmentId: string; window: string | null }
   | { name: 'board'; equipmentId: string }
-  | { name: 'focus'; equipmentId: string; entityType: string | null; anchor: string | null }
+  | { name: 'focus'; equipmentId: string; entityType: string | null; anchor: string | null; window: string | null }
   | { name: 'dev-ui' }
   | { name: 'not-found'; pathname: string };
 
@@ -24,11 +26,13 @@ export function parseRoute(pathname: string, search: string, dev: boolean = impo
   const [head, id, ...extra] = segments;
   const equipmentId = id === undefined ? null : decode(id);
   if (head === 'fleet' && segments.length === 1) return { name: 'fleet' };
+  if (head === 'fleet' && segments.length === 2 && id === 'new') return { name: 'equipment-new' };
+  if (head === 'equipment' && equipmentId && extra.length === 0) return { name: 'equipment', equipmentId };
   if (head === 'layouts' && segments.length === 1) return { name: 'layouts', file: query.get('file') };
-  if (head === 'onboarding' && equipmentId && extra.length === 0) return { name: 'onboarding', equipmentId };
+  if (head === 'onboarding' && equipmentId && extra.length === 0) return { name: 'onboarding', equipmentId, window: query.get('window') || null };
   if (head === 'onboarding' && equipmentId && extra.length === 1 && extra[0] === 'board') return { name: 'board', equipmentId };
   if (head === 'focus' && equipmentId && extra.length === 0) {
-    return { name: 'focus', equipmentId, entityType: query.get('entityType') || null, anchor: query.get('anchor') || null };
+    return { name: 'focus', equipmentId, entityType: query.get('entityType') || null, anchor: query.get('anchor') || null, window: query.get('window') || null };
   }
   if (dev && segments.length === 2 && head === 'dev' && id === 'ui') return { name: 'dev-ui' };
   return { name: 'not-found', pathname };
@@ -40,14 +44,19 @@ export function hrefFor(route: Route): string {
       return '/fleet';
     case 'layouts':
       return route.file === null ? '/layouts' : `/layouts?${new URLSearchParams({ file: route.file })}`;
+    case 'equipment-new':
+      return '/fleet/new';
+    case 'equipment':
+      return `/equipment/${encodeURIComponent(route.equipmentId)}`;
     case 'onboarding':
-      return `/onboarding/${encodeURIComponent(route.equipmentId)}`;
+      return `/onboarding/${encodeURIComponent(route.equipmentId)}${route.window === null ? '' : `?${new URLSearchParams({ window: route.window })}`}`;
     case 'board':
       return `/onboarding/${encodeURIComponent(route.equipmentId)}/board`;
     case 'focus': {
       const query = new URLSearchParams();
       if (route.entityType !== null) query.set('entityType', route.entityType);
       if (route.anchor !== null) query.set('anchor', route.anchor);
+      if (route.window !== null) query.set('window', route.window);
       const text = query.toString();
       return `/focus/${encodeURIComponent(route.equipmentId)}${text ? `?${text}` : ''}`;
     }

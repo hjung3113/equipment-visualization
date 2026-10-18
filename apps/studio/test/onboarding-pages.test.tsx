@@ -59,7 +59,7 @@ it('lists a published equipment on /fleet with a link to its onboarding page', a
   at('/fleet');
   render(<App />);
   const row = await fleetRow('eq-synth-01');
-  expect(within(row).getByText('● 게시됨')).toBeTruthy();
+  expect(within(row).getByText('게시됨')).toBeTruthy();
   expect(screen.getByRole('link', { name: 'eq-synth-01' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
 });
 
@@ -72,7 +72,7 @@ it('shows the Inventory and Template sections on /onboarding/:equipmentId', asyn
   expect(await screen.findByRole('img', { name: /미리보기$/ })).toBeTruthy();
 });
 
-it('shows not-found for an unknown id and a data error for a record without observations', async () => {
+it('shows not-found for an unknown id and an import prompt, not an error, for a record without observations', async () => {
   await writeJson(root, 'equipment/eq-nodata.json', record('eq-nodata'));
   at('/onboarding/eq-unknown');
   const first = render(<App />);
@@ -81,8 +81,9 @@ it('shows not-found for an unknown id and a data error for a record without obse
 
   at('/onboarding/eq-nodata');
   render(<App />);
-  await screen.findByText(/관측 데이터 없음/);
-  expect(screen.getByRole('alert').textContent).toContain('데이터 오류');
+  await screen.findByText('Sample Window를 가져오세요');
+  expect(within(screen.getByRole('main')).queryByRole('alert')).toBeNull();
+  expect(screen.getByRole('link', { name: '설비 데이터 열기' }).getAttribute('href')).toBe('/equipment/eq-nodata');
   expect(screen.queryByText('설비를 찾을 수 없습니다')).toBeNull();
 });
 
@@ -130,9 +131,9 @@ it.each<[string, (id: string) => Promise<void>]>([
   at('/fleet');
   render(<App />);
   const healthy = await fleetRow('eq-synth-01');
-  expect(within(healthy).getByText('● 게시됨')).toBeTruthy();
+  expect(within(healthy).getByText('게시됨')).toBeTruthy();
   const bad = await fleetRow('eq-bad');
-  expect(within(bad).getByText(/^⚠ 오류:/)).toBeTruthy();
+  expect(bad.querySelector('[data-tone="danger"]')?.textContent).toBe('오류');
   if (scenario === 'a record whose equipmentId differs from its file name') {
     expect(bad.textContent).toContain('equipment/eq-bad.json: equipmentId(eq-other)가 파일 이름과 다릅니다');
   }
@@ -148,8 +149,8 @@ it('derives the status from absence: no bindings and no rules is 미착수, mode
   await addEquipment(root, 'eq-draft');
   at('/fleet');
   render(<App />);
-  expect(within(await fleetRow('eq-new')).getByText('○ 미착수')).toBeTruthy();
-  expect(within(await fleetRow('eq-draft')).getByText('◐ 초안')).toBeTruthy();
+  expect(within(await fleetRow('eq-new')).getByText('미착수')).toBeTruthy();
+  expect(within(await fleetRow('eq-draft')).getByText('초안')).toBeTruthy();
 });
 
 it('renders the Inventory with dashes when alias metadata is absent', async () => {
@@ -167,7 +168,7 @@ it('treats an invalid alias-metadata file as an error, not as absent', async () 
   await writeJson(root, 'observations/eq-badmeta/alias-metadata.json', { schemaVersion: '0.4' });
   at('/fleet');
   const first = render(<App />);
-  expect(within(await fleetRow('eq-badmeta')).getByText(/^⚠ 오류:/)).toBeTruthy();
+  expect((await fleetRow('eq-badmeta')).querySelector('[data-tone="danger"]')?.textContent).toBe('오류');
   first.unmount();
 
   at('/onboarding/eq-badmeta');

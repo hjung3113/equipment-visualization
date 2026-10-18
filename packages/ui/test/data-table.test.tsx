@@ -98,6 +98,25 @@ it('leaves a row without onActivate unfocusable and not selectable', () => {
   expect(row!.hasAttribute('aria-selected')).toBe(false);
 });
 
+it('scrolls a focused descendant into view inside the region, not the region itself', () => {
+  const scrolled: Element[] = [];
+  const original = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView = function scrollIntoView(this: Element) { scrolled.push(this); };
+  try {
+    render(
+      <DataTable label="Actions" columns={columns}>
+        <DataTable.Row><DataTable.Cell><a href="#open">Open</a></DataTable.Cell></DataTable.Row>
+      </DataTable>,
+    );
+    fireEvent.focus(screen.getByRole('region', { name: 'Actions' }));
+    expect(scrolled).toEqual([]);
+    fireEvent.focus(screen.getByRole('link', { name: 'Open' }));
+    expect(scrolled).toEqual([screen.getByRole('link', { name: 'Open' })]);
+  } finally {
+    Element.prototype.scrollIntoView = original;
+  }
+});
+
 const sortColumns = [
   { id: 'name', header: 'Name', sortable: true },
   { id: 'count', header: 'Count', sortable: true, align: 'end' as const },

@@ -80,3 +80,26 @@ export async function writeDraft(root: string, layoutId: string): Promise<void> 
   const layout = JSON.parse(await readFile(join(repo, 'fixtures/cluster-single/layout.json'), 'utf8'));
   await writeJson(root, `layouts/${layoutId}/draft.layout.json`, { ...layout, id: layoutId });
 }
+
+/** A synthetic JSON fixture from `fixtures/import/` (read-only). */
+export const importFixture = async (name: string): Promise<Record<string, unknown>> => JSON.parse(await readFile(join(repo, 'fixtures/import', name), 'utf8'));
+
+/** The hex part of a Sample Window's content name (`<from>_<to>_<hex>`). */
+export const windowHex = async (batch: unknown): Promise<string> =>
+  (await sampleWindowName(batch as Parameters<typeof sampleWindowName>[0])).split('_').at(-1)!;
+
+/** Registers `eq-synth-03` (record, both Sample Windows by default) and, on request, its alias metadata and Model Type Dictionary. */
+export async function addSynth03(root: string, options: { windows?: boolean; metadata?: boolean; dictionary?: boolean } = {}): Promise<{ w1: string; w2: string }> {
+  await writeJson(root, 'equipment/eq-synth-03.json', await importFixture('eq-synth-03.equipment.json'));
+  const w1 = await importFixture('eq-synth-03.w1.batch.json');
+  const w2 = await importFixture('eq-synth-03.w2.batch.json');
+  if (options.windows !== false) {
+    await addWindow(root, 'eq-synth-03', w1);
+    await addWindow(root, 'eq-synth-03', w2);
+  }
+  if (options.metadata) await writeJson(root, 'observations/eq-synth-03/alias-metadata.json', await importFixture('eq-synth-03.alias-metadata.json'));
+  if (options.dictionary) {
+    await writeJson(root, 'onboarding/scopes/model/synth-maker-b/synth-wet/type-dictionary.json', await importFixture('synth-maker-b.synth-wet.type-dictionary.json'));
+  }
+  return { w1: await windowHex(w1), w2: await windowHex(w2) };
+}

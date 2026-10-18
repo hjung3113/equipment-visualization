@@ -9,6 +9,7 @@ export { Panel, type PanelProps } from './Panel.js';
 export { LoadingBlock, StateMessage, type LoadingBlockProps, type StateMessageProps } from './StateMessage.js';
 export { StatusBadge, type StatusBadgeProps, type StatusBadgeTone } from './StatusBadge.js';
 export { DetailFields, type DetailField, type DetailFieldsProps } from './DetailFields.js';
+export { FormField, type FormFieldControlProps, type FormFieldProps } from './FormField.js';
 export { FileButton, type FileButtonProps } from './FileButton.js';
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs.js';
 export { ToastRegion, useToastQueue, type ToastItem, type ToastRegionProps, type ToastTone } from './Toast.js';

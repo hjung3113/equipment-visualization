@@ -8,17 +8,25 @@ afterEach(() => {
   setNavigationBlocker(null);
 });
 
+const HEX = 'e4105058c692'.repeat(5) + 'abcd';
+
 const NAMED: [string, string, Route][] = [
   ['/fleet', '', { name: 'fleet' }],
   ['/layouts', '', { name: 'layouts', file: null }],
   ['/layouts', '?file=layouts/a/draft.layout.json', { name: 'layouts', file: 'layouts/a/draft.layout.json' }],
-  ['/onboarding/eq-synth-01', '', { name: 'onboarding', equipmentId: 'eq-synth-01' }],
+  ['/fleet/new', '', { name: 'equipment-new' }],
+  ['/equipment/eq-synth-03', '', { name: 'equipment', equipmentId: 'eq-synth-03' }],
+  ['/equipment/a%2Fb', '', { name: 'equipment', equipmentId: 'a/b' }],
+  ['/onboarding/eq-synth-01', '', { name: 'onboarding', equipmentId: 'eq-synth-01', window: null }],
+  ['/onboarding/eq-synth-01', `?window=${HEX}`, { name: 'onboarding', equipmentId: 'eq-synth-01', window: HEX }],
   ['/onboarding/eq-synth-01/board', '', { name: 'board', equipmentId: 'eq-synth-01' }],
   ['/onboarding/a%2Fb/board', '', { name: 'board', equipmentId: 'a/b' }],
   ['/focus/eq-synth-01', '?entityType=wafer&anchor=occ-1',
-    { name: 'focus', equipmentId: 'eq-synth-01', entityType: 'wafer', anchor: 'occ-1' }],
-  ['/focus/eq-synth-01', '', { name: 'focus', equipmentId: 'eq-synth-01', entityType: null, anchor: null }],
-  ['/onboarding/a%2Fb%20c', '', { name: 'onboarding', equipmentId: 'a/b c' }],
+    { name: 'focus', equipmentId: 'eq-synth-01', entityType: 'wafer', anchor: 'occ-1', window: null }],
+  ['/focus/eq-synth-01', `?entityType=wafer&anchor=occ-1&window=${HEX}`,
+    { name: 'focus', equipmentId: 'eq-synth-01', entityType: 'wafer', anchor: 'occ-1', window: HEX }],
+  ['/focus/eq-synth-01', '', { name: 'focus', equipmentId: 'eq-synth-01', entityType: null, anchor: null, window: null }],
+  ['/onboarding/a%2Fb%20c', '', { name: 'onboarding', equipmentId: 'a/b c', window: null }],
 ];
 
 it.each(NAMED)('parses %s%s', (pathname, search, route) => {
@@ -27,7 +35,7 @@ it.each(NAMED)('parses %s%s', (pathname, search, route) => {
   expect(parseRoute(hrefPath, hrefSearch)).toEqual(route);
 });
 
-it.each(['/', '/nope', '/fleet/extra', '/onboarding', '/onboarding/%E0%A4%A', '/onboarding/eq-synth-01/other', '/onboarding/eq-synth-01/board/x'])('treats %s as not found', (pathname) => {
+it.each(['/', '/nope', '/fleet/extra', '/fleet/new/x', '/equipment', '/equipment/a/b', '/onboarding', '/onboarding/%E0%A4%A', '/onboarding/eq-synth-01/other', '/onboarding/eq-synth-01/board/x'])('treats %s as not found', (pathname) => {
   expect(parseRoute(pathname, '')).toEqual({ name: 'not-found', pathname });
 });
 

@@ -39,7 +39,12 @@ it('turns a core tuple RangeError into an error row', () => {
   expect(row!.error).toContain('eq-other');
 });
 
-it('sorts by unmapped references descending, errors first, then by equipmentId', () => {
+it('turns a registered equipment without Sample Windows into a status row, not an error', () => {
+  const [row] = summarizeFleet([{ record, noObservations: true }]);
+  expect(row).toMatchObject({ status: 'no-observations', error: null, coverage: null, assumedRatio: null, unmappedReferences: null });
+});
+
+it('sorts error rows, then no-observations rows, then by unmapped references descending, ties by equipmentId', () => {
   const unpublished = (equipmentId: string, drop: number) => published({
     record: { ...record, equipmentId }, bindings: null,
     inventory: { ...inventory(), equipmentId, aliases: inventory().aliases.slice(drop) },
@@ -47,6 +52,7 @@ it('sorts by unmapped references descending, errors first, then by equipmentId',
   const rows = summarizeFleet([
     unpublished('b', 0), unpublished('a', 0), unpublished('c', 3),
     { equipmentId: 'z', maker: null, model: null, error: '관측 데이터 없음' }, published(),
+    { record: { ...record, equipmentId: 'm' }, noObservations: true },
   ]);
-  expect(rows.map(({ equipmentId }) => equipmentId)).toEqual(['z', 'a', 'b', 'c', 'eq-synth-01']);
+  expect(rows.map(({ equipmentId }) => equipmentId)).toEqual(['z', 'm', 'a', 'b', 'c', 'eq-synth-01']);
 });

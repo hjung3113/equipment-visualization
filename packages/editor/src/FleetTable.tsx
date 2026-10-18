@@ -1,16 +1,19 @@
 import { useId, type ReactNode } from 'react';
-import { DataTable } from '@eqv/ui';
+import { Circle, CircleCheck, CircleDashed, Inbox, TriangleAlert, type LucideIcon } from 'lucide-react';
+import { DataTable, StatusBadge, type StatusBadgeProps } from '@eqv/ui';
 import type { FleetRow, FleetStatus } from './fleet.js';
 
 export interface FleetTableProps {
   rows: readonly FleetRow[];
   /** The host owns routing: it wraps the equipment id in its own link. */
-  renderLink: (equipmentId: string, children: ReactNode) => ReactNode;
+  renderLink: (equipmentId: string, children: ReactNode, row: FleetRow) => ReactNode;
 }
 
-const STATUS_TEXT: Record<FleetStatus, string> = { unstarted: '○ 미착수', draft: '◐ 초안', published: '● 게시됨' };
-const STATUS_TONE: Record<FleetStatus, string> = {
-  unstarted: 'text-text-secondary', draft: 'text-text-warning-label', published: 'text-accent-primary',
+const STATUS: Record<FleetStatus, { text: string; tone: StatusBadgeProps['tone']; icon: LucideIcon }> = {
+  unstarted: { text: '미착수', tone: 'neutral', icon: Circle },
+  draft: { text: '초안', tone: 'warning', icon: CircleDashed },
+  published: { text: '게시됨', tone: 'success', icon: CircleCheck },
+  'no-observations': { text: '관측 없음', tone: 'neutral', icon: Inbox },
 };
 const percent = (ratio: number | null) => ratio === null ? '—' : `${Math.round(ratio * 100)}%`;
 
@@ -24,17 +27,17 @@ export function FleetTable({ rows, renderLink }: FleetTableProps) {
       >
         {rows.map((row) => (
           <DataTable.Row key={row.equipmentId}>
-            <DataTable.Cell rowHeader>{renderLink(row.equipmentId, row.equipmentId)}</DataTable.Cell>
+            <DataTable.Cell rowHeader className="whitespace-nowrap">{renderLink(row.equipmentId, row.equipmentId, row)}</DataTable.Cell>
             <DataTable.Cell>{row.maker ?? '—'}</DataTable.Cell>
             <DataTable.Cell>{row.model ?? '—'}</DataTable.Cell>
             {row.error !== null ? (
-              <DataTable.Cell colSpan={4}><span className="font-semibold text-text-danger">⚠ 오류: {row.error}</span></DataTable.Cell>
+              <DataTable.Cell colSpan={4}><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge> {row.error}</DataTable.Cell>
             ) : (
               <>
-                <DataTable.Cell><span className={`whitespace-nowrap font-semibold ${STATUS_TONE[row.status!]}`}>{STATUS_TEXT[row.status!]}</span></DataTable.Cell>
+                <DataTable.Cell><StatusBadge tone={STATUS[row.status!].tone} icon={STATUS[row.status!].icon}>{STATUS[row.status!].text}</StatusBadge></DataTable.Cell>
                 <DataTable.Cell>{percent(row.coverage?.references.ratio ?? null)}</DataTable.Cell>
                 <DataTable.Cell>{percent(row.assumedRatio)}</DataTable.Cell>
-                <DataTable.Cell><span className="tabular-nums">{row.unmappedReferences}</span></DataTable.Cell>
+                <DataTable.Cell><span className="tabular-nums">{row.unmappedReferences ?? '—'}</span></DataTable.Cell>
               </>
             )}
           </DataTable.Row>

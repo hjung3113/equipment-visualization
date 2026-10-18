@@ -19,7 +19,8 @@
   "dependencies": {
     "@eqv/core": "workspace:*",
     "@eqv/renderer": "workspace:*",
-    "@eqv/ui": "workspace:*"
+    "@eqv/ui": "workspace:*",
+    "lucide-react": "0.469.0"
   },
   "devDependencies": {
     "@fops/ui": "workspace:*",

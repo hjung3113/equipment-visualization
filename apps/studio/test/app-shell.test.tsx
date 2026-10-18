@@ -35,6 +35,8 @@ it.each([
   ['/onboarding/eq-x', 'Fleet'],
   ['/onboarding/eq-x/board', 'Fleet'],
   ['/focus/eq-x', 'Fleet'],
+  ['/fleet/new', 'Fleet'],
+  ['/equipment/eq-x', 'Fleet'],
   ['/layouts', '레이아웃'],
 ])('%s marks only %s current in the nav and keeps one page heading in main', async (path, current) => {
   window.history.replaceState(null, '', path);

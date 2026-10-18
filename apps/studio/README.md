@@ -1,6 +1,6 @@
 # @eqv/studio
 
-Standalone Studio app: shell and router (`/fleet`, `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`), a layouts page
+Standalone Studio app: shell and router (`/fleet`, `/fleet/new` (설비 등록), `/equipment/:equipmentId` (설비 데이터: record, Sample Windows, alias metadata and Type Dictionary status, import status notices), `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`; `/onboarding/:equipmentId` and `/focus/:equipmentId` take `?window=<hex>` to open one Sample Window), a layouts page
 (viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet and Onboarding (read-only
 Inventory and Template proposals, #14a) and the Mapping Board (#14b) are implemented. `/dev/ui` is a dev-only `@eqv/ui` component gallery for design review. It is not in the nav, it is absent from `vite build` output, and the data is synthetic.
 

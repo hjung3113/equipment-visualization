@@ -10,7 +10,7 @@ import { FocusPage } from '../src/FocusPage.js';
 import { loadFocus } from '../src/focus-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
-import { addEquipment, seedOnboardingRoot, writeDraft, writeJson } from './seed.js';
+import { addEquipment, addSynth03, seedOnboardingRoot, writeDraft, writeJson } from './seed.js';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -142,6 +142,21 @@ it('drops selection and range when the route moves to another equipment', async 
   expect(screen.getByDisplayValue('2026-01-01T10:00:00.000')).toBeTruthy();
 });
 
+it('replays the Sample Window the route names and drops selection and range when the window changes', async () => {
+  const { w1, w2 } = await addSynth03(root);
+  at(`/focus/eq-synth-03?window=${w1}`);
+  render(<App />);
+  await loaded();
+  expect(row('occ-w1-wc2-forced')).not.toBeNull();
+  expect(row('occ-w2-wc4-transfer')).toBeNull();
+  fireEvent.click(row('occ-w1-wc2-forced'));
+  expect(row('occ-w1-wc2-forced').getAttribute('aria-selected')).toBe('true');
+  act(() => navigate(`/focus/eq-synth-03?window=${w2}`));
+  await waitFor(() => expect(row('occ-w2-wc4-transfer')).not.toBeNull());
+  expect(document.querySelector('tr[aria-selected="true"]')).toBeNull();
+  expect(screen.getByDisplayValue('2026-01-01T10:30:00.000')).toBeTruthy();
+});
+
 it('links Focus from Onboarding only when the equipment has Bindings', async () => {
   at('/onboarding/eq-synth-01');
   render(<App />);
@@ -204,7 +219,7 @@ it('playing frames show the same state as a direct seek to that cursor', async (
   if (loadedFocus.kind !== 'ok') throw new Error('Expected the fixture to load');
   const data: ReplayInput = { batch: loadedFocus.batch, layouts: loadedFocus.layouts, bindings: loadedFocus.bindings, mappings: loadedFocus.mappings };
   const clock = manualClock();
-  render(<FocusPage equipmentId="eq-synth-01" entityType={null} anchor={null} scheduler={clock.scheduler} />);
+  render(<FocusPage equipmentId="eq-synth-01" sampleWindow={null} entityType={null} anchor={null} scheduler={clock.scheduler} />);
   await loaded();
   applyRange('2026-01-01T10:01:20.000', '2026-01-01T10:02:30.000');
   fireEvent.click(screen.getByRole('radio', { name: 'x4' }));
