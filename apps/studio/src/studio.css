@@ -29,14 +29,14 @@
   main ul { list-style: disc; }
   main ol { list-style: decimal; }
   main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea,
-    button:not([role='tab']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])) {
+    button:not([role='tab']):not([role='radio']):not([role='checkbox']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])) {
     border: 1px solid rgb(var(--border-strong));
     border-radius: var(--radius-sm);
     background: rgb(var(--surface-field-filled));
     padding: 2px 8px;
   }
   main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea,
-    button:not([role='tab']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])):disabled {
+    button:not([role='tab']):not([role='radio']):not([role='checkbox']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])):disabled {
     color: rgb(var(--text-disabled));
     cursor: not-allowed;
   }
