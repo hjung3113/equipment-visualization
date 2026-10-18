@@ -16,10 +16,10 @@ export function DataQualityList({ timeline, onSelectOccurrence }: DataQualityLis
     <DataTable label="Data Quality" columns={COLUMNS}>
       {[...timeline.issues].sort((a, b) => a.seq - b.seq).map((issue) => (
         <DataTable.Row key={issue.id}>
-          <DataTable.Cell>{issue.at ?? NO_TIME}</DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap">{issue.at ?? NO_TIME}</DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap">{issue.seq}</DataTable.Cell>
           <DataTable.Cell>{issue.issueType}</DataTable.Cell>
-          <DataTable.Cell>{issue.id}</DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap">{issue.id}</DataTable.Cell>
           <DataTable.Cell>
             {issue.relatedOccurrenceId === undefined ? '—' : (
               <Button type="button" variant="outline" size="toolbar" aria-label={`관련 Occurrence ${issue.relatedOccurrenceId} 선택`}

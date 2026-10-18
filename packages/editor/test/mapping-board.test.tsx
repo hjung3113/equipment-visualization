@@ -233,11 +233,13 @@ it('keeps Tab inside the palette dialog', () => {
   press(list(), 'a');
   const filter = screen.getByRole('combobox');
   const close = button('닫기');
-  close.focus();
-  press(close, 'Tab');
+  // jsdom does not move focus on Tab; the browser follows DOM order, so the icon button must come right after the footer one.
+  expect(close.compareDocumentPosition(button('창 닫기')) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  button('창 닫기').focus();
+  press(button('창 닫기'), 'Tab');
   expect(document.activeElement).toBe(filter);
   press(filter, 'Tab', { shiftKey: true });
-  expect(document.activeElement).toBe(close);
+  expect(document.activeElement).toBe(button('창 닫기'));
   expect(screen.getByRole('dialog').getAttribute('aria-modal')).toBe('true');
 });
 
@@ -536,9 +538,11 @@ it('previews a rule with R, refuses an overlap at Model scope and adds it at Equ
   expect(dialog.textContent).toContain('매칭 3 · 적용 1 · 예외 1 · 대상 없음 1 · 충돌 0');
   expect(dialog.textContent).toContain('PM2 → pm-b · 예외 (정확 규칙 pm-two-assumed)');
   expect(dialog.textContent).toContain('PM9 → pm-i · 대상 없음 (레이아웃에 없음)');
-  const buttons = within(dialog).getAllByRole('button');
-  buttons[buttons.length - 1]!.focus();
-  press(buttons[buttons.length - 1]!, 'Tab');
+  const footerClose = within(dialog).getByRole('button', { name: '닫기' });
+  const iconClose = within(dialog).getByRole('button', { name: '창 닫기' });
+  expect(footerClose.compareDocumentPosition(iconClose) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  iconClose.focus();
+  press(iconClose, 'Tab');
   expect(document.activeElement).toBe(within(dialog).getByLabelText(/패턴/));
   press(within(dialog).getByLabelText(/패턴/), 'Enter');
   expect(screen.queryByRole('dialog')).toBeNull();

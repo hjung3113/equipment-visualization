@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
 import { rm } from 'node:fs/promises';
-import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
+import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
 import { seedOnboardingRoot } from './seed.js';
 
@@ -44,4 +45,16 @@ it.each([
   expect(within(nav).getByRole('link', { name: other }).getAttribute('aria-current')).toBeNull();
   const main = screen.getByRole('main');
   await waitFor(() => expect(within(main).getAllByRole('heading', { level: 1 })).toHaveLength(1));
+});
+
+it('moves focus to the new page heading after a pathname change, not after a query-only change', async () => {
+  window.history.replaceState(null, '', '/fleet');
+  render(<App />);
+  await waitFor(() => expect(within(screen.getByRole('main')).getAllByRole('heading', { level: 1 })).toHaveLength(1));
+  expect(document.activeElement).toBe(document.body);
+  fireEvent.click(within(screen.getByRole('navigation', { name: '주 메뉴' })).getByRole('link', { name: '레이아웃' }));
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 1, name: '레이아웃' })));
+  (document.activeElement as HTMLElement).blur();
+  act(() => navigate('/layouts?file=templates%2Fx.template.json'));
+  expect(document.activeElement).toBe(document.body);
 });

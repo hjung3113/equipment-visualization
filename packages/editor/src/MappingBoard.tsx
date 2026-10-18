@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react';
 import type { AliasRulesFile } from '@eqv/core';
-import { Button, Input, Label, OutlineBadge, RadioGroup, RadioGroupItem } from '@fops/ui';
+import { Button, Dialog, DialogContent, DialogTitle, Input, Label, OutlineBadge, RadioGroup, RadioGroupItem } from '@fops/ui';
 import { TopViewer, type TopViewerProps } from '@eqv/renderer';
 import { ViewerZoomControls } from '@eqv/ui';
 import {
@@ -26,8 +26,6 @@ const MARKED_NAME = ', 선택한 component에 배정됨';
 const NOTE = 'mb-2 border-l-2 border-text-warning-label px-2 py-1 text-text-warning-label';
 const ISSUES = 'mb-2 border-l-2 border-text-warning-label py-1 pr-2 pl-6 text-text-warning-label';
 const PANE = 'min-w-0 rounded-md border border-border-subtle bg-surface-card p-2';
-const BACKDROP = 'fixed inset-0 z-10 bg-surface-canvas/60';
-const DIALOG = 'fixed top-1/2 left-1/2 z-10 box-border max-w-[calc(100vw-32px)] -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-md border border-border-strong bg-surface-card p-3';
 const STATUS_TONE: Record<BoardStatus, string> = {
   conflict: 'font-semibold text-text-danger-label', verified: 'text-accent-primary', assumed: 'text-text-warning-label',
   unmapped: 'text-text-secondary', ignored: 'text-text-secondary',
@@ -200,6 +198,10 @@ export function MappingBoard(props: MappingBoardProps) {
     if (!selected || savingRef.current) return;
     const suggestion = suggestPattern(selected.alias, selected.componentId);
     setRule({ alias: selected.alias, pattern: suggestion?.pattern ?? '', target: suggestion?.target ?? '', hint: suggestion === null });
+  };
+  const returnFocusToList = (event: Event) => {
+    event.preventDefault();
+    listRef.current?.focus();
   };
   const closeRule = () => {
     restoreFocus.current = true;
@@ -472,14 +474,12 @@ export function MappingBoard(props: MappingBoardProps) {
       </div>
       </div>
       {palette && (
-        <div className={BACKDROP} onMouseDown={(event) => {
-          if (!(event.target instanceof Element) || !event.target.closest('input, button')) event.preventDefault();
-        }}>
-        <div
-          ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`${ids}-palette-title`} className={`${DIALOG} w-[420px]`}
-          onKeyDown={onDialogKeyDown}
+        <Dialog open onOpenChange={(open) => { if (!open) closePalette(); }}>
+        <DialogContent
+          ref={dialogRef} closeLabel="창 닫기" aria-modal="true" aria-describedby={undefined} className="w-[420px] max-w-[min(420px,calc(100vw-32px))]"
+          onKeyDown={onDialogKeyDown} onInteractOutside={(event) => event.preventDefault()} onCloseAutoFocus={returnFocusToList}
         >
-          <h3 id={`${ids}-palette-title`} className="mb-2 font-semibold">{palette.alias}를 배정할 component</h3>
+          <DialogTitle>{palette.alias}를 배정할 component</DialogTitle>
           <Input
             ref={filterRef} type="text" role="combobox" aria-label="component 필터" aria-expanded="true" aria-autocomplete="list"
             aria-controls={`${ids}-palette-list`} value={palette.filter}
@@ -499,18 +499,17 @@ export function MappingBoard(props: MappingBoardProps) {
             {options.length === 0 && <p>일치하는 component가 없습니다.</p>}
           </div>
           <Button type="button" variant="outline" size="sm" onClick={closePalette}>닫기</Button>
-        </div>
-        </div>
+        </DialogContent>
+        </Dialog>
       )}
       {rule && preview && (
-        <div className={BACKDROP} onMouseDown={(event) => {
-          if (!(event.target instanceof Element) || !event.target.closest('input, button')) event.preventDefault();
-        }}>
-        <div
-          ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={`${ids}-rule-title`} className={`${DIALOG} max-h-[80vh] w-[560px]`}
-          onKeyDown={onRuleKeyDown}
+        <Dialog open onOpenChange={(open) => { if (!open) closeRule(); }}>
+        <DialogContent
+          ref={dialogRef} closeLabel="창 닫기" aria-modal="true" aria-describedby={undefined}
+          className="max-h-[80vh] w-[560px] max-w-[min(560px,calc(100vw-32px))] overflow-y-auto"
+          onKeyDown={onRuleKeyDown} onInteractOutside={(event) => event.preventDefault()} onCloseAutoFocus={returnFocusToList}
         >
-          <h3 id={`${ids}-rule-title`} className="mb-2 font-semibold">{rule.alias}에서 규칙 만들기 · 저장 범위 {LEVEL_TEXT[saveScope]}</h3>
+          <DialogTitle>{rule.alias}에서 규칙 만들기 · 저장 범위 {LEVEL_TEXT[saveScope]}</DialogTitle>
           {rule.hint && <p className={NOTE}>패턴을 제안할 숫자가 없습니다</p>}
           <div className="mb-2">
             <Label htmlFor={`${ids}-rule-pattern`}>패턴</Label>
@@ -537,8 +536,8 @@ export function MappingBoard(props: MappingBoardProps) {
             >규칙 추가</Button>
             <Button type="button" variant="outline" size="sm" onClick={closeRule}>닫기</Button>
           </div>
-        </div>
-        </div>
+        </DialogContent>
+        </Dialog>
       )}
     </section>
   );
