@@ -124,11 +124,18 @@ it.each([...LEVELS, ['illustrative', '예시'] as const])('EvidenceDetail shows 
   expect(badge.getAttribute('data-evidence')).toBe(level);
 });
 
-it.each(LEVELS)('CursorStateList shows %s location and identity evidence as badges reading %s', (level, word) => {
+it.each(LEVELS)('CursorStateList shows %s activity, location and identity evidence as badges reading %s', (level, word) => {
   const base = stateAt(time('10:26:00'));
-  const state = { ...base, materials: base.materials.map((m) => ({ ...m, locationEvidence: level, identityEvidence: level })) };
+  const [first, ...rest] = base.components;
+  const state = {
+    ...base,
+    components: [{ ...first!, activity: 'processing' as const, activityEvidence: level }, ...rest],
+    materials: base.materials.map((m) => ({ ...m, locationEvidence: level, identityEvidence: level })),
+  };
   render(<CursorStateList state={state} />);
+  const activity = within(screen.getByText(`${first!.componentId}:`, { exact: false })).getByText(word, { selector: '[data-evidence]' });
+  expect(activity.getAttribute('data-evidence')).toBe(level);
   const badges = screen.getAllByText(word, { selector: '[data-evidence]' });
-  expect(badges.length).toBeGreaterThanOrEqual(2);
+  expect(badges.length).toBeGreaterThanOrEqual(3);
   expect(badges.every((b) => b.getAttribute('data-evidence') === level)).toBe(true);
 });

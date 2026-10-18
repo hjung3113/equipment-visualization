@@ -32,9 +32,9 @@ export function PlaybackControls({ playing, onPlay, onPause, speed, onSpeedChang
   return (
     <div className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2" role="group" aria-label="재생 컨트롤">
       <Button type="button" variant="outline" size="toolbar" onClick={playing ? onPause : onPlay}>{playing ? '일시정지' : '재생'}</Button>
-      <ToggleGroup type="single" variant="outline" size="sm" aria-label="재생 속도" value={String(speed)}
+      <ToggleGroup type="single" variant="outline" size="sm" appearance="filter" aria-label="재생 속도" value={String(speed)}
         onValueChange={(value) => { if (isSpeed(value)) onSpeedChange(Number(value) as PlaybackSpeed); }}>
-        {SPEEDS.map((value) => <ToggleGroupItem key={value} value={String(value)}>{`x${value}`}</ToggleGroupItem>)}
+        {SPEEDS.map((value) => <ToggleGroupItem key={value} value={String(value)} appearance="selected-filter">{`x${value}`}</ToggleGroupItem>)}
       </ToggleGroup>
       <Button type="button" variant="outline" size="toolbar" disabled={onPreviousBreakpoint === null} onClick={() => onPreviousBreakpoint?.()}>이전 단계</Button>
       <Button type="button" variant="outline" size="toolbar" disabled={onNextBreakpoint === null} onClick={() => onNextBreakpoint?.()}>다음 단계</Button>
