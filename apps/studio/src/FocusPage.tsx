@@ -266,7 +266,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                   <OccurrenceList batch={ok!.batch} timeline={frame} bindings={ok!.bindings} appliedSeq={state.appliedSeq}
                     selectedOccurrenceId={selectedId} onSelectOccurrence={(id) => select(id, true)} />
                 </TabsContent>
-                <TabsContent value="quality"><DataQualityList timeline={frame} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
+                <TabsContent value="quality"><DataQualityList timeline={frame} appliedSeq={state.appliedSeq} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
                 <TabsContent value="detail"><EvidenceDetail batch={ok!.batch} state={state} selectedOccurrenceId={selectedId} /></TabsContent>
               </Tabs>
             </>

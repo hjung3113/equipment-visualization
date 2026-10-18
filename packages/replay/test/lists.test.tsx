@@ -139,3 +139,43 @@ it.each(LEVELS)('CursorStateList shows %s activity, location and identity eviden
   expect(badges.length).toBeGreaterThanOrEqual(3);
   expect(badges.every((b) => b.getAttribute('data-evidence') === level)).toBe(true);
 });
+
+const many = (count: number) => {
+  const base = batch.occurrences.find((o) => o.id === 'occ-pm1-process')!;
+  const occurrences = Array.from({ length: count }, (_, i) => ({ ...base, id: `occ-gen-${i}`, start: { ...base.start, at: null, seq: 2 * i + 1 }, end: null }));
+  return { ...batch, occurrences, issues: [] };
+};
+const ids = () => Array.from(document.querySelectorAll('tbody tr')).map((tr) => tr.getAttribute('data-occurrence-id'));
+const NOTICE = /Occurrence 2,000개 중 .*번째 500개만 표시합니다/;
+
+it('caps a large Occurrence list at 500 rows around the cursor row, with a notice, and moves the slice with the selection', () => {
+  const big = many(2000);
+  const props = { batch: big, timeline, bindings: null, onSelectOccurrence: vi.fn() };
+  const { rerender } = render(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId={null} />);
+  expect(ids()).toHaveLength(500);
+  expect(ids()[0]).toBe('occ-gen-750');
+  expect(screen.getByRole('status').textContent).toBe('Occurrence 2,000개 중 751–1,250번째 500개만 표시합니다. 범위를 좁히면 모두 볼 수 있습니다.');
+  rerender(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId="occ-gen-1700" />);
+  expect(ids()).toContain('occ-gen-1700');
+  expect(ids()).toHaveLength(500);
+  expect(screen.getByRole('status').textContent).toMatch(NOTICE);
+});
+
+it('keeps ArrowDown/ArrowUp working at the edge of a capped slice by moving the slice', () => {
+  render(<OccurrenceList batch={many(2000)} timeline={timeline} bindings={null} appliedSeq={1} selectedOccurrenceId={null} onSelectOccurrence={vi.fn()} />);
+  expect(ids()[0]).toBe('occ-gen-0');
+  expect(ids()).toHaveLength(500);
+  const last = document.querySelector<HTMLElement>('tr[data-occurrence-id="occ-gen-499"]')!;
+  last.focus();
+  fireEvent.keyDown(last, { key: 'ArrowDown' });
+  expect(ids()).toContain('occ-gen-500');
+  expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe('occ-gen-500');
+});
+
+it('caps the Data Quality list too, around the cursor', () => {
+  const issues = Array.from({ length: 2000 }, (_, i) => ({ id: `dqi-${i}`, issueType: 'unmatched-end', seq: i + 1, at: null }));
+  render(<DataQualityList timeline={{ issues } as unknown as typeof timeline} appliedSeq={1000} onSelectOccurrence={vi.fn()} />);
+  expect(screen.getAllByRole('row')).toHaveLength(501);
+  expect(screen.getByText('dqi-999')).toBeTruthy();
+  expect(screen.getByRole('status').textContent).toMatch(/Data Quality Issue 2,000개 중 .*번째 500개만 표시합니다/);
+});

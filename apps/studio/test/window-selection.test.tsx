@@ -1,14 +1,14 @@
 // @vitest-environment jsdom
 import { readFile, readdir, rm } from 'node:fs/promises';
 import { join } from 'node:path';
-import { occurrenceBatchSchema, replayTimelineFrame, type OccurrenceBatch } from '@eqv/core';
+import { millisToWallClock, occurrenceBatchSchema, replayTimelineFrame, wallClockToMillis, type OccurrenceBatch } from '@eqv/core';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
 import { FocusPage } from '../src/FocusPage.js';
 import { timelineCost } from '../src/focus-data.js';
 import { createFileApi } from '../server/files.js';
-import { addSynth03, addWindow, importFixture, record, seedOnboardingRoot, writeDraft, writeJson } from './seed.js';
+import { addSynth03, addWindow, importFixture, record, seedOnboardingRoot, windowHex as hexOf, writeDraft, writeJson } from './seed.js';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -265,5 +265,21 @@ describe('large-window guard', () => {
     page(budget === 'cost' ? cost : undefined, id, id === 'eq-synth-03' ? w1 : null);
     await waitFor(() => expect(gantt()).not.toBeNull());
     expect(screen.queryByText(GUARD)).toBeNull();
+  });
+
+  it('a 2,000-Occurrence window renders at most 500 list rows and says so', async () => {
+    const t0 = wallClockToMillis(batch.from);
+    const occurrences = Array.from({ length: 2000 }, (_, i) => ({
+      id: `occ-gen-${i}`, equipmentId: batch.equipmentId, kind: 'PROCESS' as const,
+      start: { at: millisToWallClock(t0 + 500 * i), seq: 2 * i + 1, evidence: 'observed' as const },
+      end: { at: millisToWallClock(t0 + 500 * i + 100), seq: 2 * i + 2, evidence: 'observed' as const },
+      location: { moduleAlias: 'WC2' }, synthetic: false, source: { parserContractVersion: 'synthetic-1', dataGeneration: 'g1' },
+    }));
+    const big = occurrenceBatchSchema.parse({ ...batch, occurrences, issues: [], watermark: { seq: 4001, at: batch.to } });
+    await rm(join(root, 'observations/eq-synth-03/windows'), { recursive: true, force: true });
+    await addWindow(root, 'eq-synth-03', big);
+    page(undefined, 'eq-synth-03', await hexOf(big));
+    await screen.findByText(/Occurrence 2,000개 중 .*번째 500개만 표시합니다/);
+    expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBe(500);
   });
 });
