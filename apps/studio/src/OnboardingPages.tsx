@@ -7,6 +7,7 @@ import {
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { Page } from '@eqv/ui';
+import { Button } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
@@ -100,11 +101,11 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
       )}
       <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates}
         action={(choice): ReactNode => (
-          <button type="button" className="eqv-ed-btn eqv-ed-btn-primary"
+          <Button type="button" variant="primary"
             aria-label={choice.kind === 'generic' ? 'Generic Layout으로 시작' : `${result.templates.find(({ id }) => id === choice.templateId)!.name}으로 시작`}
             disabled={blocked || create.pending} onClick={() => { void start(choice); }}>
             {choice.kind === 'generic' ? 'Generic Layout으로 시작' : '이 템플릿으로 시작'}
-          </button>
+          </Button>
         )} />
     </>
   );

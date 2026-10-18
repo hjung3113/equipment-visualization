@@ -264,7 +264,13 @@ importers:
       '@eqv/renderer':
         specifier: workspace:*
         version: link:../renderer
+      '@eqv/ui':
+        specifier: workspace:*
+        version: link:../ui
     devDependencies:
+      '@fops/ui':
+        specifier: workspace:*
+        version: link:../../external/feedbackops/packages/ui
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2

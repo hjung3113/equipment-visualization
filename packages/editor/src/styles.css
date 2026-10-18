@@ -1,0 +1,2 @@
+/* Tailwind scans this package's components (they live outside the host app). Import after the @fops/ui theme. */
+@source "./";

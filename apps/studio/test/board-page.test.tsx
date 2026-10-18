@@ -329,7 +329,6 @@ it.each(['mixed', 'generic'] as const)('UX-11 gives %s start actions distinct na
   for (const start of starts) {
     const name = start.getAttribute('aria-label')!;
     expect([`${single.name}으로 시작`, `${lithography.name}으로 시작`, 'Generic Layout으로 시작']).toContain(name);
-    expect(start.classList.contains('eqv-ed-btn-primary')).toBe(true);
     const card = start.closest('li')!;
     if (card.textContent?.includes('✗ 부적합')) {
       expect(card.textContent).toContain('부적합 Template입니다');
@@ -349,7 +348,7 @@ it('UX-12 gives a loaded Board one heading and a route back to its Onboarding pa
 
 const BINDINGS = 'onboarding/bindings/eq-synth-01.bindings.json';
 const publishButton = () => screen.getByRole('button', { name: '게시' });
-const statusText = () => document.querySelector('.eqv-ed-publish-status')!.textContent;
+const statusText = () => within(screen.getByRole('heading', { name: '⑥ Publish' }).closest('section')!).getByRole('status').textContent;
 const hex12 = (hash: string) => hash.slice('sha256:'.length, 'sha256:'.length + 12);
 const inertAncestor = async () => (await list()).closest('[inert]');
 it('opens and first-publishes a draft with a valid empty bindings file', async () => {

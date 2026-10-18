@@ -3,6 +3,7 @@ import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
 import { Page } from '@eqv/ui';
+import { Button, Input, Label } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const VIEW_WIDTH = 960;
@@ -240,13 +241,13 @@ export function LayoutsPage({ file }: { file: string | null }) {
         {listing && (
           <>
             <h2>템플릿 (읽기 전용)</h2>
-            <ul>{listing.templates.map(item)}</ul>
+            <ul className="list-disc pl-6">{listing.templates.map(item)}</ul>
             <h2>레이아웃</h2>
             {listing.layouts.length === 0 && <p>저장된 레이아웃이 없습니다.</p>}
             {listing.layouts.map((entry) => (
               <div key={entry.id}>
                 <h3>{entry.id}</h3>
-                <ul>{entry.files.map(item)}</ul>
+                <ul className="list-disc pl-6">{entry.files.map(item)}</ul>
               </div>
             ))}
           </>
@@ -254,12 +255,12 @@ export function LayoutsPage({ file }: { file: string | null }) {
       </section>
       <section aria-label="문서">
         <div>
-          <label>
-            가져오기 <input type="file" accept=".json,application/json" onChange={onImport} />
-          </label>{' '}
-          <button type="button" onClick={onExport} disabled={!current}>내보내기</button>{' '}
-          <button type="button" onClick={onSaveDraft} disabled={!current || busy}>초안 저장</button>{' '}
-          <button type="button" onClick={onPublish} disabled={!current || busy}>Revision 게시</button>
+          <Label>
+            가져오기 <Input type="file" accept=".json,application/json" onChange={onImport} />
+          </Label>{' '}
+          <Button type="button" variant="outline" onClick={onExport} disabled={!current}>내보내기</Button>{' '}
+          <Button type="button" variant="outline" onClick={onSaveDraft} disabled={!current || busy}>초안 저장</Button>{' '}
+          <Button type="button" onClick={onPublish} disabled={!current || busy}>Revision 게시</Button>
         </div>
         {actionError !== null && <p role="alert">{actionError}</p>}
         {revision !== null && <p role="status">게시된 Revision: <code>{revision}</code></p>}

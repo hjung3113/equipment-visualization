@@ -32,7 +32,7 @@ it('contains each wide table in a focusable named region', () => {
     <FleetTable rows={[]} renderLink={(_, children) => children} />
     <InventoryView inventory={inventory()} dictionaries={dictionaries} />
   </>);
-  for (const [index, name] of ['Fleet 표', 'Alias 목록 표', '관측된 이송 표'].entries()) {
+  for (const [index, name] of ['Fleet 표', 'Alias 목록', '관측된 이송'].entries()) {
     const region = screen.getByRole('region', { name });
     expect(region.getAttribute('tabindex')).toBe('0');
     expect(screen.getAllByRole('table')[index]!.parentElement).toBe(region);

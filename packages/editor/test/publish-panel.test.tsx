@@ -34,6 +34,7 @@ const props = (change: Partial<PublishPanelProps> = {}): PublishPanelProps => {
     ...change,
   };
 };
+const publishStatus = () => within(screen.getByRole('heading', { name: '⑥ Publish' }).closest('section')!).getByRole('status');
 const publishButton = () => screen.getByRole('button', { name: '게시' });
 const from = () => screen.getByLabelText('effectiveFrom') as HTMLInputElement;
 const ready = () => screen.findByRole('list', { name: '미매핑 alias' });
@@ -73,7 +74,7 @@ it('disables 게시 with the unsaved-changes reason while the Board is dirty and
   expect(publishButton().getAttribute('aria-describedby')).toBeTruthy();
   expect(document.getElementById(publishButton().getAttribute('aria-describedby')!)?.textContent?.trim()).toBe(DIRTY_REASON);
   await act(async () => { fireEvent.click(publishButton()); });
-  expect(document.querySelector('.eqv-ed-publish-status')!.textContent).toBe('');
+  expect(publishStatus().textContent).toBe('');
 });
 
 it('publishes the computed plan and shows the receipt and the host failure', async () => {
@@ -81,12 +82,12 @@ it('publishes the computed plan and shows the receipt and the host failure', asy
   const { rerender } = render(<PublishPanel {...props({ onPublish })} />);
   await waitFor(() => expect(publishButton().getAttribute('aria-disabled')).toBe('false'));
   fireEvent.click(publishButton());
-  await waitFor(() => expect(document.querySelector('.eqv-ed-publish-status')!.textContent).toBe('bindings 저장 실패: 400'));
+  await waitFor(() => expect(publishStatus().textContent).toBe('bindings 저장 실패: 400'));
   expect(onPublish).toHaveBeenCalledWith(expect.objectContaining({ problems: [], bindings: expect.objectContaining({ equipmentId: 'eq-synth-01' }) }));
   rerender(<PublishPanel {...props({ onPublish, publishing: true })} />);
-  expect(document.querySelector('.eqv-ed-publish-status')!.textContent).toBe('게시 중…');
+  expect(publishStatus().textContent).toBe('게시 중…');
   rerender(<PublishPanel {...props({ onPublish, receipt: { mappingHash: 'sha256:' + 'ab'.repeat(32), effectiveFrom: '2026-01-01T10:30:00.000' } })} />);
-  expect(document.querySelector('.eqv-ed-publish-status')!.textContent).toBe('게시됨 · abababababab · 2026-01-01T10:30:00.000');
+  expect(publishStatus().textContent).toBe('게시됨 · abababababab · 2026-01-01T10:30:00.000');
 });
 
 it('ignores a dry-run result that arrives after the inputs changed', async () => {
@@ -116,7 +117,7 @@ it('shows only the unchanged blocker after success and restores date validation 
   await waitFor(() => expect(reason()).toBe('이전 게시와 같습니다'));
   expect(from().getAttribute('aria-invalid')).toBe('false');
   expect(publishButton().getAttribute('aria-disabled')).toBe('true');
-  expect(document.querySelector('.eqv-ed-publish-status')!.textContent).toBe('게시됨 · ' + receipt.mappingHash.slice(7, 19) + ' · ' + receipt.effectiveFrom);
+  expect(publishStatus().textContent).toBe('게시됨 · ' + receipt.mappingHash.slice(7, 19) + ' · ' + receipt.effectiveFrom);
   rerender(<PublishPanel {...completed} input={{ ...initial.input, layout: { ...initial.input.layout, name: 'Changed draft' } }} />);
   await waitFor(() => expect(from().getAttribute('aria-invalid')).toBe('true'));
   expect(reason()).toContain('effectiveFrom은 마지막 binding');
@@ -136,7 +137,7 @@ it('lists same-Model rows with host links and row errors', async () => {
   render(<PublishPanel {...props({ onModelDryRun: async () => ({ rows, unreadable: 1 }) })} />);
   fireEvent.click(screen.getByRole('button', { name: '같은 Model 일괄 dry-run 실행' }));
   const table = await screen.findByRole('table', { name: /synth-maker\/synth-model 설비 2대/ });
-  expect(table.querySelector('caption')!.textContent).toContain('읽지 못한 설비 1대');
+  expect(screen.getByText(/읽지 못한 설비 1대/).tagName).toBe('P');
   expect(within(within(table).getByRole('link', { name: 'eq-b' }).closest('tr')!).getAllByRole('cell')[0]!.textContent).toBe('—');
   expect(within(table).getByRole('link', { name: 'eq-a' }).getAttribute('href')).toBe('/onboarding/eq-a');
   expect(within(within(table).getByRole('link', { name: 'eq-b' }).closest('tr')!).getByText('레이아웃 초안 없음')).toBeTruthy();
