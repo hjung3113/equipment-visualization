@@ -1,0 +1,277 @@
+{
+  "equipmentId": "eq-synth-03",
+  "from": "2026-01-01T10:30:00.000",
+  "to": "2026-01-01T11:00:00.000",
+  "timeDomain": "site-synth",
+  "watermark": {
+    "seq": 42,
+    "at": "2026-01-01T10:49:00.000"
+  },
+  "parserContractVersion": "synthetic-1",
+  "dataGeneration": "g1",
+  "occurrences": [
+    {
+      "id": "occ-carrier-window-boundary",
+      "equipmentId": "eq-synth-03",
+      "kind": "CARRIER_PRESENCE",
+      "start": {
+        "at": "2026-01-01T10:02:00.000",
+        "seq": 1,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:31:00.000",
+        "seq": 24,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "carrier",
+        "id": "C03",
+        "identityEvidence": "observed",
+        "lotId": "LOT-SYN-03"
+      }
+    },
+    {
+      "id": "occ-w2-wc4-transfer",
+      "equipmentId": "eq-synth-03",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:32:00.000",
+        "seq": 25,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:33:00.000",
+        "seq": 26,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WR1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-05",
+        "identityEvidence": "observed"
+      },
+      "from": {
+        "moduleAlias": "LP2",
+        "slotAlias": "1"
+      },
+      "to": {
+        "moduleAlias": "WC4",
+        "slotAlias": "1"
+      }
+    },
+    {
+      "id": "occ-w2-lp3-visit",
+      "equipmentId": "eq-synth-03",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:34:00.000",
+        "seq": 27,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:35:00.000",
+        "seq": 28,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP3",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-06",
+        "identityEvidence": "observed"
+      }
+    },
+    {
+      "id": "occ-w2-rail-function",
+      "equipmentId": "eq-synth-03",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:36:00.000",
+        "seq": 29,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:37:00.000",
+        "seq": 30,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "RAIL1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w2-wc1-process",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:38:00.000",
+        "seq": 31,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:39:00.000",
+        "seq": 32,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WC1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w2-wc2-process",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:40:00.000",
+        "seq": 33,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:41:00.000",
+        "seq": 34,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WC2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w2-wc3-process",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:42:00.000",
+        "seq": 35,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:43:00.000",
+        "seq": 36,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WC3"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w2-dry1-visit",
+      "equipmentId": "eq-synth-03",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:44:00.000",
+        "seq": 37,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:45:00.000",
+        "seq": 38,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "DRY1",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-07",
+        "identityEvidence": "observed"
+      }
+    },
+    {
+      "id": "occ-w2-dry2-process",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:46:00.000",
+        "seq": 39,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:47:00.000",
+        "seq": 40,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "DRY2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w2-buffer-slot-nine",
+      "equipmentId": "eq-synth-03",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:48:00.000",
+        "seq": 41,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:49:00.000",
+        "seq": 42,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "BUF1",
+        "slotAlias": "9"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    }
+  ],
+  "issues": []
+}

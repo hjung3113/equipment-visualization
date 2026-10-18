@@ -1,0 +1,319 @@
+{
+  "equipmentId": "eq-synth-03",
+  "from": "2026-01-01T10:00:00.000",
+  "to": "2026-01-01T10:30:00.000",
+  "timeDomain": "site-synth",
+  "watermark": {
+    "seq": 23,
+    "at": "2026-01-01T10:25:00.000"
+  },
+  "parserContractVersion": "synthetic-1",
+  "dataGeneration": "g1",
+  "occurrences": [
+    {
+      "id": "occ-carrier-window-boundary",
+      "equipmentId": "eq-synth-03",
+      "kind": "CARRIER_PRESENCE",
+      "start": {
+        "at": "2026-01-01T10:02:00.000",
+        "seq": 1,
+        "evidence": "observed"
+      },
+      "end": null,
+      "location": {
+        "moduleAlias": "LP1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "carrier",
+        "id": "C03",
+        "identityEvidence": "observed",
+        "lotId": "LOT-SYN-03"
+      }
+    },
+    {
+      "id": "occ-w1-rail-function",
+      "equipmentId": "eq-synth-03",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:04:00.000",
+        "seq": 2,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:05:00.000",
+        "seq": 3,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "RAIL1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w1-wet-transfer",
+      "equipmentId": "eq-synth-03",
+      "kind": "TRANSFER",
+      "start": {
+        "at": "2026-01-01T10:06:00.000",
+        "seq": 4,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:07:00.000",
+        "seq": 5,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WR1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-01",
+        "identityEvidence": "observed"
+      },
+      "from": {
+        "moduleAlias": "LP1",
+        "slotAlias": "1"
+      },
+      "to": {
+        "moduleAlias": "WC1",
+        "slotAlias": "1"
+      }
+    },
+    {
+      "id": "occ-w1-lp2-inferred",
+      "equipmentId": "eq-synth-03",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:08:00.000",
+        "seq": 6,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:09:00.000",
+        "seq": 7,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP2",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-02",
+        "identityEvidence": "derived"
+      }
+    },
+    {
+      "id": "occ-w1-lp3-visit",
+      "equipmentId": "eq-synth-03",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:09:00.000",
+        "seq": 8,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:10:00.000",
+        "seq": 9,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "LP3",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-03",
+        "identityEvidence": "observed"
+      }
+    },
+    {
+      "id": "occ-w1-wc2-forced",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:10:00.000",
+        "seq": 10,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:11:00.000",
+        "seq": 11,
+        "evidence": "derived",
+        "reason": "ForcedByNextStart"
+      },
+      "location": {
+        "moduleAlias": "WC2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w1-wc3-null-time",
+      "equipmentId": "eq-synth-03",
+      "kind": "POST_PROCESS",
+      "start": {
+        "at": null,
+        "seq": 12,
+        "evidence": "unknown",
+        "reason": "TimeParseFailure"
+      },
+      "end": {
+        "at": "2026-01-01T10:13:00.000",
+        "seq": 13,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WC3"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w1-dry1-visit",
+      "equipmentId": "eq-synth-03",
+      "kind": "VISIT",
+      "start": {
+        "at": "2026-01-01T10:14:00.000",
+        "seq": 14,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:15:00.000",
+        "seq": 15,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "DRY1",
+        "slotAlias": "1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      },
+      "material": {
+        "kind": "wafer",
+        "id": "W-03-04",
+        "identityEvidence": "observed"
+      }
+    },
+    {
+      "id": "occ-w1-dry2-process",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:16:00.000",
+        "seq": 16,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:17:00.000",
+        "seq": 17,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "DRY2"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w1-buffer-function",
+      "equipmentId": "eq-synth-03",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:18:00.000",
+        "seq": 18,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:19:00.000",
+        "seq": 19,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "BUF1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    },
+    {
+      "id": "occ-w1-wc1-inverted",
+      "equipmentId": "eq-synth-03",
+      "kind": "PROCESS",
+      "start": {
+        "at": "2026-01-01T10:24:00.000",
+        "seq": 20,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:22:00.000",
+        "seq": 21,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WC1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    }
+  ],
+  "issues": [
+    {
+      "id": "dqi-w1-unmatched-end",
+      "equipmentId": "eq-synth-03",
+      "issueType": "UnmatchedEnd",
+      "seq": 22,
+      "at": "2026-01-01T10:23:00.000"
+    },
+    {
+      "id": "dqi-w1-end-before-start",
+      "equipmentId": "eq-synth-03",
+      "issueType": "EndBeforeStart",
+      "seq": 23,
+      "at": "2026-01-01T10:25:00.000",
+      "relatedOccurrenceId": "occ-w1-wc1-inverted"
+    }
+  ]
+}
