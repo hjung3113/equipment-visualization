@@ -122,6 +122,11 @@ export default defineConfig([
       'shadcn/require-static-classes': 'error',
     },
   },
+  {
+    // #73 slice f1: AP wraps the @fops/ui TabsList/TabsTrigger the same way (underline tabs); roles, selection and keyboard stay @fops/ui's.
+    files: ['packages/ui/src/Tabs.tsx'],
+    rules: { 'shadcn/no-restyle': 'off' },
+  },
   globalIgnores([
     '**/node_modules/**',
     '**/dist/**',

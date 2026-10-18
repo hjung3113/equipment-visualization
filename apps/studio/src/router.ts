@@ -6,6 +6,7 @@ export type Route =
   | { name: 'onboarding'; equipmentId: string }
   | { name: 'board'; equipmentId: string }
   | { name: 'focus'; equipmentId: string; entityType: string | null; anchor: string | null }
+  | { name: 'dev-ui' }
   | { name: 'not-found'; pathname: string };
 
 function decode(segment: string): string | null {
@@ -16,7 +17,8 @@ function decode(segment: string): string | null {
   }
 }
 
-export function parseRoute(pathname: string, search: string): Route {
+/** `dev` gates the dev-only `/dev/ui` gallery; `vite build` sets it false, so the route is not-found there. */
+export function parseRoute(pathname: string, search: string, dev: boolean = import.meta.env.DEV): Route {
   const segments = pathname.split('/').filter((segment) => segment !== '');
   const query = new URLSearchParams(search);
   const [head, id, ...extra] = segments;
@@ -28,6 +30,7 @@ export function parseRoute(pathname: string, search: string): Route {
   if (head === 'focus' && equipmentId && extra.length === 0) {
     return { name: 'focus', equipmentId, entityType: query.get('entityType') || null, anchor: query.get('anchor') || null };
   }
+  if (dev && segments.length === 2 && head === 'dev' && id === 'ui') return { name: 'dev-ui' };
   return { name: 'not-found', pathname };
 }
 
@@ -48,6 +51,8 @@ export function hrefFor(route: Route): string {
       const text = query.toString();
       return `/focus/${encodeURIComponent(route.equipmentId)}${text ? `?${text}` : ''}`;
     }
+    case 'dev-ui':
+      return '/dev/ui';
     case 'not-found':
       return route.pathname;
   }

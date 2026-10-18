@@ -31,6 +31,18 @@ it.each(['/', '/nope', '/fleet/extra', '/onboarding', '/onboarding/%E0%A4%A', '/
   expect(parseRoute(pathname, '')).toEqual({ name: 'not-found', pathname });
 });
 
+it.each([[true, { name: 'dev-ui' }], [false, { name: 'not-found', pathname: '/dev/ui' }]])('parses /dev/ui with dev=%s', (dev, route) => {
+  expect(parseRoute('/dev/ui', '', dev)).toEqual(route);
+});
+
+it.each(['/dev/ui/x', '/dev'])('treats %s as not found in dev', (pathname) => {
+  expect(parseRoute(pathname, '', true)).toEqual({ name: 'not-found', pathname });
+});
+
+it('builds the gallery href', () => {
+  expect(hrefFor({ name: 'dev-ui' })).toBe('/dev/ui');
+});
+
 it.each([false, true])('blocks navigation without changing history, then allows it (replace=%s)', (replace) => {
   navigate('/layouts');
   const { result } = renderHook(() => useRoute());

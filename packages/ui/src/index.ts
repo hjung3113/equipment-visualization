@@ -10,4 +10,5 @@ export { LoadingBlock, StateMessage, type LoadingBlockProps, type StateMessagePr
 export { StatusBadge, type StatusBadgeProps, type StatusBadgeTone } from './StatusBadge.js';
 export { DetailFields, type DetailField, type DetailFieldsProps } from './DetailFields.js';
 export { FileButton, type FileButtonProps } from './FileButton.js';
+export { Tabs, TabsContent, TabsList, TabsTrigger } from './Tabs.js';
 export { ToastRegion, useToastQueue, type ToastItem, type ToastRegionProps, type ToastTone } from './Toast.js';

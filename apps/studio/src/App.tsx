@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Factory, LayoutTemplate } from 'lucide-react';
 import { APP_FRAME_MAIN_ID, AppFrame, Page } from '@eqv/ui';
 import { Button } from '@fops/ui';
@@ -6,6 +6,8 @@ import { FocusPage } from './FocusPage.js';
 import { LayoutsPage } from './LayoutsPage.js';
 import { BoardPage, FleetPage, OnboardingPage } from './OnboardingPages.js';
 import { Link, hrefFor, navigate, useLocation, useRoute, type Route } from './router.js';
+
+const UiGallery = import.meta.env.DEV ? lazy(() => import('./dev/UiGallery.js')) : null;
 
 function RoutePage({ route }: { route: Route }) {
   switch (route.name) {
@@ -19,6 +21,8 @@ function RoutePage({ route }: { route: Route }) {
       return <BoardPage equipmentId={route.equipmentId} />;
     case 'focus':
       return <FocusPage equipmentId={route.equipmentId} entityType={route.entityType} anchor={route.anchor} />;
+    case 'dev-ui':
+      return UiGallery ? <Suspense fallback={null}><UiGallery /></Suspense> : null;
     case 'not-found':
       return (
         <Page title="페이지를 찾을 수 없습니다">
