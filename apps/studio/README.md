@@ -29,7 +29,11 @@ pnpm dev                              # from the repo root: builds core and rend
 pnpm dev --port 5181 --strictPort     # extra args reach vite
 ```
 
-The file API reads `<repo>/assets`. Set `EQV_STUDIO_ASSETS` to an absolute path to use another root (previews, tests).
+The data root is `<repo>/assets` by default. Set `EQV_STUDIO_ASSETS` to an absolute path to use another root (previews, tests,
+your own equipment). Import (`/api/import/*`) writes only to a root **outside this repository**: when the root's realpath is
+inside the repo, every import write is 403 (`저장소 밖 경로를 EQV_STUDIO_ASSETS로 지정하세요`) and `GET /api/import/status`
+reports `enabled: false` with that reason. A root inside another git work tree is allowed, and the status reports
+`insideGitWorkTree: true` so the UI can warn. Reads and the general file API are not affected.
 It exists only in `vite` serve mode (`apply: 'serve'`); `vite build` output has no server code. There is no auth and no
 permission check (ONBOARDING §8).
 
@@ -42,6 +46,13 @@ permission check (ONBOARDING §8).
 | `PUT /api/files?path=<rel>` (JSON body) | 201 `{ path, created: true }`; 200 `{ path, created: false }` on overwrite or an identical immutable file; 409 if a different immutable file exists |
 | `PUT /api/files?path=<rel>` with `If-None-Match: *` | create-only for a mutable path: validated as usual, then created exclusively (201); 412 `{ error }` and the file untouched if it already exists. Without the header a mutable file is overwritten |
 | `POST /api/layout-revisions` (layout JSON) | 201 `{ path, revision }`; 200 if identical; 409 if a different file is at that path |
+| `GET /api/import/status` | `{ enabled, reason?, insideGitWorkTree, catalog: 'data-root' \| 'bundled', maxWindowBytes }` |
+| `POST /api/import/equipment` (`equipmentRecordSchema`) | 201 `{ path, created: true }`; 412 if the id exists; 409 `{ error, field, existing }` for an id, maker or model that differs only by case from a stored one |
+| `POST /api/import/windows?equipmentId=<id>` (a complete `OccurrenceBatch`) | 201 `{ path, created: true, summary, warnings }`, the file named by the server; 200 `created: false` for an identical file; 400 `{ error, issues, warnings, summary? }` with `validateSampleWindow` reject codes; 409 for overlap/time-domain only, or a different file at the same name; 404 equipment not registered |
+| `PUT /api/import/alias-metadata?equipmentId=<id>` (`aliasMetadataFileSchema`) | 201 on create, 200 on replace; with `If-None-Match: *` 412 if it exists |
+| `PUT /api/import/type-dictionary?maker=<m>&model=<n>` (Model-scope dictionary) | 201, create-only (412 if it exists); 404 unless a registered record has exactly that maker and model |
+
+Import bodies may be up to 32 MiB (413 above); every other endpoint keeps 5 MiB. An import checks, in order: guard (403), query names (400), content type (415), size (413), JSON (400), body validation and registry (400/404/409/422), then writes. A failed request writes nothing.
 
 PUT and POST need `Content-Type: application/json` (415 otherwise). Reads cover any `.json` under the root. Unsafe paths
 (`..`, absolute, `\`, NUL, `:` in the first segment, empty or `.` segments) get 400; symlink escapes get 403.
@@ -63,7 +74,18 @@ Only these paths are writable, and each must pass the named core validator (fail
 | `onboarding/baselines/<equipmentId>/<hex>.inventory.json` | `observedInventorySchema`, `equipmentId`, matching Mapping Version exists (else 409) | immutable |
 | `onboarding/bindings/<equipmentId>.bindings.json` | `validateBindings`, `equipmentId` | overwrite |
 
-`templates/`, `primitives/`, `equipment/` and `observations/` are read-only (writes get 403). Fleet and Onboarding read `equipment/<equipmentId>.json`, `observations/<equipmentId>/{occurrence-batch,alias-metadata}.json` and the `onboarding/` files above, and validate each at read time. Files are written as received (`JSON.stringify(value, null, 2)` plus a newline); mutable files are replaced atomically.
+### Import-only paths
+
+Written only through `/api/import/*`; the general `PUT /api/files` gets 403 for `equipment/` and `observations/`. Existing Model `type-dictionary.json` files can still be overwritten through the general API.
+
+| Path | Check | Mutability |
+| --- | --- | --- |
+| `equipment/<equipmentId>.json` | `equipmentRecordSchema`; ids, makers and models that differ only by case are refused | create-only |
+| `observations/<equipmentId>/windows/<from>_<to>_<hex>.batch.json` | `validateSampleWindow`; equipment registered; name computed by the server | immutable, append-only |
+| `observations/<equipmentId>/alias-metadata.json` | `aliasMetadataFileSchema`, `equipmentId` equals the query | create or replace |
+| `onboarding/scopes/model/<maker>/<model>/type-dictionary.json` | `validateTypeDictionary`, Model scope; a registered record has that maker/model | create-only through import |
+
+`templates/` and `primitives/` are read-only (writes get 403); when the data root has no `templates/`, reads under it come from the bundled `<repo>/assets/templates/` (the status says `catalog: 'bundled'`). `equipment/` and `observations/` are written only through `/api/import/*`. Fleet and Onboarding read `equipment/<equipmentId>.json`, `observations/<equipmentId>/alias-metadata.json` and the `onboarding/` files above, and validate each at read time; the Studio reads `observations/<equipmentId>/windows/*.batch.json` (one selected Sample Window). Files are written as received (`JSON.stringify(value, null, 2)` plus a newline); mutable files are replaced atomically.
 
 ## Mapping Board (#14b)
 

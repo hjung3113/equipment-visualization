@@ -205,9 +205,9 @@ assets/layouts/<layoutId>/draft.layout.json             # Mapping Board가 배�
 
 Studio dev 파일 API(#13)는 위 경로만 쓰며, 각 경로는 대응하는 core validator를 통과해야 한다.
 
-설비 기록(`equipmentRecordSchema`, `schemaVersion: "0.4"`, `equipmentId`·`maker`·`model`)은 파일 이름이 `equipmentId`와 같아야 하며, `maker`/`model`이 적용되는 Scope를 정한다. `equipment/`와 `observations/`는 일반 파일 API로는 쓰지 않는다(쓰기는 403). 지금은 읽기 전용이다. 승인된 규칙(ADR-0010, 구현: #100): 가져오기 endpoint(`/api/import/*`)로만 쓴다. 설비 기록은 create-only, Sample Window는 불변 추가(겹치는 구간은 거부, 대체·폐기 없음), alias metadata는 확인 후 교체다. 데이터 루트(`EQV_STUDIO_ASSETS`)가 이 저장소 안이면 가져오기를 거부하고, 다른 git 작업 트리 안이면 경고한다. Studio는 읽을 때 각 파일을 core validator로 다시 검사하며, 404만 "없음"으로 취급하고 그 외 실패나 잘못된 내용은 해당 설비의 오류로 표시한다.
+설비 기록(`equipmentRecordSchema`, `schemaVersion: "0.4"`, `equipmentId`·`maker`·`model`)은 파일 이름이 `equipmentId`와 같아야 하며, `maker`/`model`이 적용되는 Scope를 정한다. `equipment/`와 `observations/`는 일반 파일 API로는 쓰지 않는다(쓰기는 403). 승인된 규칙(ADR-0010): 가져오기 endpoint(`/api/import/*`)로만 쓴다. 설비 기록은 create-only, Sample Window는 불변 추가(겹치는 구간은 거부, 대체·폐기 없음), alias metadata는 확인 후 교체다. 데이터 루트(`EQV_STUDIO_ASSETS`)가 이 저장소 안이면 가져오기를 거부하고, 다른 git 작업 트리 안이면 경고한다. Studio는 읽을 때 각 파일을 core validator로 다시 검사하며, 404만 "없음"으로 취급하고 그 외 실패나 잘못된 내용은 해당 설비의 오류로 표시한다.
 
-저장소에는 synthetic 설비만 둔다. 실제 maker/model 값은 플랫폼 배포 계층. 가져온 데이터는 저장소 밖 데이터 루트에 있다(구현: #100).
+저장소에는 synthetic 설비만 둔다. 실제 maker/model 값은 플랫폼 배포 계층. 가져온 데이터는 저장소 밖 데이터 루트에 있다.
 
 ## 8. 권한
 

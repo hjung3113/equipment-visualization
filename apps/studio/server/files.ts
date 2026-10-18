@@ -1,10 +1,12 @@
-import { lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
+import { link, lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join, sep } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
   layoutRevision, mappingVersionSchema, observedInventorySchema, validateAliasRules, validateBindings, validateLayout,
   validateTypeDictionary, verifyMappingHash,
 } from '@eqv/core';
+import { ApiError, fail, NAME } from './errors.js';
+import { createImportApi } from './import.js';
 
 export interface FileApiRequest {
   method: string;
@@ -16,19 +18,20 @@ export interface FileApiResponse {
   status: number;
   body: unknown;
 }
+/** Where a write may land: the data root's realpath resolved once per request, and (import only) the repo it must stay out of. */
+export interface WriteScope {
+  base: string;
+  repoReal?: string;
+}
+/** Test seams: run inside `write`, after the request's guard and before any file is created / published. */
+export interface FileApiHooks {
+  beforeWrite?(): Promise<void>;
+  afterTempWrite?(): Promise<void>;
+}
 
-const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const LAYOUT_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const HEX = /^[0-9a-f]{64}$/;
 
-class ApiError extends Error {
-  constructor(readonly status: number, message: string, readonly issues?: unknown[]) {
-    super(message);
-  }
-}
-const fail = (status: number, message: string, issues?: unknown[]): never => {
-  throw new ApiError(status, message, issues);
-};
 
 type Validated = { ok: boolean; issues?: unknown[] };
 const check = (result: Validated, message: string): void => {
@@ -141,7 +144,7 @@ function relativeSegments(value: string | null, kind: 'file' | 'dir'): string[] 
 const missing = (error: unknown): boolean => (error as NodeJS.ErrnoException).code === 'ENOENT';
 const contained = (root: string, target: string): boolean => target === root || target.startsWith(root + sep);
 
-export function createFileApi({ root }: { root: string }) {
+export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoot?: string; hooks?: FileApiHooks }) {
   async function rootReal(): Promise<string> {
     try {
       return await realpath(root);
@@ -150,9 +153,23 @@ export function createFileApi({ root }: { root: string }) {
     }
   }
 
-  async function readTarget(segments: string[]): Promise<{ real: string; absolute: string }> {
-    const base = await rootReal();
-    const absolute = join(root, ...segments);
+  /** True when the data root has no `templates/`: reads then come from the bundled catalog (needs `repoRoot`). */
+  async function usesBundledCatalog(): Promise<boolean> {
+    if (repoRoot === undefined) return false;
+    return lstat(join(root, 'templates')).then(() => false, (error) => missing(error));
+  }
+
+  async function readTarget(segments: string[]): Promise<{ real: string; absolute: string; base: string }> {
+    let base = await rootReal();
+    let absolute = join(root, ...segments);
+    if (repoRoot !== undefined && segments[0] === 'templates' && await usesBundledCatalog()) {
+      try {
+        base = await realpath(join(repoRoot, 'assets/templates'));
+      } catch {
+        return fail(404, 'Not found');
+      }
+      absolute = join(repoRoot, 'assets', ...segments);
+    }
     let real: string;
     try {
       real = await realpath(absolute);
@@ -160,11 +177,11 @@ export function createFileApi({ root }: { root: string }) {
       return missing(error) ? fail(404, 'Not found') : fail(500, 'Cannot resolve path');
     }
     if (!contained(base, real)) fail(403, 'Path escapes the assets root');
-    return { real, absolute };
+    return { real, absolute, base };
   }
 
   async function get(segments: string[], kind: 'file' | 'dir'): Promise<FileApiResponse> {
-    const { real } = await readTarget(segments);
+    const { real, base } = await readTarget(segments);
     const info = await stat(real);
     if (kind === 'file') {
       if (!info.isFile()) fail(400, 'Not a file');
@@ -175,7 +192,6 @@ export function createFileApi({ root }: { root: string }) {
       }
     }
     if (!info.isDirectory()) fail(400, 'Not a directory');
-    const base = await rootReal();
     const entries: { name: string; kind: 'file' | 'dir' }[] = [];
     for (const name of await readdir(real)) {
       try {
@@ -219,51 +235,83 @@ export function createFileApi({ root }: { root: string }) {
     }
   }
 
-  async function write(
-    segments: string[], value: unknown, immutable: boolean, createOnly = false,
-  ): Promise<{ created: boolean; conflict: boolean; exists?: boolean }> {
-    const absolute = join(root, ...segments);
-    const text = `${JSON.stringify(value, null, 2)}\n`;
-    await mkdir(dirname(absolute), { recursive: true });
-    if (createOnly && !immutable) {
+  /**
+   * The deepest existing ancestor of `dir` must resolve inside the request's data root and outside the repo (403 otherwise).
+   * Run right before each create so a link swapped in after the guard is refused. The window between this check and the
+   * create is not closed (no directory-handle API in Node); the Studio is a single-user local dev tool, so that narrower
+   * race is accepted. The final component is never followed: files are published with link(2), which fails on any existing name.
+   */
+  async function assertParentInside(dir: string, scope: WriteScope): Promise<void> {
+    for (let ancestor = dir; ; ancestor = dirname(ancestor)) {
+      let real: string;
       try {
-        await writeFile(absolute, text, { flag: 'wx' });
-        return { created: true, conflict: false };
+        real = await realpath(ancestor);
       } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-        return { created: false, conflict: false, exists: true };
+        if (!missing(error) || ancestor === scope.base) return fail(500, 'Cannot resolve path');
+        continue;
       }
-    }
-    if (immutable) {
-      try {
-        await writeFile(absolute, text, { flag: 'wx' });
-        return { created: true, conflict: false };
-      } catch (error) {
-        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
-        let existing: unknown;
-        try {
-          existing = JSON.parse(await readFile(absolute, 'utf8'));
-        } catch {
-          return { created: false, conflict: true };
-        }
-        return { created: false, conflict: !isDeepStrictEqual(existing, JSON.parse(text)) };
+      if (!contained(scope.base, real) || (scope.repoReal !== undefined && contained(scope.repoReal, real))) {
+        fail(403, 'Path escapes the assets root');
       }
+      return;
     }
-    const existed = await lstat(absolute).then(() => true, () => false);
-    const temp = join(dirname(absolute), `.${segments.at(-1)}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`);
+  }
+
+  /** Writes a sibling temp file, then publishes it under `absolute`. A failure leaves neither the temp nor the final name. */
+  async function stage(absolute: string, text: string, scope: WriteScope, publish: (temp: string) => Promise<void>): Promise<void> {
+    const dir = dirname(absolute);
+    await assertParentInside(dir, scope);
+    await mkdir(dir, { recursive: true });
+    const temp = join(dir, `.${absolute.slice(dir.length + 1)}.${process.pid}.${Math.random().toString(36).slice(2)}.tmp`);
     try {
       await writeFile(temp, text, { flag: 'wx' });
-      await rename(temp, absolute);
-    } catch (error) {
+      await hooks?.afterTempWrite?.();
+      await assertParentInside(dir, scope);
+      await publish(temp);
+    } finally {
       await rm(temp, { force: true });
-      throw error;
     }
+  }
+
+  async function write(
+    segments: string[], value: unknown, immutable: boolean, createOnly = false, requestScope?: WriteScope,
+  ): Promise<{ created: boolean; conflict: boolean; exists?: boolean }> {
+    await hooks?.beforeWrite?.();
+    const scope = requestScope ?? { base: await rootReal() };
+    const absolute = join(scope.base, ...segments);
+    const text = `${JSON.stringify(value, null, 2)}\n`;
+    if (createOnly || immutable) {
+      let exists = false;
+      await stage(absolute, text, scope, async (temp) => {
+        try {
+          await link(temp, absolute);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+          exists = true;
+        }
+      });
+      if (!exists) return { created: true, conflict: false };
+      if (!immutable) return { created: false, conflict: false, exists: true };
+      let existing: unknown;
+      try {
+        existing = JSON.parse(await readFile(absolute, 'utf8'));
+      } catch {
+        return { created: false, conflict: true };
+      }
+      return { created: false, conflict: !isDeepStrictEqual(existing, JSON.parse(text)) };
+    }
+    const existed = await lstat(absolute).then(() => true, () => false);
+    await stage(absolute, text, scope, (temp) => rename(temp, absolute));
     return { created: !existed, conflict: false };
   }
 
-  function parseBody(request: FileApiRequest): unknown {
+  function assertJsonType(request: FileApiRequest): void {
     const type = Object.entries(request.headers).find(([name]) => name.toLowerCase() === 'content-type')?.[1];
     if (!type || !/^application\/json\s*(;.*)?$/i.test(type)) fail(415, 'Content-Type must be application/json');
+  }
+
+  function parseBody(request: FileApiRequest): unknown {
+    assertJsonType(request);
     try {
       return JSON.parse(request.body) as unknown;
     } catch {
@@ -305,6 +353,10 @@ export function createFileApi({ root }: { root: string }) {
     return { status: written.created ? 201 : 200, body: { path: segments.join('/'), revision } };
   }
 
+  const importApi = createImportApi({
+    root, repoRoot, rootReal, readTarget, assertWritable, write, assertJsonType, usesBundledCatalog,
+  });
+
   async function dispatch(request: FileApiRequest): Promise<FileApiResponse> {
     const url = new URL(request.url, 'http://studio.local');
     const { searchParams } = url;
@@ -321,6 +373,7 @@ export function createFileApi({ root }: { root: string }) {
       if (request.method === 'POST') return publish(request);
       return fail(405, 'Method not allowed');
     }
+    if (url.pathname.startsWith('/api/import/')) return importApi.dispatch(request, url);
     return fail(404, 'Unknown endpoint');
   }
 
