@@ -19,14 +19,39 @@ export interface AppFrameProps {
   /** The consumer's router link; defaults to a plain `a`. Receives `href`, `className`, `aria-*`. */
   linkComponent?: ElementType;
   labels: { nav: string; skipToContent: string; collapse: string; expand: string };
+  /** localStorage key that persists the sidebar's collapsed state; omit to keep it per mount. */
+  collapsedStorageKey?: string;
   children: ReactNode;
 }
 
 export const APP_FRAME_MAIN_ID = 'eqv-main';
 
+function readCollapsed(key: string | undefined): boolean {
+  if (key === undefined) return false;
+  try {
+    return window.localStorage.getItem(key) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function writeCollapsed(key: string | undefined, value: boolean): void {
+  if (key === undefined) return;
+  try {
+    window.localStorage.setItem(key, String(value));
+  } catch {
+    // Blocked storage: the sidebar still toggles for this mount.
+  }
+}
+
 /** App shell (AP ADR-0011 structure): brand rail, collapsible sidebar with the nav, skip link and the focusable `main`. */
-export function AppFrame({ appName, brand, items, linkComponent: LinkComponent = 'a', labels, children }: AppFrameProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function AppFrame({ appName, brand, items, linkComponent: LinkComponent = 'a', labels, collapsedStorageKey, children }: AppFrameProps) {
+  const [collapsed, setCollapsed] = useState(() => readCollapsed(collapsedStorageKey));
+  const toggle = () => {
+    const next = !collapsed;
+    setCollapsed(next);
+    writeCollapsed(collapsedStorageKey, next);
+  };
   return (
     <TooltipProvider delayDuration={200}>
       <div className="flex h-screen">
@@ -49,7 +74,7 @@ export function AppFrame({ appName, brand, items, linkComponent: LinkComponent =
             {!collapsed && <p className="min-w-0 truncate text-sm font-semibold">{appName}</p>}
             <button
               type="button"
-              onClick={() => setCollapsed((value) => !value)}
+              onClick={toggle}
               aria-label={collapsed ? labels.expand : labels.collapse}
               aria-expanded={!collapsed}
               className="ml-auto grid size-7 shrink-0 place-items-center rounded-md text-text-muted hover:bg-surface-row-hover hover:text-text-primary"

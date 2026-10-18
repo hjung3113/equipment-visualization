@@ -19,3 +19,8 @@ it('without a title renders the body only', () => {
   expect(screen.queryByRole('banner')).toBeNull();
   expect(screen.getByText('본문')).toBeTruthy();
 });
+
+it('makes the heading programmatically focusable for route focus', () => {
+  render(<Page title="Fleet">본문</Page>);
+  expect(screen.getByRole('heading', { level: 1 }).getAttribute('tabindex')).toBe('-1');
+});

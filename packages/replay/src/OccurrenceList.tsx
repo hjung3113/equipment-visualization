@@ -53,7 +53,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
         return (
           <DataTable.Row key={o.id} data-occurrence-id={o.id} selected={selected} tabIndex={selected || (!hasSelected && i === 0) ? 0 : -1}
             onActivate={() => onSelectOccurrence(o.id)} onKeyDown={onKey}>
-            <DataTable.Cell>
+            <DataTable.Cell className="whitespace-nowrap">
               <div>시작 {o.start.at ?? NO_TIME}</div>
               <div>끝 {o.end === null ? '열림' : o.end.at ?? NO_TIME}</div>
               {running && <strong className="font-semibold text-accent-primary">진행 중</strong>}

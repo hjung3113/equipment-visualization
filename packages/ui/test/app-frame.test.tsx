@@ -1,9 +1,21 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, it } from 'vitest';
+import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { AppFrame } from '../src/index.js';
 
-afterEach(cleanup);
+const store = new Map<string, string>();
+const memoryStorage = {
+  getItem: (key: string) => store.get(key) ?? null,
+  setItem: (key: string, value: string) => { store.set(key, value); },
+};
+beforeEach(() => {
+  store.clear();
+  vi.stubGlobal('localStorage', memoryStorage);
+});
+afterEach(() => {
+  cleanup();
+  vi.unstubAllGlobals();
+});
 
 const labels = { nav: '주 메뉴', skipToContent: '본문으로 건너뛰기', collapse: '사이드바 접기', expand: '사이드바 펼치기' };
 const items = [
@@ -49,4 +61,23 @@ it('renders the items through a custom linkComponent', () => {
   frame({ linkComponent: (props) => <a data-routed="yes" {...props} /> });
   const links = within(screen.getByRole('navigation', { name: '주 메뉴' })).getAllByRole('link');
   expect(links.map((link) => link.getAttribute('data-routed'))).toEqual(['yes', 'yes']);
+});
+
+const KEY = 'test.sidebar';
+
+it('restores a stored collapsed state and stores each toggle under collapsedStorageKey', () => {
+  window.localStorage.setItem(KEY, 'true');
+  frame({ collapsedStorageKey: KEY });
+  fireEvent.click(screen.getByRole('button', { name: '사이드바 펼치기' }));
+  expect(window.localStorage.getItem(KEY)).toBe('false');
+  fireEvent.click(screen.getByRole('button', { name: '사이드바 접기' }));
+  expect(window.localStorage.getItem(KEY)).toBe('true');
+});
+
+it('falls back to expanded and still toggles when localStorage throws', () => {
+  const blocked = () => { throw new Error('blocked'); };
+  vi.stubGlobal('localStorage', { getItem: blocked, setItem: blocked });
+  frame({ collapsedStorageKey: KEY });
+  fireEvent.click(screen.getByRole('button', { name: '사이드바 접기' }));
+  expect(screen.getByRole('button', { name: '사이드바 펼치기' })).toBeTruthy();
 });

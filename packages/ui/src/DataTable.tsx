@@ -23,12 +23,12 @@ export interface DataTableCellProps extends TdHTMLAttributes<HTMLTableCellElemen
 /** Dense table, AP `table-density`: 32px minimum row and header height, 4px 12px cell padding. */
 export function DataTable({ label, columns, children, className, ...rest }: DataTableProps) {
   return (
-    <div role="region" aria-label={label} tabIndex={0} className="overflow-x-auto">
+    <div role="region" aria-label={label} tabIndex={0} className="overflow-x-auto rounded-lg border border-border-subtle bg-surface-card">
       <table aria-label={label} className={cn('w-full border-collapse text-sm text-text-primary', className)} {...rest}>
         <thead>
           <tr className="h-8 border-b border-border-subtle">
             {columns.map((name) => (
-              <th key={name} scope="col" className="px-3 py-1 text-left text-xs font-medium uppercase text-text-secondary">
+              <th key={name} scope="col" className="bg-surface-card-elevated px-3 py-1 text-left text-xs font-medium uppercase text-text-secondary">
                 {name}
               </th>
             ))}

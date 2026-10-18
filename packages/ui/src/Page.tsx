@@ -15,7 +15,7 @@ export function Page({ title, description, actions, children }: PageProps) {
       {title !== undefined && (
         <header className="sticky top-0 z-10 flex h-toolbar shrink-0 items-center justify-between gap-3 overflow-x-auto border-b border-border-subtle bg-surface-canvas px-4">
           <div className="flex min-w-0 flex-1 items-center gap-2">
-            <h1 className="min-w-0 shrink truncate text-sm font-semibold text-text-primary">{title}</h1>
+            <h1 tabIndex={-1} className="min-w-0 shrink truncate text-sm font-semibold text-text-primary outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">{title}</h1>
             {description !== undefined && <div className="min-w-0 truncate text-xs text-text-muted">{description}</div>}
           </div>
           {actions !== undefined && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
