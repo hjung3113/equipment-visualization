@@ -1,5 +1,6 @@
 .eqv-ed-error { color: var(--eqv-assumed-fg, #8e5500); background: var(--eqv-assumed-bg, #f4ece0); font-weight: 600; }
 .eqv-ed-note { margin: 0 0 8px; padding: 4px 8px; border-left: 3px solid var(--eqv-assumed-fg, #8e5500); background: var(--eqv-assumed-bg, #f4ece0); color: var(--eqv-ink, #101828); }
+.eqv-ed-badge { display: inline-block; margin: 0 4px 2px 0; padding: 0 6px; border: 1px solid var(--eqv-border, #cbd6e6); border-radius: 8px; background: var(--eqv-selection-fill, #e4e8f6); color: var(--eqv-ink, #101828); }
 .eqv-ed-btn { padding: 4px 10px; border: 1px solid var(--eqv-secondary, #374151); border-radius: 4px; background: var(--eqv-board, #fbfdff); color: var(--eqv-ink, #101828); font: inherit; cursor: pointer; }
 .eqv-ed-btn:disabled, .eqv-ed-btn[aria-disabled="true"] { opacity: 0.4; cursor: default; }
 .eqv-ed-btn-primary { border-color: var(--eqv-selection, #1428a0); color: var(--eqv-selection, #1428a0); font-weight: 600; }
