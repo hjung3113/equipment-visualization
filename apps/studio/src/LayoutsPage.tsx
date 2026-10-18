@@ -2,6 +2,7 @@ import { Component, useEffect, useLayoutEffect, useRef, useState, type ChangeEve
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
+import { Page } from '@eqv/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const VIEW_WIDTH = 960;
@@ -232,8 +233,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
   );
 
   return (
-    <>
-      <h1>레이아웃</h1>
+    <Page title="레이아웃">
       <section aria-label="레이아웃 목록">
         {listingError !== null && <p role="alert">{listingError}</p>}
         {listing === null && listingError === null && <p>목록을 불러오는 중…</p>}
@@ -278,6 +278,6 @@ export function LayoutsPage({ file }: { file: string | null }) {
           </>
         )}
       </section>
-    </>
+    </Page>
   );
 }

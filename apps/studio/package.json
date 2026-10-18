@@ -16,6 +16,7 @@
     "@eqv/replay": "workspace:*",
     "@eqv/ui": "workspace:*",
     "@fops/ui": "workspace:*",
+    "lucide-react": "0.469.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"
   },

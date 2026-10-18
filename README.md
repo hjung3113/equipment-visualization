@@ -27,7 +27,7 @@ apps/studio/                   # Standalone web app: shell, `/layouts` page (vie
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
 packages/renderer/            # Static read-only Top View (`TopView`, `buildScene`): fitted primitives, labels, Physical Interface marks, Transfer Capability segments, Holding Site counts, Certainty badges
 packages/editor/              # Semantic Top View editor (planned)
-packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`; present, not yet used by screens until #73 slice d)
+packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `AppFrame`, `Page`). Studio uses `AppFrame` and `Page`; the other three are not used by a screen until #73 slice d
 packages/replay/              # Focus screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps and example-motion ghosts (present)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
