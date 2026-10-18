@@ -1,6 +1,6 @@
 import {
   mappingVersionSchema, validateLayout, verifyMappingHash,
-  type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch,
+  type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch, type ReplayTimelineFrame,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
 import { DataError, listSampleWindows, loadEquipment, problems, readOptional, readSampleWindow, type SampleWindowEntry } from './onboarding-data.js';
@@ -8,6 +8,8 @@ import { DataError, listSampleWindows, loadEquipment, problems, readOptional, re
 export type FocusData = {
   record: FleetData['record'];
   batch: OccurrenceBatch;
+  /** The Sample Window `batch` was read from (the anchor rule may have chosen it). */
+  selectedWindow: SampleWindowEntry;
   /** Never null: no published Binding is an empty list. */
   bindings: BindingsFile;
   /** Every Mapping Version a Binding names. */
@@ -19,7 +21,21 @@ export type FocusData = {
 export type FocusLoad =
   | { kind: 'not-found' }
   | { kind: 'error'; error: string; record: FleetData['record'] | null }
+  | { kind: 'no-observations'; record: FleetData['record'] }
   | ({ kind: 'ok' } & FocusData);
+
+/**
+ * `replayTimeline` samples the reducer once per breakpoint and each sample re-sorts every record, so its cost grows with
+ * breakpoints × records (measured in the PR that set the value). Above this the Gantt is not computed.
+ */
+export const TIMELINE_BUDGET = 2_000_000;
+
+/** `records` is the reducer's record set (reduce.ts): Occurrence starts, ends and Data Quality Issues. */
+export function timelineCost(batch: OccurrenceBatch, frame: ReplayTimelineFrame): { breakpoints: number; records: number; cost: number } {
+  const records = batch.issues.length + batch.occurrences.reduce((sum, o) => sum + (o.end ? 2 : 1), 0);
+  const breakpoints = frame.breakpoints.length;
+  return { breakpoints, records, cost: breakpoints * records };
+}
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const NO_BINDING = '게시된 Binding 없음';
@@ -95,7 +111,6 @@ export async function loadFocus(equipmentId: string, options: { window?: string;
     const loaded = await loadEquipment(equipmentId, { window });
     if (loaded.kind === 'not-found') return loaded;
     if (scanError !== null) return { kind: 'error', record: loaded.kind === 'ok' ? loaded.data.record : loaded.record, error: scanError };
-    if (loaded.kind === 'no-observations') return { kind: 'error', record: loaded.record, error: '관측 데이터 없음' };
     if (loaded.kind !== 'ok') return loaded;
     const { record, batch } = loaded.data;
     try {
@@ -122,7 +137,7 @@ export async function loadFocus(equipmentId: string, options: { window?: string;
         if (revisions.size > 1) notices.push(`Layout ${layoutId}의 Binding들이 서로 다른 Layout Revision을 가리켜 최신 Binding의 것을 사용합니다`);
         layouts.push(await loadLayout(layoutId, binding.layoutRevision, notices));
       }
-      return { kind: 'ok', record, batch, bindings, mappings: [...mappings.values()], layouts, notices };
+      return { kind: 'ok', record, batch, selectedWindow: loaded.data.selectedWindow, bindings, mappings: [...mappings.values()], layouts, notices };
     } catch (error) {
       return { kind: 'error', record, error: message(error) };
     }

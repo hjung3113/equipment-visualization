@@ -48,6 +48,12 @@ it('shows coverage, the unmapped list ordered by references, and the dry-run hea
   expect(within(screen.getByRole('list', { name: '미매핑 alias' })).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['PM9 · 영향도 1']);
 });
 
+it('names the Baseline Inventory range the plan will write', async () => {
+  render(<PublishPanel {...props()} />);
+  await ready();
+  expect(screen.getByText(`Baseline Inventory: ${inventory().from} – ${inventory().to}`)).toBeTruthy();
+});
+
 it('toggles a conflict highlight with aria-pressed', async () => {
   let highlight: Parameters<PublishPanelProps['onHighlight']>[0] = null;
   const onHighlight: PublishPanelProps['onHighlight'] = (next) => { highlight = next; };

@@ -24,7 +24,7 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 ## 2. Observed Inventory
 
 - 계약은 `ObservedInventory` DTO. core는 기준 구현 `buildInventory(batch: OccurrenceBatch, metadata?: AliasMetadataFile): ObservedInventory`를 제공하며(#11a, 독립 실행·synthetic fixture), 선택 입력 `AliasMetadataFile`은 같은 `equipmentId`의 adapter metadata(`moduleType`/`isPort`/`isRobot`)만 공급한다. 다른 장비 metadata, batch와 다른 `equipmentId`의 Occurrence·DQI record, 중복 Record Sequence, 중복 Occurrence·DQI `id`는 `RangeError`이며(replay와 같은 검사, #42) batch에 없는 alias는 추가하지 않는다. `computeCoverage`·`findMappingConflicts`·`detectDrift`는 Inventory와 Mapping Version의 `equipmentId`, Layout과 `mapping.layoutId`가 다르면 `RangeError`를 던진다(#39). 플랫폼 서버는 긴 기간을 미리 집계해 같은 DTO로 넘길 수 있다.
-- 샘플 기간은 선택한 **Sample Window의 구간**이다(ADR-0010; 선택 화면 구현: #103). 기본 **최근 30일**, 사용자 조정 가능. 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
+- 샘플 기간은 선택한 **Sample Window의 구간**이다(ADR-0010). Studio 기본은 `from`이 가장 늦은 window이며 Onboarding에서 다른 window를 고른다(`?window=`). 드문 alias(정비 모듈 등)는 Drift가 나중에 잡는다.
 - Role은 Type Dictionary로 `ModuleType` → Role 변환. 사전에 없는 ModuleType은 Role `unknown`이고 목록 최상단에 표시.
 
 ### ObservedInventory 계약 (#9b)

@@ -23,7 +23,7 @@ function RoutePage({ route }: { route: Route }) {
     case 'onboarding':
       return <OnboardingPage equipmentId={route.equipmentId} sampleWindow={route.window} />;
     case 'board':
-      return <BoardPage equipmentId={route.equipmentId} />;
+      return <BoardPage key={route.window ?? ''} equipmentId={route.equipmentId} sampleWindow={route.window} />;
     case 'focus':
       return <FocusPage equipmentId={route.equipmentId} sampleWindow={route.window} entityType={route.entityType} anchor={route.anchor} />;
     case 'dev-ui':

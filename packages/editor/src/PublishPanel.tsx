@@ -222,6 +222,7 @@ export function PublishPanel(props: PublishPanelProps) {
         {plan && (
           <div>
             <p>{plan.diff.layout}</p>
+            <p>Baseline Inventory: {plan.baseline.from} – {plan.baseline.to}</p>
             {plan.diff.binding.length > 0 && <ul aria-label="Binding 변경">{plan.diff.binding.map((line) => <li key={line}>{line}</li>)}</ul>}
             {plan.diff.entries.length > 0 && (
               <>
