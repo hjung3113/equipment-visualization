@@ -8,6 +8,7 @@ import {
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
 import { loadFocus, type FocusLoad } from './focus-data.js';
+import { Page } from '@eqv/ui';
 import { Link, hrefFor } from './router.js';
 
 type Range = { from: SiteWallClock; to: SiteWallClock };
@@ -168,8 +169,7 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
   };
 
   return (
-    <>
-      <h1>Focus · <code>{equipmentId}</code></h1>
+    <Page title={<>Focus · <code>{equipmentId}</code></>}>
       <p>{anchor !== null ? <>진입 키: <code>{entityType ?? '—'}</code> / <code>{anchor}</code></> : '진입 키 없음'}</p>
       {result === null ? <p>불러오는 중…</p> : result.kind === 'not-found' ? (
         <>
@@ -244,6 +244,6 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
           )}
         </>
       )}
-    </>
+    </Page>
   );
 }

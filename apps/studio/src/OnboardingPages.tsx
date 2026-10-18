@@ -6,6 +6,7 @@ import {
 } from '@eqv/editor';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
+import { Page } from '@eqv/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
@@ -33,15 +34,14 @@ export function FleetPage() {
     return () => { cancelled = true; };
   }, []);
   return (
-    <>
-      <h1>Fleet</h1>
+    <Page title="Fleet">
       {state === null ? <p>불러오는 중…</p> : 'error' in state ? <p role="alert">설비 목록을 불러오지 못했습니다: {state.error}</p> : (
         state.rows.length === 0 ? <p>등록된 설비가 없습니다.</p> : (
           <FleetTable rows={state.rows}
             renderLink={(equipmentId, children) => <Link href={hrefFor({ name: 'onboarding', equipmentId })}>{children}</Link>} />
         )
       )}
-    </>
+    </Page>
   );
 }
 
@@ -124,8 +124,7 @@ export function OnboardingPage({ equipmentId }: { equipmentId: string }) {
 
   const { result } = loaded;
   return (
-    <>
-      <h1>Onboarding <code>{equipmentId}</code></h1>
+    <Page title={<>Onboarding <code>{equipmentId}</code></>}>
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : (
         <>
           <p>{result.data.record.maker} / {result.data.record.model}</p>
@@ -145,7 +144,7 @@ export function OnboardingPage({ equipmentId }: { equipmentId: string }) {
           ) : <StartActions key={equipmentId} equipmentId={equipmentId} result={result} draft={result.draft} />}
         </>
       )}
-    </>
+    </Page>
   );
 }
 
@@ -323,10 +322,11 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
   }, [dirty]);
 
   const { result } = loaded;
+  // Once the board is loaded, MappingBoard owns the page's h1 (slice d moves it to the host).
+  const boardLoaded = result?.kind === 'ok' && result.draft.kind === 'found';
   return (
-    <>
-      {result?.kind === 'ok' && result.draft.kind === 'found'
-        ? <p>설비 <code>{equipmentId}</code></p> : <h1>Mapping Board <code>{equipmentId}</code></h1>}
+    <Page title={boardLoaded ? undefined : <>Mapping Board <code>{equipmentId}</code></>}>
+      {boardLoaded && <p>설비 <code>{equipmentId}</code></p>}
       <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : result.draft.kind === 'error' ? (
         <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>
@@ -339,6 +339,6 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
           publication={{ publishing: publicationNow.publishing, receipt: publicationNow.receipt, run }}
           onDirtyChange={(next) => setDirtyState({ equipmentId, dirty: next })} />
       )}
-    </>
+    </Page>
   );
 }

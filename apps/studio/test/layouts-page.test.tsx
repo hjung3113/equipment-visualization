@@ -258,9 +258,9 @@ it.each([
   const id = component.getAttribute('data-component-id');
   fireEvent.click(component);
   expect(component.getAttribute('aria-pressed')).toBe('true');
-  const fitted = container.querySelector('svg')!.getAttribute('viewBox');
+  const fitted = container.querySelector('main svg')!.getAttribute('viewBox');
   fireEvent.click(screen.getByRole('button', { name: '확대' }));
-  const zoomed = container.querySelector('svg')!.getAttribute('viewBox');
+  const zoomed = container.querySelector('main svg')!.getAttribute('viewBox');
   expect(zoomed).not.toBe(fitted);
 
   const fetchFromApi = globalThis.fetch;
@@ -280,7 +280,7 @@ it.each([
     await screen.findByRole('link', { name: revision.slice('sha256:'.length, 'sha256:'.length + 12) });
   }
   expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
-  expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(zoomed);
+  expect(container.querySelector('main svg')!.getAttribute('viewBox')).toBe(zoomed);
 });
 
 it('keeps the saved viewer until a differing draft read replaces its content', async () => {
@@ -291,7 +291,7 @@ it('keeps the saved viewer until a differing draft read replaces its content', a
   const id = component.getAttribute('data-component-id');
   fireEvent.click(component);
   fireEvent.click(screen.getByRole('button', { name: '확대' }));
-  const zoomed = container.querySelector('svg')!.getAttribute('viewBox');
+  const zoomed = container.querySelector('main svg')!.getAttribute('viewBox');
   const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
   raw.name = 'Changed draft from disk';
   const draft = 'layouts/cluster-single/draft.layout.json';
@@ -311,7 +311,7 @@ it('keeps the saved viewer until a differing draft read replaces its content', a
   await waitFor(() => expect(reading).toBe(true));
   try {
     expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector('svg')!.getAttribute('viewBox')).toBe(zoomed);
+    expect(container.querySelector('main svg')!.getAttribute('viewBox')).toBe(zoomed);
   } finally {
     await act(async () => { release(); });
     await screen.findByRole('group', { name: 'Changed draft from disk' });
