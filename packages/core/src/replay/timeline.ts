@@ -1,5 +1,6 @@
 import type { DataQualityIssue } from '../occurrence/schema.js';
 import type { SceneComponent, SceneMarker, SceneMaterial } from '../scene/schema.js';
+import { canonicalJson } from '../canonical.js';
 import { millisToWallClock, wallClockToMillis, type SiteWallClock } from '../site-wall-clock.js';
 import { assertReplayInput, seekSceneState, type ReplayInput } from './reduce.js';
 
@@ -24,10 +25,6 @@ const without = <T extends object, K extends keyof T>(value: T, ...keys: K[]): O
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 const LAST = '9999-12-31T23:59:59.999';
 const plusOneMilli = (t: SiteWallClock): SiteWallClock | null => t >= LAST ? null : millisToWallClock(wallClockToMillis(t) + 1);
-// Key-order independent, so two equal values always merge.
-const canonical = (value: unknown): string => JSON.stringify(value, (_key, v: unknown) =>
-  v && typeof v === 'object' && !Array.isArray(v)
-    ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => compare(a, b))) : v);
 // Same order as the reducer's marker sort (reduce.ts), so spans read like a Scene State.
 const markerIds = (m: SceneMarker): string[] => {
   switch (m.kind) {
@@ -76,7 +73,7 @@ export function replayTimeline(input: ReplayInput, range: TimelineRange): Replay
     seen.add(identity);
     const current = group.get(identity);
     if (current) {
-      if (canonical(without(current, 'from', 'to')) === canonical(next)) { current.to = to; return; }
+      if (canonicalJson(without(current, 'from', 'to')) === canonicalJson(next)) { current.to = to; return; }
       finished.push(current);
     }
     group.set(identity, { ...next, from, to } as T);
@@ -102,7 +99,7 @@ export function replayTimeline(input: ReplayInput, range: TimelineRange): Replay
       place(open.activities, done.activities, component.componentId, from, to, component, seen.activities);
     }
     for (const marker of state.markers) {
-      place(open.markers, done.markers, canonical(markerIds(marker)), from, to, { marker }, seen.markers);
+      place(open.markers, done.markers, canonicalJson(markerIds(marker)), from, to, { marker }, seen.markers);
     }
     close(open.materials, done.materials, seen.materials);
     close(open.activities, done.activities, seen.activities);

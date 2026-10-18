@@ -20,14 +20,14 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 4. No confidential factory images/logs may be added here. Test with synthetic fixtures and public references only.
 5. Every screen, the standalone Studio included, uses the analytics-platform design system: FeedbackOps `@fops/ui` from a git submodule, never copied, with the platform shell structure ([ADR-0008](docs/adr/0008-platform-design-system-fops-ui.md)). `core` and the renderer stay design-system-free and read only `--eqv-*`; inside the platform, the adapter injects platform token values.
 
-## Planned packages
+## Packages
 
 ```
 apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–⑥ incl. the Mapping Board, ⑤ dry-run and ⑥ Publish (present, #14); Focus screen with playback (#15c–d) present; Drift ⑦ pending
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
-packages/renderer/            # Static read-only Top View (`TopView`, `buildScene`): fitted primitives, labels, Physical Interface marks, Transfer Capability segments, Holding Site counts, Certainty badges
+packages/renderer/            # Present — static `TopView`/`buildScene` plus interactive `TopViewer` (selection, keyboard, pan/zoom, #12b), Scene State replay overlay and highlight (#15b), and host `renderControls` zoom-controls slot (#73)
 packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel. TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
-packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `AppFrame`, `Page`). Studio uses `AppFrame` and `Page`; the other three are not used by a screen until #73 slice d
+packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`); all are used by Studio screens
 packages/replay/              # Focus screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps and example-motion ghosts; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)

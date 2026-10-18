@@ -1,5 +1,5 @@
 import {
-  buildGenericLayout, compareNatural, findMappingConflicts, matchAliasRule, proposeTemplates, resolveAliasRules, resolveRole, validateAliasRules,
+  buildGenericLayout, canonicalJson, compareNatural, findMappingConflicts, matchAliasRule, proposeTemplates, resolveAliasRules, resolveRole, validateAliasRules,
   type AliasResolution, type AliasRule, type AliasRulesFile, type EquipmentLayoutDocument, type MappingConflict,
   type MappingEntry, type MappingIssue, type ObservedInventory, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -77,16 +77,6 @@ const STATUS_TEXT: Record<BoardStatus, string> = {
   conflict: '⚠ 충돌', ignored: '⊘ 무시', verified: '● 확정', assumed: '◐ 자동', unmapped: '○ 미매핑',
 };
 
-const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
-function canonical(value: unknown): string {
-  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
-  if (value !== null && typeof value === 'object') {
-    return `{${Object.entries(value).filter(([, v]) => v !== undefined).sort(([a], [b]) => compare(a, b))
-      .map(([key, v]) => `${JSON.stringify(key)}:${canonical(v)}`).join(',')}}`;
-  }
-  return JSON.stringify(value);
-}
-
 const scopeOf = (equipment: BoardInput['equipment'], scope: SaveScope): AliasRulesFile['scope'] => scope === 'model'
   ? { level: 'model', maker: equipment.maker, model: equipment.model } : { level: 'equipment', equipmentId: equipment.equipmentId };
 const emptyFile = (equipment: BoardInput['equipment'], scope: SaveScope): AliasRulesFile =>
@@ -102,7 +92,7 @@ export function createBoardState(input: Pick<BoardInput, 'equipment' | 'ruleFile
 }
 
 export const SCOPES: readonly SaveScope[] = ['model', 'equipment'];
-const same = (a: AliasRulesFile, b: AliasRulesFile) => canonical(a) === canonical(b);
+const same = (a: AliasRulesFile, b: AliasRulesFile) => canonicalJson(a) === canonicalJson(b);
 export const dirtyScopes = (state: BoardState): SaveScope[] => SCOPES.filter((scope) => !same(state.present[scope], state.baseline[scope]));
 export const isDirty = (state: BoardState): boolean => dirtyScopes(state).length > 0;
 export const canUndo = (state: BoardState): boolean => state.past.length > 0;
@@ -188,7 +178,7 @@ export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveS
     ruleFiles: allFiles(input, baseline, baseline[saveScope], saveScope), aliases, layout,
   });
   const savedEntries = new Map(saved.aliases.map((row) => [row.alias, row.entry]));
-  const entrySnapshot = (entry: MappingEntry | null) => canonical(entry
+  const entrySnapshot = (entry: MappingEntry | null) => canonicalJson(entry
     ? { target: entry.target, certainty: entry.certainty, rule: entry.rule } : null);
   const { drafts, missingTemplate } = autoAssignments(input);
   const draftedBy = new Map(base.aliases.flatMap((row) => drafts.has(row.alias) && row.entry === null && row.overlap.length === 0
@@ -209,7 +199,7 @@ export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveS
   const byAlias = new Map(resolved.aliases.map((row): [string, AliasResolution] => [row.alias, row]));
   const ruleKind = (entry: MappingEntry): 'exact' | 'pattern' => {
     const file = [input.ruleFiles.maker, saveScopeFile, files[saveScope === 'model' ? 'equipment' : 'model']]
-      .find((candidate) => candidate && canonical(candidate.scope) === canonical(entry.rule.scope));
+      .find((candidate) => candidate && canonicalJson(candidate.scope) === canonicalJson(entry.rule.scope));
     const rule = file?.rules.find(({ id }) => id === entry.rule.ruleId);
     return rule && 'pattern' in rule.match ? 'pattern' : 'exact';
   };
@@ -224,8 +214,8 @@ export function resolveBoard(input: BoardInput, files: Pending, saveScope: SaveS
     const unsaved = draft || entrySnapshot(entry) !== entrySnapshot(savedEntries.get(item.alias) ?? null);
     const savedModelId = savedModel.get(item.alias)?.rule.ruleId;
     const pendingModelId = pendingModel.get(item.alias)?.rule.ruleId;
-    const changedModelRule = savedModelId && canonical(baseline.model.rules.find(({ id }) => id === savedModelId)) !==
-      canonical(files.model.rules.find(({ id }) => id === pendingModelId)) ? savedModelId : null;
+    const changedModelRule = savedModelId && canonicalJson(baseline.model.rules.find(({ id }) => id === savedModelId)) !==
+      canonicalJson(files.model.rules.find(({ id }) => id === pendingModelId)) ? savedModelId : null;
     return {
       changedModelRule,
       alias: item.alias, moduleType: item.moduleType ?? null, slots: item.slots, status, draft,
@@ -308,7 +298,7 @@ export function applyEdits(input: BoardInput, state: BoardState, saveScope: Save
   const unchanged = applied.flatMap((alias) => {
     const previous = before.rows.find((row) => row.alias === alias)!;
     const next = after.rows.find((row) => row.alias === alias)!;
-    return previous.status === next.status && canonical(previous.target) === canonical(next.target)
+    return previous.status === next.status && canonicalJson(previous.target) === canonicalJson(next.target)
       ? [{ alias, overriddenBy: next.overriddenBy }] : [];
   });
   return { state: { ...state, present, past: [...state.past, state.present], future: [] }, applied, skipped, unchanged };

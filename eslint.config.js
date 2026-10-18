@@ -7,7 +7,7 @@ import tseslint from 'typescript-eslint';
 // FeedbackOps' .oxlintrc.json (FeedbackOps ADR-0062), copied as analytics-platform does in
 // tooling/eslint/src/index.js: screens add only layout to a component, containers also spacing, the 50px
 // headers never a height. The theme is the Studio Tailwind entry named by the root components.json. Findings
-// that predate the rules live in eslint-suppressions.json until #73 slices b–c fix them; never add new ones.
+// eslint-suppressions.json is empty and must stay so: no new design-lint suppressions.
 // core and renderer stay design-system-free (SVG reads only --eqv-*), so they are not in scope.
 const RESTYLE_CONTRACTS = [
   {
