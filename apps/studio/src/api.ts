@@ -1,4 +1,4 @@
-import type { EquipmentRecord } from '@eqv/core';
+import type { EquipmentRecord, ImportIssue, ImportWarningCode, SampleWindowSummary } from '@eqv/core';
 
 export class ApiError extends Error {
   /** `body` is the parsed response body (`null` when there was none); a write endpoint reads `issues` and the like from it. */
@@ -82,4 +82,37 @@ export const importStatus = async (): Promise<ImportStatus> => (await request('/
 /** Creates the equipment record; the write is create-only, so an existing record is an ApiError (409 field collision, 412 same id). */
 export async function registerEquipment(record: EquipmentRecord): Promise<{ path: string; created: true }> {
   return (await request('/api/import/equipment', json('POST', record))) as { path: string; created: true };
+}
+
+/** Sends the selected file's text unchanged so the import boundary hashes and stores the submitted JSON. */
+async function importText(input: string, method: string, text: string, headers: Record<string, string>) {
+  return request(input, { method, headers, body: text });
+}
+
+export interface ImportWindowResult {
+  path: string;
+  created: boolean;
+  summary: SampleWindowSummary;
+  warnings: ImportIssue<ImportWarningCode>[];
+}
+
+export async function importWindow(equipmentId: string, text: string): Promise<ImportWindowResult> {
+  const query = new URLSearchParams({ equipmentId });
+  return (await importText(`/api/import/windows?${query}`, 'POST', text, { 'Content-Type': 'application/json' })) as ImportWindowResult;
+}
+
+export interface ImportFileResult {
+  path: string;
+  created: boolean;
+}
+
+export async function putAliasMetadata(equipmentId: string, text: string, options: { createOnly: boolean }): Promise<ImportFileResult> {
+  const query = new URLSearchParams({ equipmentId });
+  const headers = { 'Content-Type': 'application/json', ...(options.createOnly ? { 'If-None-Match': '*' } : {}) };
+  return (await importText(`/api/import/alias-metadata?${query}`, 'PUT', text, headers)) as ImportFileResult;
+}
+
+export async function putTypeDictionary(maker: string, model: string, text: string): Promise<ImportFileResult> {
+  const query = new URLSearchParams({ maker, model });
+  return (await importText(`/api/import/type-dictionary?${query}`, 'PUT', text, { 'Content-Type': 'application/json' })) as ImportFileResult;
 }

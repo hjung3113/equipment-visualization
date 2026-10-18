@@ -1,11 +1,12 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react';
 import { equipmentRecordSchema } from '@eqv/core';
 import { Inbox, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
-import { DataTable, DetailFields, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, type DetailField } from '@eqv/ui';
+import { DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ToastRegion, useToastQueue, type DetailField } from '@eqv/ui';
 import { Button, Input } from '@fops/ui';
 import { ApiError, registerEquipment } from './api.js';
 import { loadEquipmentData, type EquipmentDataLoad, type FileState, type WindowRow } from './equipment-data.js';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
+import { ImportPreview, type ImportKind, type ImportOutcome } from './ImportPreview.js';
 import { problems } from './onboarding-data.js';
 import { Link, hrefFor, navigate } from './router.js';
 
@@ -186,7 +187,7 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
     const rangeDisplay = <><span className="whitespace-nowrap">{entry.from}</span>{' – '}<span className="whitespace-nowrap">{entry.to}</span></>;
     if (row.kind === 'error') {
       return (
-        <DataTable.Row key={entry.name}>
+        <DataTable.Row key={entry.name} data-window={entry.name}>
           <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>
           <DataTable.Cell colSpan={6}><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge> {row.error}</DataTable.Cell>
         </DataTable.Row>
@@ -194,7 +195,7 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
     }
     const window = entry.hash.slice('sha256:'.length);
     return (
-      <DataTable.Row key={entry.name}>
+      <DataTable.Row key={entry.name} data-window={entry.name}>
         <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>
         <DataTable.Cell mono>{row.timeDomain}</DataTable.Cell>
         <DataTable.Cell mono>{row.dataGeneration}</DataTable.Cell>
@@ -216,7 +217,11 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
   });
 }
 
-function WindowsTable({ equipmentId, windows }: { equipmentId: string; windows: Extract<EquipmentDataLoad, { kind: 'ok' }>['windows'] }) {
+function WindowsTable({ equipmentId, windows, actions }: {
+  equipmentId: string;
+  windows: Extract<EquipmentDataLoad, { kind: 'ok' }>['windows'];
+  actions?: ReactNode;
+}) {
   const rows = windows.kind === 'ok' ? windows.rows : [];
   const state = windows.kind === 'error' ? (
     <StateMessage compact tone="danger" icon={ServerCrash} title="Sample Window 목록을 읽을 수 없습니다" body={windows.error} />
@@ -227,7 +232,7 @@ function WindowsTable({ equipmentId, windows }: { equipmentId: string; windows: 
   return (
     <DataTable label="Sample Window 목록" title="Sample Window" columns={WINDOW_COLUMNS}
       subtitle="가져온 관측 구간입니다. 각 window는 불변이며 Studio는 window를 합치지 않습니다."
-      count={rows.length > 0 ? `${rows.length}개` : undefined} state={state}>
+      count={rows.length > 0 ? `${rows.length}개` : undefined} state={state} actions={actions}>
       <WindowRows equipmentId={equipmentId} rows={rows} />
     </DataTable>
   );
@@ -235,17 +240,74 @@ function WindowsTable({ equipmentId, windows }: { equipmentId: string; windows: 
 
 export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
   // The loaded state belongs to the route's equipmentId, as in OnboardingPage.
-  const [loaded, setLoaded] = useState<{ equipmentId: string; result: EquipmentDataLoad | null }>({ equipmentId, result: null });
-  if (loaded.equipmentId !== equipmentId) setLoaded({ equipmentId, result: null });
+  const [reloads, setReloads] = useState(0);
+  const [loaded, setLoaded] = useState<{ equipmentId: string; reloads: number; result: EquipmentDataLoad | null }>({ equipmentId, reloads, result: null });
+  if (loaded.equipmentId !== equipmentId) setLoaded({ equipmentId, reloads, result: null });
   const status = useImportStatus();
+  const blocked = importBlocked(status);
+  const [pending, setPending] = useState<{ id: number; kind: ImportKind; file: File; opener: HTMLElement | null } | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [focusWindow, setFocusWindow] = useState<string | null>(null);
+  const { toasts, notify, dismiss } = useToastQueue();
+  const nextPendingId = useRef(0);
+  const restoreFocus = useRef<HTMLElement | null>(null);
+
+  const openPreview = (kind: ImportKind, file: File) => {
+    if (busy) return;
+    const active = document.activeElement;
+    const opener = active instanceof HTMLElement ? active : null;
+    nextPendingId.current += 1;
+    setPending({ id: nextPendingId.current, kind, file, opener });
+  };
 
   useEffect(() => {
     let cancelled = false;
-    loadEquipmentData(equipmentId).then((result) => { if (!cancelled) setLoaded({ equipmentId, result }); });
+    loadEquipmentData(equipmentId).then((result) => { if (!cancelled) setLoaded({ equipmentId, reloads, result }); });
     return () => { cancelled = true; };
-  }, [equipmentId]);
+  }, [equipmentId, reloads]);
 
   const { result } = loaded;
+  useEffect(() => {
+    const target = restoreFocus.current;
+    if (target === null || pending !== null) return;
+    restoreFocus.current = null;
+    if (target.isConnected) target.focus();
+  }, [pending]);
+  useEffect(() => {
+    if (focusWindow === null || loaded.equipmentId !== equipmentId || loaded.result === null || loaded.reloads !== reloads) return;
+    if (loaded.result.kind === 'ok' && loaded.result.windows.kind === 'ok') {
+      const row = loaded.result.windows.rows.find((item) => item.kind === 'ok' && item.entry.name === focusWindow);
+      if (row) Array.from(document.querySelectorAll<HTMLTableRowElement>('tr[data-window]'))
+        .find((item) => item.dataset.window === focusWindow)?.querySelector<HTMLAnchorElement>('a')?.focus();
+    }
+    setFocusWindow(null);
+  }, [equipmentId, focusWindow, loaded, reloads]);
+
+  const onImported = (outcome: ImportOutcome) => {
+    if (outcome.kind === 'window') {
+      notify(outcome.created
+        ? `Sample Window ${outcome.from} – ${outcome.to}을(를) 가져왔습니다`
+        : `이미 있는 window입니다 (${outcome.from} – ${outcome.to}). 새로 쓰지 않았습니다`);
+      setFocusWindow(outcome.name);
+      restoreFocus.current = null;
+    } else if (outcome.kind === 'alias-metadata') {
+      notify(outcome.created
+        ? `Alias metadata를 저장했습니다 (alias ${outcome.aliases}개)`
+        : `Alias metadata를 교체했습니다 (alias ${outcome.aliases}개)`);
+      restoreFocus.current = pending?.opener ?? null;
+    } else {
+      notify(`Type Dictionary를 저장했습니다 (ModuleType ${outcome.entries}개)`);
+      restoreFocus.current = pending?.opener ?? null;
+    }
+    setPending(null);
+    setReloads((value) => value + 1);
+  };
+
+  const closePreview = () => {
+    restoreFocus.current = pending?.opener ?? null;
+    setPending(null);
+  };
+
   const items = (data: Extract<EquipmentDataLoad, { kind: 'ok' }>): DetailField[] => [
     { key: 'equipmentId', label: '설비 ID', value: data.record.equipmentId, mono: true },
     { key: 'maker', label: 'Maker', value: data.record.maker, mono: true },
@@ -260,16 +322,26 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
       breadcrumb={{ label: '경로', items: [{ key: 'fleet', label: 'Fleet', href: '/fleet' }, { key: 'equipment', label: equipmentId }] }}>
       <div className="grid max-w-5xl gap-4">
         <ImportStatusNotices state={status} git catalog />
+        {pending && result?.kind === 'ok' && status.kind === 'ok' && (
+          <ImportPreview key={pending.id} kind={pending.kind} file={pending.file} record={result.record}
+            windows={result.windows} typeDictionary={result.typeDictionary} maxBytes={status.status.maxWindowBytes} blocked={blocked}
+            onBusyChange={setBusy} onImported={onImported} onStale={() => setReloads((value) => value + 1)} onClose={closePreview} />
+        )}
         {result === null ? <LoadingBlock label="불러오는 중…" /> : result.kind === 'not-found' ? (
           <StateMessage icon={MapPinOff} title="설비를 찾을 수 없습니다" body="등록된 설비 기록이 없습니다." action={AWAY} />
         ) : result.kind === 'error' ? (
           <StateMessage tone="danger" icon={ServerCrash} title="데이터 오류" body={result.error} action={AWAY} />
         ) : (
           <>
-            <Panel title="설비"><DetailFields items={items(result)} /></Panel>
-            <WindowsTable equipmentId={equipmentId} windows={result.windows} />
+            <Panel title="설비" actions={<>
+              <FileButton label="Alias metadata" accept="application/json,.json" disabled={blocked || busy} onFile={(file) => openPreview('alias-metadata', file)} />
+              <FileButton label="Type Dictionary(Model 범위)" accept="application/json,.json" disabled={blocked || busy} onFile={(file) => openPreview('type-dictionary', file)} />
+            </>}><DetailFields items={items(result)} /></Panel>
+            <WindowsTable equipmentId={equipmentId} windows={result.windows}
+              actions={<FileButton label="Sample Window 가져오기" accept="application/json,.json" disabled={blocked || busy} onFile={(file) => openPreview('window', file)} />} />
           </>
         )}
+        <ToastRegion toasts={toasts} onDismiss={dismiss} labels={{ dismiss: '알림 닫기' }} />
       </div>
     </Page>
   );
