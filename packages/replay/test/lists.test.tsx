@@ -192,6 +192,7 @@ it.each([['ArrowDown', 'occ-gen-500'], ['ArrowUp', 'occ-gen-1499']])(
     expect(ids()).toContain(selected);
     expect(ids()[0]).toBe(`occ-gen-${start}`);
     expect(document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id')).toBe(selected);
+    expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe(selected);
     expect(tabStops().length).toBe(1);
   });
 

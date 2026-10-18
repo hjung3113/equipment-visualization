@@ -43,6 +43,11 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
   useEffect(() => {
     if (nav !== null) body.current?.querySelector<HTMLElement>(`tr[data-occurrence-id="${CSS.escape(nav.id)}"]`)?.focus();
   }, [nav]);
+  // The jump-back button unmounts on activation; keyboard focus follows the selection instead of dropping to <body>.
+  const [jumped, setJumped] = useState(0);
+  useEffect(() => {
+    if (jumped > 0 && selectedOccurrenceId !== null) body.current?.querySelector<HTMLElement>(`tr[data-occurrence-id="${CSS.escape(selectedOccurrenceId)}"]`)?.focus();
+  }, [jumped]);
   const indexOf = (id: string | null) => id === null ? -1 : rows.findIndex((o) => o.id === id);
   const atCursor = appliedSeq === null ? 0 : Math.max(rows.findLastIndex((o) => o.start.seq <= appliedSeq), 0);
   const pinned = indexOf(nav?.id ?? null);
@@ -77,7 +82,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
           {selectionHidden && (
             <p className="mt-1 flex items-center gap-2">
               선택한 Occurrence는 표시 범위 밖에 있습니다
-              <Button type="button" variant="outline" size="toolbar" onClick={() => setNav(null)}>선택한 Occurrence로 이동</Button>
+              <Button type="button" variant="outline" size="toolbar" onClick={() => { setNav(null); setJumped((n) => n + 1); }}>선택한 Occurrence로 이동</Button>
             </p>
           )}
         </div>
