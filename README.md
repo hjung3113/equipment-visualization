@@ -28,7 +28,7 @@ packages/core/                # Layout schema/validator, Occurrence & Scene Stat
 packages/renderer/            # Static read-only Top View (`TopView`, `buildScene`): fitted primitives, labels, Physical Interface marks, Transfer Capability segments, Holding Site counts, Certainty badges
 packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel. TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, except the Mapping Board (still `editor.css`, #73 slice d3)
 packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `AppFrame`, `Page`). Studio uses `AppFrame` and `Page`; the other three are not used by a screen until #73 slice d
-packages/replay/              # Focus screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps and example-motion ghosts (present)
+packages/replay/              # Focus screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps and example-motion ghosts; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)

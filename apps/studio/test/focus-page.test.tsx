@@ -81,7 +81,7 @@ it('selects an Occurrence in every view: row, Top View highlight on its Componen
   // The ring is drawn with a matrix, the Component group with translate/rotate/scale: same placement, different spelling.
   expect(ring.getAttribute('transform')).toBe('matrix(1 0 0 1 24 32)');
   expect(document.querySelector('[data-component-id="pm-a"]')!.getAttribute('transform')).toMatch(/^translate\(24 32\) /);
-  fireEvent.click(screen.getByRole('tab', { name: '근거 상세' }));
+  fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
   within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' })).getByText(/^시작: 2026-01-01T10:06:00.000/);
 });
 
@@ -93,7 +93,7 @@ it('switches tabs with the arrow keys', async () => {
   const tabs = screen.getAllByRole('tab');
   tabs[0]!.focus();
   fireEvent.keyDown(tabs[0]!, { key: 'ArrowRight' });
-  expect(tabs[1]!.getAttribute('aria-selected')).toBe('true');
+  await waitFor(() => expect(tabs[1]!.getAttribute('aria-selected')).toBe('true'));
   expect(document.activeElement).toBe(tabs[1]);
   screen.getByText('이 구간에 Data Quality Issue가 없습니다');
 });
@@ -207,7 +207,7 @@ it('playing frames show the same state as a direct seek to that cursor', async (
   render(<FocusPage equipmentId="eq-synth-01" entityType={null} anchor={null} scheduler={clock.scheduler} />);
   await loaded();
   applyRange('2026-01-01T10:01:20.000', '2026-01-01T10:02:30.000');
-  fireEvent.change(screen.getByRole('combobox', { name: '속도' }), { target: { value: '4' } });
+  fireEvent.click(screen.getByRole('radio', { name: 'x4' }));
   fireEvent.click(screen.getByRole('button', { name: '재생' }));
   for (let i = 0; i < 15; i += 1) clock.frame(250);
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:35.000)');
@@ -225,7 +225,7 @@ it('sequence mode shows the record-ordered state; the previous record differs fr
   await loaded();
   applyRange('2026-01-01T10:02:00.000');
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
-  screen.getByText(/wafer W01: ll-a \/ slot-1 · 위치 근거 관측/);
+  screen.getByText((_, el) => el?.tagName === 'LI' && /^wafer W01: ll-a \/ slot-1 · 위치 근거 관측/.test(el.textContent ?? ''));
   fireEvent.click(screen.getByRole('button', { name: 'Sequence step' }));
   expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 7 · 2026-01-01T10:02:00.000');
   fireEvent.click(screen.getByRole('button', { name: '이전 record' }));
@@ -250,9 +250,10 @@ it('the example-motion toggle is off by default, badges and draws one ghost at 1
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:30.000)');
   expect((screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement).disabled).toBe(true);
   screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다');
-  const badge = () => document.querySelector('.eqv-rp-illustrative-badge');
-  const toggle = () => screen.getByRole('checkbox', { name: '예시 이동 표시' }) as HTMLInputElement;
-  expect([toggle().checked, document.querySelectorAll('[data-illustrative]').length, badge()]).toEqual([false, 0, null]);
+  const badge = () => document.querySelector('[data-evidence="illustrative"]');
+  const toggle = () => screen.getByRole('checkbox', { name: '예시 이동 표시' });
+  const checked = () => toggle().getAttribute('aria-checked');
+  expect([checked(), document.querySelectorAll('[data-illustrative]').length, badge()]).toEqual(['false', 0, null]);
   expect(screen.queryByText(/예시 이동 \(관측 아님\)/)).toBeNull();
   fireEvent.click(toggle());
   expect(badge()!.textContent).toBe('예시 이동');
@@ -264,5 +265,5 @@ it('the example-motion toggle is off by default, badges and draws one ghost at 1
   act(() => navigate('/focus/eq-synth-02'));
   await screen.findByRole('heading', { name: 'Focus · eq-synth-02' });
   await loaded();
-  expect([toggle().checked, badge()]).toEqual([false, null]);
+  expect([checked(), badge()]).toEqual(['false', null]);
 });

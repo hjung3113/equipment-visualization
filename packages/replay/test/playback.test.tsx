@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, renderHook, screen, within } from '@testing-library/react';
 import { useState } from 'react';
 import { afterEach, expect, it, vi } from 'vitest';
 import { wallClockToMillis, type SiteWallClock } from '@eqv/core';
@@ -140,14 +140,22 @@ it('PlaybackControls: one play/pause button, the five speeds, breakpoint buttons
   const props = controls();
   fireEvent.click(screen.getByRole('button', { name: '재생' }));
   expect(props.onPlay).toHaveBeenCalled();
-  expect((screen.getByRole('combobox', { name: '속도' }) as HTMLSelectElement).value).toBe('1');
-  expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(['x0.25', 'x0.5', 'x1', 'x2', 'x4']);
-  fireEvent.change(screen.getByRole('combobox', { name: '속도' }), { target: { value: '4' } });
+  const speeds = within(screen.getByRole('radiogroup', { name: '재생 속도' }));
+  expect(speeds.getAllByRole('radio').map((b) => b.textContent)).toEqual(['x0.25', 'x0.5', 'x1', 'x2', 'x4']);
+  expect(speeds.getByRole('radio', { name: 'x1' }).getAttribute('aria-checked')).toBe('true');
+  fireEvent.click(speeds.getByRole('radio', { name: 'x4' }));
   expect(props.onSpeedChange).toHaveBeenCalledWith(4);
   cleanup();
   controls({ playing: true, onPreviousBreakpoint: null });
   screen.getByRole('button', { name: '일시정지' });
   expect((screen.getByRole('button', { name: '이전 단계' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('PlaybackControls: the speed group cannot be emptied by pressing the active speed', () => {
+  const props = controls();
+  fireEvent.click(screen.getByRole('radio', { name: 'x1' }));
+  expect(props.onSpeedChange).not.toHaveBeenCalled();
+  expect(screen.getByRole('radio', { name: 'x1' }).getAttribute('aria-checked')).toBe('true');
 });
 
 it('PlaybackControls: record buttons are disabled at the ends; the status names the seq and time only in sequence mode', () => {

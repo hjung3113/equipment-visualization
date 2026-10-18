@@ -61,6 +61,24 @@ it('selects a row on click and marks the selected row', () => {
   expect(document.querySelectorAll('tbody tr[tabindex="0"]')).toHaveLength(1);
 });
 
+it.each([
+  ['click', (el: HTMLElement) => fireEvent.click(el)],
+  ['Enter', (el: HTMLElement) => fireEvent.keyDown(el, { key: 'Enter' })],
+  ['Space', (el: HTMLElement) => fireEvent.keyDown(el, { key: ' ' })],
+])('activates a row on %s; ArrowDown/ArrowUp move focus between rows', (_name, activate) => {
+  const { onSelectOccurrence } = list('10:06:00');
+  const rows = Array.from(document.querySelectorAll<HTMLElement>('tbody tr'));
+  activate(rows[1]!);
+  expect(onSelectOccurrence).toHaveBeenCalledTimes(1);
+  expect(onSelectOccurrence).toHaveBeenCalledWith(rows[1]!.getAttribute('data-occurrence-id'));
+  rows[1]!.focus();
+  fireEvent.keyDown(rows[1]!, { key: 'ArrowDown' });
+  expect(document.activeElement).toBe(rows[2]);
+  fireEvent.keyDown(rows[2]!, { key: 'ArrowUp' });
+  expect(document.activeElement).toBe(rows[1]);
+  expect(onSelectOccurrence).toHaveBeenCalledTimes(1);
+});
+
 it('lists Data Quality Issues and selects the related Occurrence', () => {
   const onSelectOccurrence = vi.fn();
   render(<DataQualityList timeline={timeline} onSelectOccurrence={onSelectOccurrence} />);
@@ -75,8 +93,8 @@ it('reads an unlocated wafer as 위치 미확인 with unknown location evidence 
   const item = screen.getByText(/^wafer W01:/);
   expect(item.textContent).toBe('wafer W01: 위치 미확인 · 위치 근거 미확인 · 식별 근거 관측');
   const detail = within(screen.getByRole('region', { name: '근거 상세 occ-tm-out' }));
-  expect(detail.getByText(/^위치 미확인 · 위치 근거 미확인$/)).toBeTruthy();
-  expect(detail.getByText(/식별 근거 관측/)).toBeTruthy();
+  expect(detail.getByText((_, el) => el?.tagName === 'P' && el.textContent === '위치 미확인 · 위치 근거 미확인')).toBeTruthy();
+  expect(detail.getByText((_, el) => el?.tagName === 'P' && /식별 근거 관측$/.test(el.textContent ?? ''))).toBeTruthy();
   expect(detail.getByText(/Mapping Version: sha256:0abf3e9f/)).toBeTruthy();
   expect(screen.queryByText('Watermark 이후', { exact: false })).toBeNull();
 });
@@ -94,4 +112,30 @@ it('says an unselected or closed Occurrence has no location facet instead of gue
   expect(screen.getByText('Occurrence를 선택하세요')).toBeTruthy();
   rerender(<EvidenceDetail batch={batch} state={state} selectedOccurrenceId="occ-pm1-process" />);
   expect(screen.getByText('이 시점에 열려 있지 않음')).toBeTruthy();
+});
+
+const LEVELS = [['observed', '관측'], ['derived', '파생'], ['unknown', '미확인']] as const;
+
+it.each([...LEVELS, ['illustrative', '예시'] as const])('EvidenceDetail shows a %s boundary as a badge reading %s', (level, word) => {
+  const id = 'occ-pm1-process';
+  const changed = { ...batch, occurrences: batch.occurrences.map((o) => o.id === id ? { ...o, start: { ...o.start, evidence: level } } : o) };
+  render(<EvidenceDetail batch={changed} state={stateAt(time('10:06:00'))} selectedOccurrenceId={id} />);
+  const badge = within(screen.getByText(/^시작:/)).getByText(word);
+  expect(badge.getAttribute('data-evidence')).toBe(level);
+});
+
+it.each(LEVELS)('CursorStateList shows %s activity, location and identity evidence as badges reading %s', (level, word) => {
+  const base = stateAt(time('10:26:00'));
+  const [first, ...rest] = base.components;
+  const state = {
+    ...base,
+    components: [{ ...first!, activity: 'processing' as const, activityEvidence: level }, ...rest],
+    materials: base.materials.map((m) => ({ ...m, locationEvidence: level, identityEvidence: level })),
+  };
+  render(<CursorStateList state={state} />);
+  const activity = within(screen.getByText(`${first!.componentId}:`, { exact: false })).getByText(word, { selector: '[data-evidence]' });
+  expect(activity.getAttribute('data-evidence')).toBe(level);
+  const badges = screen.getAllByText(word, { selector: '[data-evidence]' });
+  expect(badges.length).toBeGreaterThanOrEqual(3);
+  expect(badges.every((b) => b.getAttribute('data-evidence') === level)).toBe(true);
 });
