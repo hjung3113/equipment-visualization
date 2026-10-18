@@ -1,9 +1,9 @@
 import {
-  mappingVersionSchema, occurrenceBatchSchema, validateLayout, verifyMappingHash,
+  mappingVersionSchema, validateLayout, verifyMappingHash,
   type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
-import { DataError, loadEquipment, problems, readOptional } from './onboarding-data.js';
+import { DataError, listSampleWindows, loadEquipment, problems, readOptional, readSampleWindow, type SampleWindowEntry } from './onboarding-data.js';
 
 export type FocusData = {
   record: FleetData['record'];
@@ -31,16 +31,6 @@ async function read(path: string): Promise<unknown | undefined> {
   } catch (error) {
     throw new DataError(`${path}: ${message(error)}`);
   }
-}
-
-async function loadBatch(equipmentId: string): Promise<OccurrenceBatch> {
-  const path = `observations/${equipmentId}/occurrence-batch.json`;
-  const raw = await read(path);
-  if (raw === undefined) throw new DataError('관측 데이터 없음');
-  const parsed = occurrenceBatchSchema.safeParse(raw);
-  if (!parsed.success) throw new DataError(`${path}: ${problems(parsed.error.issues)}`);
-  if (parsed.data.equipmentId !== equipmentId) throw new DataError(`${path}: equipmentId(${parsed.data.equipmentId})가 ${equipmentId}와 다릅니다`);
-  return parsed.data;
 }
 
 async function loadMapping(equipmentId: string, binding: Binding): Promise<MappingVersion> {
@@ -71,16 +61,47 @@ async function loadLayout(layoutId: string, revision: string | undefined, notice
   return layout;
 }
 
+/**
+ * Without `window`, the latest-`from` window that contains `anchor`, else the latest window. Every window is read and
+ * checked on this path (a bad file is an error, never skipped); `notice` is set when several windows contain the anchor.
+ */
+async function windowForAnchor(equipmentId: string, anchor: string): Promise<{ hex: string | undefined; notice: string | null }> {
+  const windows = await listSampleWindows(equipmentId);
+  const containing: SampleWindowEntry[] = [];
+  for (const entry of [...windows].reverse()) {
+    const batch = await readSampleWindow(equipmentId, entry);
+    if (batch.occurrences.some(({ id }) => id === anchor)) containing.push(entry);
+  }
+  const latest = containing[0];
+  if (!latest) return { hex: undefined, notice: null };
+  const notice = containing.length < 2 ? null
+    : `진입 Occurrence ${anchor}가 Sample Window ${containing.length}개에 있어 가장 늦은 window(${latest.from} – ${latest.to})를 재생합니다`;
+  return { hex: latest.hash.slice('sha256:'.length), notice };
+}
+
 /** Never rejects. Everything Focus replays is read and checked here: the batch, every Binding's Mapping Version and Layout. */
-export async function loadFocus(equipmentId: string): Promise<FocusLoad> {
+export async function loadFocus(equipmentId: string, options: { window?: string; anchor?: string | null } = {}): Promise<FocusLoad> {
   try {
-    const loaded = await loadEquipment(equipmentId);
+    let { window } = options;
+    let anchorNotice: string | null = null;
+    let scanError: string | null = null;
+    if (window === undefined && typeof options.anchor === 'string') {
+      try {
+        ({ hex: window, notice: anchorNotice } = await windowForAnchor(equipmentId, options.anchor));
+      } catch (error) {
+        scanError = message(error);
+      }
+    }
+    const loaded = await loadEquipment(equipmentId, { window });
+    if (loaded.kind === 'not-found') return loaded;
+    if (scanError !== null) return { kind: 'error', record: loaded.kind === 'ok' ? loaded.data.record : loaded.record, error: scanError };
+    if (loaded.kind === 'no-observations') return { kind: 'error', record: loaded.record, error: '관측 데이터 없음' };
     if (loaded.kind !== 'ok') return loaded;
-    const { record } = loaded.data;
+    const { record, batch } = loaded.data;
     try {
-      const batch = await loadBatch(equipmentId);
       const bindings: BindingsFile = loaded.data.bindings ?? { schemaVersion: '0.4', equipmentId, bindings: [] };
       const notices: string[] = [];
+      if (anchorNotice) notices.push(anchorNotice);
       if (bindings.bindings.length === 0) notices.push(NO_BINDING);
 
       const mappings = new Map<string, MappingVersion>();

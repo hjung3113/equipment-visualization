@@ -1,15 +1,23 @@
 import {
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema,
-  validateAliasRules, validateBindings, validateTypeDictionary, verifyMappingHash,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, parseSampleWindowName,
+  validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary, verifyMappingHash,
   validateLayout,
-  type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type MappingIssue, type MappingScope, type MappingVersion,
-  type TemplateDocument, type TypeDictionaryFile,
+  type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
+  type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
 import { ApiError, listDir, readFile, type DirEntry } from './api.js';
 
+/** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
+export type SampleWindowEntry = { name: string; path: string; from: SiteWallClock; to: SiteWallClock; hash: string };
+
 /** Read-only inputs of one equipment, validated at the read boundary (GET only parses JSON). */
 export interface LoadedEquipment extends FleetData {
+  /** The selected Sample Window's validated batch (the Inventory is built from it). */
+  batch: OccurrenceBatch;
+  /** Every Sample Window of the equipment, `from` ascending. */
+  windows: SampleWindowEntry[];
+  selectedWindow: SampleWindowEntry;
   dictionaries: TypeDictionaryFile[];
   /** The validated alias-rules files that exist, by scope level. */
   ruleFiles: RuleFiles;
@@ -23,6 +31,7 @@ export type DraftLookup =
 export type EquipmentLoad =
   | { kind: 'not-found' }
   | { kind: 'error'; error: string; record: FleetData['record'] | null }
+  | { kind: 'no-observations'; record: EquipmentRecord }
   | { kind: 'ok'; data: LoadedEquipment };
 export type OnboardingLoad =
   | Exclude<EquipmentLoad, { kind: 'ok' }>
@@ -63,7 +72,61 @@ function checkScope(path: string, actual: MappingScope, expected: MappingScope):
   if (!sameScope(actual, expected)) throw new DataError(`${path}: scope가 경로와 다릅니다 (${JSON.stringify(actual)})`);
 }
 
-async function loadData(equipmentId: string): Promise<EquipmentLoad> {
+const WINDOW_SUFFIX = '.batch.json';
+const WINDOW_HEX = /^[0-9a-f]{64}$/;
+
+/** Names only (ADR-0010): a 404 is zero windows; a stray entry or two overlapping ranges is a data error, never skipped. */
+export async function listSampleWindows(equipmentId: string): Promise<SampleWindowEntry[]> {
+  const dir = `observations/${equipmentId}/windows`;
+  let entries: DirEntry[];
+  try {
+    entries = await listDir(dir);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return [];
+    throw error;
+  }
+  const windows = entries.map(({ kind, name }): SampleWindowEntry => {
+    const path = `${dir}/${name}`;
+    const parsed = kind === 'file' && name.endsWith(WINDOW_SUFFIX) ? parseSampleWindowName(name.slice(0, -WINDOW_SUFFIX.length)) : null;
+    if (!parsed) throw new DataError(`${path}: Sample Window 파일 이름(<from>_<to>_<hex>${WINDOW_SUFFIX})이 아닙니다`);
+    return { name: name.slice(0, -WINDOW_SUFFIX.length), path, ...parsed };
+  }).sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
+  let reach: SampleWindowEntry | null = null;
+  for (const window of windows) {
+    if (reach && window.from < reach.to) throw new DataError(`${reach.path}와 ${window.path}: Sample Window 구간이 겹칩니다`);
+    if (!reach || window.to > reach.to) reach = window;
+  }
+  return windows;
+}
+
+/** Reads one listed window and re-checks it with the core validator; a 404 after listing is an error. */
+export async function readSampleWindow(equipmentId: string, entry: SampleWindowEntry): Promise<OccurrenceBatch> {
+  let raw: unknown | undefined;
+  try {
+    raw = await readOptional(entry.path);
+  } catch (error) {
+    throw new DataError(`${entry.path}: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+  }
+  if (raw === undefined) throw new DataError(`${entry.path}: 파일을 찾을 수 없습니다`);
+  const result = await validateSampleWindow(raw, { equipmentId, existing: [] });
+  if (!result.ok) {
+    throw new DataError(`${entry.path}: ${problems(result.issues.map((issue) => ({ path: issue.path, message: `${issue.code}: ${issue.message}` })))}`);
+  }
+  if (result.summary.name !== entry.name) {
+    throw new DataError(`${entry.path}: 파일 이름이 내용과 다릅니다 (내용 기준 이름: ${result.summary.name})`);
+  }
+  return result.batch;
+}
+
+/** The window `window` (64 hex digits) names, else the one with the latest `from`; an unknown value never falls back. */
+export function selectSampleWindow(windows: SampleWindowEntry[], window?: string): SampleWindowEntry {
+  if (window === undefined) return windows[windows.length - 1]!;
+  const found = WINDOW_HEX.test(window) ? windows.find(({ hash }) => hash === `sha256:${window}`) : undefined;
+  if (!found) throw new DataError(`Sample Window ${window}이(가) 없습니다`);
+  return found;
+}
+
+async function loadData(equipmentId: string, options: { window?: string }): Promise<EquipmentLoad> {
   if (!NAME.test(equipmentId)) return { kind: 'not-found' };
   const recordPath = `equipment/${equipmentId}.json`;
   const rawRecord = await readOptional(recordPath);
@@ -74,14 +137,10 @@ async function loadData(equipmentId: string): Promise<EquipmentLoad> {
   try {
     if (record.equipmentId !== equipmentId) throw new DataError(`${recordPath}: equipmentId(${record.equipmentId})가 파일 이름과 다릅니다`);
 
-    const batchPath = `observations/${equipmentId}/occurrence-batch.json`;
-    const rawBatch = await readOptional(batchPath);
-    if (rawBatch === undefined) throw new DataError('관측 데이터 없음');
-    const batch = occurrenceBatchSchema.safeParse(rawBatch);
-    if (!batch.success) throw new DataError(`${batchPath}: ${problems(batch.error.issues)}`);
-    if (batch.data.equipmentId !== equipmentId) {
-      throw new DataError(`${batchPath}: equipmentId(${batch.data.equipmentId})가 ${equipmentId}와 다릅니다`);
-    }
+    const windows = await listSampleWindows(equipmentId);
+    if (windows.length === 0) return { kind: 'no-observations', record };
+    const selectedWindow = selectSampleWindow(windows, options.window);
+    const batch = await readSampleWindow(equipmentId, selectedWindow);
 
     const metadataPath = `observations/${equipmentId}/alias-metadata.json`;
     const rawMetadata = await readOptional(metadataPath);
@@ -94,7 +153,7 @@ async function loadData(equipmentId: string): Promise<EquipmentLoad> {
       }
       metadata = parsed.data;
     }
-    const inventory = buildInventory(batch.data, metadata);
+    const inventory = buildInventory(batch, metadata);
 
     const { maker, model } = record;
     const dictionaries: TypeDictionaryFile[] = [];
@@ -148,16 +207,16 @@ async function loadData(equipmentId: string): Promise<EquipmentLoad> {
       if (mapping.layoutId !== latest.layoutId) throw new DataError(`${mappingPath}: layoutId(${mapping.layoutId})가 binding의 layoutId와 다릅니다`);
       mappings[mapping.hash] = mapping;
     }
-    return { kind: 'ok', data: { record, inventory, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
+    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
   } catch (error) {
     return { kind: 'error', record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
   }
 }
 
 /** Never rejects: transport and content failures become an `error` result. */
-export async function loadEquipment(equipmentId: string): Promise<EquipmentLoad> {
+export async function loadEquipment(equipmentId: string, options: { window?: string } = {}): Promise<EquipmentLoad> {
   try {
-    return await loadData(equipmentId);
+    return await loadData(equipmentId, options);
   } catch (error) {
     return { kind: 'error', record: null, error: error instanceof Error ? error.message : '알 수 없는 오류' };
   }
@@ -228,8 +287,8 @@ async function lookupDraft(equipmentId: string, bindings: BindingsFile | null): 
 }
 
 /** Never rejects. A broken record or batch is a data error, not not-found. */
-export async function loadOnboarding(equipmentId: string): Promise<OnboardingLoad> {
-  const loaded = await loadEquipment(equipmentId);
+export async function loadOnboarding(equipmentId: string, options: { window?: string } = {}): Promise<OnboardingLoad> {
+  const loaded = await loadEquipment(equipmentId, options);
   if (loaded.kind !== 'ok') return loaded;
   try {
     const { templates, skipped } = await loadTemplates();

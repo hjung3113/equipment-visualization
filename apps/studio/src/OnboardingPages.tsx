@@ -20,13 +20,13 @@ export function FleetPage() {
     let cancelled = false;
     (async () => {
       const ids = await listEquipmentIds();
-      const loads = await Promise.all(ids.map(loadEquipment));
+      const loads = await Promise.all(ids.map((id) => loadEquipment(id)));
       return summarizeFleet(loads.map((load, i) => {
         const equipmentId = ids[i]!;
         if (load.kind === 'ok') return load.data;
-        const error = load.kind === 'not-found' ? '설비 기록을 읽을 수 없습니다' : load.error;
-        return { equipmentId, maker: load.kind === 'error' ? load.record?.maker ?? null : null,
-          model: load.kind === 'error' ? load.record?.model ?? null : null, error };
+        const error = load.kind === 'not-found' ? '설비 기록을 읽을 수 없습니다' : load.kind === 'no-observations' ? '관측 데이터 없음' : load.error;
+        const record = load.kind === 'error' ? load.record : load.kind === 'no-observations' ? load.record : null;
+        return { equipmentId, maker: record?.maker ?? null, model: record?.model ?? null, error };
       }));
     })().then(
       (rows) => { if (!cancelled) setState({ rows }); },
@@ -58,7 +58,7 @@ function Missing({ result }: { result: Exclude<OnboardingLoad, { kind: 'ok' }> }
     </>
   ) : (
     <>
-      <p role="alert">데이터 오류: {result.error}</p>
+      <p role="alert">데이터 오류: {result.kind === 'error' ? result.error : '관측 데이터 없음'}</p>
       <p><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></p>
     </>
   );
@@ -226,9 +226,10 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
     loads.forEach((load, i) => {
       const id = ids[i]!;
       if (load.kind === 'not-found') { unreadable++; return; }
-      if (load.kind === 'error') {
+      if (load.kind === 'error' || load.kind === 'no-observations') {
+        const error = load.kind === 'error' ? load.error : '관측 데이터 없음';
         if (!load.record) unreadable++;
-        else if (load.record.maker === equipment.maker && load.record.model === equipment.model) rows.push({ equipmentId: id, published: null, error: load.error });
+        else if (load.record.maker === equipment.maker && load.record.model === equipment.model) rows.push({ equipmentId: id, published: null, error });
         return;
       }
       const { data } = load;
