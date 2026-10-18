@@ -3,27 +3,27 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "types": "./dist/index.d.ts",
+  "sideEffects": ["**/*.css"],
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js"
-    },
+    ".": "./src/index.ts",
+    "./styles.css": "./src/styles.css",
     "./editor.css": "./src/editor.css"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "test": "vitest run --config vitest.config.ts",
-    "build": "tsc -p tsconfig.build.json"
+    "test": "vitest run --config vitest.config.ts"
   },
   "peerDependencies": {
+    "@fops/ui": "workspace:*",
     "react": "^19.0.0"
   },
   "dependencies": {
     "@eqv/core": "workspace:*",
-    "@eqv/renderer": "workspace:*"
+    "@eqv/renderer": "workspace:*",
+    "@eqv/ui": "workspace:*"
   },
   "devDependencies": {
+    "@fops/ui": "workspace:*",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",
@@ -32,7 +32,7 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "typescript": "5.9.3",
-    "vitest": "3.2.7",
-    "vite": "7.3.7"
+    "vite": "7.3.7",
+    "vitest": "3.2.7"
   }
 }

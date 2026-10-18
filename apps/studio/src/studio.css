@@ -4,6 +4,7 @@
 @import "@fops/ui/styles/theme.css";
 @import "@fops/ui/styles/compat.css";
 @import "@eqv/ui/styles.css";
+@import "@eqv/editor/styles.css";
 @source "../../../external/feedbackops/packages/ui/src";
 @source ".";
 

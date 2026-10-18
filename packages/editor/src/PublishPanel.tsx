@@ -1,5 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { layoutRevision, type BindingsFile, type MappingConflict, type MappingVersion } from '@eqv/core';
+import { DataTable } from '@eqv/ui';
+import { Button, Input, Label } from '@fops/ui';
 import type { TopViewerProps } from '@eqv/renderer';
 import { describeConflict } from './conflict-text.js';
 import {
@@ -152,22 +154,26 @@ export function PublishPanel(props: PublishPanelProps) {
 
   const status = publishing ? '게시 중…' : failure ?? (receipt ? `게시됨 · ${shortHash(receipt.mappingHash)} · ${receipt.effectiveFrom}` : '');
   const coverage = run?.coverage;
+  // DataTable has no caption slot: the sentence is shown above the table and names it.
+  const diffCaption = `Mapping Version 변경 ${plan?.diff.entries.length ?? 0}건`;
+  const modelCaption = modelState?.rows
+    ? `${equipment.maker}/${equipment.model} 설비 ${modelState.rows.length}대${modelState.unreadable > 0 ? ` · 읽지 못한 설비 ${modelState.unreadable}대` : ''}` : '';
 
   return (
-    <div className="eqv-ed-publish">
-      <section aria-labelledby={`${ids}-dry`} className="eqv-ed-section">
+    <div>
+      <section aria-labelledby={`${ids}-dry`}>
         <h2 id={`${ids}-dry`}>⑤ 검증 (dry-run)</h2>
-        <p className="eqv-ed-hint">저장된 규칙 파일과 현재 레이아웃 초안 기준입니다. 저장하지 않은 자동 초안은 미매핑으로 계산됩니다.</p>
-        {computeError && <p className="eqv-ed-note" role="alert">검증을 계산하지 못했습니다: {computeError}</p>}
+        <p className="text-text-secondary">저장된 규칙 파일과 현재 레이아웃 초안 기준입니다. 저장하지 않은 자동 초안은 미매핑으로 계산됩니다.</p>
+        {computeError && <p className="text-text-warning-label" role="alert">검증을 계산하지 못했습니다: {computeError}</p>}
         {!run && !computeError && <p>계산 중…</p>}
         {run && run.issues.length > 0 && (
-          <ul className="eqv-ed-board-issues" aria-label="Publish를 막는 규칙 문제">
+          <ul className="list-disc pl-6 text-text-warning-label" aria-label="Publish를 막는 규칙 문제">
             {run.issues.map((issue) => <li key={JSON.stringify([issue.code, issue.path])}>{issue.code}: {issue.message}</li>)}
           </ul>
         )}
         {coverage && (
           <>
-            <p className="eqv-ed-coverage">
+            <p>
               참조 {coverage.references.resolved}/{coverage.references.total} ({percent(coverage.references.ratio)}) ·
               {' '}alias {coverage.aliases.resolved}/{coverage.aliases.total} ({percent(coverage.aliases.ratio)}) ·
               {' '}assumed {percent(coverage.assumed.ratio)} · 무시 {coverage.ignored.aliases.length}
@@ -184,12 +190,13 @@ export function PublishPanel(props: PublishPanelProps) {
           <>
             <h3>Mapping Conflict</h3>
             {conflicts.length === 0 ? <p>Mapping Conflict가 없습니다.</p> : (
-              <ul className="eqv-ed-conflicts" aria-label="Mapping Conflict">
+              <ul className="m-0 list-none p-0" aria-label="Mapping Conflict">
                 {conflicts.map((conflict) => (
-                  <li key={conflictKey(conflict)}>
-                    <button type="button" className="eqv-ed-btn" aria-pressed={conflictKey(conflict) === active} onClick={() => toggle(conflict)}>
+                  <li key={conflictKey(conflict)} className="mb-1">
+                    <Button type="button" variant={conflictKey(conflict) === active ? 'secondary' : 'outline'} size="sm"
+                      aria-pressed={conflictKey(conflict) === active} onClick={() => toggle(conflict)}>
                       {describeConflict(conflict)}
-                    </button>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -198,83 +205,77 @@ export function PublishPanel(props: PublishPanelProps) {
         )}
       </section>
 
-      <section aria-labelledby={`${ids}-pub`} className="eqv-ed-section">
+      <section aria-labelledby={`${ids}-pub`}>
         <h2 id={`${ids}-pub`}>⑥ Publish</h2>
-        <p>
-          <label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Label>
             effectiveFrom{' '}
-            <input
+            <Input
               type="text" value={effectiveFrom} spellCheck={false} aria-invalid={effectiveError !== null}
               aria-describedby={effectiveError ? errorId : fromHint ? hintId : undefined}
               onChange={(event) => setFrom({ prefill, value: event.target.value, touched: true })}
             />
-          </label>
-          {fromHint && <span id={hintId} className="eqv-ed-hint"> {fromHint}</span>}
-          {effectiveError && <span id={errorId} className="eqv-ed-error"> {effectiveError}</span>}
-        </p>
+          </Label>
+          {fromHint && <span id={hintId} className="text-text-secondary">{fromHint}</span>}
+          {effectiveError && <span id={errorId} className="font-semibold text-text-danger">{effectiveError}</span>}
+        </div>
         {plan && (
-          <div className="eqv-ed-diff">
+          <div>
             <p>{plan.diff.layout}</p>
             {plan.diff.binding.length > 0 && <ul aria-label="Binding 변경">{plan.diff.binding.map((line) => <li key={line}>{line}</li>)}</ul>}
             {plan.diff.entries.length > 0 && (
-              <div className="eqv-ed-table-scroll" tabIndex={0} role="region" aria-label="Mapping 변경 표">
-                <table className="eqv-ed-table">
-                  <caption>Mapping Version 변경 {plan.diff.entries.length}건</caption>
-                  <thead><tr>{['alias', '변경', '이전', '이후'].map((name) => <th key={name} scope="col">{name}</th>)}</tr></thead>
-                  <tbody>
-                    {plan.diff.entries.map((entry) => (
-                      <tr key={entry.alias}>
-                        <th scope="row">{entry.alias}</th>
-                        <td>{{ added: '추가', removed: '삭제', changed: '변경' }[entry.change]}</td>
-                        <td>{entry.before ?? '—'}</td>
-                        <td>{entry.after ?? '—'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <>
+                <p>{diffCaption}</p>
+                <DataTable label={diffCaption} columns={['alias', '변경', '이전', '이후']}>
+                  {plan.diff.entries.map((entry) => (
+                    <DataTable.Row key={entry.alias}>
+                      <DataTable.Cell rowHeader>{entry.alias}</DataTable.Cell>
+                      <DataTable.Cell>{{ added: '추가', removed: '삭제', changed: '변경' }[entry.change]}</DataTable.Cell>
+                      <DataTable.Cell>{entry.before ?? '—'}</DataTable.Cell>
+                      <DataTable.Cell>{entry.after ?? '—'}</DataTable.Cell>
+                    </DataTable.Row>
+                  ))}
+                </DataTable>
+              </>
             )}
             <p>변경 없음 {plan.diff.unchanged}건 · Mapping Conflict {plan.diff.conflicts}건 (게시를 막지 않습니다)</p>
           </div>
         )}
-        <p>
-          <button type="button" className="eqv-ed-btn eqv-ed-btn-primary" aria-disabled={blocked} aria-describedby={reason ? reasonId : undefined} onClick={publish}>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="primary" aria-disabled={blocked} aria-describedby={reason ? reasonId : undefined} onClick={publish}>
             게시
-          </button>
-          {reason && <span id={reasonId} className="eqv-ed-hint"> {reason}</span>}
-        </p>
-        <p role="status" className="eqv-ed-publish-status">{status}</p>
+          </Button>
+          {reason && <span id={reasonId} className="text-text-secondary">{reason}</span>}
+        </div>
+        <p role="status" className="min-h-6 font-semibold">{status}</p>
       </section>
 
-      <section aria-labelledby={`${ids}-model`} className="eqv-ed-section">
+      <section aria-labelledby={`${ids}-model`}>
         <h2 id={`${ids}-model`}>같은 Model 일괄 dry-run</h2>
-        <button type="button" className="eqv-ed-btn" disabled={modelState?.loading} onClick={loadModel}>같은 Model 일괄 dry-run 실행</button>
+        <Button type="button" variant="outline" disabled={modelState?.loading} onClick={loadModel}>같은 Model 일괄 dry-run 실행</Button>
         {modelState?.loading && <p role="status">계산 중…</p>}
-        {modelState?.error && <p className="eqv-ed-note" role="alert">{modelState.error}</p>}
+        {modelState?.error && <p className="text-text-warning-label" role="alert">{modelState.error}</p>}
         {modelState?.rows && (
-          <div className="eqv-ed-table-scroll" tabIndex={0} role="region" aria-label="같은 Model dry-run 표">
-            <table className="eqv-ed-table">
-              <caption>{equipment.maker}/{equipment.model} 설비 {modelState.rows.length}대{modelState.unreadable > 0 ? ` · 읽지 못한 설비 ${modelState.unreadable}대` : ''}</caption>
-              <thead>
-                <tr>{['equipmentId', '상태', '참조 coverage', 'alias coverage', '충돌', '미매핑 참조', '막는 문제', '오류'].map((name) =>
-                  <th key={name} scope="col">{name}</th>)}</tr>
-              </thead>
-              <tbody>
-                {modelState.rows.map((row) => (
-                  <tr key={row.equipmentId}>
-                    <th scope="row">{renderLink(row.equipmentId)}</th>
-                    <td>{row.status}</td>
-                    <td>{percent(row.referenceRatio)}</td>
-                    <td>{percent(row.aliasRatio)}</td>
-                    <td>{count(row.conflicts)}</td>
-                    <td>{count(row.unmappedReferences)}</td>
-                    <td>{count(row.blockingIssues)}</td>
-                    <td>{row.error ?? '—'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <>
+            <p>{modelCaption}</p>
+            <DataTable
+              label={modelCaption}
+              columns={['equipmentId', '상태', '참조 coverage', 'alias coverage', '충돌', '미매핑 참조', '막는 문제', '오류']}
+            >
+              {modelState.rows.map((row) => (
+                <DataTable.Row key={row.equipmentId}>
+                  <DataTable.Cell rowHeader>{renderLink(row.equipmentId)}</DataTable.Cell>
+                  <DataTable.Cell>{row.status}</DataTable.Cell>
+                  <DataTable.Cell>{percent(row.referenceRatio)}</DataTable.Cell>
+                  <DataTable.Cell>{percent(row.aliasRatio)}</DataTable.Cell>
+                  <DataTable.Cell>{count(row.conflicts)}</DataTable.Cell>
+                  <DataTable.Cell>{count(row.unmappedReferences)}</DataTable.Cell>
+                  <DataTable.Cell>{count(row.blockingIssues)}</DataTable.Cell>
+                  <DataTable.Cell>{row.error ?? '—'}</DataTable.Cell>
+                </DataTable.Row>
+              ))}
+            </DataTable>
+          </>
         )}
       </section>
     </div>
