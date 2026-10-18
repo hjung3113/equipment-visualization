@@ -40,7 +40,7 @@
   }
 }
 
-body { margin: 0; background: var(--eqv-canvas, #f3f7fe); color: var(--eqv-ink, #101828); font-family: system-ui, sans-serif; }
+body { margin: 0; background: var(--eqv-canvas, #f3f7fe); color: var(--eqv-ink, #101828); font-family: var(--font-sans); }
 main a:focus-visible, main button:focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 2px; }
 main h2 { margin: 16px 0 8px; font-size: 1.1rem; }
 main h3 { margin: 12px 0 6px; font-size: 1rem; }
