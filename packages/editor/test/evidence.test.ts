@@ -3,12 +3,11 @@ import { proposeTemplates, typeDictionaryFileSchema } from '@eqv/core';
 import { formatProposalEvidence } from '../src/index.js';
 import { dictionaries, fixtureTemplates, inventory, templates } from './data.js';
 
-it('formats the same sentence as core for every fixture proposal', () => {
+it('formats evidence sentences for every fixture proposal', () => {
   const proposals = proposeTemplates({ inventory: inventory(), dictionaries, templates: fixtureTemplates() });
   expect(proposals).toHaveLength(3);
   expect(formatProposalEvidence(proposals[0]!)).toBe('LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2');
   expect(formatProposalEvidence(proposals[2]!)).toContain('이송 0/7 ✗');
-  for (const proposal of proposals) expect(formatProposalEvidence(proposal)).toBe(proposal.evidence);
 });
 
 it('formats a proposal with no transfers', () => {
@@ -17,7 +16,6 @@ it('formats a proposal with no transfers', () => {
   input.transfers = [];
   const [proposal] = proposeTemplates({ inventory: input, dictionaries, templates: templates().filter(({ id }) => id === 'cluster-single') });
   expect(formatProposalEvidence(proposal!)).toBe('이송 없음, 설명 안 되는 alias 1');
-  expect(formatProposalEvidence(proposal!)).toBe(proposal!.evidence);
 });
 
 it('formats an open-vocabulary Role named like an Object.prototype key', () => {
@@ -28,5 +26,4 @@ it('formats an open-vocabulary Role named like an Object.prototype key', () => {
     entries: [{ moduleType: 'SYN_CONSTRUCTOR', role: 'constructor' }] });
   const [proposal] = proposeTemplates({ inventory: input, dictionaries: [dictionary], templates: templates().filter(({ id }) => id === 'cluster-single') });
   expect(formatProposalEvidence(proposal!)).toBe('CONSTRUCTOR 1 (0–0) ✗, 이송 없음, 설명 안 되는 alias 1');
-  expect(formatProposalEvidence(proposal!)).toBe(proposal!.evidence);
 });

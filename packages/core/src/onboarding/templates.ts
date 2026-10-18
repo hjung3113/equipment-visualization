@@ -14,8 +14,6 @@ export type TemplateProposal = {
   unexplainedAliases: string[];
   exactRoleMatches: number;
   assignments: { alias: string; componentId: string; certainty: 'assumed'; basis: AssignmentBasis }[];
-  /** @deprecated Presentation text; use formatProposalEvidence in @eqv/editor. */
-  evidence: string;
 };
 
 export function proposeTemplates({ inventory, dictionaries, templates }: {
@@ -82,15 +80,10 @@ export function proposeTemplates({ inventory, dictionaries, templates }: {
       return sum + (a && b && componentsLinked(template, a.componentId, b.componentId) ? pair.count : 0);
     }, 0);
     const rolesOutOfRange = roleFit.filter(({ inRange }) => !inRange).length;
-    const evidence = roleFit.map(({ role, observed, drawn, min, max, inRange }) =>
-      inRange && observed === drawn ? `${role.toUpperCase()} ${observed}/${drawn} ✓` :
-        `${role.toUpperCase()} ${observed} (${min}–${max}) ${inRange ? '✓' : '✗'}`);
-    evidence.push(total === 0 ? '이송 없음' : `이송 ${explained}/${total} ${explained === total ? '✓' : '✗'}`,
-      `설명 안 되는 alias ${unexplainedAliases.length}`);
     return { templateId: template.id, rank: 0, fits: rolesOutOfRange === 0, roleFit, rolesOutOfRange,
       transfers: { explained, total, ratio: total === 0 ? null : explained / total }, unexplainedAliases,
       exactRoleMatches: roleFit.filter(({ observed, drawn, inRange }) => inRange && observed === drawn).length,
-      assignments: [...assignments.values()].sort((a, b) => compareNatural(a.alias, b.alias)), evidence: evidence.join(', ') };
+      assignments: [...assignments.values()].sort((a, b) => compareNatural(a.alias, b.alias)) };
   });
   return proposals.sort((a, b) => a.rolesOutOfRange - b.rolesOutOfRange ||
     (b.transfers.ratio ?? -1) - (a.transfers.ratio ?? -1) ||

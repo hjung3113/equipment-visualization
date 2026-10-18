@@ -40,12 +40,11 @@ it('ranks the fixture proposals with hand-counted roles, weighted transfers and 
       ['EFEM_R1', 'efem-robot', 'natural-order'], ['LLA', 'll-a', 'unique-role'], ['LP1', 'lp-a', 'unique-role'],
       ['PM1', 'pm-a', 'natural-order'], ['PM2', 'pm-b', 'natural-order'], ['TM_R1', 'tm-robot', 'natural-order'],
     ].map(([alias, componentId, basis]) => ({ alias, componentId, basis, certainty: 'assumed' })),
-    evidence: 'LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2',
   });
   expect(proposals[1]).toMatchObject({ rolesOutOfRange: 2, transfers: { explained: 7, total: 7, ratio: 1 },
-    unexplainedAliases: ['VIRT_SCH'], evidence: 'LL 1 (2–2) ✗, LP 1/1 ✓, PM 3 (2–8) ✓, ROBOT 2 (3–3) ✗, 이송 7/7 ✓, 설명 안 되는 alias 1' });
+    unexplainedAliases: ['VIRT_SCH'] });
   expect(proposals[2]).toMatchObject({ rolesOutOfRange: 2, transfers: { explained: 0, total: 7, ratio: 0 },
-    unexplainedAliases: ['LLA', 'TM_R1', 'VIRT_SCH'], evidence: 'LL 1 (0–0) ✗, LP 1/1 ✓, PM 3/3 ✓, ROBOT 2 (1–1) ✗, 이송 0/7 ✗, 설명 안 되는 alias 3' });
+    unexplainedAliases: ['LLA', 'TM_R1', 'VIRT_SCH'] });
 });
 
 it.each([
@@ -99,7 +98,7 @@ it('keeps aliases without moduleType unknown and reports absent transfers', () =
   input.transfers = [];
   expect(propose(input, [templates()[0]!])[0]).toEqual({ templateId: 'cluster-single', rank: 1, fits: true,
     roleFit: [], rolesOutOfRange: 0, transfers: { explained: 0, total: 0, ratio: null }, unexplainedAliases: ['pm-a'],
-    exactRoleMatches: 0, assignments: [], evidence: '이송 없음, 설명 안 되는 alias 1' });
+    exactRoleMatches: 0, assignments: [] });
 });
 
 it('generates deterministic generic geometry, integer sites and assumed provenance without capabilities', () => {
@@ -166,5 +165,4 @@ it('uses the 0–0 range for an observed Role without its own cardinality entry'
     entries: [{ moduleType: 'SYN_CONSTRUCTOR', role: 'constructor' }] });
   const [proposal] = proposeTemplates({ inventory: input, dictionaries: [dictionary], templates: [templates()[0]!] });
   expect(proposal!.roleFit).toEqual([{ role: 'constructor', observed: 1, drawn: 0, min: 0, max: 0, inRange: false }]);
-  expect(proposal!.evidence).toBe('CONSTRUCTOR 1 (0–0) ✗, 이송 없음, 설명 안 되는 alias 1');
 });

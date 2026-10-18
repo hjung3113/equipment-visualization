@@ -34,6 +34,7 @@ export { replayTimeline } from './replay/timeline.js';
 export type { TimelineRange, MaterialSpan, ActivitySpan, MarkerSpan, ReplayTimeline } from './replay/timeline.js';
 export { replayKey, sceneStateHash } from './replay/replay-key.js';
 export type { ReplayKey } from './replay/replay-key.js';
+export { canonicalJson } from './canonical.js';
 
 export { aliasMetadataFileSchema } from './inventory/schema.js';
 export type { AliasMetadataFile } from './inventory/schema.js';
