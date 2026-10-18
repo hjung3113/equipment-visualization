@@ -648,6 +648,10 @@ it('renders the host control slot instead of the default buttons, wired to the s
   const zoomed = svg.getAttribute('viewBox');
   expect(zoomed).not.toBe(home);
   expect(screen.getByRole('button', { name: 'host-out' })).toHaveProperty('disabled', false);
+  fireEvent.click(screen.getByRole('button', { name: 'host-in' }));
+  expect(svg.getAttribute('viewBox')).not.toBe(zoomed);
+  fireEvent.click(screen.getByRole('button', { name: 'host-out' }));
+  expect(svg.getAttribute('viewBox')).toBe(zoomed);
   fireEvent.click(screen.getByRole('button', { name: 'host-fit' }));
   expect(svg.getAttribute('viewBox')).toBe(home);
 });

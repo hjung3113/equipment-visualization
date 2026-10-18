@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 const LABELS = { zoomIn: 'In', zoomOut: 'Out', fit: 'Fit' };
 
-/** A viewer stand-in: zoom 1..2, fit returns to 1. */
+/** A viewer stand-in: zoom 1..3 in steps of 1, fit returns to 1. */
 function Harness() {
   const [zoom, setZoom] = useState(1);
   return (
@@ -17,8 +17,8 @@ function Harness() {
       <ViewerZoomControls
         labels={LABELS}
         controls={{
-          zoomIn: () => setZoom(2), zoomOut: () => setZoom(1), fit: () => setZoom(1),
-          canZoomIn: zoom < 2, canZoomOut: zoom > 1, canFit: zoom !== 1,
+          zoomIn: () => setZoom((z) => z + 1), zoomOut: () => setZoom((z) => z - 1), fit: () => setZoom(1),
+          canZoomIn: zoom < 3, canZoomOut: zoom > 1, canFit: zoom !== 1,
         }}
       />
     </>
@@ -37,11 +37,11 @@ it('names three buttons from the labels and disables what the state cannot do', 
 it('each button runs its action', () => {
   render(<Harness />);
   fireEvent.click(screen.getByRole('button', { name: 'In' }));
-  expect(screen.getByTestId('zoom').textContent).toBe('2');
-  expect(screen.getByRole('button', { name: 'In' })).toHaveProperty('disabled', true);
-  fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
-  expect(screen.getByTestId('zoom').textContent).toBe('1');
   fireEvent.click(screen.getByRole('button', { name: 'In' }));
+  expect(screen.getByTestId('zoom').textContent).toBe('3');
+  expect(screen.getByRole('button', { name: 'In' })).toHaveProperty('disabled', true);
   fireEvent.click(screen.getByRole('button', { name: 'Out' }));
+  expect(screen.getByTestId('zoom').textContent).toBe('2');
+  fireEvent.click(screen.getByRole('button', { name: 'Fit' }));
   expect(screen.getByTestId('zoom').textContent).toBe('1');
 });
