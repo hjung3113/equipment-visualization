@@ -80,6 +80,17 @@ it('keeps a layout className given to DataTable together with its own classes', 
   expect(screen.getByRole('cell', { name: 'A' }).className).not.toMatch(/\bbg-/);
 });
 
+it('puts a layout className from the column on its header cell', () => {
+  render(
+    <DataTable label="Occurrence" columns={[{ id: 'eq', header: '설비', className: 'whitespace-nowrap' }]}>
+      <DataTable.Row><DataTable.Cell>EQ-1</DataTable.Cell></DataTable.Row>
+    </DataTable>,
+  );
+  const th = screen.getByRole('columnheader', { name: '설비' });
+  expect(th.className).toContain('whitespace-nowrap');
+  expect(th.className).toContain('bg-surface-card-elevated');
+});
+
 it('leaves a row without onActivate unfocusable and not selectable', () => {
   renderTable();
   const [, row] = screen.getAllByRole('row');

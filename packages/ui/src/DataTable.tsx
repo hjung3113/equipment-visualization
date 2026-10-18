@@ -9,6 +9,8 @@ export interface DataTableColumn {
   align?: 'start' | 'end';
   /** Renders a sort button; needs `onSortChange` on the table. */
   sortable?: boolean;
+  /** Layout classes for the header cell, for example `whitespace-nowrap` on a short heading. */
+  className?: string;
 }
 
 export type DataTableSortDirection = 'ascending' | 'descending';
@@ -103,6 +105,7 @@ export function DataTable({
                     className={cn(
                       'sticky top-0 z-[1] border-b border-border-subtle bg-surface-card-elevated px-3 py-1 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary first:border-l-2 first:border-l-transparent',
                       col.align === 'end' && 'text-right',
+                      col.className,
                     )}
                   >
                     {sortable ? (

@@ -42,11 +42,11 @@ const CANDIDATES: readonly { glyph: string; label: string; tone: StatusBadgeProp
 ];
 
 const COLUMNS = [
-  { id: 'id', header: '설비', sortable: true },
-  { id: 'model', header: 'Model' },
-  { id: 'coverage', header: '커버리지', align: 'end', sortable: true },
-  { id: 'unmapped', header: '미매핑 참조', align: 'end' },
-  { id: 'note', header: '메모' },
+  { id: 'id', header: '설비', sortable: true, className: 'whitespace-nowrap' },
+  { id: 'model', header: 'Model', className: 'whitespace-nowrap' },
+  { id: 'coverage', header: '커버리지', align: 'end', sortable: true, className: 'whitespace-nowrap' },
+  { id: 'unmapped', header: '미매핑 참조', align: 'end', className: 'whitespace-nowrap' },
+  { id: 'note', header: '메모', className: 'min-w-40 max-w-md' },
 ] as const;
 
 function EquipmentTable() {
@@ -71,11 +71,11 @@ function EquipmentTable() {
     >
       {rows.map((row) => (
         <DataTable.Row key={row.id} selected={selected === row.id} onActivate={() => setSelected(row.id)}>
-          <DataTable.Cell rowHeader mono>{row.id}</DataTable.Cell>
-          <DataTable.Cell>{row.model}</DataTable.Cell>
+          <DataTable.Cell rowHeader mono className="whitespace-nowrap">{row.id}</DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap">{row.model}</DataTable.Cell>
           <DataTable.Cell numeric>{row.coverage}%</DataTable.Cell>
           <DataTable.Cell numeric>{row.unmapped}</DataTable.Cell>
-          <DataTable.Cell>{row.note}</DataTable.Cell>
+          <DataTable.Cell className="min-w-40 max-w-md">{row.note}</DataTable.Cell>
         </DataTable.Row>
       ))}
     </DataTable>
@@ -105,7 +105,14 @@ export default function UiGallery() {
     <Page
       title="UI 갤러리"
       description="개발용 · @eqv/ui 컴포넌트 상태 (합성 데이터)"
-      breadcrumb={{ label: '경로', items: [{ key: 'dev', label: 'Dev' }] }}
+      breadcrumb={{
+        label: '경로',
+        items: [
+          { key: 'fleet', label: 'Fleet', href: '/fleet' },
+          { key: 'cluster', label: '아주 긴 이름의 합성 설비 클러스터 상세 경로 라벨이 헤더에서 잘리는지 확인', href: '/layouts' },
+          { key: 'dev', label: 'Dev' },
+        ],
+      }}
     >
       <div data-eqv-gallery="" className="grid gap-6">
         <Panel title="DataTable" subtitle="프레임 · 정렬 · 선택 · 고정 머리 · 상태">
@@ -191,7 +198,7 @@ export default function UiGallery() {
             <p className="m-0 text-xs text-text-muted">제안 매핑 (f2에서 확정)</p>
             <div className="flex flex-wrap gap-2">
               {CANDIDATES.map((c) => (
-                <StatusBadge key={c.glyph} tone={c.tone} icon={c.icon}>{c.glyph} {c.label}</StatusBadge>
+                <StatusBadge key={c.glyph} tone={c.tone} icon={c.icon}>{c.label}</StatusBadge>
               ))}
             </div>
           </div>

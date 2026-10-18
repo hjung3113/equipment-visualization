@@ -45,7 +45,7 @@ export function StateMessage({ tone = 'neutral', icon: Icon, title, body, action
 
 export function LoadingBlock({ label, rows = 3 }: LoadingBlockProps) {
   return (
-    <div role="status" aria-busy="true" className="min-h-24 space-y-2">
+    <div role="status" aria-busy="true" className="relative min-h-24 space-y-2">
       <span className="sr-only">{label}</span>
       {Array.from({ length: rows }, (_, i) => (
         <Skeleton key={i} className={i % 3 === 0 ? 'h-5 w-11/12' : i % 3 === 1 ? 'h-5 w-4/5' : 'h-5 w-2/3'} />

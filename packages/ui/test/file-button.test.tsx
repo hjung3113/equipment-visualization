@@ -33,6 +33,8 @@ it('clicking the button clicks the input', () => {
 it('reports the picked file and resets the input', () => {
   render(<Harness />);
   const input = screen.getByLabelText('Open file') as HTMLInputElement;
+  // jsdom cannot populate a file input's value from selected files; pin the nonempty pre-pick value the reset must clear.
+  Object.defineProperty(input, 'value', { value: 'C:\\fakepath\\layout.svg', writable: true, configurable: true });
   fireEvent.change(input, { target: { files: [new File(['x'], 'layout.svg')] } });
   expect(screen.getByRole('status').textContent).toBe('layout.svg');
   expect(input.value).toBe('');
