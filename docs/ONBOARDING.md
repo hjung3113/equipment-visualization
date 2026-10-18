@@ -66,7 +66,7 @@ type InventoryAlias = {
 4. **순위:** `rolesOutOfRange` 오름차순 → 이송 `ratio` 내림차순(null은 마지막) → 설명되지 않는 alias 수 오름차순 → `exactRoleMatches` 내림차순 → Template ID code-unit 오름차순의 사전식 비교다. `exactRoleMatches`는 범위 안이며 관측 수와 `drawn`이 같은 Role 수다. `rank`는 1부터 시작한다.
 5. **금지·정렬:** Component ID나 label이 alias와 같다는 사실을 매핑 근거로 쓰지 않는다. 자연 정렬은 최대 숫자·비숫자 run을 비교하고 숫자끼리는 정확한 `BigInt`, 나머지는 code-unit 순을 쓴다. run 목록이 접두사면 짧은 목록이 먼저며, 마지막 동률은 원문 code-unit 순이다(`PM2 < PM10`, `PM01 < PM1`). 배정 결과도 alias 자연 정렬 순이다.
 
-**근거 문장:** Role을 대문자로 표기한다. 범위 안이고 관측 수가 `drawn`과 같으면 `ROLE 관측/도형 ✓`, 범위 안이지만 다르면 `ROLE 관측 (최소–최대) ✓`, 범위 밖이면 `ROLE 관측 (최소–최대) ✗`다. 이어 `이송 explained/total ✓`(`explained < total`이면 `✗`), 이송이 없으면 `이송 없음`, 마지막은 `설명 안 되는 alias n`이다. 각 항목은 `, `로 잇고 범위에는 en dash(`–`)를 쓴다. 문장은 표시용이며 `@eqv/editor`의 `formatProposalEvidence(proposal)`이 `roleFit`·`transfers`·`unexplainedAliases`로 만든다(core의 `evidence` 필드는 deprecated). synthetic cluster fixture의 `cluster-single` 제안:
+**근거 문장:** Role을 대문자로 표기한다. 범위 안이고 관측 수가 `drawn`과 같으면 `ROLE 관측/도형 ✓`, 범위 안이지만 다르면 `ROLE 관측 (최소–최대) ✓`, 범위 밖이면 `ROLE 관측 (최소–최대) ✗`다. 이어 `이송 explained/total ✓`(`explained < total`이면 `✗`), 이송이 없으면 `이송 없음`, 마지막은 `설명 안 되는 alias n`이다. 각 항목은 `, `로 잇고 범위에는 en dash(`–`)를 쓴다. 문장은 표시용이며 `@eqv/editor`의 `formatProposalEvidence(proposal)`이 `roleFit`·`transfers`·`unexplainedAliases`로 만든다. synthetic cluster fixture의 `cluster-single` 제안:
 
 ```text
 LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2

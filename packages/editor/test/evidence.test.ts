@@ -6,8 +6,11 @@ import { dictionaries, fixtureTemplates, inventory, templates } from './data.js'
 it('formats evidence sentences for every fixture proposal', () => {
   const proposals = proposeTemplates({ inventory: inventory(), dictionaries, templates: fixtureTemplates() });
   expect(proposals).toHaveLength(3);
-  expect(formatProposalEvidence(proposals[0]!)).toBe('LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2');
-  expect(formatProposalEvidence(proposals[2]!)).toContain('이송 0/7 ✗');
+  expect(proposals.map(formatProposalEvidence)).toEqual([
+    'LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2',
+    'LL 1 (2–2) ✗, LP 1/1 ✓, PM 3 (2–8) ✓, ROBOT 2 (3–3) ✗, 이송 7/7 ✓, 설명 안 되는 alias 1',
+    'LL 1 (0–0) ✗, LP 1/1 ✓, PM 3/3 ✓, ROBOT 2 (1–1) ✗, 이송 0/7 ✗, 설명 안 되는 alias 3',
+  ]);
 });
 
 it('formats a proposal with no transfers', () => {
