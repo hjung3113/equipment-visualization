@@ -61,7 +61,7 @@ export function AppFrame({ appName, brand, items, linkComponent: LinkComponent =
         >
           {labels.skipToContent}
         </a>
-        <div className="flex w-rail shrink-0 flex-col items-center border-r border-border-subtle bg-surface-canvas pt-2">
+        <div className="flex w-rail shrink-0 flex-col items-center gap-2 border-r border-border-subtle bg-surface-sidebar py-3">
           <div aria-hidden className="mb-1 grid size-8 shrink-0 place-items-center rounded-md bg-accent-primary text-text-on-accent">
             <span className="text-sm font-semibold">{brand}</span>
           </div>

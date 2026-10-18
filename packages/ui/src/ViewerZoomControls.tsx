@@ -1,3 +1,4 @@
+import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
 import { Button } from '@fops/ui';
 
 /** Same shape as the renderer's `TopViewerControls`; declared here so this package never imports `@eqv/renderer`. */
@@ -18,9 +19,9 @@ export interface ViewerZoomControlsProps {
 export function ViewerZoomControls({ controls, labels }: ViewerZoomControlsProps) {
   return (
     <div role="group" className="flex gap-1">
-      <Button type="button" variant="outline" size="sm" disabled={!controls.canZoomIn} onClick={controls.zoomIn}>{labels.zoomIn}</Button>
-      <Button type="button" variant="outline" size="sm" disabled={!controls.canZoomOut} onClick={controls.zoomOut}>{labels.zoomOut}</Button>
-      <Button type="button" variant="outline" size="sm" disabled={!controls.canFit} onClick={controls.fit}>{labels.fit}</Button>
+      <Button type="button" variant="secondary" size="toolbar" disabled={!controls.canZoomIn} onClick={controls.zoomIn}><ZoomIn className="size-3.5" aria-hidden />{labels.zoomIn}</Button>
+      <Button type="button" variant="secondary" size="toolbar" disabled={!controls.canZoomOut} onClick={controls.zoomOut}><ZoomOut className="size-3.5" aria-hidden />{labels.zoomOut}</Button>
+      <Button type="button" variant="secondary" size="toolbar" disabled={!controls.canFit} onClick={controls.fit}><Maximize2 className="size-3.5" aria-hidden />{labels.fit}</Button>
     </div>
   );
 }
