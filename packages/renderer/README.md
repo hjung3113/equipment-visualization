@@ -29,12 +29,13 @@ Overlay layers, in order: `interfaces`, `capabilities`, `labels`, `badges`, then
 
 ## TopViewer
 
-`TopViewer` takes every `TopView` prop, plus `selectedId`, `onSelectedChange`, `highlight` and `replay`. Omit `selectedId` and the selection stays inside the viewer, starting empty. Pass `selectedId`, including `null`, to control it. `onSelectedChange` runs when a user changes the selection, in either mode. `replay` is optional; absent or `null` draws no replay layer. A new `layout` object resets the camera, the internal selection, hover and keyboard focus. `width` and `height` keep the zoom and the centre, then clamp the centre into the layout viewBox. `labels`, `layers` and `visibleLevelIds` keep the camera and the selection and rebuild at the current `pxPerUnit`. A `selectedId` that names nothing, or a hidden component, draws no highlight and is not cleared.
+`TopViewer` takes every `TopView` prop, plus `selectedId`, `onSelectedChange`, `highlight`, `replay` and `renderControls`. Omit `selectedId` and the selection stays inside the viewer, starting empty. Pass `selectedId`, including `null`, to control it. `onSelectedChange` runs when a user changes the selection, in either mode. `replay` is optional; absent or `null` draws no replay layer. A new `layout` object resets the camera, the internal selection, hover and keyboard focus. `width` and `height` keep the zoom and the centre, then clamp the centre into the layout viewBox. `labels`, `layers` and `visibleLevelIds` keep the camera and the selection and rebuild at the current `pxPerUnit`. A `selectedId` that names nothing, or a hidden component, draws no highlight and is not cleared.
 
 Zoom is a multiple of the meet-fit scale, from 1 to 8. While it is changing, the last scene stays put and only the `viewBox` moves, so labels and fixed-px marks are briefly the wrong size. 150 ms after the last zoom change the scene rebuilds at the new `pxPerUnit`. Selection, hover and pan avoid a scene build as long as the host keeps `layout`, `layers` and `visibleLevelIds` referentially stable (memoise them); a fresh object or array rebuilds the scene.
 
 | Input | Effect |
 | --- | --- |
+| 확대 / 축소 / 맞춤 slot | `renderControls(controls)` replaces the three buttons below with the host's own: `controls` has `zoomIn()`, `zoomOut()`, `fit()` and `canZoomIn`, `canZoomOut`, `canFit`. The buttons below are the default and render only when the host passes no `renderControls`. Keyboard and wheel zoom are unchanged. |
 | Wheel | Zoom toward the cursor: `zoom * exp(-deltaY * 0.002)`. A line delta counts as 16 px; a page delta counts as the view height. At a limit the page may scroll. |
 | Drag | Pan after the pointer moves at least 4 px. A shorter press is a click. |
 | 확대 | Zoom ×1.25 about the centre. Disabled at ×8. |

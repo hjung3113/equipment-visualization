@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type Keybo
 import type { AliasRulesFile } from '@eqv/core';
 import { Button, Input, Label, OutlineBadge, RadioGroup, RadioGroupItem } from '@fops/ui';
 import { TopViewer, type TopViewerProps } from '@eqv/renderer';
+import { ViewerZoomControls } from '@eqv/ui';
 import {
   addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
   paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,
@@ -427,6 +428,7 @@ export function MappingBoard(props: MappingBoardProps) {
           <TopViewer
             layout={layout} width={VIEW.width} height={VIEW.height} selectedId={viewerId}
             onSelectedChange={(id) => setPick({ kind: 'component', id })} highlight={props.highlight ?? null}
+            renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />}
           />
         </div>
         <div className={PANE} aria-label="선택한 항목" role="region">

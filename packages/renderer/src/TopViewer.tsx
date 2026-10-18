@@ -11,6 +11,16 @@ import { buildScene, type Scene } from './scene.js';
 import { formatNum, renderNode } from './svg.js';
 import type { TopViewProps } from './TopView.js';
 
+/** Zoom actions and capabilities the viewer hands to a host-rendered control slot. */
+export interface TopViewerControls {
+  zoomIn(): void;
+  zoomOut(): void;
+  fit(): void;
+  canZoomIn: boolean;
+  canZoomOut: boolean;
+  canFit: boolean;
+}
+
 export interface TopViewerProps extends TopViewProps {
   /** `undefined` keeps the selection inside the viewer. Any other value, including null, is controlled. */
   selectedId?: string | null;
@@ -20,6 +30,8 @@ export interface TopViewerProps extends TopViewProps {
   highlight?: Highlight | null;
   /** Cursor-time replay layer: activity rings, material tokens, conflicts, illustrative ghosts. Given, never computed here. */
   replay?: ReplayOverlay | null;
+  /** Host slot for the zoom controls. Absent: the default 확대/축소/맞춤 buttons render. */
+  renderControls?: (controls: TopViewerControls) => ReactNode;
 }
 
 interface Drag {
@@ -125,7 +137,7 @@ function staticParts(scene: Scene): {
  * updates `aria-pressed` and the overlay, so a click does not rebuild the picture.
  */
 export function TopViewer({
-  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay,
+  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay, renderControls,
 }: TopViewerProps) {
   const controlled = selectedId !== undefined;
   const [internalSelection, setInternalSelection] = useState<string | null>(null);
@@ -483,9 +495,20 @@ export function TopViewer({
         {parts.chips}
       </svg>
       <div style={{ position: 'absolute', top: 8, right: 8, display: 'flex', gap: 4 }}>
-        <button type="button" aria-label="확대" disabled={zoomInDisabled} style={buttonStyle(zoomInDisabled)} onClick={() => zoomBy(ZOOM_STEP)}>확대</button>
-        <button type="button" aria-label="축소" disabled={zoomOutDisabled} style={buttonStyle(zoomOutDisabled)} onClick={() => zoomBy(1 / ZOOM_STEP)}>축소</button>
-        <button type="button" aria-label="맞춤" disabled={fitDisabled} style={buttonStyle(fitDisabled)} onClick={fit}>맞춤</button>
+        {renderControls ? renderControls({
+          zoomIn: () => zoomBy(ZOOM_STEP),
+          zoomOut: () => zoomBy(1 / ZOOM_STEP),
+          fit,
+          canZoomIn: !zoomInDisabled,
+          canZoomOut: !zoomOutDisabled,
+          canFit: !fitDisabled,
+        }) : (
+          <>
+            <button type="button" aria-label="확대" disabled={zoomInDisabled} style={buttonStyle(zoomInDisabled)} onClick={() => zoomBy(ZOOM_STEP)}>확대</button>
+            <button type="button" aria-label="축소" disabled={zoomOutDisabled} style={buttonStyle(zoomOutDisabled)} onClick={() => zoomBy(1 / ZOOM_STEP)}>축소</button>
+            <button type="button" aria-label="맞춤" disabled={fitDisabled} style={buttonStyle(fitDisabled)} onClick={fit}>맞춤</button>
+          </>
+        )}
       </div>
     </div>
   );

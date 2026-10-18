@@ -628,3 +628,26 @@ it('draws a replay layer only when replay is set, between capabilities and highl
     .filter((name): name is string => ['capabilities', 'replay', 'highlight', 'interaction'].includes(name ?? ''));
   expect(order).toEqual(['capabilities', 'replay', 'highlight', 'interaction']);
 });
+
+it('renders the host control slot instead of the default buttons, wired to the same zoom', () => {
+  const { svg } = mount({
+    layout,
+    renderControls: (c) => (
+      <>
+        <button type="button" disabled={!c.canZoomIn} onClick={c.zoomIn}>host-in</button>
+        <button type="button" disabled={!c.canZoomOut} onClick={c.zoomOut}>host-out</button>
+        <button type="button" disabled={!c.canFit} onClick={c.fit}>host-fit</button>
+      </>
+    ),
+  });
+  expect(screen.queryByRole('button', { name: '확대' })).toBeNull();
+  const home = svg.getAttribute('viewBox');
+  expect(screen.getByRole('button', { name: 'host-out' })).toHaveProperty('disabled', true);
+  expect(screen.getByRole('button', { name: 'host-fit' })).toHaveProperty('disabled', true);
+  fireEvent.click(screen.getByRole('button', { name: 'host-in' }));
+  const zoomed = svg.getAttribute('viewBox');
+  expect(zoomed).not.toBe(home);
+  expect(screen.getByRole('button', { name: 'host-out' })).toHaveProperty('disabled', false);
+  fireEvent.click(screen.getByRole('button', { name: 'host-fit' }));
+  expect(svg.getAttribute('viewBox')).toBe(home);
+});

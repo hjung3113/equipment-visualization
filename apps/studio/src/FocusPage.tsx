@@ -9,7 +9,7 @@ import {
 } from '@eqv/replay';
 import { loadFocus, type FocusLoad } from './focus-data.js';
 import { Button, Checkbox, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@fops/ui';
-import { EvidenceBadge, Page } from '@eqv/ui';
+import { EvidenceBadge, Page, ViewerZoomControls } from '@eqv/ui';
 import { Link, hrefFor } from './router.js';
 
 type Range = { from: SiteWallClock; to: SiteWallClock };
@@ -203,7 +203,8 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
                   <h2>Top View{view.illustrative && <> <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge></>}</h2>
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}
-                      selectedId={view.selectedComponentId} onSelectedChange={(id) => patch({ selectedComponentId: id })} />
+                      selectedId={view.selectedComponentId} onSelectedChange={(id) => patch({ selectedComponentId: id })}
+                      renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
                   ) : <p>이 시점에 적용된 Binding이 없어 Top View를 표시할 수 없습니다</p>}
                 </section>
                 <div className="min-w-0 flex-1 basis-72">
