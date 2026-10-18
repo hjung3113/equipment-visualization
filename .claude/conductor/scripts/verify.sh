@@ -6,7 +6,7 @@
 #   2. package boundary: no `@ap/` or `analytics-platform` import under apps/ or packages/ outside
 #      packages/platform-adapter;
 #   3. asset-check.py over assets/ (JSON/SVG structure and safety);
-#   4. worker-hygiene.sh (no new suppressions; whitespace churn reported).
+#   4. global worker-hygiene.py (no new suppressions; whitespace churn reported).
 # Logs go to $WAVE_STATE/verify-<basename>/; prints a summary table and exits with the first failing code.
 here=$(cd "$(dirname "$0")" && pwd)
 : "${WAVE_STATE:?set WAVE_STATE}"; wt=${1:?usage: verify.sh <worktree>}; log=$WAVE_STATE/verify-$(basename "$wt")
@@ -41,7 +41,7 @@ for s in lint typecheck test build; do
 done
 run_check boundary "$log/boundary.log" boundary
 run_check asset-check "$log/asset-check.log" python3 "$here/asset-check.py" "$wt"
-run_check worker-hygiene "$log/worker-hygiene.log" bash "$here/worker-hygiene.sh" "$wt"
+run_check worker-hygiene "$log/worker-hygiene.log" python3 "$HOME/.agents/skills/issue-wave-conductor/scripts/worker-hygiene.py" "$wt"
 
 {
   printf '%-16s %s\n' 'Check' 'Exit'

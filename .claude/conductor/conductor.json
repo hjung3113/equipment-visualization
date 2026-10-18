@@ -1,0 +1,247 @@
+{
+  "review_plan": {
+    "base": "origin/develop",
+    "test": {
+      "regex": "(__tests__/|\\.test\\.|\\.spec\\.|(^|/)tests?/|fixtures/|test-support/)",
+      "not_prefix": [
+        "assets/"
+      ]
+    },
+    "baseline": {
+      "regex": "(^|/)tests?/visual/.*\\.png$|__snapshots__/"
+    },
+    "docs_only": {
+      "doc": {
+        "any": [
+          {
+            "suffix": [
+              ".md"
+            ]
+          },
+          {
+            "prefix": [
+              "docs/"
+            ]
+          }
+        ]
+      },
+      "also_allowed": [
+        "test",
+        "baseline"
+      ],
+      "require_doc": true
+    },
+    "reviewed_tests": "non_test_or_baseline",
+    "skip_imports": false,
+    "reason_flags": true,
+    "ux": {
+      "required": [
+        {
+          "baseline": true,
+          "label": "visual baseline: {file}"
+        },
+        {
+          "match": {
+            "any": [
+              {
+                "prefix": [
+                  "apps/studio/",
+                  "packages/renderer/",
+                  "packages/editor/"
+                ],
+                "regex": "\\.(tsx|jsx|vue|svelte|css|html)$"
+              },
+              {
+                "prefix": [
+                  "assets/"
+                ],
+                "suffix": [
+                  ".svg"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "optional": [
+        {
+          "any": [
+            {
+              "prefix": [
+                "apps/studio/",
+                "packages/renderer/",
+                "packages/editor/",
+                "packages/platform-adapter/"
+              ]
+            },
+            {
+              "regex": "(?i)(^|/)(theme|tokens?)(/|\\.)"
+            }
+          ],
+          "not_suffix": [
+            ".md"
+          ]
+        }
+      ]
+    },
+    "flags": [
+      {
+        "name": "schema",
+        "scope": "non_test_or_baseline",
+        "match": {
+          "regex": "(?i)^assets/.*\\.json$|\\.schema\\.json$|^packages/core/.*schema"
+        },
+        "reason": "schema: {file}"
+      },
+      {
+        "name": "schema_without_adr",
+        "derived": {
+          "flag": "schema",
+          "absent_prefix": [
+            "docs/adr/"
+          ]
+        }
+      },
+      {
+        "name": "replay",
+        "scope": "non_test_or_baseline",
+        "match": {
+          "prefix": [
+            "packages/replay/"
+          ],
+          "not_suffix": [
+            ".md"
+          ]
+        },
+        "reason": "replay: {file}",
+        "line": {
+          "regex": "(?i)\\b(observed|derived|illustrative|unknown)\\b.*\\b(fidelity|evidence)\\b|\\b(fidelity|evidence)\\b.*\\b(observed|derived|illustrative|unknown)\\b",
+          "file": {
+            "not_suffix": [
+              ".md"
+            ]
+          },
+          "reason": "replay (evidence fidelity line): {file}"
+        }
+      },
+      {
+        "name": "boundary",
+        "scope": "non_test_or_baseline",
+        "match": {
+          "any": [
+            {
+              "suffix": [
+                "package.json"
+              ]
+            },
+            {
+              "prefix": [
+                "packages/platform-adapter/"
+              ]
+            }
+          ]
+        },
+        "reason": "boundary: {file}",
+        "line": {
+          "regex": "@ap/|analytics-platform",
+          "file": {
+            "not_prefix": [
+              "packages/platform-adapter/"
+            ],
+            "not_suffix": [
+              ".md"
+            ]
+          },
+          "reason": "boundary (platform reference outside the adapter): {file}"
+        }
+      },
+      {
+        "name": "instructions",
+        "match": {
+          "any": [
+            {
+              "prefix": [
+                ".claude/",
+                "skills/"
+              ]
+            },
+            {
+              "suffix": [
+                "AGENTS.md",
+                "CLAUDE.md"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "worker_hygiene": {
+    "base": "origin/develop",
+    "product_paths": [
+      "apps",
+      "packages"
+    ],
+    "tracked_excludes": [
+      ":(exclude)*.png"
+    ],
+    "forbidden_pattern": "biome-ignore|eslint-disable|@ts-ignore|@ts-nocheck",
+    "forbidden_header": "NEW lint/type suppression (forbidden by the implementation rules):",
+    "reason_allowed": false,
+    "suppressions_no_growth": null,
+    "churn_paths": [
+      "."
+    ],
+    "pass_line": "worker-hygiene: no new suppression"
+  },
+  "wave_status": {
+    "preview_mode": "pid",
+    "docker_containers": true
+  },
+  "launch": {
+    "main_env": "EV_MAIN",
+    "base": "origin/develop",
+    "branch_prefix": "feature/",
+    "orca_setup": "skip",
+    "install": [
+      {
+        "run": [
+          "git",
+          "submodule",
+          "update",
+          "--init",
+          "--quiet"
+        ],
+        "stdin_null": true,
+        "fail": "git submodule update failed"
+      }
+    ],
+    "install_after_close": [
+      {
+        "run": [
+          "pnpm",
+          "install",
+          "--frozen-lockfile"
+        ],
+        "when_file": "pnpm-lock.yaml",
+        "log": ".review/install.log",
+        "stdin_null": true,
+        "fail": "pnpm install failed (see {worktree}/.review/install.log)"
+      }
+    ],
+    "first_line": "Read {rules} first.",
+    "templates": [
+      {
+        "dest": ".review/00-IMPL-RULES.md",
+        "shared": "impl-rules.md",
+        "addendum": "addenda/impl-rules.md",
+        "in_rules": true
+      },
+      {
+        "dest": ".review/00-REVIEW-RULES.md",
+        "shared": "review-rules.md",
+        "addendum": "addenda/review-rules.md"
+      }
+    ]
+  }
+}
