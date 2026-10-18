@@ -8,7 +8,7 @@ Overrides and additions to the numbered rules above.
   what the task asks.
 - Rule 1 checks: `vitest run <files>` plus the package's `typecheck` script when one exists. For assets, run
   `python3 .claude/conductor/scripts/asset-check.py . <changed asset paths>`.
-- **No suppressions:** no `biome-ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck` (`worker-hygiene.sh`
+- **No suppressions:** no `biome-ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck` (`worker-hygiene.py`
   fails on them).
 - **Domain invariants (AGENTS.md "Architecture constraints") — a violation is a blocker:**
   - `core`, renderer, editor and replay never import `@ap/*`, analytics-platform code or a company parser; only
