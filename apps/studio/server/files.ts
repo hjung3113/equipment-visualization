@@ -5,6 +5,8 @@ import {
   layoutRevision, mappingVersionSchema, observedInventorySchema, validateAliasRules, validateBindings, validateLayout,
   validateTypeDictionary, verifyMappingHash,
 } from '@eqv/core';
+import { ApiError, fail, NAME } from './errors.js';
+import { createImportApi } from './import.js';
 
 export interface FileApiRequest {
   method: string;
@@ -17,18 +19,9 @@ export interface FileApiResponse {
   body: unknown;
 }
 
-const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const LAYOUT_ID = /^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/;
 const HEX = /^[0-9a-f]{64}$/;
 
-class ApiError extends Error {
-  constructor(readonly status: number, message: string, readonly issues?: unknown[]) {
-    super(message);
-  }
-}
-const fail = (status: number, message: string, issues?: unknown[]): never => {
-  throw new ApiError(status, message, issues);
-};
 
 type Validated = { ok: boolean; issues?: unknown[] };
 const check = (result: Validated, message: string): void => {
@@ -141,7 +134,7 @@ function relativeSegments(value: string | null, kind: 'file' | 'dir'): string[] 
 const missing = (error: unknown): boolean => (error as NodeJS.ErrnoException).code === 'ENOENT';
 const contained = (root: string, target: string): boolean => target === root || target.startsWith(root + sep);
 
-export function createFileApi({ root }: { root: string }) {
+export function createFileApi({ root, repoRoot }: { root: string; repoRoot?: string }) {
   async function rootReal(): Promise<string> {
     try {
       return await realpath(root);
@@ -150,9 +143,23 @@ export function createFileApi({ root }: { root: string }) {
     }
   }
 
-  async function readTarget(segments: string[]): Promise<{ real: string; absolute: string }> {
-    const base = await rootReal();
-    const absolute = join(root, ...segments);
+  /** True when the data root has no `templates/`: reads then come from the bundled catalog (needs `repoRoot`). */
+  async function usesBundledCatalog(): Promise<boolean> {
+    if (repoRoot === undefined) return false;
+    return lstat(join(root, 'templates')).then(() => false, (error) => missing(error));
+  }
+
+  async function readTarget(segments: string[]): Promise<{ real: string; absolute: string; base: string }> {
+    let base = await rootReal();
+    let absolute = join(root, ...segments);
+    if (repoRoot !== undefined && segments[0] === 'templates' && await usesBundledCatalog()) {
+      try {
+        base = await realpath(join(repoRoot, 'assets/templates'));
+      } catch {
+        return fail(404, 'Not found');
+      }
+      absolute = join(repoRoot, 'assets', ...segments);
+    }
     let real: string;
     try {
       real = await realpath(absolute);
@@ -160,11 +167,11 @@ export function createFileApi({ root }: { root: string }) {
       return missing(error) ? fail(404, 'Not found') : fail(500, 'Cannot resolve path');
     }
     if (!contained(base, real)) fail(403, 'Path escapes the assets root');
-    return { real, absolute };
+    return { real, absolute, base };
   }
 
   async function get(segments: string[], kind: 'file' | 'dir'): Promise<FileApiResponse> {
-    const { real } = await readTarget(segments);
+    const { real, base } = await readTarget(segments);
     const info = await stat(real);
     if (kind === 'file') {
       if (!info.isFile()) fail(400, 'Not a file');
@@ -175,7 +182,6 @@ export function createFileApi({ root }: { root: string }) {
       }
     }
     if (!info.isDirectory()) fail(400, 'Not a directory');
-    const base = await rootReal();
     const entries: { name: string; kind: 'file' | 'dir' }[] = [];
     for (const name of await readdir(real)) {
       try {
@@ -261,9 +267,13 @@ export function createFileApi({ root }: { root: string }) {
     return { created: !existed, conflict: false };
   }
 
-  function parseBody(request: FileApiRequest): unknown {
+  function assertJsonType(request: FileApiRequest): void {
     const type = Object.entries(request.headers).find(([name]) => name.toLowerCase() === 'content-type')?.[1];
     if (!type || !/^application\/json\s*(;.*)?$/i.test(type)) fail(415, 'Content-Type must be application/json');
+  }
+
+  function parseBody(request: FileApiRequest): unknown {
+    assertJsonType(request);
     try {
       return JSON.parse(request.body) as unknown;
     } catch {
@@ -305,6 +315,10 @@ export function createFileApi({ root }: { root: string }) {
     return { status: written.created ? 201 : 200, body: { path: segments.join('/'), revision } };
   }
 
+  const importApi = createImportApi({
+    root, repoRoot, rootReal, readTarget, assertWritable, write, assertJsonType, usesBundledCatalog,
+  });
+
   async function dispatch(request: FileApiRequest): Promise<FileApiResponse> {
     const url = new URL(request.url, 'http://studio.local');
     const { searchParams } = url;
@@ -321,6 +335,7 @@ export function createFileApi({ root }: { root: string }) {
       if (request.method === 'POST') return publish(request);
       return fail(405, 'Method not allowed');
     }
+    if (url.pathname.startsWith('/api/import/')) return importApi.dispatch(request, url);
     return fail(404, 'Unknown endpoint');
   }
 
