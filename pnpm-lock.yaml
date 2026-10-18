@@ -344,7 +344,13 @@ importers:
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
+      '@eqv/ui':
+        specifier: workspace:*
+        version: link:../ui
     devDependencies:
+      '@fops/ui':
+        specifier: workspace:*
+        version: link:../../external/feedbackops/packages/ui
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2

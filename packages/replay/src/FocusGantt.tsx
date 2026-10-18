@@ -1,7 +1,8 @@
-import { useId, useMemo, useRef, type KeyboardEvent, type PointerEvent } from 'react';
+import { useId, useMemo, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import {
   millisToWallClock, wallClockToMillis, type EquipmentLayoutDocument, type OccurrenceBatch, type ReplayTimeline, type SiteWallClock,
 } from '@eqv/core';
+import { Legend, type LegendItem } from '@eqv/ui';
 import { buildLanes, type Bar } from './lanes.js';
 import { ACTIVITY_KO, EVIDENCE_KO, clock, type StateEvidence } from './words.js';
 
@@ -121,12 +122,30 @@ export function FocusGantt({
     return `${target} ${what} ${clock(bar.from)}–${end} · ${evidence}`;
   };
 
+  const swatch = (fill: string, stroke: string, pattern?: string) => (
+    <svg width="26" height="12" aria-hidden="true">
+      <rect width="26" height="12" fill={fill} stroke={stroke} />
+      {pattern !== undefined && <rect width="26" height="12" fill={`url(#${pattern})`} />}
+    </svg>
+  );
+  const legend: LegendItem[] = [
+    ...EVIDENCES.map((evidence) => ({
+      swatch: swatch(BASE.material!.fill, BASE.material!.stroke, `${prefix}-${evidence}`), label: `${EVIDENCE_KO[evidence]} — ${PATTERN_TEXT[evidence]}`,
+    })),
+    ...(['processing', 'post-processing', 'function'] as const).map((activity) => ({
+      swatch: swatch(BASE[activity]!.fill, BASE[activity]!.stroke), label: `활동 ${ACTIVITY_KO[activity]}`,
+    })),
+    { swatch: swatch(BASE.material!.fill, BASE.material!.stroke), label: '물질 위치' },
+    ...['Binding 경계 — 실선', 'Watermark — 점선, Watermark 이후 — 음영', '시각 역전 — 음영 띠', '점유 충돌 — 레인 외곽선',
+      '▸ 구간 끝에서 열림 — 끝 미확정', '▼ 축 위 눈금 — Data Quality Issue'].map((label) => ({ swatch: null, label })),
+  ];
+
   const timeAnomalyKeys = new Set<string>();
   let componentLabel = '';
   return (
-    <div className="eqv-rp-gantt">
-      <div className="eqv-rp-gantt-scroll" role="region" aria-label="Gantt 차트" tabIndex={0}>
-      <svg viewBox={`0 0 ${WIDTH} ${plotBottom + PAD}`} width="100%" style={{ minWidth: WIDTH }} role="group" aria-label="Component lane Gantt" className="eqv-rp-svg">
+    <div className="text-text-primary">
+      <div className="max-w-full overflow-x-auto focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring" role="region" aria-label="Gantt 차트" tabIndex={0}>
+      <svg viewBox={`0 0 ${WIDTH} ${plotBottom + PAD}`} width="100%" style={{ '--eqv-rp-min': `${WIDTH}px` } as CSSProperties} role="group" aria-label="Component lane Gantt" className="eqv-rp-svg">
         <defs>
           <pattern id={`${prefix}-observed`} width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="none" /></pattern>
           <pattern id={`${prefix}-derived`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -184,7 +203,7 @@ export function FocusGantt({
           const current = lane.holdingSiteId === undefined && lane.componentId !== null && lane.componentId === selectedComponentId;
           return (
             <g key={lane.id} role="group" aria-label={`레인 ${lane.holdingSiteId === undefined ? lane.label : `${componentLabel} ${lane.label}`}`}
-              aria-current={current ? 'true' : undefined} data-lane-id={lane.id} className={current ? 'eqv-rp-lane eqv-rp-lane-current' : 'eqv-rp-lane'}>
+              aria-current={current ? 'true' : undefined} data-lane-id={lane.id} className={current ? 'eqv-rp-lane-current' : undefined}>
               <rect className="eqv-rp-lane-bg" x={0} y={top} width={LABEL_W + PLOT_W} height={height} />
               {canExpand ? (
                 <g role="button" tabIndex={0} aria-expanded={isOpen} aria-label={`${lane.label} Holding Site ${isOpen ? '접기' : '펼치기'}`}
@@ -262,33 +281,7 @@ export function FocusGantt({
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onPointerLeave={onPointerLeave} />
       </svg>
       </div>
-      <ul className="eqv-rp-legend" aria-label="범례">
-        {EVIDENCES.map((evidence) => (
-          <li key={evidence}>
-            <svg width="26" height="12" aria-hidden="true">
-              <rect width="26" height="12" fill={BASE.material!.fill} stroke={BASE.material!.stroke} />
-              <rect width="26" height="12" fill={`url(#${prefix}-${evidence})`} />
-            </svg>
-            {EVIDENCE_KO[evidence]} — {PATTERN_TEXT[evidence]}
-          </li>
-        ))}
-        {(['processing', 'post-processing', 'function'] as const).map((activity) => (
-          <li key={activity}>
-            <svg width="26" height="12" aria-hidden="true"><rect width="26" height="12" fill={BASE[activity]!.fill} stroke={BASE[activity]!.stroke} /></svg>
-            활동 {ACTIVITY_KO[activity]}
-          </li>
-        ))}
-        <li>
-          <svg width="26" height="12" aria-hidden="true"><rect width="26" height="12" fill={BASE.material!.fill} stroke={BASE.material!.stroke} /></svg>
-          물질 위치
-        </li>
-        <li>Binding 경계 — 실선</li>
-        <li>Watermark — 점선, Watermark 이후 — 음영</li>
-        <li>시각 역전 — 음영 띠</li>
-        <li>점유 충돌 — 레인 외곽선</li>
-        <li>▸ 구간 끝에서 열림 — 끝 미확정</li>
-        <li>▼ 축 위 눈금 — Data Quality Issue</li>
-      </ul>
+      <Legend label="범례" items={legend} />
     </div>
   );
 }

@@ -1,6 +1,11 @@
 import type { SceneState } from '@eqv/core';
 import type { IllustrativeGhost } from './ghosts.js';
-import { ACTIVITY_KO, EVIDENCE_KO, UNKNOWN_LANE } from './words.js';
+import { Evidence } from './Evidence.js';
+import { ACTIVITY_KO, UNKNOWN_LANE } from './words.js';
+
+const P = 'my-0.5 break-words';
+const H4 = 'mb-0.5 mt-2 text-sm text-text-secondary';
+const UL = 'my-0.5 list-disc pl-5';
 
 export interface CursorStateListProps {
   state: SceneState;
@@ -12,35 +17,35 @@ export interface CursorStateListProps {
 export function CursorStateList({ state, illustrative = [] }: CursorStateListProps) {
   const active = state.components.filter((c) => c.activity !== 'no recorded activity');
   return (
-    <section className="eqv-rp-state" aria-label="커서 시점 상태">
-      <h3>커서 시점 상태 ({state.at})</h3>
-      <p>{state.binding ? `Binding: ${state.binding.layoutId} · ${state.binding.mappingHash}` : '적용된 Binding 없음'}</p>
-      <h4>Component 활동</h4>
-      {active.length === 0 ? <p>기록된 활동 없음</p> : (
-        <ul>
+    <section className="text-text-primary" aria-label="커서 시점 상태">
+      <h3 className="mb-1.5 text-base font-semibold">커서 시점 상태 ({state.at})</h3>
+      <p className={P}>{state.binding ? `Binding: ${state.binding.layoutId} · ${state.binding.mappingHash}` : '적용된 Binding 없음'}</p>
+      <h4 className={H4}>Component 활동</h4>
+      {active.length === 0 ? <p className={P}>기록된 활동 없음</p> : (
+        <ul className={UL}>
           {active.map((c) => (
             <li key={c.componentId}>
-              {c.componentId}: {ACTIVITY_KO[c.activity as keyof typeof ACTIVITY_KO]} · 활동 근거 {EVIDENCE_KO[c.activityEvidence]}
+              {c.componentId}: {ACTIVITY_KO[c.activity as keyof typeof ACTIVITY_KO]} · 활동 근거 <Evidence level={c.activityEvidence} />
             </li>
           ))}
         </ul>
       )}
-      <h4>물질</h4>
-      {state.materials.length === 0 ? <p>열려 있는 물질 없음</p> : (
-        <ul>
+      <h4 className={H4}>물질</h4>
+      {state.materials.length === 0 ? <p className={P}>열려 있는 물질 없음</p> : (
+        <ul className={UL}>
           {state.materials.map((m) => (
             <li key={m.key}>
               {m.kind} {m.id ?? '익명'}: {m.location === null ? UNKNOWN_LANE
                 : `${m.location.componentId}${m.location.holdingSiteId === undefined ? '' : ` / ${m.location.holdingSiteId}`}`}
-              {' '}· 위치 근거 {EVIDENCE_KO[m.locationEvidence]} · 식별 근거 {EVIDENCE_KO[m.identityEvidence]}
+              {' '}· 위치 근거 <Evidence level={m.locationEvidence} /> · 식별 근거 <Evidence level={m.identityEvidence} />
             </li>
           ))}
         </ul>
       )}
       {illustrative.length > 0 && (
         <>
-          <h4>예시 이동</h4>
-          <ul>
+          <h4 className={H4}>예시 이동</h4>
+          <ul className={UL}>
             {illustrative.map((ghost) => (
               <li key={ghost.materialKey}>{ghost.label}: {ghost.fromComponentId} → {ghost.toComponentId} · 예시 이동 (관측 아님)</li>
             ))}
@@ -49,8 +54,8 @@ export function CursorStateList({ state, illustrative = [] }: CursorStateListPro
       )}
       {state.markers.length > 0 && (
         <>
-          <h4>표식</h4>
-          <ul>
+          <h4 className={H4}>표식</h4>
+          <ul className={UL}>
             {state.markers.map((marker) => {
               switch (marker.kind) {
                 case 'after-watermark': return <li key={marker.kind}>Watermark 이후 ({marker.watermarkAt})</li>;

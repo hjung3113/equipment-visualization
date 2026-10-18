@@ -62,7 +62,7 @@ it('ignores moves after a press released elsewhere, and keeps the Gantt at its d
   fireEvent.pointerDown(slider, { clientX: 500, pointerId: 1, buttons: 1 });
   fireEvent.pointerMove(slider, { clientX: 700, pointerId: 1, buttons: 0 });
   expect(onCursorChange).toHaveBeenCalledTimes(1);
-  expect(svg.style.minWidth).toBe('972px');
+  expect(svg.style.getPropertyValue('--eqv-rp-min')).toBe('972px');
   expect(svg.closest('[role="region"]')?.getAttribute('aria-label')).toBe('Gantt 차트');
 });
 

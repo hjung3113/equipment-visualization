@@ -62,6 +62,6 @@ EV의 모든 화면은 독립 Studio에서 돌 때도 analytics-platform(AP)과 
 #73 슬라이스 a가 열린 점을 확인했고, 소유자 규칙(2026-10-18: `@fops/ui`에 없는 UI 패턴은 EV 컴포넌트나 레이아웃을 먼저 만들고 화면이 그것을 쓴다)이 생겼다. 이에 따라 위 "패키지별 범위"의 일부를 바꾼다.
 
 1. **DOM UI 패키지(`@eqv/ui`, `@eqv/replay`, `@eqv/editor`)는 TypeScript 소스로 소비한다**(`exports` → `./src/…`, `tsc` 산출물 없음). `@fops/ui`와 AP 패키지와 같다. 이유: `rootDir: src`인 `tsc` 빌드는 `@fops/ui` 소스를 포함할 수 없고(TS6059), 두 호스트(Studio Vite, AP Vite)가 모두 소스를 컴파일한다. `core`·`renderer`는 `dist` 빌드를 유지한다. `@fops/ui`를 import하는 패키지는 `lib`에 `DOM.Iterable`을 넣는다(슬라이스 a에서 `useHorizontalOverflow.ts`가 없이는 TS2488이었다).
-2. **DOM UI 패키지는 패키지 CSS 클래스가 아니라 `@fops/ui` 테마의 Tailwind 유틸리티로 스타일한다.** 이유: 디자인 린트(`@shadcn/lint`, PR #77)가 검사할 수 있어야 한다. 각 패키지는 `@source "./"`가 든 `src/styles.css`를 내고, 호스트가 `@fops/ui` 테마 뒤에서 import한다(Studio는 `studio.css`, AP는 어댑터 호스트). 이는 위 "두 패키지는 자체 Tailwind 유틸리티 클래스를 쓰지 않는다 … 호스트가 이 패키지 트리를 `@source`로 훑지 않아도 된다" 문장을 대체한다.
+2. **DOM UI 패키지는 패키지 CSS 클래스가 아니라 `@fops/ui` 테마의 Tailwind 유틸리티로 스타일한다.** 이유: 디자인 린트(`@shadcn/lint`, PR #77)가 검사할 수 있어야 한다. 각 패키지는 `@source "./"`가 든 `src/styles.css`를 내고, 호스트가 `@fops/ui` 테마 뒤에서 import한다(Studio는 `studio.css`, AP는 어댑터 호스트). 이는 위 "두 패키지는 자체 Tailwind 유틸리티 클래스를 쓰지 않는다 … 호스트가 이 패키지 트리를 `@source`로 훑지 않아도 된다" 문장을 대체한다. `--eqv-*`를 계속 쓰는 SVG 그리기 클래스(`@eqv/replay`의 `eqv-rp-*`)는 패키지 `styles.css`에 Tailwind `@utility`로 선언해 디자인 린트가 알게 한다.
 3. **`@fops/ui`에 없는 패턴의 EV 컴포넌트는 `@eqv/ui`에 둔다.** `@fops/ui` 프리미티브와 토큰 위에 짓고, `@eqv/core` 타입을 import할 수 있다. 이유: 화면마다 표·배지를 따로 꾸미면 플랫폼과 갈라진다. `core`·`renderer`는 `@eqv/ui`를 import하지 않는다(ESLint 경계 규칙).
-4. **`replay`·`editor`는 슬라이스 d에서 (1)–(2)로 옮긴다.** 그때까지 두 패키지의 CSS는 그대로이고, 디자인 린트의 기존 지적은 억제 목록에 남는다.
+4. **`replay`·`editor`는 슬라이스 d에서 (1)–(2)로 옮긴다**(`replay`는 d1에서 옮겼다). `editor`는 그때까지 CSS가 그대로이고, 디자인 린트의 기존 지적은 억제 목록에 남는다.

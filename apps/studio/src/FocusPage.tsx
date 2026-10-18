@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type KeyboardEvent } from 'react';
+import { useEffect, useId, useMemo, useState } from 'react';
 import {
   replayTimeline, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis, type ReplayInput, type ReplayTimeline, type SceneState, type SiteWallClock,
 } from '@eqv/core';
@@ -8,7 +8,8 @@ import {
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
 import { loadFocus, type FocusLoad } from './focus-data.js';
-import { Page } from '@eqv/ui';
+import { Button, Checkbox, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@fops/ui';
+import { EvidenceBadge, Page } from '@eqv/ui';
 import { Link, hrefFor } from './router.js';
 
 type Range = { from: SiteWallClock; to: SiteWallClock };
@@ -51,26 +52,6 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
   return { range: { from: a.data, to: b.data } };
 }
 
-function Tabs({ base, active, onChange }: { base: string; active: Tab; onChange: (tab: Tab) => void }) {
-  const onKey = (event: KeyboardEvent<HTMLElement>) => {
-    const index = TABS.findIndex((tab) => tab.id === active);
-    const next = event.key === 'ArrowRight' ? (index + 1) % TABS.length : event.key === 'ArrowLeft' ? (index + TABS.length - 1) % TABS.length
-      : event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : -1;
-    if (next < 0) return;
-    event.preventDefault();
-    onChange(TABS[next]!.id);
-    document.getElementById(`${base}-${TABS[next]!.id}`)?.focus();
-  };
-  return (
-    <div role="tablist" aria-label="Focus 상세" className="focus-tabs" onKeyDown={onKey}>
-      {TABS.map((tab) => (
-        <button key={tab.id} id={`${base}-${tab.id}`} type="button" role="tab" aria-selected={tab.id === active}
-          aria-controls={`${base}-panel`} tabIndex={tab.id === active ? 0 : -1} onClick={() => onChange(tab.id)}>{tab.label}</button>
-      ))}
-    </div>
-  );
-}
-
 export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
   equipmentId: string; entityType: string | null; anchor: string | null;
   /** Frame clock for playback; tests only, the browser's by default. */
@@ -81,7 +62,7 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [tab, setTab] = useState<Tab>('list');
-  const tabsId = useId();
+  const rangeId = useId();
   // Everything below belongs to the route's equipmentId and entry key: a change clears it during render, and a late
   // result of a previous id is dropped by the effect cleanup.
   if (view.equipmentId !== equipmentId) setView(fresh());
@@ -186,10 +167,16 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
           <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
           {[...result.notices, ...(entry?.notice ? [entry.notice] : [])].map((notice) => <p key={notice} role="status">{notice}</p>)}
           {range && (
-            <form aria-label="구간" className="focus-range" onSubmit={(event) => { event.preventDefault(); apply(); }}>
-              <label>시작 <input type="text" value={draft.from} onChange={(event) => patch({ draft: { ...draft, from: event.target.value } })} /></label>
-              <label>끝 <input type="text" value={draft.to} onChange={(event) => patch({ draft: { ...draft, to: event.target.value } })} /></label>
-              <button type="submit">적용</button>
+            <form aria-label="구간" className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2" onSubmit={(event) => { event.preventDefault(); apply(); }}>
+              <div className="flex items-center gap-2">
+                <Label htmlFor={`${rangeId}-from`}>시작</Label>
+                <Input id={`${rangeId}-from`} type="text" className="w-72" value={draft.from} onChange={(event) => patch({ draft: { ...draft, from: event.target.value } })} />
+              </div>
+              <div className="flex items-center gap-2">
+                <Label htmlFor={`${rangeId}-to`}>끝</Label>
+                <Input id={`${rangeId}-to`} type="text" className="w-72" value={draft.to} onChange={(event) => patch({ draft: { ...draft, to: event.target.value } })} />
+              </div>
+              <Button type="submit">적용</Button>
               {view.rangeError && <span role="alert">{view.rangeError}</span>}
             </form>
           )}
@@ -207,18 +194,21 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
                   onPrevious: stepIndex > 0 ? () => moveStep(stepIndex - 1) : null,
                   onNext: stepIndex >= 0 && stepIndex < steps.length - 1 ? () => moveStep(stepIndex + 1) : null,
                   step: sequenceSeq === null ? null : { seq: sequenceSeq, at: state.at } }} />
-              <label className="focus-illustrative">
-                <input type="checkbox" checked={view.illustrative} onChange={(event) => patch({ illustrative: event.target.checked })} /> 예시 이동 표시
-              </label>
-              <div className="focus-top">
-                <section aria-label="Top View">
-                  <h2>Top View{view.illustrative && <span className="eqv-rp-illustrative-badge">예시 이동</span>}</h2>
+              <div className="mb-2 flex items-center gap-2">
+                <Checkbox id={`${rangeId}-illustrative`} checked={view.illustrative} onCheckedChange={(value) => patch({ illustrative: value === true })} />
+                <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
+              </div>
+              <div className="flex flex-wrap items-start gap-4">
+                <section aria-label="Top View" className="max-w-full flex-none overflow-auto">
+                  <h2>Top View{view.illustrative && <> <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge></>}</h2>
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}
                       selectedId={view.selectedComponentId} onSelectedChange={(id) => patch({ selectedComponentId: id })} />
                   ) : <p>이 시점에 적용된 Binding이 없어 Top View를 표시할 수 없습니다</p>}
                 </section>
-                <CursorStateList state={state} {...(ghosts ? { illustrative: ghosts } : {})} />
+                <div className="min-w-0 flex-1 basis-72">
+                  <CursorStateList state={state} {...(ghosts ? { illustrative: ghosts } : {})} />
+                </div>
               </div>
               <section aria-label="Gantt">
                 <h2>Gantt</h2>
@@ -231,15 +221,17 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
                     return { ...previous, expanded };
                   })} />
               </section>
-              <Tabs base={tabsId} active={tab} onChange={setTab} />
-              <div role="tabpanel" id={`${tabsId}-panel`} className="focus-panel" aria-labelledby={`${tabsId}-${tab}`}>
-                {tab === 'list' && (
+              <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-4">
+                <TabsList aria-label="Focus 상세">
+                  {TABS.map((item) => <TabsTrigger key={item.id} value={item.id}>{item.label}</TabsTrigger>)}
+                </TabsList>
+                <TabsContent value="list">
                   <OccurrenceList batch={ok!.batch} timeline={timelineInput.timeline} bindings={ok!.bindings} appliedSeq={state.appliedSeq}
                     selectedOccurrenceId={selectedId} onSelectOccurrence={(id) => select(id, true)} />
-                )}
-                {tab === 'quality' && <DataQualityList timeline={timelineInput.timeline} onSelectOccurrence={(id) => select(id, true)} />}
-                {tab === 'detail' && <EvidenceDetail batch={ok!.batch} state={state} selectedOccurrenceId={selectedId} />}
-              </div>
+                </TabsContent>
+                <TabsContent value="quality"><DataQualityList timeline={timelineInput.timeline} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
+                <TabsContent value="detail"><EvidenceDetail batch={ok!.batch} state={state} selectedOccurrenceId={selectedId} /></TabsContent>
+              </Tabs>
             </>
           )}
         </>
