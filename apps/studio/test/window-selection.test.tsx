@@ -279,7 +279,23 @@ describe('large-window guard', () => {
     await rm(join(root, 'observations/eq-synth-03/windows'), { recursive: true, force: true });
     await addWindow(root, 'eq-synth-03', big);
     page(undefined, 'eq-synth-03', await hexOf(big));
-    await screen.findByText(/Occurrence 2,000개 중 .*번째 500개만 표시합니다/);
+    await screen.findByText(/Occurrence 2,000개 중 .*번째 500개를 표시합니다/);
     expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBe(500);
+  });
+
+  it('an untimed anchor Occurrence in a 2,000-Occurrence window stays in the capped list', async () => {
+        const occurrences = Array.from({ length: 2000 }, (_, i) => ({
+      id: `occ-gen-${i}`, equipmentId: batch.equipmentId, kind: 'PROCESS' as const,
+      start: { at: null, seq: i + 1, evidence: 'unknown' as const },
+      end: null,
+      location: { moduleAlias: 'WC2' }, synthetic: false, source: { parserContractVersion: 'synthetic-1', dataGeneration: 'g1' },
+    }));
+    const big = occurrenceBatchSchema.parse({ ...batch, occurrences, issues: [], watermark: { seq: 2001, at: batch.to } });
+    await rm(join(root, 'observations/eq-synth-03/windows'), { recursive: true, force: true });
+    await addWindow(root, 'eq-synth-03', big);
+    render(<FocusPage equipmentId="eq-synth-03" sampleWindow={await hexOf(big)} entityType="occurrence" anchor="occ-gen-1000" />);
+    await screen.findByText(/Occurrence 2,000개 중 .*번째 500개를 표시합니다/);
+    expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBe(500);
+    expect(row('occ-gen-1000')).not.toBeNull();
   });
 });

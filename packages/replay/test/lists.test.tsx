@@ -146,7 +146,7 @@ const many = (count: number) => {
   return { ...batch, occurrences, issues: [] };
 };
 const ids = () => Array.from(document.querySelectorAll('tbody tr')).map((tr) => tr.getAttribute('data-occurrence-id'));
-const NOTICE = /Occurrence 2,000개 중 .*번째 500개만 표시합니다/;
+const NOTICE = /Occurrence 2,000개 중 .*번째 500개를 표시합니다/;
 
 it('caps a large Occurrence list at 500 rows around the cursor row, with a notice, and moves the slice with the selection', () => {
   const big = many(2000);
@@ -154,7 +154,7 @@ it('caps a large Occurrence list at 500 rows around the cursor row, with a notic
   const { rerender } = render(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId={null} />);
   expect(ids()).toHaveLength(500);
   expect(ids()[0]).toBe('occ-gen-750');
-  expect(screen.getByRole('status').textContent).toBe('Occurrence 2,000개 중 751–1,250번째 500개만 표시합니다. 범위를 좁히면 모두 볼 수 있습니다.');
+  expect(screen.getByRole('status').textContent).toBe('Occurrence 2,000개 중 751–1,250번째 500개를 표시합니다. 커서를 옮기거나 목록에서 위아래로 이동하면 표시 범위가 따라갑니다.');
   rerender(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId="occ-gen-1700" />);
   expect(ids()).toContain('occ-gen-1700');
   expect(ids()).toHaveLength(500);
@@ -172,10 +172,39 @@ it('keeps ArrowDown/ArrowUp working at the edge of a capped slice by moving the 
   expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe('occ-gen-500');
 });
 
+const props2 = { timeline, bindings: null, appliedSeq: 1, onSelectOccurrence: vi.fn() };
+const tabStops = () => document.querySelectorAll('tbody tr[tabindex="0"]');
+
+it.each([['ArrowDown', 'occ-gen-500'], ['ArrowUp', 'occ-gen-1499']])(
+  'keeps the selection and a Tab stop after %s past a slice edge, and offers a way back to the selection', (key, to) => {
+    const selected = key === 'ArrowDown' ? 'occ-gen-0' : 'occ-gen-1999';
+    const start = key === 'ArrowDown' ? 0 : 1500;
+    render(<OccurrenceList {...props2} batch={many(2000)} selectedOccurrenceId={selected} />);
+    const edge = document.querySelector<HTMLElement>(`tr[data-occurrence-id="${key === 'ArrowDown' ? 'occ-gen-499' : 'occ-gen-1500'}"]`)!;
+    expect(edge).not.toBeNull();
+    edge.focus();
+    fireEvent.keyDown(edge, { key });
+    expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe(to);
+    expect(ids()).not.toContain(selected);
+    expect(tabStops().length).toBe(1);
+    expect(screen.getByRole('status').textContent).toContain('선택한 Occurrence는 표시 범위 밖에 있습니다');
+    fireEvent.click(screen.getByRole('button', { name: '선택한 Occurrence로 이동' }));
+    expect(ids()).toContain(selected);
+    expect(ids()[0]).toBe(`occ-gen-${start}`);
+    expect(document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id')).toBe(selected);
+    expect(tabStops().length).toBe(1);
+  });
+
+it('centres a capped list on the anchor Occurrence, also when it is untimed and the cursor is elsewhere', () => {
+  render(<OccurrenceList {...props2} batch={many(2000)} appliedSeq={2 * 1999 + 1} anchorOccurrenceId="occ-gen-1000" selectedOccurrenceId={null} />);
+  expect(ids()).toContain('occ-gen-1000');
+  expect(ids()).toHaveLength(500);
+});
+
 it('caps the Data Quality list too, around the cursor', () => {
   const issues = Array.from({ length: 2000 }, (_, i) => ({ id: `dqi-${i}`, issueType: 'unmatched-end', seq: i + 1, at: null }));
   render(<DataQualityList timeline={{ issues } as unknown as typeof timeline} appliedSeq={1000} onSelectOccurrence={vi.fn()} />);
   expect(screen.getAllByRole('row')).toHaveLength(501);
   expect(screen.getByText('dqi-999')).toBeTruthy();
-  expect(screen.getByRole('status').textContent).toMatch(/Data Quality Issue 2,000개 중 .*번째 500개만 표시합니다/);
+  expect(screen.getByRole('status').textContent).toMatch(/Data Quality Issue 2,000개 중 .*번째 500개를 표시합니다/);
 });

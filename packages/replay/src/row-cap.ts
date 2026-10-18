@@ -13,4 +13,4 @@ export function rowSlice(total: number, center: number, max: number = ROW_CAP): 
 
 /** 1-based range in the notice shown above a capped list. */
 export const capNotice = (what: string, total: number, slice: RowSlice) =>
-  `${what} ${total.toLocaleString('en-US')}개 중 ${(slice.start + 1).toLocaleString('en-US')}–${slice.end.toLocaleString('en-US')}번째 ${(slice.end - slice.start).toLocaleString('en-US')}개만 표시합니다. 범위를 좁히면 모두 볼 수 있습니다.`;
+  `${what} ${total.toLocaleString('en-US')}개 중 ${(slice.start + 1).toLocaleString('en-US')}–${slice.end.toLocaleString('en-US')}번째 ${(slice.end - slice.start).toLocaleString('en-US')}개를 표시합니다. 커서를 옮기거나 목록에서 위아래로 이동하면 표시 범위가 따라갑니다.`;
