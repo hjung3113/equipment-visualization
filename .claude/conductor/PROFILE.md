@@ -23,9 +23,12 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 
 ## Launch
 
-- `scripts/launch-worker.sh <n> <slug>`:
+- `$ENGINE` = `~/.agents/skills/issue-wave-conductor/scripts` (global engines). This repo's rules live in
+  `.claude/conductor/conductor.json` + `addenda/`; the engine tests live in the engine repo
+  (`~/orca/workspaces/conductor-engine`), not here.
+- `python3 $ENGINE/launch-worker.py <n> <slug>` (reads `conductor.json`):
   - creates an Orca worktree from `origin/develop` and renames its branch to `feature/<n>-<slug>`;
-  - copies `templates/impl-rules.md` and `templates/review-rules.md` into `.review/` and writes `.review/W-<n>-TASK.md`
+  - builds `.review/00-IMPL-RULES.md` and `.review/00-REVIEW-RULES.md` from the shared templates plus `addenda/` and writes `.review/W-<n>-TASK.md`
     (the rules pointer, then `$WAVE_BRIEFS/<n>-task.md`);
   - initialises submodules (`external/feedbackops`, ADR-0008), closes setup shells, runs `pnpm install
     --frozen-lockfile` when a lockfile exists, applies `PRE_ADD`;
@@ -50,7 +53,7 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 ## Verify
 
 1. `scripts/verify.sh <worktree>` (needs `WAVE_STATE`): root `lint`, `typecheck`, `test`, `build` when defined, the
-   package-boundary check, `asset-check.py` and `worker-hygiene.sh`; prints a summary.
+   package-boundary check, `asset-check.py` and `$ENGINE/worker-hygiene.py`; prints a summary.
 2. **Replay changes:** tests exist for each replay case the brief listed (ties, open occurrences, Data Quality
    Issues, Time Anomalies, Watermark and Binding boundaries, invalid mappings, duplicate occupancy, evidence
    fidelity); run the reducer suite twice, a different result is a determinism failure.
@@ -66,11 +69,11 @@ bound to `<label>.localhost`, and a second one from the wave baseline worktree (
 
 ## Review
 
-- Plan: `python3 scripts/review-plan.py <checkout> [--base origin/develop] [--head HEAD]`; rules pinned by
-  `test-review-plan.py`. Docs-only changes get no roles.
+- Plan: `python3 $ENGINE/review-plan.py <checkout> --config .claude/conductor/conductor.json [--base origin/develop] [--head HEAD]`;
+  rules in `conductor.json` `review_plan`. Docs-only changes get no roles.
 - Flags go into every reviewer task: `boundary` (check the package boundary first), `replay`, `schema` (and
   `schema_without_adr`), `instructions` (`.claude/**`, `skills/**`, `AGENTS.md`, `CLAUDE.md`; global step 7a).
-- Rules: `review-final` → `templates/review-rules.md`, copied to `.review/00-REVIEW-RULES.md`; `review-ux` →
+- Rules: `review-final` → shared `review-rules.md` + `addenda/review-rules.md`, built to `.review/00-REVIEW-RULES.md`; `review-ux` →
   global `~/.agents/agents/review-ux.md` with § Review lens: UX; `review-quality` → global
   `~/.agents/agents/review-quality.md` with § Review lens: quality.
 - Perf: no measurement tool and no `review-perf` rules yet; put any performance angle in the code reviewer's task.
@@ -172,17 +175,17 @@ check.
 
 | Tool | What it does | Tests |
 | --- | --- | --- |
-| `scripts/launch-worker.sh <n> <slug>` | Launch above | – |
+| `$ENGINE/launch-worker.py <n> <slug>` | Launch above | – |
 | `scripts/verify.sh <worktree>` | Verify step 1; logs in `$WAVE_STATE/verify-<basename>/` | – |
 | `scripts/release-gate.sh <checkout>` | fetches `develop`/`main`, requires a clean checkout at `origin/develop`, runs the gate, prints the release PR command without creating or merging it | – |
 | `scripts/asset-check.py <checkout> [paths...]` | JSON duplicate keys and validity; SVG well-formedness, `viewBox`, unique ids, no `<script>`/`<foreignObject>`/`on*=`/`javascript:`/external `href` | `test-asset-check.py` |
-| `scripts/review-plan.py` | Review plan; refuses uncommitted changes | `test-review-plan.py` |
-| `scripts/worker-hygiene.sh <worktree>` | new suppressions fail; whitespace churn is reported (`HYGIENE_BASE`, default `origin/develop`) | `test-worker-hygiene.py` |
-| `scripts/wave-status.py [--json] [--prs] [--state-dir <dir>]` | read-only snapshot of workers, previews, worktrees, containers and open PRs; reads `$WAVE_STATE` or every recent session `wave/` dir of this repo | `test-wave-status.py` |
-| `templates/brief-check.md` | brief self-check and brief-check items | – |
+| `$ENGINE/review-plan.py` | Review plan; refuses uncommitted changes | engine repo |
+| `$ENGINE/worker-hygiene.py <worktree>` | new suppressions fail; whitespace churn is reported (base `origin/develop`, from `conductor.json`) | engine repo |
+| `$ENGINE/wave-status.py [--json] [--prs] [--state-dir <dir>]` | read-only snapshot of workers, previews, worktrees, containers and open PRs; reads `$WAVE_STATE` or every recent session `wave/` dir of this repo | engine repo |
+| `addenda/brief-check.md` | EV items for the shared brief self-check (`templates/brief-check.md` in the skill) | – |
 | `ls docs/adr` | next ADR number (check open branches too) | – |
 
-Run the tests with `python3 .claude/conductor/scripts/test-<name>.py`; CI does not run them.
+Run `asset-check.py`'s test with `python3 .claude/conductor/scripts/test-asset-check.py`; CI does not run it. Engine tests are in the engine repo.
 
 ### Not yet ported
 
