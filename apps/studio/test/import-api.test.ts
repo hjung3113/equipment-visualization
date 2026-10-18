@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
+import { chmod, mkdir, mkdtemp, readFile, readdir, rm, stat, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -391,6 +391,100 @@ describe('path security', () => {
     await register();
     const result = await call('PUT', `/api/import/type-dictionary${query(params)}`, await fixture('synth-maker-b.synth-wet.type-dictionary.json'));
     expect(result.status).toBe(400);
+    expect(await exists(join(root, 'onboarding'))).toBe(false);
+  });
+});
+
+describe('writes stay inside the approved root', () => {
+  let fakeRepo: string;
+  beforeEach(async () => {
+    fakeRepo = join(base, 'repo');
+    await mkdir(join(fakeRepo, 'assets'), { recursive: true });
+  });
+  const repoFiles = () => readdir(fakeRepo, { recursive: true });
+
+  it('403 and no file in the repo when a subdirectory is swapped for a link into it after the guard', async () => {
+    await mkdir(join(root, 'equipment'));
+    const swapped = createFileApi({
+      root, repoRoot: fakeRepo,
+      hooks: {
+        beforeWrite: async () => {
+          await rm(join(root, 'equipment'), { recursive: true });
+          await symlink(join(fakeRepo, 'assets'), join(root, 'equipment'));
+        },
+      },
+    });
+    const before = await repoFiles();
+    const result = await send(swapped, 'POST', '/api/import/equipment', await fixture('eq-synth-03.equipment.json'));
+    expect(result.status).toBe(403);
+    expect(await repoFiles()).toEqual(before);
+  });
+
+  it('writes through the root resolved at the guard when the data-root link is retargeted into the repo', async () => {
+    const link = join(base, 'link');
+    await symlink(root, link);
+    const swapped = createFileApi({
+      root: link, repoRoot: fakeRepo,
+      hooks: {
+        beforeWrite: async () => {
+          await rm(link);
+          await symlink(join(fakeRepo, 'assets'), link);
+        },
+      },
+    });
+    const before = await repoFiles();
+    expect((await send(swapped, 'POST', '/api/import/equipment', await fixture('eq-synth-03.equipment.json'))).status).toBe(201);
+    expect(await repoFiles()).toEqual(before);
+    expect(await exists(join(root, 'equipment/eq-synth-03.json'))).toBe(true);
+  });
+
+  it('a failed create leaves no final or temp file, and the retry succeeds', async () => {
+    let fail = true;
+    const flaky = createFileApi({
+      root, repoRoot: repo,
+      hooks: { afterTempWrite: async () => { if (fail) throw new Error('ENOSPC'); } },
+    });
+    const body = await fixture('eq-synth-03.equipment.json');
+    expect((await send(flaky, 'POST', '/api/import/equipment', body)).status).toBe(500);
+    expect(await readdir(join(root, 'equipment'))).toEqual([]);
+    fail = false;
+    expect((await send(flaky, 'POST', '/api/import/equipment', body)).status).toBe(201);
+    expect(await readdir(join(root, 'equipment'))).toEqual(['eq-synth-03.json']);
+  });
+});
+
+describe('stored-file failures', () => {
+  it.each<[string, string, number]>([
+    ['unreadable record file', 'equipment/eq-synth-03.json', 0o000],
+    ['unreadable equipment directory', 'equipment', 0o000],
+    ['equipment directory without search permission', 'equipment', 0o600],
+  ])('422 without the absolute path: %s', async (_name, target, mode) => {
+    await register();
+    await chmod(join(root, target), mode);
+    try {
+      const results = [await register(), await postWindow(await fixture('eq-synth-03.w1.batch.json'))];
+      for (const result of results) {
+        expect(result.status).toBe(422);
+        expect(result.body.error).toContain('equipment');
+        expect(JSON.stringify(result.body)).not.toContain(base);
+      }
+    } finally {
+      await chmod(join(root, target), target === 'equipment' ? 0o755 : 0o644);
+    }
+  });
+
+  it('keeps 404 for an unregistered id', async () => {
+    expect((await postWindow(await fixture('eq-synth-03.w1.batch.json'))).status).toBe(404);
+  });
+});
+
+describe('type dictionary needs a correctly named record', () => {
+  it('422 when the only record with this maker/model is misnamed, writing nothing', async () => {
+    await mkdir(join(root, 'equipment'));
+    await writeFile(join(root, 'equipment/wrong-name.json'), await fixture('eq-synth-03.equipment.json'));
+    const result = await putDictionary(await fixture('synth-maker-b.synth-wet.type-dictionary.json'));
+    expect(result.status).toBe(422);
+    expect(result.body.error).toContain('equipment/wrong-name.json');
     expect(await exists(join(root, 'onboarding'))).toBe(false);
   });
 });

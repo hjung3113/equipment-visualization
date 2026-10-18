@@ -6,7 +6,7 @@ import {
   type EquipmentRecord, type SampleWindowRef,
 } from '@eqv/core';
 import { ApiError, fail, NAME } from './errors.js';
-import type { FileApiRequest, FileApiResponse } from './files.js';
+import type { FileApiRequest, FileApiResponse, WriteScope } from './files.js';
 
 const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
 const REPO_REASON = '저장소 밖 경로를 EQV_STUDIO_ASSETS로 지정하세요';
@@ -19,16 +19,26 @@ interface ImportDeps {
   rootReal(): Promise<string>;
   readTarget(segments: string[]): Promise<{ real: string }>;
   assertWritable(segments: string[]): Promise<void>;
-  write(segments: string[], value: unknown, immutable: boolean, createOnly?: boolean):
+  write(segments: string[], value: unknown, immutable: boolean, createOnly: boolean | undefined, scope: WriteScope):
     Promise<{ created: boolean; conflict: boolean; exists?: boolean }>;
   assertJsonType(request: FileApiRequest): void;
   usesBundledCatalog(): Promise<boolean>;
 }
 
-type Guard = { enabled: true; insideGitWorkTree: boolean } | { enabled: false; reason: string; status: number; insideGitWorkTree: false };
+type Guard = { enabled: true; insideGitWorkTree: boolean; scope: WriteScope } | { enabled: false; reason: string; status: number; insideGitWorkTree: false };
 
 const contained = (root: string, target: string): boolean => target === root || target.startsWith(root + sep);
-const reasonOf = (error: unknown): string => error instanceof Error ? error.message : 'unreadable';
+/** A reason that never carries a path: raw filesystem messages include the absolute file name. */
+const reasonOf = (error: unknown): string => {
+  if (error instanceof SyntaxError) return 'not valid JSON';
+  const code = (error as NodeJS.ErrnoException | null)?.code;
+  return typeof code === 'string' ? code : 'unreadable';
+};
+/** A stored file that cannot be resolved or read is invalid stored data (422); containment (403) and prepared 422s are kept. */
+const storedFailure = (error: unknown, path: string): never => {
+  if (error instanceof ApiError && error.status !== 404 && error.status !== 500) throw error;
+  return fail(422, `${path}: ${error instanceof ApiError ? 'unreadable' : reasonOf(error)}`);
+};
 
 export function createImportApi(deps: ImportDeps) {
   const { root, repoRoot } = deps;
@@ -61,7 +71,7 @@ export function createImportApi(deps: ImportDeps) {
       return off('repository root unknown', 403);
     }
     if (contained(repoPath, rootPath)) return off(REPO_REASON, 403);
-    return { enabled: true, insideGitWorkTree: await insideGitWorkTree(rootPath) };
+    return { enabled: true, insideGitWorkTree: await insideGitWorkTree(rootPath), scope: { base: rootPath, repoReal: repoPath } };
   }
 
   async function status(): Promise<FileApiResponse> {
@@ -78,9 +88,10 @@ export function createImportApi(deps: ImportDeps) {
     };
   }
 
-  async function assertEnabled(): Promise<void> {
+  /** The data root is resolved once here; every write of the request goes through this scope. */
+  async function assertEnabled(): Promise<WriteScope> {
     const state = await guard();
-    if (!state.enabled) fail(state.status, state.reason);
+    return state.enabled ? state.scope : fail(state.status, state.reason);
   }
 
   function queryName(query: URLSearchParams, key: string): string {
@@ -106,10 +117,14 @@ export function createImportApi(deps: ImportDeps) {
       real = (await deps.readTarget(segments)).real;
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return [];
-      throw error;
+      return storedFailure(error, segments.join('/'));
     }
-    if (!(await stat(real)).isDirectory()) return fail(422, `${segments.join('/')}: not a directory`);
-    return (await readdir(real)).sort();
+    try {
+      if (!(await stat(real)).isDirectory()) return fail(422, `${segments.join('/')}: not a directory`);
+      return (await readdir(real)).sort();
+    } catch (error) {
+      return storedFailure(error, segments.join('/'));
+    }
   }
 
   async function readStored(segments: string[]): Promise<unknown> {
@@ -119,8 +134,7 @@ export function createImportApi(deps: ImportDeps) {
       if (!(await stat(real)).isFile()) return fail(422, `${path}: not a file`);
       return JSON.parse(await readFile(real, 'utf8')) as unknown;
     } catch (error) {
-      if (error instanceof ApiError) throw error;
-      return fail(422, `${path}: ${reasonOf(error)}`);
+      return storedFailure(error, path);
     }
   }
 
@@ -145,7 +159,7 @@ export function createImportApi(deps: ImportDeps) {
       await deps.readTarget(['equipment', name]);
     } catch (error) {
       if (error instanceof ApiError && error.status === 404) return fail(404, 'Equipment is not registered');
-      throw error;
+      return storedFailure(error, `equipment/${name}`);
     }
     if ((await readRecord(name)).equipmentId !== equipmentId) fail(404, 'Equipment is not registered');
   }
@@ -153,7 +167,7 @@ export function createImportApi(deps: ImportDeps) {
   const sameIgnoringCase = (a: string, b: string): boolean => a !== b && a.toLowerCase() === b.toLowerCase();
 
   async function registerEquipment(request: FileApiRequest): Promise<FileApiResponse> {
-    await assertEnabled();
+    const scope = await assertEnabled();
     const body = receive(request);
     const parsed = equipmentRecordSchema.safeParse(body);
     if (!parsed.success) return fail(400, 'Invalid equipment record', parsed.error.issues);
@@ -171,13 +185,13 @@ export function createImportApi(deps: ImportDeps) {
     if (byModel) return collision('model', byModel.record.model);
     const segments = ['equipment', `${equipmentId}.json`];
     await deps.assertWritable(segments);
-    const written = await deps.write(segments, body, false, true);
+    const written = await deps.write(segments, body, false, true, scope);
     if (written.exists) return { status: 412, body: { error: 'A file already exists at this path' } };
     return { status: 201, body: { path: segments.join('/'), created: true } };
   }
 
   async function importWindow(request: FileApiRequest, query: URLSearchParams): Promise<FileApiResponse> {
-    await assertEnabled();
+    const scope = await assertEnabled();
     const equipmentId = queryName(query, 'equipmentId');
     const body = receive(request);
     await requireRegistered(equipmentId);
@@ -201,7 +215,7 @@ export function createImportApi(deps: ImportDeps) {
     }
     const segments = [...dir, `${result.summary.name}${WINDOW_FILE}`];
     await deps.assertWritable(segments);
-    const written = await deps.write(segments, body, true);
+    const written = await deps.write(segments, body, true, undefined, scope);
     if (written.conflict) return { status: 409, body: { error: 'A different file already exists at this path' } };
     return {
       status: written.created ? 201 : 200,
@@ -210,7 +224,7 @@ export function createImportApi(deps: ImportDeps) {
   }
 
   async function putAliasMetadata(request: FileApiRequest, query: URLSearchParams): Promise<FileApiResponse> {
-    await assertEnabled();
+    const scope = await assertEnabled();
     const equipmentId = queryName(query, 'equipmentId');
     const body = receive(request);
     const parsed = aliasMetadataFileSchema.safeParse(body);
@@ -220,13 +234,13 @@ export function createImportApi(deps: ImportDeps) {
     const segments = ['observations', equipmentId, 'alias-metadata.json'];
     await deps.assertWritable(segments);
     const createOnly = Object.entries(request.headers).some(([name, value]) => name.toLowerCase() === 'if-none-match' && value?.trim() === '*');
-    const written = await deps.write(segments, body, false, createOnly);
+    const written = await deps.write(segments, body, false, createOnly, scope);
     if (written.exists) return { status: 412, body: { error: 'A file already exists at this path' } };
     return { status: written.created ? 201 : 200, body: { path: segments.join('/'), created: written.created } };
   }
 
   async function putTypeDictionary(request: FileApiRequest, query: URLSearchParams): Promise<FileApiResponse> {
-    await assertEnabled();
+    const scope = await assertEnabled();
     const maker = queryName(query, 'maker');
     const model = queryName(query, 'model');
     const body = receive(request);
@@ -234,12 +248,15 @@ export function createImportApi(deps: ImportDeps) {
     if (!checked.ok) return fail(400, 'Invalid type dictionary', checked.issues);
     if (!isDeepStrictEqual((body as { scope?: unknown }).scope, { level: 'model', maker, model })) fail(400, 'Scope does not match the query');
     const records = await readRecords();
-    if (!records.some(({ record }) => record.maker === maker && record.model === model)) {
-      return fail(404, 'No registered equipment has this maker and model');
+    const matching = records.filter(({ record }) => record.maker === maker && record.model === model);
+    if (matching.length === 0) return fail(404, 'No registered equipment has this maker and model');
+    // Registered = the file name is the equipmentId; a misnamed record does not register its maker/model.
+    if (!matching.some(({ stem, record }) => stem === record.equipmentId)) {
+      return fail(422, `equipment/${matching[0]!.stem}.json: file name does not match its equipmentId`);
     }
     const segments = ['onboarding', 'scopes', 'model', maker, model, 'type-dictionary.json'];
     await deps.assertWritable(segments);
-    const written = await deps.write(segments, body, false, true);
+    const written = await deps.write(segments, body, false, true, scope);
     if (written.exists) return { status: 412, body: { error: 'A file already exists at this path' } };
     return { status: 201, body: { path: segments.join('/'), created: true } };
   }
