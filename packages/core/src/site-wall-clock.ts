@@ -4,6 +4,19 @@ import { z } from 'zod';
 export const siteWallClockSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/);
 export type SiteWallClock = z.infer<typeof siteWallClockSchema>;
 
+// Why a string is not a Site Wall-clock (ADR-0009). Diagnosis only: it never fixes, truncates or pads the value, and
+// it is exactly the regex above (calendar validity is not judged here).
+export type WallClockDiagnosis =
+  | { ok: true }
+  | { ok: false; reason: 'fraction-too-long' | 'fraction-missing' | 'offset' | 'malformed' };
+export function diagnoseWallClock(value: string): WallClockDiagnosis {
+  if (siteWallClockSchema.safeParse(value).success) return { ok: true };
+  if (/(?:Z|[+-]\d{2}:?\d{2})$/.test(value)) return { ok: false, reason: 'offset' };
+  if (/T\d{2}:\d{2}:\d{2}\.\d{4,}$/.test(value)) return { ok: false, reason: 'fraction-too-long' };
+  if (/T\d{2}:\d{2}:\d{2}$/.test(value)) return { ok: false, reason: 'fraction-missing' };
+  return { ok: false, reason: 'malformed' };
+}
+
 // Arithmetic on timezone-free integers: milliseconds since 0001-01-01T00:00:00.000, proleptic Gregorian.
 const DAY = 86_400_000;
 const MONTH_DAYS = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];

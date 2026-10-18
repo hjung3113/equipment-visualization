@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   bindingsFileSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema, sceneStateSchema,
-  seekSceneState, stepSceneState, replayKey, sceneStateHash, type ReplayInput, type SiteWallClock,
+  seekSceneState, stepSceneState, replayKey, replayTimeline, sceneStateHash, type ReplayInput, type SiteWallClock,
 } from '../src/index.js';
 
 const root = new URL('../../../fixtures/cluster-single/', import.meta.url);
@@ -50,6 +50,10 @@ it.each([
     message: 'Record Sequence 2 is not unique (occurrences[1].start, occurrences[2].start)' },
   { name: 'a DQI sharing a boundary sequence', edit: (b: ReplayInput['batch']) => { b.issues[0]!.seq = 45; },
     message: 'Record Sequence 45 is not unique (occurrences[23].start, issues[0])' },
+  { name: 'a duplicate Occurrence id', edit: (b: ReplayInput['batch']) => { b.occurrences[3]!.id = 'occ-lp-slot-two'; },
+    message: 'Occurrence id occ-lp-slot-two is not unique (occurrences[2], occurrences[3])' },
+  { name: 'a duplicate DQI id', edit: (b: ReplayInput['batch']) => { b.issues[1]!.id = 'dqi-end-before-start'; },
+    message: 'Data Quality Issue id dqi-end-before-start is not unique (issues[0], issues[1])' },
   { name: 'an unfinished page', edit: (b: ReplayInput['batch']) => { b.continuationToken = 'page-2'; },
     message: 'batch.continuationToken is set: replay needs the complete OccurrenceBatch' },
 ])('rejects $name before replay', async ({ edit, message }) => {
@@ -58,6 +62,7 @@ it.each([
   const error = new RangeError(message);
   expect(thrown(() => seekSceneState(data, time('10:00:30')))).toEqual(error);
   expect(thrown(() => stepSceneState(data, 3))).toEqual(error);
+  expect(thrown(() => replayTimeline(data, { from: data.batch.from, to: data.batch.to }))).toEqual(error);
   await expect(replayKey(data, time('10:00:30'))).rejects.toEqual(error);
 });
 

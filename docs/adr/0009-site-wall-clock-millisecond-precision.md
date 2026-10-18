@@ -20,7 +20,7 @@ EV의 순서·비교·해시·산술은 모두 "한 시각에 문자열 하나, 
 
 ## Consequences
 
-- **`SiteWallClock`:** 정규식과 `wallClockToMillis`/`millisToWallClock`은 바뀌지 않는다. 가져오기와 같은 경계에서 사람이 읽을 거부 사유를 주기 위해, 형식 오류를 `fraction-too-long`(4자리 이상), `fraction-missing`(소수 없음), `offset`(`Z`·`+09:00`), `malformed`로 구분하는 진단 함수를 core에 둔다(ADR-0010의 가져오기 검증이 쓴다). 진단은 값을 고치지 않는다. 진단 함수는 아직 없다(구현: #97).
+- **`SiteWallClock`:** 정규식과 `wallClockToMillis`/`millisToWallClock`은 바뀌지 않는다. 가져오기와 같은 경계에서 사람이 읽을 거부 사유를 주기 위해, 형식 오류를 `fraction-too-long`(4자리 이상), `fraction-missing`(소수 없음), `offset`(`Z`·`+09:00`), `malformed`로 구분하는 진단 함수를 core에 둔다(ADR-0010의 가져오기 검증이 쓴다). 진단은 값을 고치지 않는다. 진단 함수는 `diagnoseWallClock`이다(#97). 가져오기 issue code는 이 reason을 `malformed-time`으로 적는다.
 - **순서:** 상태 적용 순서는 계속 Record Sequence 하나다(ADR-0002). 같은 ms 안의 두 경계는 같은 문자열이며, 그 사이 순서는 원래부터 seq가 정한다. 이 결정으로 바뀌는 순서 규칙은 없다. Record Sequence는 JSON 안전 정수(`z.int()`, 2^53−1 이하)만 받는다. 그보다 큰 값은 JSON 파싱에서 이미 반올림되지만 스키마가 거부하므로, 조용히 다른 seq로 재생되지 않는다. 이것도 같은 fail-closed 원칙이다.
 - **해시:** `replayKey`의 `observationHash`, Layout Revision(시각 없음), Mapping Version hash(시각 없음, ONBOARDING §5), Baseline Inventory, ADR-0010의 Sample Window 파일 이름 해시는 모두 그대로다. 한 시각에 문자열이 하나뿐이므로 "같은 내용이면 같은 해시"가 유지된다.
 - **스키마 스냅샷:** `packages/core/schema/*.schema.json`은 바뀌지 않는다. JSON Schema의 `pattern`이 곧 이 결정의 공개 표현이다.

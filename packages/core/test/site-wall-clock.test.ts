@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { millisToWallClock, wallClockToMillis, type SiteWallClock } from '../src/index.js';
+import { diagnoseWallClock, millisToWallClock, siteWallClockSchema, wallClockToMillis, type SiteWallClock } from '../src/index.js';
 
 it.each([
   { at: '0001-01-01T00:00:00.000', next: '0001-01-01T00:00:00.001' },
@@ -26,4 +26,21 @@ it.each(['2026-13-01T00:00:00.000', '2026-02-30T00:00:00.000', '2026-01-01T24:00
 
 it.each([0.5, -1, wallClockToMillis('9999-12-31T23:59:59.999') + 1])('rejects instant %s', (ms) => {
   expect(() => millisToWallClock(ms)).toThrow(RangeError);
+});
+
+it.each([
+  { value: '2026-01-01T10:00:00.000', reason: undefined },
+  { value: '2026-01-01T10:00:00.123456', reason: 'fraction-too-long' },
+  { value: '2026-01-01T10:00:00.1234', reason: 'fraction-too-long' },
+  { value: '2026-01-01T10:00:00', reason: 'fraction-missing' },
+  { value: '2026-01-01T10:00:00.000Z', reason: 'offset' },
+  { value: '2026-01-01T10:00:00.000+09:00', reason: 'offset' },
+  { value: '10:00:00Z', reason: 'offset' },
+  { value: '2026-01-01T10:00:00.5', reason: 'malformed' },
+  { value: '2026-01-01 10:00:00.000', reason: 'malformed' },
+  { value: '', reason: 'malformed' },
+])('diagnoses $value as $reason', ({ value, reason }) => {
+  const diagnosis = diagnoseWallClock(value);
+  expect(diagnosis).toEqual(reason ? { ok: false, reason } : { ok: true });
+  expect(diagnosis.ok).toBe(siteWallClockSchema.safeParse(value).success);
 });

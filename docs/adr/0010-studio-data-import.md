@@ -20,7 +20,7 @@ Studio는 다음 네 가지를 **가져오기 endpoint**(`/api/import/*`, dev �
 **검증: 고치지 않고 거부한다.** 서버와 화면은 core의 같은 순수 함수(`validateSampleWindow(raw, { equipmentId, existing })`)를 쓴다. 이 함수는 첫 문제에서 멈추지 않고 모든 문제를 `{ code, path, message }`로 모은다. 서버 판정이 최종이다. 거부 사유는 다음과 같다.
 
 - **형식:** strict `occurrenceBatchSchema` 위반(알 수 없는 필드 포함). 실패 메시지에는 "원천이 짝지은 Occurrence만 가져옵니다. Start/End 점 이벤트나 원시 로그는 원천 변환기에서 Occurrence로 바꾼 뒤 가져오세요(ADR-0002)"를 함께 보인다. Start/End를 짝짓지 않으며, 원시 로그를 받는 입력은 어디에도 없다.
-- **시각:** ADR-0009 형식이 아닌 값(`fraction-too-long`, `fraction-missing`, `offset`, `malformed`). 자르거나 채우지 않는다. `from < to`가 아니면 거부한다. `timeDomain`이 빈 문자열이면 거부한다. 같은 설비의 기존 window와 `timeDomain`이 다르면 `time-domain-mismatch`로 거부한다. 시간대 변환은 어디에서도 하지 않는다.
+- **시각:** ADR-0009 형식이 아닌 값(`fraction-too-long`, `fraction-missing`, `offset`, `malformed-time`). 자르거나 채우지 않는다. `from < to`가 아니면 거부한다. `timeDomain`이 빈 문자열이면 거부한다. 같은 설비의 기존 window와 `timeDomain`이 다르면 `time-domain-mismatch`로 거부한다. 시간대 변환은 어디에서도 하지 않는다.
 - **완전성:** `continuationToken`이 있으면 거부한다(미완료 page, #42). page를 이어 붙이지 않는다.
 - **소유와 순서:** batch `equipmentId`가 등록된 설비와 경로의 id와 다르면 거부한다. 모든 Occurrence·DQI record의 `equipmentId`, Record Sequence 유일성(`assertBatchRecords`, #42), Occurrence `id`와 DQI `id`의 유일성을 검사한다. id 중복은 `replayKey`가 id로 정렬하는 순서를 입력 배열이 정하게 만든다. 그래서 이 전제는 가져오기만이 아니라 `assertBatchRecords`에 넣어 replay와 Inventory도 거부하게 한다.
 - **세대:** 각 Occurrence의 `source.parserContractVersion`·`source.dataGeneration`이 batch 값과 다르면 거부한다. Replay Key와 캐시 폐기는 batch의 Data Generation 하나를 쓰므로, 세대가 섞인 batch를 받으면 키가 사실과 다른 것을 말하게 된다.
