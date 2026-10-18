@@ -104,6 +104,11 @@ describe('listing and read errors', () => {
       await writeJson(root, `${dir}/${name}`, w1.batch);
       return { paths: [`${dir}/${name}`, w1.path] };
     }],
+    ['windows as a regular file', async () => {
+      await rm(join(root, dir), { recursive: true, force: true });
+      await writeFile(join(root, dir), 'x');
+      return { paths: [dir] };
+    }],
     ['another equipment in the file', async () => {
       await writeFile(join(root, w1.path), (await readFile(join(root, w1.path), 'utf8')).replaceAll('"eq-synth-03"', '"eq-other"'));
       return { window: w1.hex, paths: [w1.path] };

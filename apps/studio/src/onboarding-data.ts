@@ -83,7 +83,7 @@ export async function listSampleWindows(equipmentId: string): Promise<SampleWind
     entries = await listDir(dir);
   } catch (error) {
     if (error instanceof ApiError && error.status === 404) return [];
-    throw error;
+    throw new DataError(`${dir}: ${error instanceof Error ? error.message : String(error)}`);
   }
   const windows = entries.map(({ kind, name }): SampleWindowEntry => {
     const path = `${dir}/${name}`;
