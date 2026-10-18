@@ -375,6 +375,8 @@ export function ImportPreview(props: ImportPreviewProps) {
   };
 
   const warningList = inspection ? rowsFor(inspection) : [];
+  const showAllClear = inspection !== null && warningList.length === 0 && inspection.notice === null
+    && !inspection.locked && !dictionaryExists && !blocked && !busy;
   const windowName = inspection?.summary && 'name' in inspection.summary ? inspection.summary.name : null;
   const details = inspection === null ? null : kind === 'window'
     ? <WindowDetails summary={inspection.summary} />
@@ -427,7 +429,7 @@ export function ImportPreview(props: ImportPreviewProps) {
                   </DataTable.Row>
                 ))}
               </DataTable>
-            ) : state.kind === 'ready' ? (
+            ) : showAllClear ? (
               <StateMessage compact icon={CircleCheck} title="거부나 경고가 없습니다" />
             ) : null}
           </> : null}

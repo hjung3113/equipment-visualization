@@ -158,6 +158,31 @@ it('imports w2 after w1 as a separate Sample Window', async () => {
   await waitFor(() => expect(screen.getByText('2개', { exact: true })).toBeTruthy());
 });
 
+it('rejects an overlapping Sample Window in the preview when the existing window is loaded', async () => {
+  const w1Text = await readFile(join(repo, 'fixtures/import/eq-synth-03.w1.batch.json'), 'utf8');
+  const w1 = JSON.parse(w1Text) as Record<string, unknown>;
+  const stored = await api.handle({ method: 'POST', url: `/api/import/windows?${new URLSearchParams({ equipmentId: 'eq-synth-03' })}`,
+    headers: { 'Content-Type': 'application/json' }, body: w1Text });
+  expect(stored.status).toBe(201);
+
+  await openPage();
+  await screen.findByRole('link', {
+    name: '2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000 Onboarding 열기',
+  });
+  const overlapping = { ...w1, to: '2026-01-01T10:30:00.001' };
+  await upload('Sample Window 가져오기', JSON.stringify(overlapping), 'overlapping.json');
+  await preview();
+
+  const table = screen.getByRole('table', { name: '가져오기 문제' });
+  expect(table.textContent).toContain('window-overlap');
+  expect(screen.getByText('문제')).toBeTruthy();
+  expect(screen.queryByText('서버 판정')).toBeNull();
+  expect(screen.getByRole('alert').textContent).toContain('가져올 수 없습니다');
+  expect((screen.getByRole('button', { name: '가져오기' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(sent.filter(({ method, url }) => method === 'POST' && new URL(url, 'http://studio.test').pathname === '/api/import/windows')).toEqual([]);
+  expect(await storedWindowNames()).toHaveLength(1);
+});
+
 it('keeps the server overlap verdict final when the page data is stale', async () => {
   const w1Text = await readFile(join(repo, 'fixtures/import/eq-synth-03.w1.batch.json'), 'utf8');
   const w1 = JSON.parse(w1Text) as Record<string, unknown>;
@@ -263,6 +288,7 @@ it('creates a Model Type Dictionary, then blocks a second import as create-only'
   await upload('Type Dictionary(Model 범위)', text, 'type-dictionary.json');
   const panel = await preview('Type Dictionary 미리보기');
   expect(within(panel).getByText('이 Model의 Type Dictionary가 이미 있습니다')).toBeTruthy();
+  expect(within(panel).queryByText('거부나 경고가 없습니다')).toBeNull();
   expect((screen.getByRole('button', { name: '가져오기' }) as HTMLButtonElement).disabled).toBe(true);
 });
 
