@@ -1,5 +1,5 @@
 export const PACKAGE_NAME = '@eqv/core';
-export { siteWallClockSchema, wallClockToMillis, millisToWallClock, type SiteWallClock } from './site-wall-clock.js';
+export { siteWallClockSchema, wallClockToMillis, millisToWallClock, diagnoseWallClock, type SiteWallClock, type WallClockDiagnosis } from './site-wall-clock.js';
 
 export { LAYOUT_SCHEMA_VERSION, layoutDocumentSchema, idSchema } from './layout/schema.js';
 export type {
@@ -13,6 +13,8 @@ export type { LayoutIssue, LayoutIssueCode, LayoutValidationResult } from './lay
 
 export { occurrenceBatchSchema } from './occurrence/schema.js';
 export type { EvidenceLevel, Boundary, Occurrence, DataQualityIssue, OccurrenceBatch } from './occurrence/schema.js';
+export { validateSampleWindow, sampleWindowName, parseSampleWindowName } from './occurrence/window.js';
+export type { SampleWindowRef, SampleWindowSummary, SampleWindowResult, ImportIssue, ImportRejectCode, ImportWarningCode } from './occurrence/window.js';
 
 export { typeDictionaryFileSchema, aliasRulesFileSchema, mappingVersionSchema, bindingsFileSchema } from './mapping/schema.js';
 export type {
@@ -32,7 +34,7 @@ export { RULESET_VERSION, assertReplayInput, seekSceneState, stepSceneState } fr
 export type { ReplayInput } from './replay/reduce.js';
 export { replayTimeline } from './replay/timeline.js';
 export type { TimelineRange, MaterialSpan, ActivitySpan, MarkerSpan, ReplayTimeline } from './replay/timeline.js';
-export { replayKey, sceneStateHash } from './replay/replay-key.js';
+export { replayKey, observationHash, sceneStateHash } from './replay/replay-key.js';
 export type { ReplayKey } from './replay/replay-key.js';
 export { canonicalJson } from './canonical.js';
 

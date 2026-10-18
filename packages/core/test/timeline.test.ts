@@ -88,7 +88,7 @@ it('rejects an empty or reversed range and foreign equipment', () => {
 });
 
 it('uses no time API in src', () => {
-  for (const file of ['../src/replay/timeline.ts', '../src/site-wall-clock.ts']) {
+  for (const file of ['../src/replay/timeline.ts', '../src/site-wall-clock.ts', '../src/occurrence/window.ts']) {
     expect(readFileSync(new URL(file, import.meta.url), 'utf8')).not.toMatch(/\bDate\b|getTime|toISOString|\bIntl\b/);
   }
 });
