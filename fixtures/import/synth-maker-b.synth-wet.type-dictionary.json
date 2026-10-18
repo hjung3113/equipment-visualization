@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "0.4",
+  "scope": {
+    "level": "model",
+    "maker": "synth-maker-b",
+    "model": "synth-wet"
+  },
+  "entries": [
+    {
+      "moduleType": "SYN_LOADPORT",
+      "role": "lp"
+    },
+    {
+      "moduleType": "SYN_RAIL",
+      "role": "rail"
+    },
+    {
+      "moduleType": "SYN_WET_ROBOT",
+      "role": "robot"
+    },
+    {
+      "moduleType": "SYN_WET_CELL",
+      "role": "cell"
+    },
+    {
+      "moduleType": "SYN_DRYER",
+      "role": "dry"
+    },
+    {
+      "moduleType": "SYN_BUFFER",
+      "role": "buffer"
+    }
+  ]
+}

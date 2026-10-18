@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-synth-03",
+  "aliases": [
+    {
+      "alias": "LP1",
+      "moduleType": "SYN_LOADPORT",
+      "isPort": true,
+      "isRobot": false
+    },
+    {
+      "alias": "LP2",
+      "moduleType": "SYN_LOADPORT",
+      "isPort": true,
+      "isRobot": false
+    },
+    {
+      "alias": "LP3",
+      "moduleType": "SYN_LOADPORT",
+      "isPort": true,
+      "isRobot": false
+    },
+    {
+      "alias": "RAIL1",
+      "moduleType": "SYN_RAIL",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "WR1",
+      "moduleType": "SYN_WET_ROBOT",
+      "isPort": false,
+      "isRobot": true
+    },
+    {
+      "alias": "WC1",
+      "moduleType": "SYN_WET_CELL",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "WC2",
+      "moduleType": "SYN_WET_CELL",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "WC3",
+      "moduleType": "SYN_WET_CELL",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "WC4",
+      "moduleType": "SYN_WET_CELL",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "DRY1",
+      "moduleType": "SYN_DRYER",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "DRY2",
+      "moduleType": "SYN_DRYER",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "BUF1",
+      "moduleType": "SYN_BUFFER",
+      "isPort": false,
+      "isRobot": false
+    }
+  ]
+}
