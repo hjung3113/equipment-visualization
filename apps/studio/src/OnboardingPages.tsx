@@ -1,13 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
 import { buildGenericLayout, instantiateLayout, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
   FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
 } from '@eqv/editor';
+import { Database, Inbox, MapPinOff, Plus, ServerCrash } from 'lucide-react';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
-import { Page } from '@eqv/ui';
+import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
 import { Button } from '@fops/ui';
+import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
@@ -16,6 +18,8 @@ type FleetState = { rows: FleetRow[] } | { error: string } | null;
 
 export function FleetPage() {
   const [state, setState] = useState<FleetState>(null);
+  const status = useImportStatus();
+  const disabledId = useId();
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -24,8 +28,9 @@ export function FleetPage() {
       return summarizeFleet(loads.map((load, i) => {
         const equipmentId = ids[i]!;
         if (load.kind === 'ok') return load.data;
-        const error = load.kind === 'not-found' ? '설비 기록을 읽을 수 없습니다' : load.kind === 'no-observations' ? '관측 데이터 없음' : load.error;
-        const record = load.kind === 'error' ? load.record : load.kind === 'no-observations' ? load.record : null;
+        if (load.kind === 'no-observations') return { record: load.record, noObservations: true as const };
+        const error = load.kind === 'not-found' ? '설비 기록을 읽을 수 없습니다' : load.error;
+        const record = load.kind === 'error' ? load.record : null;
         return { equipmentId, maker: record?.maker ?? null, model: record?.model ?? null, error };
       }));
     })().then(
@@ -34,14 +39,27 @@ export function FleetPage() {
     );
     return () => { cancelled = true; };
   }, []);
+  const registerLabel = <><Plus className="size-3.5" aria-hidden />설비 등록</>;
+  const actions = importBlocked(status) ? (
+    <Button type="button" variant="primary" size="sm" disabled aria-describedby={status.kind === 'loading' ? undefined : disabledId}>{registerLabel}</Button>
+  ) : (
+    <Button asChild variant="primary" size="sm"><Link href={hrefFor({ name: 'equipment-new' })}>{registerLabel}</Link></Button>
+  );
   return (
-    <Page title="Fleet">
-      {state === null ? <p>불러오는 중…</p> : 'error' in state ? <p role="alert">설비 목록을 불러오지 못했습니다: {state.error}</p> : (
-        state.rows.length === 0 ? <p>등록된 설비가 없습니다.</p> : (
+    <Page title="Fleet" actions={actions}>
+      <div className="grid gap-4">
+        <ImportStatusNotices state={status} git={false} catalog={false} disabledId={disabledId} />
+        {state === null ? <LoadingBlock label="불러오는 중…" /> : 'error' in state ? (
+          <StateMessage tone="danger" icon={ServerCrash} title="설비 목록을 불러오지 못했습니다" body={state.error} />
+        ) : state.rows.length === 0 ? (
+          <StateMessage icon={Inbox} title="등록된 설비가 없습니다" body="설비를 등록한 뒤 Sample Window를 가져오면 Onboarding을 시작할 수 있습니다." />
+        ) : (
           <FleetTable rows={state.rows}
-            renderLink={(equipmentId, children) => <Link href={hrefFor({ name: 'onboarding', equipmentId })}>{children}</Link>} />
-        )
-      )}
+            renderLink={(equipmentId, children, row) => (
+              <Link href={hrefFor(row.status === 'no-observations' ? { name: 'equipment', equipmentId } : { name: 'onboarding', equipmentId, window: null })}>{children}</Link>
+            )} />
+        )}
+      </div>
     </Page>
   );
 }
@@ -50,22 +68,27 @@ type Ok = Extract<OnboardingLoad, { kind: 'ok' }>;
 type Choice = Parameters<NonNullable<ComponentProps<typeof TemplateProposals>['action']>>[0];
 type CreateState = { pending: boolean; error: string | null; exists: boolean };
 
-function Missing({ result }: { result: Exclude<OnboardingLoad, { kind: 'ok' }> }) {
-  return result.kind === 'not-found' ? (
-    <>
-      <p>설비를 찾을 수 없습니다</p>
-      <p><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></p>
-    </>
-  ) : (
-    <>
-      <p role="alert">데이터 오류: {result.kind === 'error' ? result.error : '관측 데이터 없음'}</p>
-      <p><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></p>
-    </>
-  );
+const FLEET_AWAY = (
+  <Button asChild variant="secondary" size="sm"><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></Button>
+);
+
+function Missing({ equipmentId, result }: { equipmentId: string; result: Exclude<OnboardingLoad, { kind: 'ok' }> }) {
+  switch (result.kind) {
+    case 'not-found':
+      return <StateMessage icon={MapPinOff} title="설비를 찾을 수 없습니다" action={FLEET_AWAY} />;
+    case 'error':
+      return <StateMessage tone="danger" icon={ServerCrash} title="데이터 오류" body={result.error} action={FLEET_AWAY} />;
+    case 'no-observations':
+      return (
+        <StateMessage icon={Inbox} title="Sample Window를 가져오세요"
+          body="이 설비는 등록되었지만 아직 가져온 관측이 없습니다. Inventory와 Template 제안은 Sample Window에서 만듭니다."
+          action={<Button asChild variant="secondary" size="sm"><Link href={hrefFor({ name: 'equipment', equipmentId })}>설비 데이터 열기</Link></Button>} />
+      );
+  }
 }
 
 function StartActions({ equipmentId, result, draft }: { equipmentId: string; result: Ok; draft: Extract<DraftLookup, { kind: 'absent' | 'no-id' }> }) {
-  // The parent keys this component by equipmentId, so the state never crosses equipment.
+  // The parent keys this component by equipmentId and Sample Window, so the state never crosses either.
   const [create, setCreate] = useState<CreateState>({ pending: false, error: null, exists: false });
   const active = useRef<string | null>(null);
   useEffect(() => {
@@ -111,26 +134,31 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
   );
 }
 
-export function OnboardingPage({ equipmentId }: { equipmentId: string }) {
-  // The loaded state belongs to the route's equipmentId: a change clears it during render, and a late result of
-  // a previous id is dropped by the effect cleanup.
-  const [loaded, setLoaded] = useState<{ equipmentId: string; result: OnboardingLoad | null }>({ equipmentId, result: null });
-  if (loaded.equipmentId !== equipmentId) setLoaded({ equipmentId, result: null });
+export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: string; sampleWindow: string | null }) {
+  // The loaded state belongs to the route's equipmentId and Sample Window: a change clears it during render, and a
+  // late result of a previous one is dropped by the effect cleanup.
+  const [loaded, setLoaded] = useState<{ equipmentId: string; sampleWindow: string | null; result: OnboardingLoad | null }>({ equipmentId, sampleWindow, result: null });
+  if (loaded.equipmentId !== equipmentId || loaded.sampleWindow !== sampleWindow) setLoaded({ equipmentId, sampleWindow, result: null });
 
   useEffect(() => {
     let cancelled = false;
-    loadOnboarding(equipmentId).then((result) => { if (!cancelled) setLoaded({ equipmentId, result }); });
+    loadOnboarding(equipmentId, { window: sampleWindow ?? undefined }).then((result) => { if (!cancelled) setLoaded({ equipmentId, sampleWindow, result }); });
     return () => { cancelled = true; };
-  }, [equipmentId]);
+  }, [equipmentId, sampleWindow]);
 
   const { result } = loaded;
   return (
-    <Page title={<>Onboarding <code>{equipmentId}</code></>}>
-      {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : (
+    <Page title={<>Onboarding <code>{equipmentId}</code></>}
+      actions={result !== null && result.kind !== 'not-found' ? (
+        <Button asChild variant="secondary" size="toolbar">
+          <Link href={hrefFor({ name: 'equipment', equipmentId })}><Database className="size-3.5" aria-hidden />설비 데이터</Link>
+        </Button>
+      ) : undefined}>
+      {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : (
         <>
           <p>{result.data.record.maker} / {result.data.record.model}</p>
           {(result.data.bindings?.bindings.length ?? 0) > 0 && (
-            <p><Link href={hrefFor({ name: 'focus', equipmentId, entityType: null, anchor: null })}>Focus 열기</Link></p>
+            <p><Link href={hrefFor({ name: 'focus', equipmentId, entityType: null, anchor: null, window: sampleWindow })}>Focus 열기</Link></p>
           )}
           {result.skippedTemplates.length > 0 && <p role="status">건너뛴 Template: {result.skippedTemplates.join(', ')}</p>}
           <InventoryView inventory={result.data.inventory} dictionaries={result.data.dictionaries} />
@@ -142,7 +170,7 @@ export function OnboardingPage({ equipmentId }: { equipmentId: string }) {
             </>
           ) : result.draft.kind === 'error' ? (
             <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />
-          ) : <StartActions key={equipmentId} equipmentId={equipmentId} result={result} draft={result.draft} />}
+          ) : <StartActions key={`${equipmentId}\n${sampleWindow ?? ''}`} equipmentId={equipmentId} result={result} draft={result.draft} />}
         </>
       )}
     </Page>
@@ -330,8 +358,8 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
       title={boardLoaded ? '④ Mapping Board' : <>Mapping Board <code>{equipmentId}</code></>}
       description={boardLoaded ? <>설비 <code>{equipmentId}</code></> : undefined}
     >
-      <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
-      {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : result.draft.kind === 'error' ? (
+      <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: null })}>Onboarding으로 이동</Link></p>
+      {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : result.draft.kind === 'error' ? (
         <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>
       ) : result.draft.kind !== 'found' ? (
         <>

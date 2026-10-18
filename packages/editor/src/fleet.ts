@@ -2,7 +2,7 @@ import {
   computeCoverage, type BindingsFile, type Coverage, type EquipmentRecord, type MappingVersion, type ObservedInventory,
 } from '@eqv/core';
 
-export type FleetStatus = 'unstarted' | 'draft' | 'published';
+export type FleetStatus = 'unstarted' | 'draft' | 'published' | 'no-observations';
 
 /** Everything `summarizeFleet` needs for one equipment whose inputs loaded. */
 export interface FleetData {
@@ -23,6 +23,12 @@ export interface FleetFailure {
   error: string;
 }
 
+/** A registered equipment with no Sample Window yet: a status, not an error. */
+export interface FleetNoObservations {
+  record: EquipmentRecord;
+  noObservations: true;
+}
+
 export interface FleetRow {
   equipmentId: string;
   maker: string | null;
@@ -38,7 +44,11 @@ export interface FleetRow {
 
 const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
 
-function summarize(input: FleetData | FleetFailure): FleetRow {
+function summarize(input: FleetData | FleetFailure | FleetNoObservations): FleetRow {
+  if ('noObservations' in input) {
+    const { equipmentId, maker, model } = input.record;
+    return { equipmentId, maker, model, status: 'no-observations', coverage: null, assumedRatio: null, unmappedReferences: null, error: null };
+  }
   if ('error' in input) {
     return { ...input, status: null, coverage: null, assumedRatio: null, unmappedReferences: null };
   }
@@ -62,9 +72,12 @@ function summarize(input: FleetData | FleetFailure): FleetRow {
   }
 }
 
-/** One row per equipment, most unmapped references first; error rows lead, ties by equipmentId in code-unit order. */
-export function summarizeFleet(inputs: readonly (FleetData | FleetFailure)[]): FleetRow[] {
+const rank = (row: FleetRow) => row.error !== null ? 0 : row.status === 'no-observations' ? 1 : 2;
+
+/** One row per equipment: error rows, then no-observations rows, then most unmapped references first; ties by equipmentId in code-unit order. */
+export function summarizeFleet(inputs: readonly (FleetData | FleetFailure | FleetNoObservations)[]): FleetRow[] {
   return inputs.map(summarize).sort((a, b) =>
-    (b.unmappedReferences ?? Infinity) - (a.unmappedReferences ?? Infinity) ||
+    rank(a) - rank(b) ||
+    (b.unmappedReferences ?? 0) - (a.unmappedReferences ?? 0) ||
     (a.equipmentId < b.equipmentId ? -1 : a.equipmentId > b.equipmentId ? 1 : 0));
 }

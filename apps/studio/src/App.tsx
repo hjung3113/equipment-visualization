@@ -2,6 +2,7 @@ import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Factory, LayoutTemplate } from 'lucide-react';
 import { APP_FRAME_MAIN_ID, AppFrame, Page } from '@eqv/ui';
 import { Button } from '@fops/ui';
+import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
 import { FocusPage } from './FocusPage.js';
 import { LayoutsPage } from './LayoutsPage.js';
 import { BoardPage, FleetPage, OnboardingPage } from './OnboardingPages.js';
@@ -13,14 +14,18 @@ function RoutePage({ route }: { route: Route }) {
   switch (route.name) {
     case 'fleet':
       return <FleetPage />;
+    case 'equipment-new':
+      return <RegisterEquipmentPage />;
+    case 'equipment':
+      return <EquipmentDataPage equipmentId={route.equipmentId} />;
     case 'layouts':
       return <LayoutsPage file={route.file} />;
     case 'onboarding':
-      return <OnboardingPage equipmentId={route.equipmentId} />;
+      return <OnboardingPage equipmentId={route.equipmentId} sampleWindow={route.window} />;
     case 'board':
       return <BoardPage equipmentId={route.equipmentId} />;
     case 'focus':
-      return <FocusPage equipmentId={route.equipmentId} entityType={route.entityType} anchor={route.anchor} />;
+      return <FocusPage equipmentId={route.equipmentId} sampleWindow={route.window} entityType={route.entityType} anchor={route.anchor} />;
     case 'dev-ui':
       return UiGallery ? <Suspense fallback={null}><UiGallery /></Suspense> : null;
     case 'not-found':
@@ -55,7 +60,7 @@ export function App() {
     if (window.location.pathname === '/') navigate('/fleet', { replace: true });
   }, [location]);
   const items = [
-    { key: 'fleet', label: 'Fleet', icon: <Factory className="size-4" />, href: '/fleet', current: ['fleet', 'onboarding', 'board', 'focus'].includes(route.name) },
+    { key: 'fleet', label: 'Fleet', icon: <Factory className="size-4" />, href: '/fleet', current: ['fleet', 'equipment-new', 'equipment', 'onboarding', 'board', 'focus'].includes(route.name) },
     { key: 'layouts', label: '레이아웃', icon: <LayoutTemplate className="size-4" />, href: hrefFor({ name: 'layouts', file: null }), current: route.name === 'layouts' },
   ];
   return (

@@ -3,10 +3,10 @@ import {
   Ban, Check, Circle, CircleCheck, CircleDashed, CircleDot, Download, Inbox, Play, RotateCw, Save, ServerCrash, SkipBack, TriangleAlert, Undo2, X,
 } from 'lucide-react';
 import {
-  DataTable, DetailFields, FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger,
+  DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger,
   ToastRegion, ViewerZoomControls, useToastQueue, type DataTableSort, type StatusBadgeProps,
 } from '@eqv/ui';
-import { Button } from '@fops/ui';
+import { Button, Input } from '@fops/ui';
 
 // Dev-only gallery of every @eqv/ui component in its states, for design review against AP screens. Synthetic data, no I/O.
 
@@ -222,6 +222,20 @@ export default function UiGallery() {
             <FileButton label="가져오기" accept=".json,application/json" onFile={(file) => setFileName(file.name)} />
             <FileButton label="가져오기 (비활성)" accept=".json,application/json" disabled onFile={() => undefined} />
             <span role="status" className="text-xs text-text-muted">{fileName === null ? '선택한 파일 없음' : `선택한 파일: ${fileName}`}</span>
+          </div>
+        </Panel>
+
+        <Panel title="FormField" subtitle="라벨 · 힌트 · 오류 · 필수 · 비활성">
+          <div className="grid max-w-md gap-4">
+            <FormField label="합성 이름" hint="영문자로 시작하는 합성 값입니다.">
+              {(control) => <Input {...control} defaultValue="synth-name" />}
+            </FormField>
+            <FormField label="필수 값" required hint="합성 힌트입니다." error="값을 입력하세요.">
+              {(control) => <Input {...control} defaultValue="" />}
+            </FormField>
+            <FormField label="비활성 값">
+              {(control) => <Input {...control} defaultValue="synth-locked" disabled />}
+            </FormField>
           </div>
         </Panel>
 

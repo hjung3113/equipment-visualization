@@ -6,20 +6,28 @@ import { bindings, dictionaries, inventory, mappings, record, templates } from '
 
 afterEach(cleanup);
 
-it('renders fleet rows with status text, integer percentages, dashes and a host link', () => {
+it('renders fleet rows with status badges, integer percentages, dashes and a host link that receives the row', () => {
   const rows = summarizeFleet([
     { record, inventory: inventory(), bindings, mappings, hasAliasRules: true },
     { record: { ...record, equipmentId: 'eq-new' }, inventory: inventory(), bindings: null, mappings: {}, hasAliasRules: false },
+    { record: { ...record, equipmentId: 'eq-empty' }, noObservations: true },
     { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
   ]);
-  render(<FleetTable rows={rows} renderLink={(id, children) => <a href={`/onboarding/${id}`}>{children}</a>} />);
+  render(<FleetTable rows={rows}
+    renderLink={(id, children, row) => <a href={row.status === 'no-observations' ? `/equipment/${id}` : `/onboarding/${id}`}>{children}</a>} />);
   expect(screen.getByRole('link', { name: 'eq-synth-01' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
+  expect(screen.getByRole('link', { name: 'eq-empty' }).getAttribute('href')).toBe('/equipment/eq-empty');
   const row = (id: string) => within(screen.getByRole('link', { name: id }).closest('tr')!);
-  expect(row('eq-synth-01').getByText('● 게시됨')).toBeTruthy();
+  expect(row('eq-synth-01').getByText('게시됨')).toBeTruthy();
   expect(row('eq-synth-01').getAllByRole('cell').map((cell) => cell.textContent)).toEqual(
-    ['synth-maker', 'synth-model', '● 게시됨', expect.stringMatching(/^\d+%$/), expect.stringMatching(/^\d+%$/), expect.any(String)]);
-  expect(row('eq-new').getAllByRole('cell').map((cell) => cell.textContent).slice(2, 6)).toEqual(['○ 미착수', '—', '—', expect.any(String)]);
-  expect(row('eq-bad').getByText(/관측 데이터 없음/)).toBeTruthy();
+    ['synth-maker', 'synth-model', '게시됨', expect.stringMatching(/^\d+%$/), expect.stringMatching(/^\d+%$/), expect.any(String)]);
+  expect(row('eq-new').getAllByRole('cell').map((cell) => cell.textContent).slice(2, 6)).toEqual(['미착수', '—', '—', expect.any(String)]);
+  const empty = screen.getByRole('link', { name: 'eq-empty' }).closest('tr')!;
+  expect(Array.from(empty.querySelectorAll('td')).map((cell) => cell.textContent)).toEqual(['synth-maker', 'synth-model', '관측 없음', '—', '—', '—']);
+  expect(empty.querySelector('[data-tone="danger"]')).toBeNull();
+  const bad = screen.getByRole('link', { name: 'eq-bad' }).closest('tr')!;
+  expect(bad.querySelector('[data-tone="danger"]')?.textContent).toBe('오류');
+  expect(bad.textContent).toContain('관측 데이터 없음');
   expect(screen.getAllByRole('columnheader')).toHaveLength(7);
   const table = screen.getByRole('table');
   expect(document.getElementById(table.getAttribute('aria-describedby')!)?.textContent).toBe(

@@ -15,6 +15,7 @@ import { Link, hrefFor } from './router.js';
 type Range = { from: SiteWallClock; to: SiteWallClock };
 type View = {
   equipmentId: string;
+  sampleWindow: string | null;
   entryKey: string;
   result: FocusLoad | null;
   /** The user-applied range; null means the entry's default. */
@@ -52,29 +53,29 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
   return { range: { from: a.data, to: b.data } };
 }
 
-export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
-  equipmentId: string; entityType: string | null; anchor: string | null;
+export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler }: {
+  equipmentId: string; sampleWindow: string | null; entityType: string | null; anchor: string | null;
   /** Frame clock for playback; tests only, the browser's by default. */
   scheduler?: PlaybackScheduler;
 }) {
   const entryKey = JSON.stringify([entityType, anchor]);
-  const fresh = (): View => ({ equipmentId, entryKey, result: null, applied: null, draft: null, rangeError: null, cursor: null,
+  const fresh = (): View => ({ equipmentId, sampleWindow, entryKey, result: null, applied: null, draft: null, rangeError: null, cursor: null,
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [tab, setTab] = useState<Tab>('list');
   const rangeId = useId();
-  // Everything below belongs to the route's equipmentId and entry key: a change clears it during render, and a late
-  // result of a previous id is dropped by the effect cleanup.
-  if (view.equipmentId !== equipmentId) setView(fresh());
+  // Everything below belongs to the route's equipmentId, Sample Window and entry key: a change clears it during render,
+  // and a late result of a previous id is dropped by the effect cleanup. The cursor, range and selection belong to one batch.
+  if (view.equipmentId !== equipmentId || view.sampleWindow !== sampleWindow) setView(fresh());
   else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, mode: { kind: 'time' } });
 
   useEffect(() => {
     let cancelled = false;
-    loadFocus(equipmentId).then((result) => {
-      if (!cancelled) setView((previous) => previous.equipmentId === equipmentId ? { ...previous, result } : previous);
+    loadFocus(equipmentId, sampleWindow === null ? {} : { window: sampleWindow }).then((result) => {
+      if (!cancelled) setView((previous) => previous.equipmentId === equipmentId && previous.sampleWindow === sampleWindow ? { ...previous, result } : previous);
     });
     return () => { cancelled = true; };
-  }, [equipmentId]);
+  }, [equipmentId, sampleWindow]);
 
   const { result } = view;
   const ok = result?.kind === 'ok' ? result : null;
@@ -164,7 +165,7 @@ export function FocusPage({ equipmentId, entityType, anchor, scheduler }: {
         </>
       ) : (
         <>
-          <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
+          <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}>Onboarding으로 이동</Link></p>
           {[...result.notices, ...(entry?.notice ? [entry.notice] : [])].map((notice) => <p key={notice} role="status">{notice}</p>)}
           {range && (
             <form aria-label="구간" className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2" onSubmit={(event) => { event.preventDefault(); apply(); }}>

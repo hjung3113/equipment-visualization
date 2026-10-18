@@ -13,7 +13,7 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 
 | 단계 | 화면 | 핵심 내용 |
 |---|---|---|
-| ① Fleet | Maker → Model → 장비 표 | 상태 `미착수 / 초안 / 게시됨 / Drift`, 커버리지 %, assumed 비율, 미매핑 영향도. 영향도 순 정렬 |
+| ① Fleet | Maker → Model → 장비 표 | 상태 `관측 없음 / 미착수 / 초안 / 게시됨 / Drift`, 커버리지 %, assumed 비율, 미매핑 영향도. 관측 없음은 등록했지만 Sample Window가 없는 설비다(오류 아님, 설비 데이터 페이지로 링크). 정렬: 오류, 관측 없음, 그다음 영향도 순 |
 | ② Inventory | alias 목록 + 관측 이송 그래프 | alias별 ModuleType·Role·Port/Robot 여부·slot 집합·활동 배지(PRC/FNC/XFR/Carrier)·건수·처음/마지막 관측. 관측 이송 쌍(A→B, 건수)은 공간 정보 없는 node-link |
 | ③ Template 제안 | 상위 3개 썸네일 비교 | 점수와 근거 문장("PM 4/4 ✓, LL 2/2 ✓, TM robot ✓, 설명 안 되는 alias 1"). 맞는 것이 없으면 Generic Layout |
 | ④ Mapping Board | alias 목록 · Top View · 선택 상세 (§4) | 배정·규칙화·무시·충돌 해결 |
