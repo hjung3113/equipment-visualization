@@ -87,6 +87,10 @@ export function DataTable({
         role="region"
         aria-label={label}
         tabIndex={0}
+        onFocus={(event) => {
+          // Keyboard focus on a clipped row action must bring it fully into the scroll viewport (default behavior is instant, never smooth).
+          if (event.target !== event.currentTarget) event.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
+        }}
         className={cn('overflow-x-auto', capped && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
       >
         <table aria-label={label} className={cn('w-full border-separate border-spacing-0 text-sm text-text-primary', className)} {...rest}>

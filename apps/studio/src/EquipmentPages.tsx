@@ -183,10 +183,11 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
   return rows.map((row) => {
     const { entry } = row;
     const range = `${entry.from} – ${entry.to}`;
+    const rangeDisplay = <><span className="whitespace-nowrap">{entry.from}</span>{' – '}<span className="whitespace-nowrap">{entry.to}</span></>;
     if (row.kind === 'error') {
       return (
         <DataTable.Row key={entry.name}>
-          <DataTable.Cell rowHeader mono>{range}</DataTable.Cell>
+          <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>
           <DataTable.Cell colSpan={6}><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge> {row.error}</DataTable.Cell>
         </DataTable.Row>
       );
@@ -194,7 +195,7 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
     const window = entry.hash.slice('sha256:'.length);
     return (
       <DataTable.Row key={entry.name}>
-        <DataTable.Cell rowHeader mono>{range}</DataTable.Cell>
+        <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>
         <DataTable.Cell mono>{row.timeDomain}</DataTable.Cell>
         <DataTable.Cell mono>{row.dataGeneration}</DataTable.Cell>
         <DataTable.Cell numeric>{row.occurrences}</DataTable.Cell>

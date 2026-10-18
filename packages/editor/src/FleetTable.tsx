@@ -27,7 +27,7 @@ export function FleetTable({ rows, renderLink }: FleetTableProps) {
       >
         {rows.map((row) => (
           <DataTable.Row key={row.equipmentId}>
-            <DataTable.Cell rowHeader>{renderLink(row.equipmentId, row.equipmentId, row)}</DataTable.Cell>
+            <DataTable.Cell rowHeader className="whitespace-nowrap">{renderLink(row.equipmentId, row.equipmentId, row)}</DataTable.Cell>
             <DataTable.Cell>{row.maker ?? '—'}</DataTable.Cell>
             <DataTable.Cell>{row.model ?? '—'}</DataTable.Cell>
             {row.error !== null ? (
