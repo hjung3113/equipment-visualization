@@ -11,6 +11,7 @@ import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
 import { Button } from '@fops/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
+import { WindowPicker, windowHex } from './WindowPicker.js';
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 
@@ -87,7 +88,9 @@ function Missing({ equipmentId, result }: { equipmentId: string; result: Exclude
   }
 }
 
-function StartActions({ equipmentId, result, draft }: { equipmentId: string; result: Ok; draft: Extract<DraftLookup, { kind: 'absent' | 'no-id' }> }) {
+function StartActions({ equipmentId, sampleWindow, result, draft }: {
+  equipmentId: string; sampleWindow: string | null; result: Ok; draft: Extract<DraftLookup, { kind: 'absent' | 'no-id' }>;
+}) {
   // The parent keys this component by equipmentId and Sample Window, so the state never crosses either.
   const [create, setCreate] = useState<CreateState>({ pending: false, error: null, exists: false });
   const active = useRef<string | null>(null);
@@ -105,7 +108,7 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
         : result.templates.find(({ id }) => id === choice.templateId);
       if (!source) throw new Error('Template을 찾을 수 없습니다');
       await createDraft(draft.layoutId, instantiateLayout(source, draft.layoutId));
-      if (active.current === equipmentId) navigate(hrefFor({ name: 'board', equipmentId }));
+      if (active.current === equipmentId) navigate(hrefFor({ name: 'board', equipmentId, window: sampleWindow }));
     } catch (error) {
       if (active.current !== equipmentId) return;
       const exists = error instanceof ApiError && error.status === 412;
@@ -119,7 +122,7 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
       {blocked && <p>설비 id로 레이아웃 id를 만들 수 없습니다</p>}
       {create.error && (
         <p role="alert">
-          {create.error}{create.exists && <> <Link href={hrefFor({ name: 'board', equipmentId })}>④ Mapping Board 열기</Link></>}
+          {create.error}{create.exists && <> <Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}>④ Mapping Board 열기</Link></>}
         </p>
       )}
       <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates}
@@ -133,6 +136,8 @@ function StartActions({ equipmentId, result, draft }: { equipmentId: string; res
     </>
   );
 }
+
+const PICKER_HINT = 'Inventory·Template 제안·Mapping Board·Publish의 Baseline Inventory가 이 window에서 나옵니다. 기본은 가장 늦은 window이며, 고른 window는 주소(?window=)에 남습니다.';
 
 export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: string; sampleWindow: string | null }) {
   // The loaded state belongs to the route's equipmentId and Sample Window: a change clears it during render, and a
@@ -154,6 +159,10 @@ export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: str
           <Link href={hrefFor({ name: 'equipment', equipmentId })}><Database className="size-3.5" aria-hidden />설비 데이터</Link>
         </Button>
       ) : undefined}>
+      <WindowPicker equipmentId={equipmentId} hint={PICKER_HINT}
+        value={sampleWindow ?? (result?.kind === 'ok' ? windowHex(result.data.selectedWindow) : null)}
+        details={result?.kind === 'ok' ? { dataGeneration: result.data.batch.dataGeneration, timeDomain: result.data.batch.timeDomain, hash: result.data.selectedWindow.hash } : null}
+        onChange={(hex) => navigate(hrefFor({ name: 'onboarding', equipmentId, window: hex }))} />
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : (
         <>
           <p>{result.data.record.maker} / {result.data.record.model}</p>
@@ -166,11 +175,11 @@ export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: str
           {result.draft.kind === 'found' ? (
             <>
               <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />
-              <p><Link href={hrefFor({ name: 'board', equipmentId })}>④ Mapping Board 열기</Link></p>
+              <p><Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}>④ Mapping Board 열기</Link></p>
             </>
           ) : result.draft.kind === 'error' ? (
             <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />
-          ) : <StartActions key={`${equipmentId}\n${sampleWindow ?? ''}`} equipmentId={equipmentId} result={result} draft={result.draft} />}
+          ) : <StartActions key={`${equipmentId}\n${sampleWindow ?? ''}`} equipmentId={equipmentId} sampleWindow={sampleWindow} result={result} draft={result.draft} />}
         </>
       )}
     </Page>
@@ -214,8 +223,8 @@ async function writePublication(plan: PublishPlan, layout: EquipmentLayoutDocume
   return { ok: true, mappingHash: mapping.hash };
 }
 
-function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }: {
-  equipmentId: string; result: Ok; layout: EquipmentLayoutDocument; onDirtyChange: (dirty: boolean) => void; publication: Publication;
+function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange, publication }: {
+  equipmentId: string; sampleWindow: string | null; result: Ok; layout: EquipmentLayoutDocument; onDirtyChange: (dirty: boolean) => void; publication: Publication;
 }) {
   const { record, inventory, dictionaries, ruleFiles, bindings, mappings } = result.data;
   const equipment = useMemo(() => ({ equipmentId, maker: record.maker, model: record.model }), [equipmentId, record.maker, record.model]);
@@ -248,7 +257,8 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
 
   const onModelDryRun = async () => {
     const ids = await listEquipmentIds();
-    const loads = await Promise.all(ids.map((id) => loadOnboarding(id)));
+    // Other equipment have no selected window here: each reads its own default.
+    const loads = await Promise.all(ids.map((id) => loadOnboarding(id, id === equipmentId && sampleWindow !== null ? { window: sampleWindow } : {})));
     const rows: ModelDryRunInput[] = [];
     let unreadable = 0;
     loads.forEach((load, i) => {
@@ -283,7 +293,7 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
         publishing={publication.publishing} receipt={publication.receipt}
         onPublish={(plan) => publication.run(plan, () => writePublication(plan, layout))}
         onHighlight={setHighlight} onModelDryRun={onModelDryRun}
-        renderLink={(id) => <Link href={hrefFor({ name: 'board', equipmentId: id })}>{id}</Link>} />
+        renderLink={(id) => <Link href={hrefFor({ name: 'board', equipmentId: id, window: id === equipmentId ? sampleWindow : null })}>{id}</Link>} />
       <div inert={publication.publishing} onClickCapture={guard} onKeyDownCapture={guard} onDropCapture={guard}>
         <MappingBoard key={equipmentId} equipment={equipment} inventory={inventory} dictionaries={dictionaries} layout={layout}
           ruleFiles={ruleFiles} templates={result.templates} onSave={onSave} highlight={highlight}
@@ -293,7 +303,8 @@ function LoadedBoard({ equipmentId, result, layout, onDirtyChange, publication }
   );
 }
 
-export function BoardPage({ equipmentId }: { equipmentId: string }) {
+/** The parent keys this page by `sampleWindow`, so a window change remounts it and every piece of state below belongs to one window. */
+export function BoardPage({ equipmentId, sampleWindow }: { equipmentId: string; sampleWindow: string | null }) {
   const [visit, setVisit] = useState({ equipmentId, generation: 0 });
   if (visit.equipmentId !== equipmentId) setVisit({ equipmentId, generation: visit.generation + 1 });
   // Same ownership as OnboardingPage: loaded state and the dirty flag both belong to the route's equipmentId.
@@ -313,6 +324,7 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
     return () => { owner.current = null; };
   }, [visit]);
 
+  const windowOption = sampleWindow === null ? {} : { window: sampleWindow };
   const run: Publication['run'] = async (plan, execute) => {
     const forId = equipmentId;
     if (owner.current?.visit !== visit) return { ok: false, error: '이전 Board 방문의 게시 요청입니다' };
@@ -326,7 +338,7 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
       return outcome;
     }
     if (!current()) return outcome;
-    const reloaded = await loadOnboarding(forId);
+    const reloaded = await loadOnboarding(forId, windowOption);
     if (!current()) return outcome;
     setLoaded({ equipmentId: forId, result: reloaded });
     const effectiveFrom = plan.bindings!.bindings.at(-1)!.effectiveFrom;
@@ -336,9 +348,9 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    loadOnboarding(equipmentId).then((result) => { if (!cancelled) setLoaded({ equipmentId, result }); });
+    loadOnboarding(equipmentId, windowOption).then((result) => { if (!cancelled) setLoaded({ equipmentId, result }); });
     return () => { cancelled = true; };
-  }, [equipmentId]);
+  }, [equipmentId, sampleWindow]);
 
   useEffect(() => {
     if (!dirty) return undefined;
@@ -356,9 +368,9 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
   return (
     <Page
       title={boardLoaded ? '④ Mapping Board' : <>Mapping Board <code>{equipmentId}</code></>}
-      description={boardLoaded ? <>설비 <code>{equipmentId}</code></> : undefined}
+      description={boardLoaded ? <>설비 <code>{equipmentId}</code> · Sample Window {result.data.selectedWindow.from} – {result.data.selectedWindow.to}</> : undefined}
     >
-      <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: null })}>Onboarding으로 이동</Link></p>
+      <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}>Onboarding으로 이동</Link></p>
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : result.draft.kind === 'error' ? (
         <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>
       ) : result.draft.kind !== 'found' ? (
@@ -366,7 +378,7 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
           <p>레이아웃 draft가 없습니다</p>
         </>
       ) : (
-        <LoadedBoard key={publicationNow.reloads} equipmentId={equipmentId} result={result} layout={result.draft.layout}
+        <LoadedBoard key={publicationNow.reloads} equipmentId={equipmentId} sampleWindow={sampleWindow} result={result} layout={result.draft.layout}
           publication={{ publishing: publicationNow.publishing, receipt: publicationNow.receipt, run }}
           onDirtyChange={(next) => setDirtyState({ equipmentId, dirty: next })} />
       )}

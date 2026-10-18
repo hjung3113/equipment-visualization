@@ -127,7 +127,7 @@ describe('no observations', () => {
     await writeJson(root, 'equipment/eq-nodata.json', record('eq-nodata'));
     if (label === 'empty windows dir') await mkdir(join(root, 'observations/eq-nodata/windows'), { recursive: true });
     expect(await loadEquipment('eq-nodata')).toEqual({ kind: 'no-observations', record: record('eq-nodata') });
-    expect(await loadFocus('eq-nodata')).toEqual({ kind: 'error', record: record('eq-nodata'), error: '관측 데이터 없음' });
+    expect(await loadFocus('eq-nodata')).toEqual({ kind: 'no-observations', record: record('eq-nodata') });
   });
 });
 

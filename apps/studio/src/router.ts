@@ -6,7 +6,7 @@ export type Route =
   | { name: 'equipment'; equipmentId: string }
   | { name: 'layouts'; file: string | null }
   | { name: 'onboarding'; equipmentId: string; window: string | null }
-  | { name: 'board'; equipmentId: string }
+  | { name: 'board'; equipmentId: string; window: string | null }
   | { name: 'focus'; equipmentId: string; entityType: string | null; anchor: string | null; window: string | null }
   | { name: 'dev-ui' }
   | { name: 'not-found'; pathname: string };
@@ -30,7 +30,7 @@ export function parseRoute(pathname: string, search: string, dev: boolean = impo
   if (head === 'equipment' && equipmentId && extra.length === 0) return { name: 'equipment', equipmentId };
   if (head === 'layouts' && segments.length === 1) return { name: 'layouts', file: query.get('file') };
   if (head === 'onboarding' && equipmentId && extra.length === 0) return { name: 'onboarding', equipmentId, window: query.get('window') || null };
-  if (head === 'onboarding' && equipmentId && extra.length === 1 && extra[0] === 'board') return { name: 'board', equipmentId };
+  if (head === 'onboarding' && equipmentId && extra.length === 1 && extra[0] === 'board') return { name: 'board', equipmentId, window: query.get('window') || null };
   if (head === 'focus' && equipmentId && extra.length === 0) {
     return { name: 'focus', equipmentId, entityType: query.get('entityType') || null, anchor: query.get('anchor') || null, window: query.get('window') || null };
   }
@@ -51,7 +51,7 @@ export function hrefFor(route: Route): string {
     case 'onboarding':
       return `/onboarding/${encodeURIComponent(route.equipmentId)}${route.window === null ? '' : `?${new URLSearchParams({ window: route.window })}`}`;
     case 'board':
-      return `/onboarding/${encodeURIComponent(route.equipmentId)}/board`;
+      return `/onboarding/${encodeURIComponent(route.equipmentId)}/board${route.window === null ? '' : `?${new URLSearchParams({ window: route.window })}`}`;
     case 'focus': {
       const query = new URLSearchParams();
       if (route.entityType !== null) query.set('entityType', route.entityType);

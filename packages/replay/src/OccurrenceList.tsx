@@ -5,7 +5,7 @@ import { LEVEL_KO, NO_TIME } from './words.js';
 
 export interface OccurrenceListProps {
   batch: OccurrenceBatch;
-  timeline: ReplayTimeline;
+  timeline: Pick<ReplayTimeline, 'range'>;
   bindings: BindingsFile | null;
   /** `SceneState.appliedSeq` at the cursor: a row is `진행 중` when the reducer holds it open there. */
   appliedSeq: number | null;

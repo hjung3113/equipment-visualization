@@ -20,6 +20,8 @@ export type ReplayTimeline = {
   issues: DataQualityIssue[];
 };
 
+export type ReplayTimelineFrame = Pick<ReplayTimeline, 'range' | 'breakpoints' | 'bindingBoundaries' | 'issues'>;
+
 const without = <T extends object, K extends keyof T>(value: T, ...keys: K[]): Omit<T, K> =>
   Object.fromEntries(Object.entries(value).filter(([key]) => !(keys as string[]).includes(key))) as Omit<T, K>;
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
@@ -42,9 +44,11 @@ const compareIds = (a: string[], b: string[]) => {
   return 0;
 };
 
-// Run-length encoding of `seekSceneState`: sample it at every instant where the sought state can change
-// (see `breakpoints`) and merge equal adjacent samples. No reducer rule is re-implemented here.
-export function replayTimeline(input: ReplayInput, range: TimelineRange): ReplayTimeline {
+/**
+ * The cheap part of a timeline: the instants where the sought state can change, the Binding boundaries and the issues in
+ * range. `replayTimeline` samples `seekSceneState` at exactly these breakpoints, so `breakpoints.length` is its sampling cost.
+ */
+export function replayTimelineFrame(input: ReplayInput, range: TimelineRange): ReplayTimelineFrame {
   assertReplayInput(input);
   if (!(range.from < range.to)) throw new RangeError(`range.from (${range.from}) must be before range.to (${range.to})`);
   const inRange = (t: SiteWallClock) => range.from <= t && t < range.to;
@@ -64,6 +68,16 @@ export function replayTimeline(input: ReplayInput, range: TimelineRange): Replay
     if (timed[i]! < timed[i - 1]!) candidates.push(plusOneMilli(timed[i - 1]!));
   }
   const breakpoints = [...new Set(candidates.filter((t): t is SiteWallClock => t !== null && inRange(t)))].sort(compare);
+  const boundaries = input.bindings.bindings.flatMap((b) => [b.effectiveFrom, ...(b.effectiveTo === undefined ? [] : [b.effectiveTo])]);
+  const bindingBoundaries = [...new Set(boundaries.filter((t) => range.from < t && t < range.to))].sort(compare);
+  const issues = batch.issues.filter((issue) => issue.at === null || inRange(issue.at)).sort((a, b) => a.seq - b.seq);
+  return { range, breakpoints, bindingBoundaries, issues };
+}
+
+// Run-length encoding of `seekSceneState`: sample it at every instant where the sought state can change
+// (see `breakpoints`) and merge equal adjacent samples. No reducer rule is re-implemented here.
+export function replayTimeline(input: ReplayInput, range: TimelineRange): ReplayTimeline {
+  const { breakpoints, bindingBoundaries, issues } = replayTimelineFrame(input, range);
 
   const open = { materials: new Map<string, MaterialSpan>(), activities: new Map<string, ActivitySpan>(), markers: new Map<string, MarkerSpan>() };
   const done = { materials: [] as MaterialSpan[], activities: [] as ActivitySpan[], markers: [] as MarkerSpan[] };
@@ -111,8 +125,5 @@ export function replayTimeline(input: ReplayInput, range: TimelineRange): Replay
     .sort((a, b) => compare(a.componentId, b.componentId) || compare(a.from, b.from));
   const markers = [...done.markers, ...open.markers.values()]
     .sort((a, b) => compareIds(markerIds(a.marker), markerIds(b.marker)) || compare(a.from, b.from));
-  const boundaries = input.bindings.bindings.flatMap((b) => [b.effectiveFrom, ...(b.effectiveTo === undefined ? [] : [b.effectiveTo])]);
-  const bindingBoundaries = [...new Set(boundaries.filter((t) => range.from < t && t < range.to))].sort(compare);
-  const issues = batch.issues.filter((issue) => issue.at === null || inRange(issue.at)).sort((a, b) => a.seq - b.seq);
   return { range, breakpoints, materials, activities, markers, bindingBoundaries, issues };
 }

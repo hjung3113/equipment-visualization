@@ -4,7 +4,7 @@ import { DataTable } from '@eqv/ui';
 import { NO_TIME } from './words.js';
 
 export interface DataQualityListProps {
-  timeline: ReplayTimeline;
+  timeline: Pick<ReplayTimeline, 'issues'>;
   onSelectOccurrence: (id: string) => void;
 }
 

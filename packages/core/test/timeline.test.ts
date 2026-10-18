@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   bindingsFileSchema, layoutDocumentSchema, mappingVersionSchema, millisToWallClock, occurrenceBatchSchema,
-  replayTimeline, seekSceneState, wallClockToMillis, type ReplayInput, type SiteWallClock,
+  replayTimeline, replayTimelineFrame, seekSceneState, wallClockToMillis, type ReplayInput, type SiteWallClock,
 } from '../src/index.js';
 
 const root = new URL('../../../fixtures/cluster-single/', import.meta.url);
@@ -85,6 +85,29 @@ it('rejects an empty or reversed range and foreign equipment', () => {
   const foreign = { ...data, bindings: { ...data.bindings, equipmentId: 'eq-other' } };
   expect(() => replayTimeline(foreign, window)).toThrow(RangeError);
   expect(() => replayTimeline(foreign, window)).toThrow('must match batch.equipmentId');
+});
+
+const importRoot = new URL('../../../fixtures/import/', import.meta.url);
+const importInput = (name: string): ReplayInput => {
+  const batch = occurrenceBatchSchema.parse(JSON.parse(readFileSync(new URL(`eq-synth-03.${name}.batch.json`, importRoot), 'utf8')));
+  return { batch, layouts: [], bindings: { schemaVersion: '0.4', equipmentId: batch.equipmentId, bindings: [] }, mappings: [] };
+};
+const w1 = importInput('w1');
+const w2 = importInput('w2');
+
+it.each([
+  ['cluster-single, whole range', data, window],
+  ['cluster-single, Binding switch, Watermark, open Occurrence, occupancy conflict', data, { from: time('10:05:00'), to: time('10:11:00') }],
+  ['import w1 (open Occurrence, at: null, inverted boundary, 2 DQIs)', w1, { from: w1.batch.from, to: w1.batch.to }],
+  ['import w2', w2, { from: w2.batch.from, to: w2.batch.to }],
+])('replayTimelineFrame equals the frame fields of replayTimeline: %s', (_name, replayInput, range) => {
+  const { breakpoints, bindingBoundaries, issues } = replayTimeline(replayInput, range);
+  expect(replayTimelineFrame(replayInput, range)).toEqual({ range, breakpoints, bindingBoundaries, issues });
+});
+
+it('replayTimelineFrame rejects an empty range and foreign equipment like replayTimeline', () => {
+  expect(() => replayTimelineFrame(data, { from: time('10:05:00'), to: time('10:05:00') })).toThrow(RangeError);
+  expect(() => replayTimelineFrame({ ...data, bindings: { ...data.bindings, equipmentId: 'eq-other' } }, window)).toThrow('must match batch.equipmentId');
 });
 
 it('uses no time API in src', () => {

@@ -1,21 +1,24 @@
 import { useEffect, useId, useMemo, useState } from 'react';
+import { ChartGantt, Inbox } from 'lucide-react';
 import {
-  replayTimeline, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis, type ReplayInput, type ReplayTimeline, type SceneState, type SiteWallClock,
+  replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
+  type ReplayInput, type ReplayTimeline, type ReplayTimelineFrame, type SceneState, type SiteWallClock,
 } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import {
   CursorStateList, DataQualityList, EvidenceDetail, FocusGantt, focusRange, illustrativeGhosts, OccurrenceList, PlaybackControls, recordSteps,
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
-import { loadFocus, type FocusLoad } from './focus-data.js';
+import { TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focus-data.js';
 import { Button, Checkbox, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@fops/ui';
-import { EvidenceBadge, Page, ViewerZoomControls } from '@eqv/ui';
-import { Link, hrefFor } from './router.js';
+import { EvidenceBadge, Page, StateMessage, ViewerZoomControls } from '@eqv/ui';
+import { Link, hrefFor, navigate } from './router.js';
+import { WindowPicker, windowHex } from './WindowPicker.js';
 
 type Range = { from: SiteWallClock; to: SiteWallClock };
 type View = {
-  equipmentId: string;
-  sampleWindow: string | null;
+  /** What the load depends on (`loadKey` in `FocusPage`): the result, range, cursor and selections all belong to it. */
+  loadKey: string;
   entryKey: string;
   result: FocusLoad | null;
   /** The user-applied range; null means the entry's default. */
@@ -40,6 +43,8 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
+const PICKER_HINT = '재생·Gantt·목록이 이 window 하나를 씁니다. 기본은 진입 Occurrence를 담은 가장 늦은 window, 없으면 가장 늦은 window이며, 고른 window는 주소(?window=)에 남습니다.';
+const count = (value: number) => value.toLocaleString('en-US');
 
 function parseRange(from: string, to: string): { range: Range } | { error: string } {
   const a = siteWallClockSchema.safeParse(from);
@@ -53,29 +58,33 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
   return { range: { from: a.data, to: b.data } };
 }
 
-export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler }: {
+export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler, timelineBudget = TIMELINE_BUDGET }: {
   equipmentId: string; sampleWindow: string | null; entityType: string | null; anchor: string | null;
+  /** Largest breakpoints × records the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
+  timelineBudget?: number;
   /** Frame clock for playback; tests only, the browser's by default. */
   scheduler?: PlaybackScheduler;
 }) {
   const entryKey = JSON.stringify([entityType, anchor]);
-  const fresh = (): View => ({ equipmentId, sampleWindow, entryKey, result: null, applied: null, draft: null, rangeError: null, cursor: null,
+  // The anchor only picks the window when `?window=` is absent, so it is part of the load only then.
+  const loadKey = JSON.stringify([equipmentId, sampleWindow, sampleWindow === null ? anchor : null]);
+  const fresh = (): View => ({ loadKey, entryKey, result: null, applied: null, draft: null, rangeError: null, cursor: null,
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [tab, setTab] = useState<Tab>('list');
   const rangeId = useId();
-  // Everything below belongs to the route's equipmentId, Sample Window and entry key: a change clears it during render,
-  // and a late result of a previous id is dropped by the effect cleanup. The cursor, range and selection belong to one batch.
-  if (view.equipmentId !== equipmentId || view.sampleWindow !== sampleWindow) setView(fresh());
+  // Everything below belongs to the load key and the entry key: a change clears it during render, and a late result of a
+  // previous load is dropped by the effect cleanup. The cursor, range and selection belong to one batch.
+  if (view.loadKey !== loadKey) setView(fresh());
   else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, mode: { kind: 'time' } });
 
   useEffect(() => {
     let cancelled = false;
-    loadFocus(equipmentId, sampleWindow === null ? {} : { window: sampleWindow }).then((result) => {
-      if (!cancelled) setView((previous) => previous.equipmentId === equipmentId && previous.sampleWindow === sampleWindow ? { ...previous, result } : previous);
+    loadFocus(equipmentId, { ...(sampleWindow === null ? {} : { window: sampleWindow }), anchor }).then((result) => {
+      if (!cancelled) setView((previous) => previous.loadKey === loadKey ? { ...previous, result } : previous);
     });
     return () => { cancelled = true; };
-  }, [equipmentId, sampleWindow]);
+  }, [loadKey]);
 
   const { result } = view;
   const ok = result?.kind === 'ok' ? result : null;
@@ -84,27 +93,39 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
   const rawCursor = view.cursor ?? entry?.cursor ?? null;
   const cursor = range && rawCursor && rawCursor >= range.from && rawCursor < range.to ? rawCursor : range?.from ?? null;
 
-  const computed = useMemo((): { input: ReplayInput; timeline: ReplayTimeline } | { error: string } | null => {
-    if (!ok || !range) return null;
+  const input = useMemo((): ReplayInput | null => ok ? { batch: ok.batch, layouts: ok.layouts, bindings: ok.bindings, mappings: ok.mappings } : null, [ok]);
+  const framed = useMemo((): { frame: ReplayTimelineFrame } | { error: string } | null => {
+    if (!input || !range) return null;
     try {
-      const input: ReplayInput = { batch: ok.batch, layouts: ok.layouts, bindings: ok.bindings, mappings: ok.mappings };
-      return { input, timeline: replayTimeline(input, range) };
+      return { frame: replayTimelineFrame(input, range) };
     } catch (error) {
       return { error: message(error) };
     }
-  }, [ok, range]);
-  const timelineInput = computed && !('error' in computed) ? computed : null;
+  }, [input, range]);
+  const frame = framed && 'frame' in framed ? framed.frame : null;
+  const cost = useMemo(() => ok && frame ? timelineCost(ok.batch, frame) : null, [ok, frame]);
+  const tooLarge = cost !== null && cost.cost > timelineBudget;
+  // The Gantt is the only view that needs the full timeline; above the budget everything else still runs on `input` and `frame`.
+  const computed = useMemo((): { timeline: ReplayTimeline } | { error: string } | null => {
+    if (!input || !range || cost === null || tooLarge) return null;
+    try {
+      return { timeline: replayTimeline(input, range) };
+    } catch (error) {
+      return { error: message(error) };
+    }
+  }, [input, range, cost, tooLarge]);
+  const timeline = computed && 'timeline' in computed ? computed.timeline : null;
   const steps = useMemo(() => ok && range ? recordSteps(ok.batch, range) : [], [ok, range]);
   const { mode } = view;
   const sequenceSeq = mode.kind === 'sequence' && steps.some((s) => s.seq === mode.seq) ? mode.seq : null;
   const sceneState = useMemo((): SceneState | { error: string } | null => {
-    if (!timelineInput || !cursor) return null;
+    if (!input || !frame || !cursor) return null;
     try {
-      return sequenceSeq !== null ? stepSceneState(timelineInput.input, sequenceSeq) : seekSceneState(timelineInput.input, cursor);
+      return sequenceSeq !== null ? stepSceneState(input, sequenceSeq) : seekSceneState(input, cursor);
     } catch (error) {
       return { error: message(error) };
     }
-  }, [timelineInput, cursor, sequenceSeq]);
+  }, [input, frame, cursor, sequenceSeq]);
   const state = sceneState && !('error' in sceneState) ? sceneState : null;
   const layout = ok && state?.binding ? ok.layouts.find((l) => l.id === state.binding!.layoutId) ?? null : null;
   const selectedId = view.selectedOccurrenceId;
@@ -117,14 +138,14 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     return ids.length ? { componentIds: [...new Set(ids)] } : null;
   }, [state, selectedId]);
   const ghosts = useMemo(
-    () => view.illustrative && timelineInput && state ? illustrativeGhosts(timelineInput.input, state, layout) : null,
-    [view.illustrative, timelineInput, state, layout]);
+    () => view.illustrative && input && state ? illustrativeGhosts(input, state, layout) : null,
+    [view.illustrative, input, state, layout]);
   const replay = useMemo(() => state ? { state, ...(ghosts ? { illustrative: ghosts } : {}) } : null, [state, ghosts]);
 
   const patch = (changes: Partial<View>) => setView((previous) => ({ ...previous, ...changes }));
-  const playback = usePlayback({ cursor, range, onCursorChange: (at) => patch({ cursor: at }), resetKey: JSON.stringify([equipmentId, entryKey]), scheduler });
+  const playback = usePlayback({ cursor, range, onCursorChange: (at) => patch({ cursor: at }), resetKey: JSON.stringify([loadKey, entryKey]), scheduler });
   const shownAt = state?.at ?? null;
-  const breakpoints = timelineInput?.timeline.breakpoints ?? [];
+  const breakpoints = frame?.breakpoints ?? [];
   const previousBreakpoint = shownAt === null ? undefined : [...breakpoints].reverse().find((t) => t < shownAt);
   const nextBreakpoint = shownAt === null ? undefined : breakpoints.find((t) => t > shownAt);
   const toTime = (at: SiteWallClock) => patch({ cursor: at, mode: { kind: 'time' } });
@@ -152,12 +173,20 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
 
   return (
     <Page title={<>Focus · <code>{equipmentId}</code></>}>
+      <WindowPicker equipmentId={equipmentId} hint={PICKER_HINT}
+        value={sampleWindow ?? (ok ? windowHex(ok.selectedWindow) : null)}
+        details={ok ? { dataGeneration: ok.batch.dataGeneration, timeDomain: ok.batch.timeDomain, hash: ok.selectedWindow.hash } : null}
+        onChange={(hex) => navigate(hrefFor({ name: 'focus', equipmentId, entityType, anchor, window: hex }))} />
       <p>{anchor !== null ? <>진입 키: <code>{entityType ?? '—'}</code> / <code>{anchor}</code></> : '진입 키 없음'}</p>
       {result === null ? <p>불러오는 중…</p> : result.kind === 'not-found' ? (
         <>
           <p>설비를 찾을 수 없습니다</p>
           <p><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></p>
         </>
+      ) : result.kind === 'no-observations' ? (
+        <StateMessage icon={Inbox} title="Sample Window를 가져오세요"
+          body="이 설비는 등록되었지만 아직 가져온 관측이 없습니다. 재생할 Sample Window가 없습니다."
+          action={<Button asChild variant="secondary" size="sm"><Link href={`/equipment/${encodeURIComponent(equipmentId)}`}>설비 데이터 열기</Link></Button>} />
       ) : result.kind === 'error' ? (
         <>
           <p role="alert">데이터 오류: {result.error}</p>
@@ -165,7 +194,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
         </>
       ) : (
         <>
-          <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}>Onboarding으로 이동</Link></p>
+          <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow ?? windowHex(result.selectedWindow) })}>Onboarding으로 이동</Link></p>
           {[...result.notices, ...(entry?.notice ? [entry.notice] : [])].map((notice) => <p key={notice} role="status">{notice}</p>)}
           {range && (
             <form aria-label="구간" className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2" onSubmit={(event) => { event.preventDefault(); apply(); }}>
@@ -181,9 +210,10 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
               {view.rangeError && <span role="alert">{view.rangeError}</span>}
             </form>
           )}
+          {framed && 'error' in framed && <p role="alert">Replay 오류: {framed.error}</p>}
           {computed && 'error' in computed && <p role="alert">Replay 오류: {computed.error}</p>}
           {sceneState && 'error' in sceneState && <p role="alert">Replay 오류: {sceneState.error}</p>}
-          {timelineInput && state && cursor && (
+          {input && frame && state && cursor && (
             <>
               <PlaybackControls playing={playback.playing} onPlay={() => { patch({ mode: { kind: 'time' } }); playback.play(); }} onPause={playback.pause}
                 speed={playback.speed} onSpeedChange={playback.setSpeed}
@@ -214,24 +244,29 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
               </div>
               <section aria-label="Gantt">
                 <h2>Gantt</h2>
-                <FocusGantt timeline={timelineInput.timeline} layout={layout} batch={ok!.batch} cursor={state.at}
-                  onCursorChange={toTime} selectedOccurrenceId={selectedId}
-                  onSelectOccurrence={(id) => select(id, false)} selectedComponentId={view.selectedComponentId}
-                  expanded={view.expanded} onToggleExpand={(id) => setView((previous) => {
-                    const expanded = new Set(previous.expanded);
-                    if (!expanded.delete(id)) expanded.add(id);
-                    return { ...previous, expanded };
-                  })} />
+                {timeline ? (
+                  <FocusGantt timeline={timeline} layout={layout} batch={ok!.batch} cursor={state.at}
+                    onCursorChange={toTime} selectedOccurrenceId={selectedId}
+                    onSelectOccurrence={(id) => select(id, false)} selectedComponentId={view.selectedComponentId}
+                    expanded={view.expanded} onToggleExpand={(id) => setView((previous) => {
+                      const expanded = new Set(previous.expanded);
+                      if (!expanded.delete(id)) expanded.add(id);
+                      return { ...previous, expanded };
+                    })} />
+                ) : tooLarge && (
+                  <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
+                    body={`범위를 좁히세요. 지금 범위는 breakpoint ${count(cost.breakpoints)}개 × record ${count(cost.records)}개 = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
+                )}
               </section>
               <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-4">
                 <TabsList aria-label="Focus 상세">
                   {TABS.map((item) => <TabsTrigger key={item.id} value={item.id}>{item.label}</TabsTrigger>)}
                 </TabsList>
                 <TabsContent value="list">
-                  <OccurrenceList batch={ok!.batch} timeline={timelineInput.timeline} bindings={ok!.bindings} appliedSeq={state.appliedSeq}
+                  <OccurrenceList batch={ok!.batch} timeline={frame} bindings={ok!.bindings} appliedSeq={state.appliedSeq}
                     selectedOccurrenceId={selectedId} onSelectOccurrence={(id) => select(id, true)} />
                 </TabsContent>
-                <TabsContent value="quality"><DataQualityList timeline={timelineInput.timeline} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
+                <TabsContent value="quality"><DataQualityList timeline={frame} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
                 <TabsContent value="detail"><EvidenceDetail batch={ok!.batch} state={state} selectedOccurrenceId={selectedId} /></TabsContent>
               </Tabs>
             </>
