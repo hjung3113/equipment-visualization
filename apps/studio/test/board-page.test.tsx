@@ -98,7 +98,7 @@ it('mounts the Board for a direct visit and shows the fixture statuses', async (
   render(<App />);
   await loaded();
   screen.getByRole('heading', { name: '④ Mapping Board' });
-  const status = async (alias: string) => (await option(alias)).querySelector('.eqv-ed-board-status')!.textContent;
+  const status = async (alias: string) => (await option(alias)).getAttribute('aria-label')!.split(', ')[1];
   expect(await Promise.all(['EFEM_R1', 'LLA', 'LP1', 'PM1', 'PM2', 'PM9', 'TM_R1', 'VIRT_SCH'].map(status))).toEqual(
     ['● 확정', '● 확정', '● 확정', '● 확정', '◐ 자동', '○ 미매핑', '● 확정', '⊘ 무시']);
 });

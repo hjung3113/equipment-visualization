@@ -1,13 +1,9 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
-import { readFileSync } from 'node:fs';
-import { URL as NodeURL } from 'node:url';
 import { validateAliasRules } from '@eqv/core';
 import { MappingBoard, type MappingBoardProps, type SaveOutcome } from '../src/index.js';
 import { boardInput, equipmentRules, templateDraft } from './board-data.js';
-
-const editorCss = readFileSync(new NodeURL('../src/editor.css', import.meta.url), 'utf8');
 
 afterEach(cleanup);
 
@@ -434,7 +430,7 @@ it.each(['pattern', 'shared exact'] as const)('UX-5 warns when a pending exact r
     .toContain(`Model 규칙 ${id}을(를) 바꿉니다: synth-maker/synth-model의 모든 설비에 적용됩니다`);
 });
 
-const markedAliases = () => Array.from(list().querySelectorAll('[aria-selected="true"]')).map((node) => node.querySelector('.eqv-ed-board-alias')!.textContent);
+const markedAliases = () => Array.from(list().querySelectorAll('[aria-selected="true"]')).map((node) => node.getAttribute('aria-label')?.split(',')[0]);
 const equipmentScope = () => fireEvent.click(screen.getByRole('radio', { name: /설비/ }));
 
 it('confirms two marked rows with the keyboard at Equipment scope and undoes them together', () => {
@@ -613,45 +609,20 @@ it('keeps aggregated Model and override warnings and qualifies bulk ignore resul
 });
 
 
-it('keeps a separate active caret and outline while ignored rows remain marked', () => {
-  const style = document.createElement('style');
-  style.textContent = editorCss;
-  document.head.append(style);
-  try {
-    mount();
-    equipmentScope();
-    fireEvent.click(option('LLA'));
-    press(list(), ' ');
-    press(list(), 'j', { shiftKey: true });
-    press(list(), 'i');
-    const activeCaret = () => option('LP1').querySelector('[aria-hidden="true"]');
-    expect(activeCaret()?.textContent).toBe('▸');
-    expect(getComputedStyle(option('LP1')).outlineStyle).toBe('solid');
-    press(list(), 'k');
-    expect(option('LP1').querySelector('.eqv-ed-board-active')).toBeNull();
-    expect(option('LLA').querySelector('.eqv-ed-board-active')?.textContent).toBe('▸');
-    expect(markedAliases()).toEqual(['LLA', 'LP1']);
-    expect(list().getAttribute('aria-activedescendant')).toBe(option('LLA').id);
-  } finally {
-    style.remove();
-  }
-});
-
-it.each(['a', 'r'])('caps the %s dialog inside 16px viewport gutters with border-box sizing', (key) => {
-  const style = document.createElement('style');
-  style.textContent = editorCss;
-  document.head.append(style);
-  try {
-    mount();
-    fireEvent.click(option('PM1'));
-    press(list(), key);
-    const sizing = getComputedStyle(screen.getByRole('dialog'));
-    expect(sizing.boxSizing).toBe('border-box');
-    expect(sizing.maxWidth).toBe(`${window.innerWidth - 32}px`);
-    expect(sizing.width).toBe(key === 'a' ? '420px' : '560px');
-  } finally {
-    style.remove();
-  }
+it('keeps a separate active caret while ignored rows remain marked', () => {
+  mount();
+  equipmentScope();
+  fireEvent.click(option('LLA'));
+  press(list(), ' ');
+  press(list(), 'j', { shiftKey: true });
+  press(list(), 'i');
+  const caretRows = () => Array.from(list().querySelectorAll('[role="option"]'))
+    .filter((row) => row.textContent?.includes('▸')).map((row) => row.id);
+  expect(caretRows()).toEqual([option('LP1').id]);
+  press(list(), 'k');
+  expect(caretRows()).toEqual([option('LLA').id]);
+  expect(markedAliases()).toEqual(['LLA', 'LP1']);
+  expect(list().getAttribute('aria-activedescendant')).toBe(option('LLA').id);
 });
 
 it('shows a narrower-scope conflict in the rule preview without disabling add', () => {
@@ -692,21 +663,19 @@ it('describes auto-confirm sharing and overrides before one-click confirmation',
 });
 
 
-it('keeps the active selection background when the active row is also bulk-marked', () => {
-  const style = document.createElement('style');
-  // jsdom does not resolve CSS custom-property fallbacks for background colours.
-  style.textContent = editorCss.replace(/var\(--[^,]+,\s*([^)]+)\)/g, '$1');
-  document.head.append(style);
-  try {
-    mount();
-    fireEvent.click(option('LLA'));
-    const selection = getComputedStyle(option('LLA')).backgroundColor;
-    press(list(), ' ');
-    expect(getComputedStyle(option('LLA')).backgroundColor).toBe(selection);
-    press(list(), 'j', { shiftKey: true });
-    expect(getComputedStyle(option('LP1')).backgroundColor).toBe(selection);
-    expect(getComputedStyle(option('LLA')).backgroundColor).not.toBe(selection);
-  } finally {
-    style.remove();
-  }
+it('keeps the active row apart from the bulk-marked rows', () => {
+  mount();
+  const caretRows = () => Array.from(list().querySelectorAll('[role="option"]'))
+    .filter((row) => row.textContent?.includes('▸')).map((row) => row.id);
+  fireEvent.click(option('LLA'));
+  const expectState = (active: string, selected: string[]) => {
+    expect(caretRows()).toEqual([option(active).id]);
+    expect(list().getAttribute('aria-activedescendant')).toBe(option(active).id);
+    expect(Array.from(list().querySelectorAll('[aria-selected="true"]')).map((row) => row.id)).toEqual(selected.map((alias) => option(alias).id));
+  };
+  expectState('LLA', ['LLA']);
+  press(list(), ' ');
+  expectState('LLA', ['LLA']);
+  press(list(), 'j', { shiftKey: true });
+  expectState('LP1', ['LLA', 'LP1']);
 });

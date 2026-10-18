@@ -323,11 +323,12 @@ export function BoardPage({ equipmentId }: { equipmentId: string }) {
   }, [dirty]);
 
   const { result } = loaded;
-  // Once the board is loaded, MappingBoard owns the page's h1 (slice d moves it to the host).
   const boardLoaded = result?.kind === 'ok' && result.draft.kind === 'found';
   return (
-    <Page title={boardLoaded ? undefined : <>Mapping Board <code>{equipmentId}</code></>}>
-      {boardLoaded && <p>설비 <code>{equipmentId}</code></p>}
+    <Page
+      title={boardLoaded ? '④ Mapping Board' : <>Mapping Board <code>{equipmentId}</code></>}
+      description={boardLoaded ? <>설비 <code>{equipmentId}</code></> : undefined}
+    >
       <p><Link href={hrefFor({ name: 'onboarding', equipmentId })}>Onboarding으로 이동</Link></p>
       {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing result={result} /> : result.draft.kind === 'error' ? (
         <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>
