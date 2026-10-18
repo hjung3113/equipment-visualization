@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { cp, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
+import { sampleWindowName } from '@eqv/core';
 
 // vitest runs with cwd = apps/studio; import.meta.url is not a file URL under jsdom.
 const repo = resolve(process.cwd(), '../..');
@@ -35,6 +36,13 @@ export async function writeJson(root: string, path: string, value: unknown): Pro
   await writeFile(join(root, path), JSON.stringify(value));
 }
 
+/** Writes `batch` as `equipmentId`'s Sample Window under its content name; returns the data-root-relative path. */
+export async function addWindow(root: string, equipmentId: string, batch: unknown): Promise<string> {
+  const path = `observations/${equipmentId}/windows/${await sampleWindowName(batch as Parameters<typeof sampleWindowName>[0])}.batch.json`;
+  await writeJson(root, path, batch);
+  return path;
+}
+
 /** The healthy cluster-single observations re-keyed to `equipmentId`; `rename` rewrites alias names in both files. */
 export async function addEquipment(root: string, equipmentId: string, options: {
   maker?: string; model?: string; rename?: (text: string) => string; metadata?: boolean;
@@ -42,7 +50,7 @@ export async function addEquipment(root: string, equipmentId: string, options: {
   const rename = options.rename ?? ((text: string) => text);
   const rekey = async (file: string) => JSON.parse(rename(await readFile(join(repo, file), 'utf8')).replaceAll('"eq-synth-01"', JSON.stringify(equipmentId)));
   await writeJson(root, `equipment/${equipmentId}.json`, record(equipmentId, options.maker, options.model));
-  await writeJson(root, `observations/${equipmentId}/occurrence-batch.json`, await rekey('fixtures/cluster-single/occurrence-batch.json'));
+  await addWindow(root, equipmentId, await rekey('fixtures/cluster-single/occurrence-batch.json'));
   if (options.metadata !== false) {
     await writeJson(root, `observations/${equipmentId}/alias-metadata.json`, await rekey('fixtures/cluster-single/onboarding/alias-metadata.json'));
   }
