@@ -211,7 +211,7 @@ export function PublishPanel(props: PublishPanelProps) {
           <Label>
             effectiveFrom{' '}
             <Input
-              type="text" value={effectiveFrom} spellCheck={false} aria-invalid={effectiveError !== null}
+              type="text" className="min-w-68" value={effectiveFrom} spellCheck={false} aria-invalid={effectiveError !== null}
               aria-describedby={effectiveError ? errorId : fromHint ? hintId : undefined}
               onChange={(event) => setFrom({ prefill, value: event.target.value, touched: true })}
             />

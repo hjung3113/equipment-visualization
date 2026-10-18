@@ -2,7 +2,7 @@ import { Component, useEffect, useLayoutEffect, useRef, useState, type ChangeEve
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
-import { Page } from '@eqv/ui';
+import { Page, ViewerZoomControls } from '@eqv/ui';
 import { Button, Input, Label } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
@@ -274,7 +274,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
               {imported && <> <strong>저장 안 됨</strong></>}
             </p>
             <ViewerBoundary key={documentEpoch}>
-              <TopViewer layout={current.layout} width={VIEW_WIDTH} height={VIEW_HEIGHT} />
+              <TopViewer layout={current.layout} width={VIEW_WIDTH} height={VIEW_HEIGHT}
+                renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
             </ViewerBoundary>
           </>
         )}

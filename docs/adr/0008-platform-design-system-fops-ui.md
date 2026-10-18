@@ -12,7 +12,7 @@ EV의 모든 화면은 독립 Studio에서 돌 때도 analytics-platform(AP)과 
 
 ## 패키지별 범위
 
-- **`core`·`renderer`**: 디자인 시스템을 모른다. SVG는 계속 `--eqv-*` 변수와 fallback만 읽는다. `@fops/*`를 import하지 않는다(ESLint 경계 규칙으로 강제, 구현 슬라이스 a).
+- **`core`·`renderer`**: 디자인 시스템을 모른다. SVG는 계속 `--eqv-*` 변수와 fallback만 읽는다. `@fops/*`를 import하지 않는다(ESLint 경계 규칙으로 강제, 구현 슬라이스 a). Top View 줌 컨트롤은 호스트 slot(`renderControls`)이며, 호스트가 주지 않을 때만 기본 버튼을 그린다(Studio는 `@eqv/ui`의 `ViewerZoomControls`를 넘긴다).
 - **`replay`·`editor`**: DOM 컨트롤(버튼, 탭, select, checkbox, 표, 배지)은 `@fops/ui` 프리미티브로 그린다. `@fops/ui`는 peer dependency다(`workspace:*`, 패키지가 `private` `0.0.0`이다). 호스트가 한 벌을 준다. AP 안에서는 AP 워크스페이스의 같은 패키지다. 자체 스타일 방식은 아래 개정(2026-10-18)이 정한다: 슬라이스 d까지는 패키지 CSS(FeedbackOps 변수 `rgb(var(--…))`와 `--eqv-*`), 이후에는 `@fops/ui` 테마의 Tailwind 유틸리티다. Gantt·Top View 같은 SVG 그림은 계속 `--eqv-*`를 쓴다.
 - **`ui`(`@eqv/ui`)**: `@fops/ui`에 없는 패턴(밀집 표, 증거 배지, 범례 등)의 EV 컴포넌트. 개정(2026-10-18)을 본다.
 - **Studio**: `@fops/ui` `theme.css` 머리 주석의 소비자 순서를 그대로 따른다. 이 순서는 FeedbackOps ADR-0058의 불변 조건이다. 순서가 바뀌면 base 토큰이 theme 층에 진다.

@@ -22,31 +22,31 @@
   --eqv-assumed-fg: rgb(var(--text-warning-label));
 }
 
-/* Stopgap (UX-1/UX-2): restore cues Tailwind Preflight erases, until slice c replaces these controls with @fops/ui primitives. */
+/* Studio base typography: app-owned element defaults (@fops/ui compat.css leaves bare elements to the app). @fops/ui tokens only.
+   Layered, so d1/d2 utilities (text-*, mb-*, font-*) still win. */
 @layer base {
-  h1, h2, h3 { font-weight: 600; }
+  body {
+    margin: 0;
+    background: rgb(var(--surface-canvas));
+    color: rgb(var(--text-primary));
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-normal);
+  }
+  h2 { margin: var(--spacing-16) 0 var(--spacing-8); font-size: var(--text-lg); font-weight: 600; }
+  h3 { margin: var(--spacing-8) 0 var(--spacing-4); font-size: var(--text-md); font-weight: 600; }
   main ul, main ol { padding-left: 1.5em; }
   main ul { list-style: disc; }
   main ol { list-style: decimal; }
-  main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea,
-    button:not([role='tab']):not([role='radio']):not([role='checkbox']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])) {
-    border: 1px solid rgb(var(--border-strong));
-    border-radius: var(--radius-sm);
-    background: rgb(var(--surface-field-filled));
-    padding: 2px 8px;
-  }
-  main :is(input:not([type='checkbox']):not([type='radio']):not([type='range']), select, textarea,
-    button:not([role='tab']):not([role='radio']):not([role='checkbox']):not([aria-label='확대']):not([aria-label='축소']):not([aria-label='맞춤'])):disabled {
-    color: rgb(var(--text-disabled));
-    cursor: not-allowed;
+  code { font-family: var(--font-mono); }
+  main a { color: var(--color-accent-primary); }
+  main a:focus-visible { outline: 2px solid rgb(var(--focus-ring)); outline-offset: 2px; }
+  main a[aria-current='page'] { font-weight: 600; }
+  main section[aria-label] { margin-bottom: var(--spacing-16); }
+  /* The text stays the cue; colour and wash only reinforce it. No @fops/ui warning surface exists: this is Callout's amber wash. */
+  main [role='alert'] {
+    color: rgb(var(--text-warning-label));
+    background: rgb(var(--text-warning) / 0.08);
+    padding: var(--spacing-8) var(--spacing-12);
   }
 }
-
-body { margin: 0; background: var(--eqv-canvas, #f3f7fe); color: var(--eqv-ink, #101828); font-family: var(--font-sans); }
-main a:focus-visible, main button:focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 2px; }
-main h2 { margin: 16px 0 8px; font-size: 1.1rem; }
-main h3 { margin: 12px 0 6px; font-size: 1rem; }
-main a { color: var(--eqv-selection, #1428a0); }
-main [role='alert'] { color: var(--eqv-assumed-fg, #8e5500); background: var(--eqv-assumed-bg, #f4ece0); padding: 6px 10px; }
-main section[aria-label] { margin-bottom: 16px; }
-main a[aria-current='page'] { font-weight: 600; }
