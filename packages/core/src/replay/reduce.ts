@@ -1,19 +1,40 @@
 import type { EquipmentLayoutDocument } from '../layout/schema.js';
 import { resolveLocation } from '../mapping/resolve.js';
-import type { BindingsFile, MappingVersion } from '../mapping/schema.js';
+import type { Binding, BindingsFile, MappingVersion } from '../mapping/schema.js';
 import type { EvidenceLevel, Occurrence, OccurrenceBatch } from '../occurrence/schema.js';
 import { assertBatchRecords } from '../occurrence/validate.js';
 import type { SceneComponent, SceneMarker, SceneMaterial, SceneState } from '../scene/schema.js';
 import type { SiteWallClock } from '../site-wall-clock.js';
 
-export const RULESET_VERSION = 'scene-rules-1';
+export const RULESET_VERSION = 'scene-rules-2';
 export type ReplayInput = {
   batch: OccurrenceBatch; layouts: EquipmentLayoutDocument[]; bindings: BindingsFile; mappings: MappingVersion[];
+  /** Published Layout Revisions by `sha256:<hex>`; the caller verified each key against its content (ADR-0011). */
+  layoutRevisions?: Readonly<{ [revision: string]: EquipmentLayoutDocument }>;
 };
+const REVISION = /^sha256:[0-9a-f]{64}$/;
+/**
+ * The one Layout lookup (ADR-0011). A Binding that pins `layoutRevision` resolves by that revision only; a revision the
+ * input lacks is no Layout, never the `layoutId` Layout. An unpinned Binding resolves by `layoutId` in `layouts`.
+ */
+export function bindingLayout(input: ReplayInput, binding: Pick<Binding, 'layoutId' | 'layoutRevision'> | null | undefined): EquipmentLayoutDocument | null {
+  if (!binding) return null;
+  if (binding.layoutRevision !== undefined) return input.layoutRevisions?.[binding.layoutRevision] ?? null;
+  return input.layouts.find((l) => l.id === binding.layoutId) ?? null;
+}
 export function assertReplayInput(input: ReplayInput): void {
   const equipmentId = input.batch.equipmentId;
   if (input.bindings.equipmentId !== equipmentId) {
     throw new RangeError(`bindings.equipmentId (${input.bindings.equipmentId}) must match batch.equipmentId (${equipmentId})`);
+  }
+  for (const revision of Object.keys(input.layoutRevisions ?? {})) {
+    if (!REVISION.test(revision)) throw new RangeError(`layoutRevisions key ${revision} must be sha256:<64 lowercase hex>`);
+  }
+  for (const binding of input.bindings.bindings) {
+    const layout = binding.layoutRevision === undefined ? undefined : input.layoutRevisions?.[binding.layoutRevision];
+    if (layout && layout.id !== binding.layoutId) {
+      throw new RangeError(`layoutRevisions[${binding.layoutRevision}] is Layout ${layout.id}, but the Binding names ${binding.layoutId}`);
+    }
   }
   assertBatchRecords(input.batch);
   // An unfinished page can omit a record that would change a facet (e.g. a second occupant), so replay
@@ -70,7 +91,7 @@ export function stepSceneState(input: ReplayInput, seq: number): SceneState {
 // caller owns how it got them (a filter for one instant, an incremental set for a timeline pass).
 export function sceneStateAt(input: ReplayInput, t: SiteWallClock, prepared: Prepared, appliedSeq: number | null, open: Occurrence[]): SceneState {
   const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
-  const layout = binding && input.layouts.find((l) => l.id === binding.layoutId);
+  const layout = bindingLayout(input, binding);
   const resolve = (o: Occurrence) => resolveLocation({ bindings: input.bindings, mappings: input.mappings,
     alias: o.location!.moduleAlias, ...(o.location!.slotAlias === undefined ? {} : { slot: o.location!.slotAlias }), at: t });
   const anomalies = new Set<string>();
@@ -152,6 +173,7 @@ export function sceneStateAt(input: ReplayInput, t: SiteWallClock, prepared: Pre
     return 0;
   });
   return { equipmentId: input.batch.equipmentId, at: t, appliedSeq,
-    binding: binding ? { layoutId: binding.layoutId, mappingHash: binding.mappingHash } : null,
+    binding: binding ? { layoutId: binding.layoutId, mappingHash: binding.mappingHash,
+      ...(binding.layoutRevision === undefined ? {} : { layoutRevision: binding.layoutRevision }) } : null,
     materials: placed, components, markers };
 }

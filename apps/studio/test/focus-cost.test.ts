@@ -1,4 +1,4 @@
-import { millisToWallClock, replayTimelineFrame, wallClockToMillis, type OccurrenceBatch, type ReplayInput } from '@eqv/core';
+import { millisToWallClock, replayTimelineFrame, wallClockToMillis, type EquipmentLayoutDocument, type OccurrenceBatch, type ReplayInput } from '@eqv/core';
 import { describe, expect, it } from 'vitest';
 import { TIMELINE_BUDGET, timelineCost } from '../src/focus-data.js';
 
@@ -28,5 +28,14 @@ describe('timelineCost', () => {
     expect(cost.cost).toBeGreaterThan(TIMELINE_BUDGET);
     // The batch alone (the earlier model) would have admitted it.
     expect(cost.records + cost.breakpoints * (cost.open + cost.inversions)).toBeLessThanOrEqual(TIMELINE_BUDGET);
+  });
+
+  it('counts the Layouts of layoutRevisions as well as layouts', () => {
+    const layout = (components: number) => ({ components: Array.from({ length: components }, (_, i) => ({ id: `c${i}` })) }) as unknown as EquipmentLayoutDocument;
+    const small: ReplayInput = { ...input, bindings: { ...input.bindings, bindings: [] },
+      layoutRevisions: { [`sha256:${'1'.repeat(64)}`]: layout(8), [`sha256:${'2'.repeat(64)}`]: layout(100) } };
+    const cost = timelineCost(small, replayTimelineFrame(small, { from: batch.from, to: batch.to }));
+    // Hand-derived: 0 Bindings + 2 Layouts + 100 components × max(1, ⌈log₂ 100⌉ = 7); 50,000 records, 50,000 breakpoints.
+    expect(cost).toMatchObject({ context: 0 + 2 + 700, cost: N + N * (702 + 0) });
   });
 });

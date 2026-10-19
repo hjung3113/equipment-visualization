@@ -8,7 +8,7 @@ Studio의 Publish는 네 개의 파일을 정해진 순서로 쓴다. (1) 현재
 
 Baseline Inventory가 이미 있으면(409) 기존 파일을 유지하고 Publish를 계속한다. 같은 Mapping Version에 대한 기준은 처음 게시 때의 것이 Drift 비교의 기준으로 남아야 하기 때문이다.
 
-Binding에 선택 필드 `layoutRevision`(`sha256:<hex>`, `layoutRevision()` 값)을 추가하고 Publish는 항상 채운다. Mapping Version의 `layoutId`는 초안의 `id`다. Replay는 계속 `layoutId`로 Layout을 찾는다. Revision으로 찾는 것은 reducer가 동기 함수라 해시를 계산할 수 없으므로 #53에 남긴다. 필드가 없는 기존 bindings는 그대로 유효하다.
+Binding에 선택 필드 `layoutRevision`(`sha256:<hex>`, `layoutRevision()` 값)을 추가하고 Publish는 항상 채운다. Mapping Version의 `layoutId`는 초안의 `id`다. Replay가 Layout을 Revision으로 찾는 규칙은 [ADR-0011](0011-replay-resolves-layout-by-revision.md)이 정한다(reducer는 동기 함수라 해시를 계산할 수 없으므로 호출자가 검증한다). 필드가 없는 기존 bindings는 그대로 유효하다.
 
 `effectiveFrom`은 사람이 입력한다. Binding이 없는 장비는 Inventory `from`, 있는 장비는 Inventory `to`로 채우고, 가장 최근 binding의 `effectiveFrom`보다 늦어야 한다. 최근 binding이 열려 있으면 새 `effectiveFrom`으로 `effectiveTo`를 닫는다. 새 bindings 파일은 `validateBindings`를 통과해야 한다.
 
