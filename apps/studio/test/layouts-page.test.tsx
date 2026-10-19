@@ -479,6 +479,23 @@ it('opens the publish dialog focused on cancel, and cancel publishes nothing', a
   expect(screen.queryByText('게시된 Revision')).toBeNull();
 });
 
+it.each([
+  { how: 'Esc', close: (dialog: HTMLElement) => { fireEvent.keyDown(dialog, { key: 'Escape' }); } },
+  { how: '취소', close: (dialog: HTMLElement) => { fireEvent.click(within(dialog).getByRole('button', { name: '취소' })); } },
+])('returns focus to the Revision 게시 opener after $how', async ({ close }) => {
+  const { dialog } = await openPublishDialog();
+  close(dialog);
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Revision 게시' })));
+});
+
+it('returns focus to the Revision 게시 opener once a publish has settled', async () => {
+  await openPublishDialog();
+  await confirmPublish();
+  await screen.findByText('게시된 Revision');
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Revision 게시' })));
+});
+
 it('keeps 게시 disabled while the baseline is computing', async () => {
   const fetchFromApi = globalThis.fetch;
   let release!: () => void;

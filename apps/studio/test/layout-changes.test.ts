@@ -16,18 +16,25 @@ it('reports no change for an identical document', () => {
   expect(changes.header).toEqual([]);
 });
 
-// The template has no processRoutes; the collections share one code path.
-it.each(['levels', 'components', 'physicalInterfaces', 'transferCapabilities'] as const)(
+// The template has no processRoutes, so the test input gets two minimal valid ones.
+const withRoute = (raw: Raw) => {
+  const [first, second] = (raw.components as { id: string }[]);
+  const route = (id: string) => ({ id, label: id, steps: [first!.id, second!.id] });
+  raw.processRoutes = [route('route-a'), route('route-b')];
+  return raw;
+};
+it.each(['levels', 'components', 'physicalInterfaces', 'transferCapabilities', 'processRoutes'] as const)(
   'reports added, removed and changed ids in %s, sorted', (name) => {
-    const items = base[name] as { id: string }[];
+    const before = asLayout(withRoute(clone()));
+    const items = before[name] as { id: string }[];
     const first = items[0]!;
     const last = items[items.length - 1]!;
-    const after = clone();
+    const after = withRoute(clone());
     const next = (after[name] as { id: string }[]).slice(1);
     next[next.length - 1] = { ...next[next.length - 1]!, extra: true } as { id: string };
     next.push({ ...structuredClone(first), id: 'zz-added' }, { ...structuredClone(first), id: 'aa-added' });
     after[name] = next;
-    const changes = layoutChanges(base, asLayout(after));
+    const changes = layoutChanges(before, asLayout(after));
     expect(changes.collections[name]).toEqual({ added: ['aa-added', 'zz-added'], removed: [first.id], changed: [last.id] });
     expect(isUnchanged(changes)).toBe(false);
   },

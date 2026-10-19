@@ -107,6 +107,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [importSequence, setImportSequence] = useState(0);
   const activeImportSequence = useRef<number | null>(importSequence);
   const documentRef = useRef<HTMLDivElement>(null);
+  const publishOpener = useRef<HTMLButtonElement>(null);
+  /** Document epoch whose publish dialog just closed; the opener regains focus once it is enabled again. */
+  const focusOpenerFor = useRef<number | null>(null);
   const viewWidth = useColumnWidth(documentRef);
 
   useLayoutEffect(() => {
@@ -118,6 +121,14 @@ export function LayoutsPage({ file }: { file: string | null }) {
     activeDocumentEpoch.current = documentEpoch;
     return () => { activeDocumentEpoch.current = null; };
   }, [documentEpoch]);
+
+  // The dialog unmounts as it closes, so focus returns from here rather than from its onCloseAutoFocus.
+  useEffect(() => {
+    const owner = focusOpenerFor.current;
+    if (owner === null || publishing !== null || busy) return;
+    focusOpenerFor.current = null;
+    if (owner === documentEpoch) publishOpener.current?.focus();
+  }, [publishing, busy, documentEpoch]);
 
   // After navigation is approved, opening another file clears the import and previous notices.
   if (prevFile !== file) {
@@ -289,7 +300,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
             <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || busy}>
               <Save className="size-3.5" aria-hidden />초안 저장
             </Button>
-            <Button type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || busy}>
+            <Button ref={publishOpener} type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || busy}>
               <Send className="size-3.5" aria-hidden />Revision 게시
             </Button>
           </>}
@@ -321,8 +332,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
       </div>
       {publishing && (
         <PublishDialog
-          layout={publishing.layout} onCancel={() => setPublishing(null)}
-          onPublish={() => { setPublishing(null); void onPublish(publishing); }}
+          layout={publishing.layout}
+          onCancel={() => { focusOpenerFor.current = documentEpoch; setPublishing(null); }}
+          onPublish={() => { focusOpenerFor.current = documentEpoch; setPublishing(null); void onPublish(publishing); }}
         />
       )}
     </Page>
