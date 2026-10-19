@@ -228,11 +228,12 @@ describe('large-window guard', () => {
   const emptyInput = (b: OccurrenceBatch) => ({ batch: b, layouts: [], bindings: { schemaVersion: '0.4' as const, equipmentId: b.equipmentId, bindings: [] }, mappings: [] });
   beforeEach(async () => {
     batch = occurrenceBatchSchema.parse(await importFixture('eq-synth-03.w1.batch.json'));
-    cost = timelineCost(batch, replayTimelineFrame(emptyInput(batch), { from: batch.from, to: batch.to })).cost;
+    cost = timelineCost(emptyInput(batch), replayTimelineFrame(emptyInput(batch), { from: batch.from, to: batch.to })).cost;
   });
   const gantt = () => screen.queryByRole('group', { name: 'Component lane Gantt' });
-  const page = (budget?: number, id = 'eq-synth-03', window: string | null = w1) =>
-    render(<FocusPage equipmentId={id} sampleWindow={window} entityType={null} anchor={null} {...(budget === undefined ? {} : { timelineBudget: budget })} />);
+  const page = (budget?: number, id = 'eq-synth-03', window: string | null = w1, spanLimit?: number) =>
+    render(<FocusPage equipmentId={id} sampleWindow={window} entityType={null} anchor={null}
+      {...(budget === undefined ? {} : { timelineBudget: budget })} {...(spanLimit === undefined ? {} : { ganttSpanLimit: spanLimit })} />);
 
   it('over budget: Gantt replaced by a notice, everything else stays, a narrower range brings the Gantt back', async () => {
     page(cost - 1);
@@ -247,7 +248,23 @@ describe('large-window guard', () => {
     await screen.findByText('dqi-w1-unmatched-end');
 
     const narrow = { from: '2026-01-01T10:00:00.000' as const, to: '2026-01-01T10:05:00.000' as const };
-    expect(timelineCost(batch, replayTimelineFrame(emptyInput(batch), narrow)).cost).toBeLessThanOrEqual(cost - 1);
+    expect(timelineCost(emptyInput(batch), replayTimelineFrame(emptyInput(batch), narrow)).cost).toBeLessThanOrEqual(cost - 1);
+    const [from, to] = screen.getAllByRole('textbox') as HTMLInputElement[];
+    fireEvent.change(from!, { target: { value: narrow.from } });
+    fireEvent.change(to!, { target: { value: narrow.to } });
+    fireEvent.click(screen.getByRole('button', { name: '적용' }));
+    await waitFor(() => expect(gantt()).not.toBeNull());
+    expect(screen.queryByText(GUARD)).toBeNull();
+  });
+
+  it('over the span limit: Gantt replaced by a notice naming spans and limit, a narrower range brings the Gantt back', async () => {
+    const limit = 3;
+    page(undefined, 'eq-synth-03', w1, limit);
+    await screen.findByText(GUARD);
+    expect(gantt()).toBeNull();
+    expect(screen.getByText(/Gantt 막대는 \d+개로 그리기 한도 3개를 넘습니다/)).not.toBeNull();
+    screen.getByRole('region', { name: 'Top View' });
+    const narrow = { from: '2026-01-01T10:00:00.000', to: '2026-01-01T10:00:30.000' };
     const [from, to] = screen.getAllByRole('textbox') as HTMLInputElement[];
     fireEvent.change(from!, { target: { value: narrow.from } });
     fireEvent.change(to!, { target: { value: narrow.to } });
