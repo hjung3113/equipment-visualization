@@ -229,11 +229,11 @@ perf role is added only once the Studio has a measured interaction budget.
 - Packages built with `tsc` need `.js` relative import specifiers, or `dist` fails under Node ESM.
 - A worktree created by hand (`orca worktree create`, `git worktree add`) has no submodules: run `git submodule update
   --init` before `pnpm install`, or Studio cannot resolve `@fops/ui` (2026-10-18).
-- `orca worktree create --issue` accepts only numbers; launch split issues (11a/11b) under the plain number and
-  archive the earlier brief and state (hjung3113/conductor-engine#23).
-- A lettered slice (73e, 73f2) launched with `launch-worker.py <n> <slug>` reads `$WAVE_BRIEFS/<n>-task.md`, an older
-  slice's brief: pass `--brief <abs path>` and check that the state JSON's report and sentinel match the brief
-  (2026-10-18).
+- A lettered slice (73e, 73f2) launches with its suffixed id, `launch-worker.py 73f2 <slug>`: the launcher reads
+  `$WAVE_BRIEFS/73f2-task.md`, names the report, sentinel and state `W-73f2`, and passes only the digits to `orca
+  worktree create --issue` (which accepts only numbers). Launching with the plain number picked an older slice's
+  brief (2026-10-18). Keep `--brief` for a brief stored under another file name; it does not change the report or
+  sentinel names.
 - A new package cannot receive `PRE_ADD` dependencies: create the worktree by hand, commit a scaffold
   (`package.json`, tsconfigs, pinned deps), then launch with the shared `worker-launch.sh`
   (hjung3113/conductor-engine#23).
