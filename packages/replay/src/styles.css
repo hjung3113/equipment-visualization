@@ -1,0 +1,47 @@
+/* Tailwind scans this package's components (they live outside the host app). Import after the @fops/ui theme.
+   The SVG drawing classes keep --eqv-* colours (ADR-0008) and are declared as @utility so the design lint knows them. */
+@source "./";
+
+@utility eqv-rp-svg {
+  display: block;
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: var(--eqv-rp-min);
+  background: var(--eqv-board, #fbfdff);
+  border: 1px solid var(--eqv-border, #cbd6e6);
+  font: 11px system-ui, sans-serif;
+  & text { fill: var(--eqv-ink, #101828); }
+}
+@utility eqv-rp-lane-bg { fill: none; stroke: var(--eqv-border, #cbd6e6); stroke-width: 0.5; }
+@utility eqv-rp-lane-current { & .eqv-rp-lane-bg { fill: var(--eqv-selection-fill, #e4e8f6); } }
+@utility eqv-rp-lane-label { fill: var(--eqv-secondary, #374151); }
+@utility eqv-rp-disclosure {
+  cursor: pointer;
+  &:focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 1px; }
+}
+@utility eqv-rp-tick {
+  & line { stroke: var(--eqv-border, #cbd6e6); stroke-width: 0.5; }
+  & text { fill: var(--eqv-secondary, #374151); }
+}
+@utility eqv-rp-grid { stroke: var(--eqv-border, #cbd6e6); stroke-width: 0.5; }
+@utility eqv-rp-bar {
+  cursor: pointer;
+  &:focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 1px; }
+}
+@utility eqv-rp-bar-selected { & rect:first-of-type { stroke: var(--eqv-selection, #1428a0); stroke-width: 2.5; } }
+@utility eqv-rp-open-end { fill: none; stroke: var(--eqv-ink, #101828); stroke-width: 1.5; }
+@utility eqv-rp-binding { stroke: var(--eqv-ink, #101828); stroke-width: 1.5; }
+@utility eqv-rp-watermark { stroke: var(--eqv-assumed-fg, #8e5500); stroke-width: 1.5; stroke-dasharray: 5 3; }
+@utility eqv-rp-after-watermark { fill: var(--eqv-assumed-bg, #f4ece0); opacity: 0.6; pointer-events: none; }
+@utility eqv-rp-time-anomaly { fill: var(--eqv-highlight, #b42318); opacity: 0.12; }
+@utility eqv-rp-conflict { fill: none; stroke: var(--eqv-highlight, #b42318); stroke-width: 2; pointer-events: none; }
+@utility eqv-rp-dqi { fill: var(--eqv-highlight, #b42318); }
+@utility eqv-rp-marker-label { fill: var(--eqv-secondary, #374151); font-size: 10px; pointer-events: none; }
+@utility eqv-rp-cursor { stroke: var(--eqv-selection, #1428a0); stroke-width: 1.5; pointer-events: none; }
+@utility eqv-rp-axis {
+  fill: var(--eqv-selection-fill, #e4e8f6);
+  opacity: 0.6;
+  cursor: ew-resize;
+  touch-action: none;
+  &:focus-visible { outline: 2px solid var(--eqv-selection, #1428a0); outline-offset: 1px; }
+}

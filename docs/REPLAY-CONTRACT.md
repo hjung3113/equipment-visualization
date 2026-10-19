@@ -1,6 +1,6 @@
 # Replay Contract v0.4 — 로그 기반 설명 가능한 시각 재생
 
-용어는 [`CONTEXT.md`](../CONTEXT.md), 근거 결정은 [ADR-0002](adr/0002-occurrence-input-contract.md)·[ADR-0003](adr/0003-facet-evidence-levels.md).
+용어는 [`GLOSSARY.md`](../GLOSSARY.md), 근거 결정은 [ADR-0002](adr/0002-occurrence-input-contract.md)·[ADR-0003](adr/0003-facet-evidence-levels.md).
 
 ## 기본 정의
 
@@ -56,13 +56,14 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 
 - **순서:** 상태 적용 순서는 원천의 Record Sequence 하나뿐이다. timestamp는 화면 위치를 정하는 값이지 순서 근거가 아니다.
 - **Seek(t):** timestamp ≤ t인 **가장 긴 Record Sequence prefix**를 적용한 상태. sequence와 timestamp가 어긋난 경계(예: `EndBeforeStart`)는 Time Anomaly로 표시하고 그 구간의 영향 객체는 `unknown`. 디버그용 "sequence 단위 step" 탐색 제공.
-- **시각:** 모든 시각은 Site Wall-clock(`"YYYY-MM-DDTHH:mm:ss.fff"` naive 문자열 + `timeDomain` id). `Date`·로컬 timezone·UTC 변환 금지; 비교는 문자열 또는 timezone 없는 정수 값으로.
+- **시각:** 모든 시각은 Site Wall-clock(`"YYYY-MM-DDTHH:mm:ss.fff"` naive 문자열 + `timeDomain` id). `Date`·로컬 timezone·UTC 변환 금지; 비교는 문자열 또는 timezone 없는 정수 값으로. 소수 3자리 고정이며 더 정밀한 원천 시각은 자르지 않고 거부한다([ADR-0009](adr/0009-site-wall-clock-millisecond-precision.md)).
 - **구간:** Occurrence 구간은 `[start, end)`; 열린 Occurrence는 `end = null`.
 - **조회:** 재생 구간과 **겹치는** Occurrence를 조회한다(구간 안에서 시작한 것만이 아님). 따라서 중간 진입 시 이미 진행 중이던 체류·실행이 snapshot 없이 복원된다. 완료 Result만 있는 원천에서 Watermark 이후 진행 중인 것은 보이지 않으므로 그 구간은 근거 부재로 표시.
 - **동일 timestamp:** Record Sequence가 있으면 그 순서. 같은 Holding Site를 동시에 점유하는 충돌은 validation issue로 표시.
 - **이어지는 상태:** 관측된 상태는 다음 근거까지 원래 등급을 유지하되 `lastObservedAt`을 보존하고, Watermark상 근거가 끊긴 구간에서는 `unknown`으로 강등.
 - **Binding 경계:** 재생 구간이 Binding 유효기간 경계를 넘으면 segment로 나누고 경계 마커를 표시. 경계 이후 Material Location은 `unknown`으로 초기화하며 옛 이력을 새 레이아웃에 끼워 맞추지 않는다.
 - **결정론:** `Replay Key = (Layout Revision, Mapping Version, Ruleset Version, Data Generation, 관측 집합 해시, t)`가 같으면 같은 SceneState. 브라우저 프레임률과 무관. 구현된 key는 활성 Binding, Layout Revision 대신 레이아웃 내용 해시(아직 revision 필드 없음), 제공된 Mapping Version의 hash, Watermark를 포함한 전체 batch의 해시를 사용한다.
+- **Binding의 `layoutRevision`:** Binding은 선택 필드 `layoutRevision`(`sha256:<hex>`, Publish가 계산한 Layout Revision)을 가질 수 있고 없는 기존 bindings도 유효하다. Replay는 계속 `layoutId`로 Layout을 찾으며, Revision으로 찾는 것은 #53에서 다룬다(ADR-0007).
 - **재생 속도:** Pause/speed x0.25, x0.5, x1, x2, x4 는 **화면 시간** 변화. 예시 모션은 이벤트가 겹칠 때 drawing order만 다르고 source 순서를 재배열하지 않음.
 - **이동 표시:** 원천 시각 근거가 없다면 이동은 **discrete jump** 또는 `unknown`. '동작 중' 블레이드 실루엣을 임의 회전시키지 않음.
 - **이송 중:** Get 종료와 Put 종료 사이 Material의 Location은 Handler Component(`derived`). Holding Site는 Mapping이 arm slot을 해석할 때만.
@@ -76,8 +77,9 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 `@eqv/core/scene-state.schema.json`이 아래 형식을 정의한다. `seekSceneState`는 시각 prefix, `stepSceneState`는 지정 seq 이하의 모든 record를 적용하고, `replayKey`는 재생 입력을 식별한다. `stepSceneState`의 `t`는 prefix에서 seq 순으로 마지막인 null 아닌 `at`이며, 없으면 `batch.from`이다.
 `fixtures/cluster-single/expected-scene-states.json`은 구현과 독립적인 정답이다.
 DQI는 타임라인 마커이며 Scene State에 들어가지 않고 상태를 바꾸지 않는다.
-Replay 입력은 하나의 설비에 속해야 하며 `bindings.equipmentId`, batch와 모든 Occurrence·DQI record의 `equipmentId`가 다르면 `seekSceneState`·`stepSceneState`·`replayKey`는 상태를 도출하기 전에 `RangeError`를 던진다. 같은 진입점은 다음 batch도 `RangeError`로 거부한다(#42):
+Replay 입력은 하나의 설비에 속해야 하며 `bindings.equipmentId`, batch와 모든 Occurrence·DQI record의 `equipmentId`가 다르면 `seekSceneState`·`stepSceneState`·`replayKey`·`replayTimeline`은 상태를 도출하기 전에 `RangeError`를 던진다. 같은 진입점은 다음 batch도 `RangeError`로 거부한다(#42):
 - **Record Sequence 중복:** 모든 Occurrence의 `start.seq`·`end.seq`와 모든 DQI `seq`는 batch 안에서 서로 달라야 한다. 같은 seq면 입력 배열 순서가 상태를 정하게 되어 Replay Key 불변식이 깨진다.
+- **id 중복:** Occurrence `id`는 batch 안에서 서로 달라야 하고, DQI `id`도 서로 달라야 한다. `replayKey`가 id 순으로 정렬해 관측 집합 해시를 만들므로 같은 id면 입력 배열 순서가 해시를 정한다.
 - **미완료 page:** `continuationToken`이 있는 batch. 빠진 page의 record가 facet을 바꿀 수 있으므로(예: 같은 Holding Site의 두 번째 점유) 호출자가 전체 batch를 모은 뒤 replay한다. core는 page를 가져오지 않는다.
 
 ```ts

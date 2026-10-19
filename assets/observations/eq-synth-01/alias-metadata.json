@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-synth-01",
+  "aliases": [
+    {
+      "alias": "LP1",
+      "moduleType": "SYN_LOADPORT",
+      "isPort": true,
+      "isRobot": false
+    },
+    {
+      "alias": "EFEM_R1",
+      "moduleType": "SYN_ATM_ROBOT",
+      "isPort": false,
+      "isRobot": true
+    },
+    {
+      "alias": "LLA",
+      "moduleType": "SYN_LOADLOCK",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "TM_R1",
+      "moduleType": "SYN_VAC_ROBOT",
+      "isPort": false,
+      "isRobot": true
+    },
+    {
+      "alias": "PM1",
+      "moduleType": "SYN_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "PM2",
+      "moduleType": "SYN_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "PM9",
+      "moduleType": "SYN_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "VIRT_SCH",
+      "moduleType": "SYN_VIRTUAL",
+      "isPort": false,
+      "isRobot": false
+    }
+  ]
+}

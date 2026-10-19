@@ -2,8 +2,6 @@
 .review/
 # local session handoff (session-handoff skill)
 HANDOFF.md
-# impeccable engine binary (downloaded on first run)
-.claude/skills/impeccable/scripts/bin/
 # per-user Claude Code settings
 .claude/settings.local.json
 # local hookify rules (copied from FeedbackOps; per-clone)

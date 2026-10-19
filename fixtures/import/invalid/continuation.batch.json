@@ -1,0 +1,39 @@
+{
+  "equipmentId": "eq-synth-03",
+  "from": "2026-01-01T10:00:00.000",
+  "to": "2026-01-01T10:30:00.000",
+  "timeDomain": "site-synth",
+  "watermark": {
+    "seq": 2,
+    "at": "2026-01-01T10:06:00.000"
+  },
+  "parserContractVersion": "synthetic-1",
+  "dataGeneration": "g1",
+  "occurrences": [
+    {
+      "id": "occ-continuation",
+      "equipmentId": "eq-synth-03",
+      "kind": "FUNCTION",
+      "start": {
+        "at": "2026-01-01T10:05:00.000",
+        "seq": 1,
+        "evidence": "observed"
+      },
+      "end": {
+        "at": "2026-01-01T10:06:00.000",
+        "seq": 2,
+        "evidence": "observed"
+      },
+      "location": {
+        "moduleAlias": "WC1"
+      },
+      "synthetic": false,
+      "source": {
+        "parserContractVersion": "synthetic-1",
+        "dataGeneration": "g1"
+      }
+    }
+  ],
+  "issues": [],
+  "continuationToken": "page-2"
+}

@@ -1,0 +1,52 @@
+@import "tailwindcss";
+@import "@fops/ui/styles/tokens.css" layer(base);
+@import "@fops/ui/styles/semantic.css" layer(base);
+@import "@fops/ui/styles/theme.css";
+@import "@fops/ui/styles/compat.css";
+@import "@eqv/ui/styles.css";
+@import "@eqv/editor/styles.css";
+@import "@eqv/replay/styles.css";
+@source "../../../external/feedbackops/packages/ui/src";
+@source ".";
+
+/* ADR-0008: --eqv-* rows whose platform token @fops/ui defines; undeclared rows fall back to the asset hex. */
+:root {
+  --eqv-canvas: rgb(var(--surface-canvas));
+  --eqv-board: rgb(var(--surface-card));
+  --eqv-border: rgb(var(--border-subtle));
+  --eqv-ink: rgb(var(--text-primary));
+  --eqv-secondary: rgb(var(--text-secondary));
+  --eqv-interface: rgb(var(--text-secondary));
+  --eqv-evidence: rgb(var(--text-secondary));
+  --eqv-detail-fill: rgb(var(--surface-field-filled));
+  --eqv-assumed-fg: rgb(var(--text-warning-label));
+}
+
+/* Studio base typography: app-owned element defaults (@fops/ui compat.css leaves bare elements to the app). @fops/ui tokens only.
+   Layered, so d1/d2 utilities (text-*, mb-*, font-*) still win. */
+@layer base {
+  body {
+    margin: 0;
+    background: rgb(var(--surface-canvas));
+    color: rgb(var(--text-primary));
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--leading-normal);
+  }
+  h2 { margin: var(--spacing-16) 0 var(--spacing-8); font-size: var(--text-lg); font-weight: 600; }
+  h3 { margin: var(--spacing-8) 0 var(--spacing-4); font-size: var(--text-md); font-weight: 600; }
+  main ul, main ol { padding-left: 1.5em; }
+  main ul { list-style: disc; }
+  main ol { list-style: decimal; }
+  code { font-family: var(--font-mono); }
+  main a { color: var(--color-accent-primary); }
+  main a:focus-visible { outline: 2px solid rgb(var(--focus-ring)); outline-offset: 2px; }
+  main a[aria-current='page'] { font-weight: 600; }
+  main section[aria-label] { margin-bottom: var(--spacing-16); }
+  /* The text stays the cue; colour and wash only reinforce it. No @fops/ui warning surface exists: this is Callout's amber wash. */
+  main [role='alert'] {
+    color: rgb(var(--text-warning-label));
+    background: rgb(var(--text-warning) / 0.08);
+    padding: var(--spacing-8) var(--spacing-12);
+  }
+}
