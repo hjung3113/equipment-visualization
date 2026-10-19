@@ -6,6 +6,9 @@ Overrides and additions to the numbered rules above.
   `docs/REPLAY-CONTRACT.md`, `docs/ONBOARDING.md`, `docs/VIEWS.md`, `docs/INTEGRATION.md`, `docs/adr/`) and any
   nested `AGENTS.md` on the paths you touch. A design marked **Proposed** is not implemented behaviour; build only
   what the task asks.
+- Before the first test loop, build the workspace packages once: `pnpm exec turbo run build
+  --filter=@eqv/studio^... --filter='!@fops/*'`. A fresh worktree has no `dist` for workspace packages, so a
+  package test that imports another `@eqv/*` package fails until it is built.
 - Rule 1 checks: `vitest run <files>` plus the package's `typecheck` script when one exists. For assets, run
   `python3 .claude/conductor/scripts/asset-check.py . <changed asset paths>`.
 - **No suppressions:** no `biome-ignore`, `eslint-disable`, `@ts-ignore` or `@ts-nocheck` (`worker-hygiene.py`

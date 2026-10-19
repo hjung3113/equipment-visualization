@@ -15,6 +15,12 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 - `$MAIN` is `EV_MAIN` (`~/orca/projects/equipment-visualization`). Orca chooses the worktree location; the launcher
   finds it by name.
 - `WAVE_BRIEFS` is `$EV_MAIN/.review/wave/` (`.review/` is gitignored).
+- **Merge grant (asked once in the slice-start round, re-asked each session):** the recommended option is "merge into
+  `develop` on green CI and review, report afterwards" (사후보고). Other shapes the owner has used: a pre-merge report
+  and go-ahead per PR, and "artifact before merge" for screen-changing PRs. Every shape ends at `develop`.
+- **Owner decisions (standing):** merges into `develop` are allowed under the grant, but the release (`develop` →
+  `main`) waits for the owner's confirmation; a new `@eqv/ui` component is applied to screens only after an astra
+  (`review-ux`) review confirms it belongs to the same design system (ADR-0008).
 - **Slice start:** separate **Proposed** design from what is implemented. Owner decisions include
   `docs/DELIVERY-PLAN.md` checklist items and format/ADR approval.
 - **Slice order:** the dependency order in the slice issues (#5 → #6 → {#7, #8, #9} → {#10, #11, #12} → …) and
@@ -24,8 +30,8 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 ## Launch
 
 - `$ENGINE` = `~/.agents/skills/issue-wave-conductor/scripts` (global engines). This repo's rules live in
-  `.claude/conductor/conductor.json` + `addenda/`; the engine tests live in the engine repo
-  (`~/orca/workspaces/conductor-engine`), not here.
+  `.claude/conductor/conductor.json` + `addenda/`; the engine tests live in the provider repo
+  (`~/orca/projects/conductor-engine`), not here.
 - `python3 $ENGINE/launch-worker.py <n> <slug>` (reads `conductor.json`):
   - creates an Orca worktree from `origin/develop` and renames its branch to `feature/<n>-<slug>`;
   - builds `.review/00-IMPL-RULES.md` and `.review/00-REVIEW-RULES.md` from the shared templates plus `addenda/` and writes `.review/W-<n>-TASK.md`
@@ -63,9 +69,17 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 
 ## Browser evidence
 
-Once `apps/studio` exists (S8, #13): start the Studio dev server from the worktree's root `dev` script on a free port,
-bound to `<label>.localhost`, and a second one from the wave baseline worktree (install: `pnpm install
---frozen-lockfile`). Captures go to `.review/<n>-shots/`. There is no preview script yet (see Tools → Not yet ported).
+Previews are started by hand; there is no preview script (porting `app-preview.py` is #91).
+
+- **Branch:** in the issue worktree, `EQV_STUDIO_ASSETS=<scratch copy of assets/> pnpm dev --port <free> --strictPort`
+  (the root `dev` script builds the Studio's workspace dependencies, then runs vite). Use fixed free ports per wave
+  (5191–5199 so far) and pass the URLs to the reviewer.
+- **Baseline:** the same command in the wave baseline worktree detached at `origin/develop` (install: `pnpm install
+  --frozen-lockfile`; refresh with `git -C <baseline> checkout --detach origin/develop`).
+- **Data root:** `EQV_STUDIO_ASSETS` points each preview at its own copy of `assets/` outside this repository, so a save,
+  publish or import in the preview never writes the checkout (`apps/studio/README.md`; imports into a root inside the
+  repo are refused).
+- Captures go to `.review/<n>-shots/`. Stop both dev servers in the turn the UX review ends.
 
 ## Review
 
@@ -90,6 +104,10 @@ Read first by the global `review-ux` persona. Report in English.
 - **What runs:** the Studio — the semantic Top View viewer, the layout editor and log replay.
 - **Previews:** `branch` and `main`, each on its own host (`http://<label>.localhost:<port>`), both serving synthetic
   fixtures. There is no login and no backend; no persona or role switch.
+- **Write scope:** do not press save, publish or import in a Studio preview unless the task says the preview runs on
+  a throwaway `EQV_STUDIO_ASSETS` copy. A preview without that variable writes the reviewed checkout's `assets/`:
+  after the review the conductor restores it (`git checkout -- assets`, trash untracked files under `assets/`)
+  before any commit, and resets a polluted preview data copy before the next run (2026-10-18).
 - **Viewport:** about 1440 wide; check one narrow width only when the task touches layout.
 - **Authority:**
   - root `AGENTS.md` (evidence labels, geometry vs connectivity, unknowns) and `README.md` boundaries;
@@ -103,8 +121,8 @@ Read first by the global `review-ux` persona. Report in English.
     FeedbackOps `@fops/ui` controls and tokens, the platform shell (rail, sidebar, 50px page head, 32px table rows).
     Compare side by side with the analytics-platform screen of the same kind; a default browser control or an
     unstyled table is a finding, not a nit;
-  - generic lenses only where the project is silent: `.claude/skills/impeccable/reference/critique.md` (heuristics)
-    and `.claude/skills/impeccable/reference/audit.md` (accessibility).
+  - generic lenses only where the project is silent: the globally installed `impeccable` skill's
+    `~/.agents/skills/impeccable/reference/critique.md` (heuristics) and `reference/audit.md` (accessibility).
 - **Project checks:**
   - **Evidence honesty (blocker class):** every replayed state shows its fidelity (`observed`, `derived`,
     `illustrative`, `unknown`); illustrative motion is visibly distinct and off by default; nothing animates a
@@ -126,8 +144,8 @@ Read first by the global `review-ux` persona. Report in English.
 
 Read first by the global `review-quality` persona. Report in English.
 
-- **Range:** the slice start commit `..origin/develop` (the tip the release PR will ship), in a disposable worktree
-  detached at `origin/develop`.
+- **Range:** slice start (or the previous release merge)`...origin/develop` (the tip the release PR will ship), in a
+  disposable worktree detached at `origin/develop`; the same range as § Slice close.
 - **Authority:** root `AGENTS.md` (Architecture constraints, Change quality gates, Integration rules); `GLOSSARY.md`,
   `docs/DESIGN-v0.4.md` (domain model), `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`, ADRs under `docs/adr/`,
   and nested `AGENTS.md` files on touched paths. A section marked **Proposed** is design, not a contract the code
@@ -173,6 +191,13 @@ check.
 
 ## Tools
 
+Provided pieces (the `issue-wave-conductor` skill with its engines and templates, `orca-dispatch-recipes`,
+`session-handoff`, the reviewer personas, the workflow hooks) are installed by the provider repo
+`~/orca/projects/conductor-engine` with `bash install.sh`; this repo keeps only `$CONDUCTOR`. The SessionStart
+context names the installed commit; when it warns about edited installed copies, run `bash install.sh --check` in the
+provider checkout. A defect in a provided piece is filed with `$ENGINE/upstream-file.sh` (global § Deferrals →
+Upstream), and a local workaround goes in § Traps with the issue link.
+
 | Tool | What it does | Tests |
 | --- | --- | --- |
 | `$ENGINE/launch-worker.py <n> <slug>` | Launch above | – |
@@ -190,18 +215,28 @@ Run `asset-check.py`'s test with `python3 .claude/conductor/scripts/test-asset-c
 ### Not yet ported
 
 FeedbackOps tooling with no target here yet: visual baselines (`visual.sh`, `baseline-keep.py`,
-`capture.visual.spec.ts.tmpl`), UI performance (`nav-perf.*`, `review-perf`, `review-rules-perf.md`), previews
-(`app-preview.py`, `preview-fixtures.mjs`), `biome-cmp.sh`, and the backend/DB path (`verify-be.sh`, `verify-db.sh`,
-`impl-rules-be.md`, throwaway Postgres). Port after S8 (#13) when `apps/studio` exists; previews will use the vite dev
-server, and a perf role is added only once the Studio has a measured interaction budget.
+`capture.visual.spec.ts.tmpl`), UI performance (`nav-perf.*`, `review-perf`, `review-rules-perf.md`), the preview
+script (`app-preview.py`, `preview-fixtures.mjs`; tracked in #91, previews run by hand per § Browser evidence),
+`biome-cmp.sh`, and the backend/DB path (`verify-be.sh`, `verify-db.sh`, `impl-rules-be.md`, throwaway Postgres). A
+perf role is added only once the Studio has a measured interaction budget.
 
 ## Traps
 
 - Reviewer tasks say "do not run pnpm": a codex reviewer's `pnpm` in a review worktree auto-installs a repo-local
   `.pnpm-store/`, which makes `orca worktree rm` refuse; in `$EV_MAIN`, trashing that store broke `node_modules`
-  links (reinstall with `--config.confirmModulesPurge=false`).
+  links (reinstall with `--config.confirmModulesPurge=false`). The `review-quality` persona lacks this rule
+  (hjung3113/conductor-engine#22), so its task says it too.
 - Packages built with `tsc` need `.js` relative import specifiers, or `dist` fails under Node ESM.
 - A worktree created by hand (`orca worktree create`, `git worktree add`) has no submodules: run `git submodule update
   --init` before `pnpm install`, or Studio cannot resolve `@fops/ui` (2026-10-18).
 - `orca worktree create --issue` accepts only numbers; launch split issues (11a/11b) under the plain number and
-  archive the earlier brief and state.
+  archive the earlier brief and state (hjung3113/conductor-engine#23).
+- A lettered slice (73e, 73f2) launched with `launch-worker.py <n> <slug>` reads `$WAVE_BRIEFS/<n>-task.md`, an older
+  slice's brief: pass `--brief <abs path>` and check that the state JSON's report and sentinel match the brief
+  (2026-10-18).
+- A new package cannot receive `PRE_ADD` dependencies: create the worktree by hand, commit a scaffold
+  (`package.json`, tsconfigs, pinned deps), then launch with the shared `worker-launch.sh`
+  (hjung3113/conductor-engine#23).
+- A merge of a change that loads ESLint/Tailwind inside the parallel test run pushed an unrelated 5 s editor test
+  over its timeout in CI twice: read the CI timings of the slowest tests in other packages before merging such a
+  change (2026-10-18; hjung3113/conductor-engine#20).
