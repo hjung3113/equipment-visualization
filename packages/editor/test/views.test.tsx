@@ -34,6 +34,23 @@ it('renders fleet rows with status badges, integer percentages, dashes and a hos
     '커버리지: 해석된 참조 수 / 전체 참조 수(무시한 alias 제외). assumed 비율: assumed 규칙으로 해석된 참조 수 / 해석된 참조 수.');
 });
 
+it('adds the host action column and spans it in error rows when provided', () => {
+  const rows = summarizeFleet([
+    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true },
+    { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
+  ]);
+  render(<FleetTable rows={rows} renderLink={(_, children) => children}
+    renderActions={(row) => row.status === 'published' ? <button type="button">Replay {row.equipmentId}</button> : null} />);
+
+  const table = screen.getByRole('table', { name: 'Fleet 표' });
+  expect(within(table).getAllByRole('columnheader').map((header) => header.textContent)).toEqual(
+    ['설비', 'Maker', 'Model', '상태', '커버리지', 'assumed 비율', '미매핑 참조', '동작']);
+  const published = screen.getByRole('row', { name: /eq-synth-01/ });
+  expect(within(published).getByRole('button', { name: 'Replay eq-synth-01' })).toBeTruthy();
+  const failed = screen.getByRole('row', { name: /eq-bad/ });
+  expect(failed.querySelector('td[colspan="5"]')).not.toBeNull();
+});
+
 
 it('contains each wide table in a focusable named region', () => {
   render(<>

@@ -63,6 +63,31 @@ it('lists a published equipment on /fleet with a link to its onboarding page', a
   expect(screen.getByRole('link', { name: 'eq-synth-01' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
 });
 
+it.each([
+  { status: 'published', equipmentId: 'eq-synth-01', replay: true, setup: async () => {} },
+  { status: 'draft', equipmentId: 'eq-draft', replay: false, setup: async () => { await addEquipment(root, 'eq-draft'); } },
+  { status: 'unstarted', equipmentId: 'eq-new', replay: false, setup: async () => {
+    await addEquipment(root, 'eq-new', { maker: 'other-maker', model: 'other-model' });
+  } },
+  { status: 'no-observations', equipmentId: 'eq-empty', replay: false, setup: async () => {
+    await writeJson(root, 'equipment/eq-empty.json', record('eq-empty'));
+  } },
+  { status: 'error', equipmentId: 'eq-bad', replay: false, setup: async () => {
+    await writeJson(root, 'equipment/eq-bad.json', { schemaVersion: '0.4', equipmentId: 'eq-bad' });
+  } },
+])('offers Replay only for a published Fleet row ($status)', async ({ equipmentId, replay, setup }) => {
+  await setup();
+  at('/fleet');
+  render(<App />);
+  const row = await fleetRow(equipmentId);
+  const replayLink = within(row).queryByRole('link', { name: `${equipmentId} Replay` });
+  if (replay) {
+    expect(replayLink?.getAttribute('href')).toBe(`/focus/${equipmentId}`);
+  } else {
+    expect(replayLink).toBeNull();
+  }
+});
+
 it('shows the Inventory and Template sections on /onboarding/:equipmentId', async () => {
   at('/onboarding/eq-synth-01');
   render(<App />);
