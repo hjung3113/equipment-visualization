@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   bindingsFileSchema, canonicalJson, layoutDocumentSchema, mappingVersionSchema, millisToWallClock, occurrenceBatchSchema,
-  replayTimeline, replayTimelineFrame, seekSceneState, wallClockToMillis, type MappingVersion, type ReplayInput, type ReplayTimeline,
+  replayTimeline, replayTimelineFrame, seekSceneState, wallClockToMillis, type ActivitySpan, type MappingVersion, type MarkerSpan, type MaterialSpan, type ReplayInput, type ReplayTimeline,
   type SiteWallClock, type TimelineRange,
 } from '../src/index.js';
 
@@ -136,16 +136,16 @@ function sampledTimeline(replayInput: ReplayInput, range: TimelineRange): Replay
     return 0;
   };
   const { breakpoints, bindingBoundaries, issues } = replayTimelineFrame(replayInput, range);
-  const open = { materials: new Map<string, any>(), activities: new Map<string, any>(), markers: new Map<string, any>() };
-  const done = { materials: [] as any[], activities: [] as any[], markers: [] as any[] };
-  const place = (group: Map<string, any>, finished: any[], identity: string, from: SiteWallClock, to: SiteWallClock, next: object, seen: Set<string>) => {
+  const open = { materials: new Map<string, MaterialSpan>(), activities: new Map<string, ActivitySpan>(), markers: new Map<string, MarkerSpan>() };
+  const done = { materials: [] as MaterialSpan[], activities: [] as ActivitySpan[], markers: [] as MarkerSpan[] };
+  const place = <T extends Span>(group: Map<string, T>, finished: T[], identity: string, from: SiteWallClock, to: SiteWallClock, next: object, seen: Set<string>) => {
     seen.add(identity);
     const current = group.get(identity);
     if (current) {
       if (canonicalJson(strip(current, 'from', 'to')) === canonicalJson(next)) { current.to = to; return; }
       finished.push(current);
     }
-    group.set(identity, { ...next, from, to });
+    group.set(identity, { ...next, from, to } as T);
   };
   const close = (group: Map<string, Span>, finished: Span[], seen: Set<string>) => {
     for (const [identity, span] of group) {
@@ -258,7 +258,7 @@ it('replayTimeline equals sampling seekSceneState per breakpoint: 200 seeded ran
     const a = wallClockToMillis(random.batch.from) + Math.floor(rnd() * 20000);
     const sub = { from: millisToWallClock(a), to: millisToWallClock(a + 500 + Math.floor(rnd() * 9000)) };
     for (const range of [{ from: random.batch.from, to: random.batch.to }, sub]) {
-      try { sameAsSampled(random, range); } catch (error) { throw new Error(`seed ${seed}, ${range.from}..${range.to}: ${(error as Error).message.slice(0, 300)}`); }
+      try { sameAsSampled(random, range); } catch (error) { throw new Error(`seed ${seed}, ${range.from}..${range.to}: ${(error as Error).message.slice(0, 300)}`, { cause: error }); }
     }
   }
 });
