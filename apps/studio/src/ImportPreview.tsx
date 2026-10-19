@@ -18,7 +18,7 @@ import {
   type DetailField,
 } from '@eqv/ui';
 import { ApiError, importWindow, putAliasMetadata, putTypeDictionary } from './api.js';
-import { readOptional } from './onboarding-data.js';
+import { checkScope, readAliasMetadata, shortWindowHash } from './onboarding-data.js';
 import type { EquipmentDataLoad, FileState } from './equipment-data.js';
 
 export type ImportKind = 'window' | 'alias-metadata' | 'type-dictionary';
@@ -88,16 +88,9 @@ function aliasDiff(current: AliasMetadataFile, next: AliasMetadataFile): AliasDi
 }
 
 async function currentAlias(equipmentId: string): Promise<AliasCurrent> {
-  const path = `observations/${equipmentId}/alias-metadata.json`;
   try {
-    const raw = await readOptional(path);
-    if (raw === undefined) return { kind: 'absent' };
-    const parsed = aliasMetadataFileSchema.safeParse(raw);
-    if (!parsed.success) return { kind: 'unreadable', message: parsed.error.issues.map(({ message }) => message).join('; ') };
-    if (parsed.data.equipmentId !== equipmentId) {
-      return { kind: 'unreadable', message: `equipmentId(${parsed.data.equipmentId})가 ${equipmentId}와 다릅니다` };
-    }
-    return { kind: 'ok', file: parsed.data };
+    const file = await readAliasMetadata(equipmentId);
+    return file === undefined ? { kind: 'absent' } : { kind: 'ok', file };
   } catch (error) {
     return { kind: 'unreadable', message: errorText(error) };
   }
@@ -164,8 +157,13 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
   const result = validateTypeDictionary(raw);
   const rejects = result.ok ? [] : issueProblems(result.issues);
   const fileData = result.ok ? result.file : undefined;
-  if (fileData && (fileData.scope.level !== 'model' || fileData.scope.maker !== record.maker || fileData.scope.model !== record.model)) {
-    rejects.push({ code: 'scope-mismatch', path: ['scope'], message: `범위가 Model ${record.maker}/${record.model}이 아닙니다: ${JSON.stringify(fileData.scope)}` });
+  if (fileData) {
+    try {
+      checkScope(`onboarding/scopes/model/${record.maker}/${record.model}/type-dictionary.json`, fileData.scope,
+        { level: 'model', maker: record.maker, model: record.model });
+    } catch (error) {
+      rejects.push({ code: 'scope-mismatch', path: ['scope'], message: errorText(error) });
+    }
   }
   const exists = typeDictionary.kind === 'ok';
   const notice = rejects.length > 0
@@ -208,7 +206,7 @@ function WindowDetails({ summary }: { summary: Inspection['summary'] }) {
     { key: 'aliases', label: 'alias', value: `${summary.aliases}개` },
     { key: 'boundary-evidence', label: '경계 근거', value: evidence(summary.boundaryEvidence) },
     { key: 'identity-evidence', label: '식별 근거', value: evidence(summary.identityEvidence) },
-    ...('hash' in summary ? [{ key: 'hash', label: 'hash', value: summary.hash.slice(7, 19), mono: true }] : []),
+    ...('hash' in summary ? [{ key: 'hash', label: 'hash', value: shortWindowHash(summary.hash), mono: true }] : []),
   ];
   return <DetailFields items={items} />;
 }

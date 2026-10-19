@@ -7,7 +7,7 @@ import { ApiError, registerEquipment } from './api.js';
 import { loadEquipmentData, type EquipmentDataLoad, type FileState, type WindowRow } from './equipment-data.js';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { ImportPreview, type ImportKind, type ImportOutcome } from './ImportPreview.js';
-import { problems } from './onboarding-data.js';
+import { problems, windowHex } from './onboarding-data.js';
 import { Link, hrefFor, navigate } from './router.js';
 
 const FIELDS = [
@@ -193,7 +193,7 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
         </DataTable.Row>
       );
     }
-    const window = entry.hash.slice('sha256:'.length);
+    const window = windowHex(entry);
     return (
       <DataTable.Row key={entry.name} data-window={entry.name}>
         <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>

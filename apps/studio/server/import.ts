@@ -1,14 +1,15 @@
 import { readdir, readFile, realpath, stat } from 'node:fs/promises';
-import { dirname, join, sep } from 'node:path';
+import { dirname, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
   aliasMetadataFileSchema, equipmentRecordSchema, parseSampleWindowName, validateSampleWindow, validateTypeDictionary,
   type EquipmentRecord, type SampleWindowRef,
 } from '@eqv/core';
-import { ApiError, fail, NAME } from './errors.js';
+import { ApiError, contained, fail, NAME } from './errors.js';
 import type { FileApiRequest, FileApiResponse, WriteScope } from './files.js';
 
-const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
+export const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
+export const IMPORT_API_PREFIX = '/api/import/';
 const REPO_REASON = '저장소 밖 경로를 EQV_STUDIO_ASSETS로 지정하세요';
 const WINDOW_FILE = '.batch.json';
 const CONFLICT_CODES = new Set(['window-overlap', 'time-domain-mismatch']);
@@ -16,7 +17,6 @@ const CONFLICT_CODES = new Set(['window-overlap', 'time-domain-mismatch']);
 interface ImportDeps {
   root: string;
   repoRoot: string | undefined;
-  rootReal(): Promise<string>;
   readTarget(segments: string[]): Promise<{ real: string }>;
   assertWritable(segments: string[]): Promise<void>;
   write(segments: string[], value: unknown, immutable: boolean, createOnly: boolean | undefined, scope: WriteScope):
@@ -27,7 +27,6 @@ interface ImportDeps {
 
 type Guard = { enabled: true; insideGitWorkTree: boolean; scope: WriteScope } | { enabled: false; reason: string; status: number; insideGitWorkTree: false };
 
-const contained = (root: string, target: string): boolean => target === root || target.startsWith(root + sep);
 /** A reason that never carries a path: raw filesystem messages include the absolute file name. */
 const reasonOf = (error: unknown): string => {
   if (error instanceof SyntaxError) return 'not valid JSON';

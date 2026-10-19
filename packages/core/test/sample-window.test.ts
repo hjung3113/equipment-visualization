@@ -64,6 +64,20 @@ it.each<{ code: ImportRejectCode; path: (string | number)[]; edit: (b: Occurrenc
   expect((result as { issues: { path: unknown }[] }).issues[0]!.path).toEqual(path);
 });
 
+it('reports one time-domain mismatch using the first existing window', async () => {
+  const result = await run(() => {}, [
+    ref('2026-01-01T10:30:00.000', '2026-01-01T11:00:00.000', 'site-first'),
+    ref('2026-01-01T11:00:00.000', '2026-01-01T12:00:00.000', 'site-second'),
+  ]);
+  expect(result.ok).toBe(false);
+  if (result.ok) throw new Error('expected rejection');
+  expect(result.issues).toEqual([{
+    code: 'time-domain-mismatch',
+    path: ['timeDomain'],
+    message: 'timeDomain "site-synth" differs from existing window [2026-01-01T10:30:00.000, 2026-01-01T11:00:00.000) ("site-first")',
+  }]);
+});
+
 it('allows one id in both arrays, since replayKey sorts them separately', async () => {
   const batch = base();
   batch.issues[1]!.id = batch.occurrences[0]!.id;

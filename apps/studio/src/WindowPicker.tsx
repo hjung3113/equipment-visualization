@@ -1,10 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { DetailFields, FormField, Panel } from '@eqv/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@fops/ui';
-import { listSampleWindows, type SampleWindowEntry } from './onboarding-data.js';
-
-/** The 64 hex digits of a Sample Window's content hash: the value of `?window=`. */
-export const windowHex = (entry: Pick<SampleWindowEntry, 'hash'>): string => entry.hash.slice('sha256:'.length);
+import { listSampleWindows, shortWindowHash, windowHex, type SampleWindowEntry } from './onboarding-data.js';
 
 export interface WindowPickerProps {
   equipmentId: string;
@@ -54,7 +51,7 @@ export function WindowPicker({ equipmentId, value, hint, details, onChange }: Wi
           <DetailFields items={[
             { key: 'dataGeneration', label: 'Data Generation', value: details.dataGeneration, mono: true },
             { key: 'timeDomain', label: 'timeDomain', value: details.timeDomain, mono: true },
-            { key: 'hash', label: 'hash', value: details.hash.slice(7, 19), mono: true },
+            { key: 'hash', label: 'hash', value: shortWindowHash(details.hash), mono: true },
           ]} />
         )}
       </div>

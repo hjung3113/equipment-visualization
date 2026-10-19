@@ -1,12 +1,12 @@
 import { link, lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { dirname, join, sep } from 'node:path';
+import { dirname, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
 import {
   layoutRevision, mappingVersionSchema, observedInventorySchema, validateAliasRules, validateBindings, validateLayout,
   validateTypeDictionary, verifyMappingHash,
 } from '@eqv/core';
-import { ApiError, fail, NAME } from './errors.js';
-import { createImportApi } from './import.js';
+import { ApiError, contained, fail, NAME } from './errors.js';
+import { createImportApi, IMPORT_API_PREFIX } from './import.js';
 
 export interface FileApiRequest {
   method: string;
@@ -142,8 +142,6 @@ function relativeSegments(value: string | null, kind: 'file' | 'dir'): string[] 
 }
 
 const missing = (error: unknown): boolean => (error as NodeJS.ErrnoException).code === 'ENOENT';
-const contained = (root: string, target: string): boolean => target === root || target.startsWith(root + sep);
-
 export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoot?: string; hooks?: FileApiHooks }) {
   async function rootReal(): Promise<string> {
     try {
@@ -354,7 +352,7 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
   }
 
   const importApi = createImportApi({
-    root, repoRoot, rootReal, readTarget, assertWritable, write, assertJsonType, usesBundledCatalog,
+    root, repoRoot, readTarget, assertWritable, write, assertJsonType, usesBundledCatalog,
   });
 
   async function dispatch(request: FileApiRequest): Promise<FileApiResponse> {
@@ -373,7 +371,7 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
       if (request.method === 'POST') return publish(request);
       return fail(405, 'Method not allowed');
     }
-    if (url.pathname.startsWith('/api/import/')) return importApi.dispatch(request, url);
+    if (url.pathname.startsWith(IMPORT_API_PREFIX)) return importApi.dispatch(request, url);
     return fail(404, 'Unknown endpoint');
   }
 

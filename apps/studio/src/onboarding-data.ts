@@ -2,7 +2,7 @@ import {
   aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, parseSampleWindowName,
   validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary, verifyMappingHash,
   validateLayout,
-  type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
+  type AliasMetadataFile, type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
   type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
@@ -10,6 +10,8 @@ import { ApiError, listDir, readFile, type DirEntry } from './api.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
 export type SampleWindowEntry = { name: string; path: string; from: SiteWallClock; to: SiteWallClock; hash: string };
+export const windowHex = (entry: Pick<SampleWindowEntry, 'hash'>): string => entry.hash.slice('sha256:'.length);
+export const shortWindowHash = (hash: string): string => hash.slice('sha256:'.length, 'sha256:'.length + 12);
 
 /** Read-only inputs of one equipment, validated at the read boundary (GET only parses JSON). */
 export interface LoadedEquipment extends FleetData {
@@ -40,7 +42,7 @@ export type OnboardingLoad =
 /** Thrown for any content problem; the message becomes the equipment's error text. */
 export class DataError extends Error {}
 
-const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
+export const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const problems = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
   issues.map(({ path, message }) => `${path.map(String).join('.') || '(root)'}: ${message}`).join('; ');
 
@@ -68,8 +70,25 @@ function sameScope(a: MappingScope, b: MappingScope): boolean {
   }
 }
 
-function checkScope(path: string, actual: MappingScope, expected: MappingScope): void {
+export function checkScope(path: string, actual: MappingScope, expected: MappingScope): void {
   if (!sameScope(actual, expected)) throw new DataError(`${path}: scope가 경로와 다릅니다 (${JSON.stringify(actual)})`);
+}
+
+export async function readAliasMetadata(equipmentId: string): Promise<AliasMetadataFile | undefined> {
+  const path = `observations/${equipmentId}/alias-metadata.json`;
+  let raw: unknown | undefined;
+  try {
+    raw = await readOptional(path);
+  } catch (error) {
+    throw new DataError(error instanceof Error ? error.message : '알 수 없는 오류');
+  }
+  if (raw === undefined) return undefined;
+  const parsed = aliasMetadataFileSchema.safeParse(raw);
+  if (!parsed.success) throw new DataError(`${path}: ${problems(parsed.error.issues)}`);
+  if (parsed.data.equipmentId !== equipmentId) {
+    throw new DataError(`${path}: equipmentId(${parsed.data.equipmentId})가 ${equipmentId}와 다릅니다`);
+  }
+  return parsed.data;
 }
 
 const WINDOW_SUFFIX = '.batch.json';
@@ -142,17 +161,7 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     const selectedWindow = selectSampleWindow(windows, options.window);
     const batch = await readSampleWindow(equipmentId, selectedWindow);
 
-    const metadataPath = `observations/${equipmentId}/alias-metadata.json`;
-    const rawMetadata = await readOptional(metadataPath);
-    let metadata;
-    if (rawMetadata !== undefined) {
-      const parsed = aliasMetadataFileSchema.safeParse(rawMetadata);
-      if (!parsed.success) throw new DataError(`${metadataPath}: ${problems(parsed.error.issues)}`);
-      if (parsed.data.equipmentId !== equipmentId) {
-        throw new DataError(`${metadataPath}: equipmentId(${parsed.data.equipmentId})가 ${equipmentId}와 다릅니다`);
-      }
-      metadata = parsed.data;
-    }
+    const metadata = await readAliasMetadata(equipmentId);
     const inventory = buildInventory(batch, metadata);
 
     const { maker, model } = record;

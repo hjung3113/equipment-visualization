@@ -1,6 +1,6 @@
-import { aliasMetadataFileSchema, equipmentRecordSchema, validateTypeDictionary, type EquipmentRecord } from '@eqv/core';
+import { equipmentRecordSchema, validateTypeDictionary, type EquipmentRecord } from '@eqv/core';
 import {
-  DataError, listSampleWindows, problems, readOptional, readSampleWindow, type SampleWindowEntry,
+  checkScope, DataError, listSampleWindows, NAME, problems, readAliasMetadata, readOptional, readSampleWindow, type SampleWindowEntry,
 } from './onboarding-data.js';
 
 export type WindowRow =
@@ -13,7 +13,6 @@ export type EquipmentDataLoad =
   | { kind: 'error'; error: string }
   | { kind: 'ok'; record: EquipmentRecord; windows: Windows; aliasMetadata: FileState; typeDictionary: FileState };
 
-const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 
 async function windowRow(equipmentId: string, entry: SampleWindowEntry): Promise<WindowRow> {
@@ -35,6 +34,15 @@ async function fileState(path: string, count: (raw: unknown) => number): Promise
   }
 }
 
+async function aliasMetadataState(equipmentId: string): Promise<FileState> {
+  try {
+    const metadata = await readAliasMetadata(equipmentId);
+    return metadata === undefined ? { kind: 'absent' } : { kind: 'ok', count: metadata.aliases.length };
+  } catch (error) {
+    return { kind: 'error', error: message(error) };
+  }
+}
+
 /** Never rejects. Reads the record, then every Sample Window and the two optional files; a bad window is an error row, never skipped. */
 export async function loadEquipmentData(equipmentId: string): Promise<EquipmentDataLoad> {
   try {
@@ -49,7 +57,6 @@ export async function loadEquipmentData(equipmentId: string): Promise<EquipmentD
       return { kind: 'error', error: `${recordPath}: equipmentId(${record.equipmentId})가 파일 이름과 다릅니다` };
     }
 
-    const metadataPath = `observations/${equipmentId}/alias-metadata.json`;
     const { maker, model } = record;
     const dictionaryPath = `onboarding/scopes/model/${maker}/${model}/type-dictionary.json`;
     const [windows, aliasMetadata, typeDictionary] = await Promise.all([
@@ -61,21 +68,12 @@ export async function loadEquipmentData(equipmentId: string): Promise<EquipmentD
           return { kind: 'error', error: message(error) };
         }
       })(),
-      fileState(metadataPath, (raw) => {
-        const parsed = aliasMetadataFileSchema.safeParse(raw);
-        if (!parsed.success) throw new DataError(`${metadataPath}: ${problems(parsed.error.issues)}`);
-        if (parsed.data.equipmentId !== equipmentId) {
-          throw new DataError(`${metadataPath}: equipmentId(${parsed.data.equipmentId})가 ${equipmentId}와 다릅니다`);
-        }
-        return parsed.data.aliases.length;
-      }),
+      aliasMetadataState(equipmentId),
       fileState(dictionaryPath, (raw) => {
         const result = validateTypeDictionary(raw);
         if (!result.ok) throw new DataError(`${dictionaryPath}: ${problems(result.issues)}`);
         const { file } = result;
-        if (file.scope.level !== 'model' || file.scope.maker !== maker || file.scope.model !== model) {
-          throw new DataError(`${dictionaryPath}: scope가 경로와 다릅니다 (${JSON.stringify(file.scope)})`);
-        }
+        checkScope(dictionaryPath, file.scope, { level: 'model', maker, model });
         return file.entries.length;
       }),
     ]);
