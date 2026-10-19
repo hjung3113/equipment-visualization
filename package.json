@@ -10,7 +10,7 @@
     "dev": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && pnpm --filter @eqv/studio dev",
     "lint": "eslint .",
     "typecheck": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run typecheck --filter='!@fops/*' --only",
-    "test": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run test --filter='!@fops/*' --only",
+    "test": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run test --filter='!@fops/*' --only --concurrency=2",
     "build": "turbo run build --filter=@eqv/studio^... --filter='!@fops/*' && turbo run build --filter=@eqv/studio --only"
   },
   "devDependencies": {
