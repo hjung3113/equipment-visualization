@@ -131,7 +131,7 @@ describe('links carry the window', () => {
     render(<App />);
     await loaded();
     await screen.findByRole('heading', { name: '④ Mapping Board' });
-    expect(document.body.textContent).toContain('Sample Window 2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000');
+    expect(screen.getByText('Sample Window 2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000', { exact: true })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Onboarding으로 이동' }).getAttribute('href')).toBe(`/onboarding/eq-synth-03?window=${w1}`);
   });
 

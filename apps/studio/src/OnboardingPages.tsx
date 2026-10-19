@@ -92,7 +92,7 @@ const crumbs = (equipmentId: string, sampleWindow: string | null, onboarding: bo
   label: '경로',
   items: [
     { key: 'fleet', label: 'Fleet', href: hrefFor({ name: 'fleet' }) },
-    { key: 'equipment', label: '설비', href: hrefFor({ name: 'equipment', equipmentId }) },
+    { key: 'equipment', label: equipmentId, href: hrefFor({ name: 'equipment', equipmentId }) },
     ...(onboarding ? [{ key: 'onboarding', label: 'Onboarding', href: hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow }) }] : []),
   ],
 });
@@ -389,7 +389,7 @@ export function BoardPage({ equipmentId, sampleWindow }: { equipmentId: string; 
     <Page
       title={boardLoaded ? '④ Mapping Board' : <>Mapping Board <code>{equipmentId}</code></>}
       linkComponent={Link} breadcrumb={crumbs(equipmentId, sampleWindow, true)}
-      description={boardLoaded ? <>설비 <code>{equipmentId}</code> · Sample Window {result.data.selectedWindow.from} – {result.data.selectedWindow.to}</> : undefined}
+      description={boardLoaded ? <>Sample Window {result.data.selectedWindow.from} – {result.data.selectedWindow.to}</> : undefined}
       actions={(
         <Button asChild variant="secondary" size="toolbar">
           <Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}><ArrowLeft className="size-3.5" aria-hidden />Onboarding으로 이동</Link>
