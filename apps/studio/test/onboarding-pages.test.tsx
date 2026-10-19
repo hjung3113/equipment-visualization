@@ -75,12 +75,12 @@ it.each([
   { status: 'error', equipmentId: 'eq-bad', replay: false, setup: async () => {
     await writeJson(root, 'equipment/eq-bad.json', { schemaVersion: '0.4', equipmentId: 'eq-bad' });
   } },
-])('offers Replay only for a published Fleet row ($status)', async ({ equipmentId, replay, setup }) => {
+])('offers Focus 열기 only for a published Fleet row ($status)', async ({ equipmentId, replay, setup }) => {
   await setup();
   at('/fleet');
   render(<App />);
   const row = await fleetRow(equipmentId);
-  const replayLink = within(row).queryByRole('link', { name: `${equipmentId} Replay` });
+  const replayLink = within(row).queryByRole('link', { name: `${equipmentId} Focus 열기` });
   if (replay) {
     expect(replayLink?.getAttribute('href')).toBe(`/focus/${equipmentId}`);
   } else {

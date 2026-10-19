@@ -21,7 +21,7 @@
 ├ [Occurrence 목록] [Data Quality] [근거 상세] ──────────────────────────┤
 ```
 
-- Top View 재생 레이어의 Material 표시: 커서 시점에 위치가 있는 Material은 지름 12 px 디스크(wafer·reticle은 원, 그 외는 둥근 사각형)로 Component 아래쪽 가장자리에 그린다. Holding Site별로 묶음(클러스터)을 나누어 layout의 Holding Site 순서대로 놓고(두 blade·두 slot이 별개 객체로 보임), Site가 없거나 layout에 없는 Site의 Material은 마지막 묶음에 둔다. 이 자리는 표시용 순서일 뿐 Holding Site 좌표가 아니다. Component당 4개 이하면 각 디스크에 Material id를 라벨로 붙이고(익명은 라벨 없음), 5개 이상이면 앞 3개와 "+N" 칩(title에 숨은 id)만 그린다. 활동이 기록된 Component는 본체에 옅은 틴트와 링을 얹고 강도는 activity Evidence를 따른다(observed 틴트+실선 링, derived 절반 틴트+점선 링, unknown 틴트 없이 점선 링).
+- Top View 재생 레이어의 Material 표시: 커서 시점에 위치가 있는 Material은 지름 12 px 디스크(wafer·reticle은 원, 그 외는 둥근 사각형)로 Component의 화면상 bounding box 안쪽 아래에 똑바로 세워 그린다(Component 회전 프레임이 아님). Holding Site별로 묶음(클러스터)을 나누어 layout의 Holding Site 순서대로 놓고(두 blade·두 slot이 별개 객체로 보임), Site가 없거나 layout에 없는 Site의 Material은 마지막 묶음에 둔다. 이 자리는 표시용 순서일 뿐 Holding Site 좌표가 아니다. Component당 4개 이하면 각 디스크에 Material id를 라벨로 붙이고(익명은 라벨 없음), 5개 이상이면 앞 3개와 "+N" 칩(title에 숨은 id)만 그린다. 활동이 기록된 Component는 본체에 옅은 틴트와 링을 얹고 강도는 activity Evidence를 따른다(observed 틴트+실선 링, derived 절반 틴트+파선(`6 4`) 링, unknown 틴트 없이 점선(`2 3`) 링).
 - Top View · Gantt · 목록이 **하나의 커서**를 공유한다. Gantt가 진단의 주 도구, Top View는 공간 맥락·선택.
 - Gantt 막대는 Occurrence 종류로 색, Evidence는 패턴(빗금 등)으로 구분 — 색만으로 구분하지 않는다. Time Anomaly·Watermark 이후·Binding 경계는 lane 전체에 걸친 마커.
 - 기본 구간 = 진입 Occurrence 구간 + 앞뒤 여유, 사용자 조정 가능. 재생 커서 `at`은 page-local 상태.

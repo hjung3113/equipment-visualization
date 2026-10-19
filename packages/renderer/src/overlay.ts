@@ -284,7 +284,6 @@ function siteOrdered(comp: SceneComponent, materials: readonly StateMaterial[]):
   return rows;
 }
 
-
 /**
  * Disc clusters in screen-upright scene space (never the component's rotated frame): one row centred on the
  * component's scene centre, on the inner bottom edge of its axis-aligned bbox, one group per Holding Site;
@@ -394,6 +393,7 @@ export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number)
     if (row) row.push(material);
     else byComponent.set(material.location.componentId, [material]);
   }
+  const clusters: SvgNode[] = [];
   for (const state of replay.state.components) {
     const comp = visible(scene, state.componentId);
     if (!comp) continue;
@@ -413,8 +413,9 @@ export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number)
     }
     if (parts.length > 0) nodes.push(mark(comp, parts));
     const located = byComponent.get(state.componentId);
-    if (located) nodes.push(el('g', { 'data-material-cluster': comp.id }, materialTokens(comp, located, k)));
+    if (located) clusters.push(el('g', { 'data-material-cluster': comp.id }, materialTokens(comp, located, k)));
   }
+  nodes.push(...clusters);
   for (const marker of replay.state.markers) {
     if (marker.kind !== 'occupancy-conflict') continue;
     const comp = visible(scene, marker.componentId);
