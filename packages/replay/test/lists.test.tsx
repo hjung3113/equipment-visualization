@@ -183,16 +183,25 @@ const active = () => document.activeElement?.getAttribute('data-occurrence-id');
 // jsdom has no layout, so the virtualizer sees a 0-size region and renders no row. Mocked: offsetHeight (region 480, rows 32) and
 // offsetWidth give a window of ~15 rows plus overscan; scrollHeight and Element.scrollTo (sets scrollTop, fires `scroll`) serve scrolls after mount.
 describe('large lists are virtualized', () => {
+  const savedScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTo');
   beforeEach(() => {
     vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) { return this.getAttribute('role') === 'region' ? 480 : 32; });
     vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(800);
     vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(10_000_000);
-    Element.prototype.scrollTo = function (this: Element, options?: ScrollToOptions | number) {
-      this.scrollTop = typeof options === 'object' ? options.top ?? 0 : 0;
-      this.dispatchEvent(new Event('scroll'));
-    } as typeof Element.prototype.scrollTo;
+    Object.defineProperty(Element.prototype, 'scrollTo', {
+      configurable: true,
+      writable: true,
+      value: function (this: Element, options?: ScrollToOptions | number) {
+        this.scrollTop = typeof options === 'object' ? options.top ?? 0 : 0;
+        this.dispatchEvent(new Event('scroll'));
+      },
+    });
   });
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => {
+    vi.restoreAllMocks();
+    if (savedScrollTo) Object.defineProperty(Element.prototype, 'scrollTo', savedScrollTo);
+    else delete (Element.prototype as { scrollTo?: unknown }).scrollTo;
+  });
 
   it('opens a 2,000-Occurrence list on the cursor row with a bounded window and no cap notice, and follows the selection', () => {
     const props = { batch: many(2000), timeline, bindings: null, onSelectOccurrence: vi.fn() };
@@ -250,6 +259,24 @@ describe('large lists are virtualized', () => {
     expect(tabStops().length).toBe(1);
     expect(document.querySelector('tbody tr[tabindex="0"]')?.getAttribute('data-occurrence-id')).toBe(ids()[0]);
   });
+
+  it.each([['Home', 'occ-gen-0', 'occ-gen-1000'], ['End', 'occ-gen-1999', 'occ-gen-1000']])(
+    'repeating %s after the caret row has been scrolled out focuses %s again; one Tab stop remains', (key, to, from) => {
+      render(<OccurrenceList {...props2} batch={many(2000)} selectedOccurrenceId={from} />);
+      const row = document.querySelector<HTMLElement>(`tr[data-occurrence-id="${from}"]`)!;
+      row.focus();
+      fireEvent.keyDown(row, { key });
+      expect(active()).toBe(to);
+      const view = screen.getByRole('region', { name: 'Occurrence 목록' });
+      act(() => { view.scrollTo({ top: key === 'Home' ? 800 * 32 : 0 }); });
+      expect(ids()).not.toContain(to);
+      const first = document.querySelector<HTMLElement>('tbody tr[tabindex="0"]')!;
+      first.focus();
+      fireEvent.keyDown(first, { key });
+      expect(ids()).toContain(to);
+      expect(active()).toBe(to);
+      expect(tabStops().length).toBe(1);
+    });
 
   it('shows the cursor row of a 2,000-issue Data Quality list, bounded, and keeps the related-Occurrence buttons', () => {
     const issues = Array.from({ length: 2000 }, (_, i) => ({ id: `dqi-${i}`, issueType: 'unmatched-end', seq: i + 1, at: null, relatedOccurrenceId: `occ-${i}` }));

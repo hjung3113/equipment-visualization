@@ -41,6 +41,8 @@ export interface DataTableRows {
   initialIndex?: number;
   /** Brings this row into the scroll viewport whenever the value changes; a no-op while it is visible. Only the table scrolls, never the page. */
   scrollToIndex?: number | null;
+  /** Scrolls to `scrollToIndex` again when this value changes, also when the index did not: a repeated key command. */
+  scrollKey?: number;
 }
 
 export interface DataTableProps extends Omit<HTMLAttributes<HTMLTableElement>, 'aria-label' | 'children' | 'title'> {
@@ -104,6 +106,9 @@ export function DataTable({
     setBodyOffset(Math.round(tbody.current.getBoundingClientRect().top - region.current.getBoundingClientRect().top + region.current.scrollTop));
   }, [virtual, columns.length]);
   const [start] = useState(() => rows?.scrollToIndex ?? rows?.initialIndex ?? 0);
+  const mounted = useRef(false);
+  // The plain table's scroll offset, tracked while it is not virtual (the virtualizer rewrites the offset on enabling).
+  const scrollTop = useRef(0);
   const virtualizer = useVirtualizer({
     enabled: virtual,
     count: rows?.count ?? 0,
@@ -112,12 +117,13 @@ export function DataTable({
     getItemKey: (index) => rows?.getKey?.(index) ?? index,
     overscan: 8,
     useFlushSync: false,
-    initialOffset: start * (rows?.estimateSize ?? 32),
+    // A table that turns virtual after mount (rows grew past the threshold) opens at the offset the user had.
+    initialOffset: () => (mounted.current ? scrollTop.current : start * (rows?.estimateSize ?? 32)),
     scrollMargin: bodyOffset,
     scrollPaddingStart: bodyOffset,
   });
   const target = rows?.scrollToIndex ?? null;
-  const mounted = useRef(false);
+  const scrollKey = rows?.scrollKey;
   useEffect(() => {
     if (rows === undefined) return;
     const first = !mounted.current;
@@ -130,7 +136,7 @@ export function DataTable({
       if (row !== null) revealRow(region.current, row, bodyOffset);
     }
     // Only a new target scrolls; the virtualizer and offsets change on every render.
-  }, [target, virtual]);
+  }, [target, scrollKey, virtual]);
   const items = virtual ? virtualizer.getVirtualItems() : [];
   const rendered = virtual ? { start: items[0]?.index ?? 0, end: items[items.length - 1]?.index ?? 0 } : { start: 0, end: (rows?.count ?? 1) - 1 };
   const above = items.length === 0 ? 0 : items[0]!.start - bodyOffset;
@@ -156,6 +162,7 @@ export function DataTable({
         role="region"
         aria-label={label}
         tabIndex={0}
+        onScroll={(event) => { if (!virtual) scrollTop.current = event.currentTarget.scrollTop; }}
         onFocus={(event) => {
           // Keyboard focus on a clipped row action must bring it fully into the scroll viewport (default behavior is instant, never smooth).
           if (event.target !== event.currentTarget) event.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });

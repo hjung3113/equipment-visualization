@@ -45,7 +45,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
     .filter((o) => (o.start.at === null || o.start.at < range.to) && (o.end === null || o.end.at === null || o.end.at > range.from))
     .sort((a, b) => a.start.seq - b.start.seq), [batch, range]);
   // The keyboard caret is a row of its own, apart from the selection; a new selection hands the caret back to it.
-  const [nav, setNav] = useState<{ id: string; selected: string | null } | null>(null);
+  const [nav, setNav] = useState<{ id: string; selected: string | null; press: number } | null>(null);
   if (nav !== null && nav.selected !== selectedOccurrenceId) setNav(null);
   // The caret row may still be off-screen when the key is pressed: it takes focus when it mounts.
   const focusId = useRef<string | null>(null);
@@ -72,7 +72,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
     if (!next) return;
     event.preventDefault();
     focusId.current = next.id;
-    setNav({ id: next.id, selected: selectedOccurrenceId });
+    setNav((prev) => ({ id: next.id, selected: selectedOccurrenceId, press: (prev?.press ?? 0) + 1 }));
   };
   if (rows.length === 0) {
     return <DataTable label="Occurrence 목록" role="grid" columns={COLUMNS} state={
@@ -85,6 +85,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
       getKey: (index) => rows[index]!.id,
       initialIndex: opening,
       scrollToIndex: scrollTo,
+      scrollKey: nav?.press ?? 0,
       render: (index, rendered) => {
         const o = rows[index]!;
         const selected = o.id === selectedOccurrenceId;

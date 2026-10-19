@@ -4,27 +4,34 @@
 // ~15 rows plus overscan. The mount position comes from `initialIndex` (no scroll event fires on mount). Post-mount
 // scrolls (`scrollToIndex`) also need scrollHeight (offsets clamp to scrollHeight − clientHeight) and
 // Element.scrollTo, which sets scrollTop and fires `scroll`.
-import { act, cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { DataTable, VIRTUAL_ROW_THRESHOLD, type DataTableRows } from '../src/index.js';
 
 const REGION = 480;
 const ROW = 32;
 
+const savedScrollTo = Object.getOwnPropertyDescriptor(Element.prototype, 'scrollTo');
 beforeEach(() => {
   vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) {
     return this.getAttribute('role') === 'region' ? REGION : ROW;
   });
   vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(800);
   vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(1_000_000);
-  Element.prototype.scrollTo = function (this: Element, options?: ScrollToOptions | number) {
-    this.scrollTop = typeof options === 'object' ? options.top ?? 0 : 0;
-    this.dispatchEvent(new Event('scroll'));
-  } as typeof Element.prototype.scrollTo;
+  Object.defineProperty(Element.prototype, 'scrollTo', {
+    configurable: true,
+    writable: true,
+    value: function (this: Element, options?: ScrollToOptions | number) {
+      this.scrollTop = typeof options === 'object' ? options.top ?? 0 : 0;
+      this.dispatchEvent(new Event('scroll'));
+    },
+  });
 });
 afterEach(() => {
   cleanup();
   vi.restoreAllMocks();
+  if (savedScrollTo) Object.defineProperty(Element.prototype, 'scrollTo', savedScrollTo);
+  else delete (Element.prototype as { scrollTo?: unknown }).scrollTo;
 });
 
 const rows = (count: number, over: Partial<DataTableRows> = {}): DataTableRows => ({
@@ -66,4 +73,28 @@ it('starts at initialIndex and renders the target row after scrollToIndex change
   expect(screen.getByTestId('row-4000')).toBeTruthy();
   expect(dataRows().length).toBeLessThan(60);
   expect(within(screen.getByRole('table', { name: 'Many' })).getByRole('row', { name: '행 4000' }).getAttribute('aria-rowindex')).toBe('4002');
+});
+
+it('scrolls again when scrollKey changes with the same scrollToIndex', () => {
+  const { rerender } = render(table(rows(5000, { scrollToIndex: 4000, scrollKey: 1 })));
+  const region = screen.getByRole('region', { name: 'Many' });
+  act(() => { region.scrollTo({ top: 0 }); });
+  expect(screen.queryByTestId('row-4000')).toBeNull();
+  act(() => { rerender(table(rows(5000, { scrollToIndex: 4000, scrollKey: 2 }))); });
+  expect(screen.getByTestId('row-4000')).toBeTruthy();
+});
+
+it('keeps the scroll position when an uncontrolled table grows past the threshold', () => {
+  // jsdom has no layout: the header offset is tbody.top − region.top + scrollTop, so give the body a 32px header that scrolls away with the region.
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(function (this: HTMLElement) {
+    const top = this.tagName === 'TBODY' ? ROW - (this.closest('[role=region]')?.scrollTop ?? 0) : 0;
+    return { top, bottom: top, left: 0, right: 0, width: 0, height: 0, x: 0, y: top, toJSON: () => ({}) };
+  });
+  const { rerender } = render(table(rows(VIRTUAL_ROW_THRESHOLD - 1)));
+  const region = screen.getByRole('region', { name: 'Many' });
+  act(() => { region.scrollTop = 150 * ROW; fireEvent.scroll(region); });
+  act(() => { rerender(table(rows(VIRTUAL_ROW_THRESHOLD))); });
+  expect(dataRows().length).toBeLessThan(60);
+  expect(screen.getByTestId('row-150')).toBeTruthy();
+  expect(screen.queryByTestId('row-0')).toBeNull();
 });
