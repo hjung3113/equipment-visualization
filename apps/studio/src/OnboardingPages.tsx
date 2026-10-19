@@ -4,11 +4,11 @@ import {
   FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
 } from '@eqv/editor';
-import { Database, Inbox, MapPinOff, Plus, ServerCrash } from 'lucide-react';
+import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
-import { Button } from '@fops/ui';
+import { Button, Callout } from '@fops/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 import { WindowPicker } from './WindowPicker.js';
@@ -88,6 +88,15 @@ function Missing({ equipmentId, result }: { equipmentId: string; result: Exclude
   }
 }
 
+const crumbs = (equipmentId: string, sampleWindow: string | null, onboarding: boolean) => ({
+  label: '경로',
+  items: [
+    { key: 'fleet', label: 'Fleet', href: hrefFor({ name: 'fleet' }) },
+    { key: 'equipment', label: '설비', href: hrefFor({ name: 'equipment', equipmentId }) },
+    ...(onboarding ? [{ key: 'onboarding', label: 'Onboarding', href: hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow }) }] : []),
+  ],
+});
+
 function StartActions({ equipmentId, sampleWindow, result, draft }: {
   equipmentId: string; sampleWindow: string | null; result: Ok; draft: Extract<DraftLookup, { kind: 'absent' | 'no-id' }>;
 }) {
@@ -118,12 +127,11 @@ function StartActions({ equipmentId, sampleWindow, result, draft }: {
   };
   const blocked = draft.kind === 'no-id';
   return (
-    <>
-      {blocked && <p>설비 id로 레이아웃 id를 만들 수 없습니다</p>}
+    <div className="grid gap-4">
+      {blocked && <Callout tone="amber" icon={<TriangleAlert className="size-3.5" aria-hidden />}>설비 id로 레이아웃 id를 만들 수 없습니다</Callout>}
       {create.error && (
-        <p role="alert">
-          {create.error}{create.exists && <> <Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}>④ Mapping Board 열기</Link></>}
-        </p>
+        <StateMessage compact tone="danger" icon={ServerCrash} title={create.error}
+          action={create.exists ? <Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}>④ Mapping Board 열기</Link> : undefined} />
       )}
       <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates}
         action={(choice): ReactNode => (
@@ -133,7 +141,7 @@ function StartActions({ equipmentId, sampleWindow, result, draft }: {
             {choice.kind === 'generic' ? 'Generic Layout으로 시작' : '이 템플릿으로 시작'}
           </Button>
         )} />
-    </>
+    </div>
   );
 }
 
@@ -152,36 +160,48 @@ export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: str
   }, [equipmentId, sampleWindow]);
 
   const { result } = loaded;
+  const focusable = result?.kind === 'ok' && (result.data.bindings?.bindings.length ?? 0) > 0;
+  const boardReady = result?.kind === 'ok' && result.draft.kind === 'found';
   return (
-    <Page title={<>Onboarding <code>{equipmentId}</code></>}
+    <Page title={<>Onboarding <code>{equipmentId}</code></>} linkComponent={Link} breadcrumb={crumbs(equipmentId, sampleWindow, false)}
+      description={result?.kind === 'ok' ? <>{result.data.record.maker} / {result.data.record.model}</> : undefined}
       actions={result !== null && result.kind !== 'not-found' ? (
-        <Button asChild variant="secondary" size="toolbar">
-          <Link href={hrefFor({ name: 'equipment', equipmentId })}><Database className="size-3.5" aria-hidden />설비 데이터</Link>
-        </Button>
+        <>
+          {focusable && (
+            <Button asChild variant="secondary" size="toolbar">
+              <Link href={hrefFor({ name: 'focus', equipmentId, entityType: null, anchor: null, window: sampleWindow })}><Crosshair className="size-3.5" aria-hidden />Focus 열기</Link>
+            </Button>
+          )}
+          {boardReady && (
+            <Button asChild variant="primary" size="toolbar">
+              <Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}><Grid2x2Check className="size-3.5" aria-hidden />④ Mapping Board 열기</Link>
+            </Button>
+          )}
+          <Button asChild variant="secondary" size="toolbar">
+            <Link href={hrefFor({ name: 'equipment', equipmentId })}><Database className="size-3.5" aria-hidden />설비 데이터</Link>
+          </Button>
+        </>
       ) : undefined}>
+      <div className="grid gap-4">
       <WindowPicker equipmentId={equipmentId} hint={PICKER_HINT}
         value={sampleWindow ?? (result?.kind === 'ok' ? windowHex(result.data.selectedWindow) : null)}
         details={result?.kind === 'ok' ? { dataGeneration: result.data.batch.dataGeneration, timeDomain: result.data.batch.timeDomain, hash: result.data.selectedWindow.hash } : null}
         onChange={(hex) => navigate(hrefFor({ name: 'onboarding', equipmentId, window: hex }))} />
-      {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : (
+      {result === null ? <LoadingBlock label="불러오는 중…" /> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : (
         <>
-          <p>{result.data.record.maker} / {result.data.record.model}</p>
-          {(result.data.bindings?.bindings.length ?? 0) > 0 && (
-            <p><Link href={hrefFor({ name: 'focus', equipmentId, entityType: null, anchor: null, window: sampleWindow })}>Focus 열기</Link></p>
+          {result.skippedTemplates.length > 0 && (
+            <div role="status"><Callout tone="blue" icon={<Info className="size-3.5" aria-hidden />}>건너뛴 Template: {result.skippedTemplates.join(', ')}</Callout></div>
           )}
-          {result.skippedTemplates.length > 0 && <p role="status">건너뛴 Template: {result.skippedTemplates.join(', ')}</p>}
           <InventoryView inventory={result.data.inventory} dictionaries={result.data.dictionaries} />
-          {result.draft.kind === 'error' && <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>}
+          {result.draft.kind === 'error' && <StateMessage compact tone="danger" icon={ServerCrash} title={`레이아웃 draft 오류: ${result.draft.error}`} />}
           {result.draft.kind === 'found' ? (
-            <>
-              <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />
-              <p><Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}>④ Mapping Board 열기</Link></p>
-            </>
+            <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />
           ) : result.draft.kind === 'error' ? (
             <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />
           ) : <StartActions key={`${equipmentId}\n${sampleWindow ?? ''}`} equipmentId={equipmentId} sampleWindow={sampleWindow} result={result} draft={result.draft} />}
         </>
       )}
+      </div>
     </Page>
   );
 }
@@ -368,15 +388,19 @@ export function BoardPage({ equipmentId, sampleWindow }: { equipmentId: string; 
   return (
     <Page
       title={boardLoaded ? '④ Mapping Board' : <>Mapping Board <code>{equipmentId}</code></>}
+      linkComponent={Link} breadcrumb={crumbs(equipmentId, sampleWindow, true)}
       description={boardLoaded ? <>설비 <code>{equipmentId}</code> · Sample Window {result.data.selectedWindow.from} – {result.data.selectedWindow.to}</> : undefined}
+      actions={(
+        <Button asChild variant="secondary" size="toolbar">
+          <Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}><ArrowLeft className="size-3.5" aria-hidden />Onboarding으로 이동</Link>
+        </Button>
+      )}
     >
-      <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}>Onboarding으로 이동</Link></p>
-      {result === null ? <p>불러오는 중…</p> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : result.draft.kind === 'error' ? (
-        <p role="alert">레이아웃 draft 오류: {result.draft.error}</p>
+      {result === null ? <LoadingBlock label="불러오는 중…" /> : result.kind !== 'ok' ? <Missing equipmentId={equipmentId} result={result} /> : result.draft.kind === 'error' ? (
+        <StateMessage tone="danger" icon={ServerCrash} title={`레이아웃 draft 오류: ${result.draft.error}`} />
       ) : result.draft.kind !== 'found' ? (
-        <>
-          <p>레이아웃 draft가 없습니다</p>
-        </>
+        <StateMessage icon={MapPinOff} title="레이아웃 draft가 없습니다"
+          action={<Button asChild variant="secondary" size="sm"><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}>Onboarding에서 시작</Link></Button>} />
       ) : (
         <LoadedBoard key={publicationNow.reloads} equipmentId={equipmentId} sampleWindow={sampleWindow} result={result} layout={result.draft.layout}
           publication={{ publishing: publicationNow.publishing, receipt: publicationNow.receipt, run }}

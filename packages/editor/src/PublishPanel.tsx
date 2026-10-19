@@ -1,7 +1,8 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { layoutRevision, type BindingsFile, type MappingConflict, type MappingVersion } from '@eqv/core';
-import { DataTable } from '@eqv/ui';
-import { Button, Input, Label } from '@fops/ui';
+import { DataTable, DetailFields, LoadingBlock, Panel, StateMessage } from '@eqv/ui';
+import { Button, Callout, EmptyState, Input, Label, PanelSectionTitle } from '@fops/ui';
+import { Play, Send, TriangleAlert } from 'lucide-react';
 import type { TopViewerProps } from '@eqv/renderer';
 import { describeConflict } from './conflict-text.js';
 import {
@@ -154,80 +155,90 @@ export function PublishPanel(props: PublishPanelProps) {
 
   const status = publishing ? '게시 중…' : failure ?? (receipt ? `게시됨 · ${shortHash(receipt.mappingHash)} · ${receipt.effectiveFrom}` : '');
   const coverage = run?.coverage;
-  // DataTable has no caption slot: the sentence is shown above the table and names it.
   const diffCaption = `Mapping Version 변경 ${plan?.diff.entries.length ?? 0}건`;
   const modelCaption = modelState?.rows
     ? `${equipment.maker}/${equipment.model} 설비 ${modelState.rows.length}대${modelState.unreadable > 0 ? ` · 읽지 못한 설비 ${modelState.unreadable}대` : ''}` : '';
 
   return (
-    <div>
-      <section aria-labelledby={`${ids}-dry`}>
-        <h2 id={`${ids}-dry`}>⑤ 검증 (dry-run)</h2>
-        <p className="text-text-secondary">저장된 규칙 파일과 현재 레이아웃 초안 기준입니다. 저장하지 않은 자동 초안은 미매핑으로 계산됩니다.</p>
-        {computeError && <p className="text-text-warning-label" role="alert">검증을 계산하지 못했습니다: {computeError}</p>}
-        {!run && !computeError && <p>계산 중…</p>}
-        {run && run.issues.length > 0 && (
-          <ul className="list-disc pl-6 text-text-warning-label" aria-label="Publish를 막는 규칙 문제">
-            {run.issues.map((issue) => <li key={JSON.stringify([issue.code, issue.path])}>{issue.code}: {issue.message}</li>)}
-          </ul>
-        )}
-        {coverage && (
-          <>
-            <p>
-              참조 {coverage.references.resolved}/{coverage.references.total} ({percent(coverage.references.ratio)}) ·
-              {' '}alias {coverage.aliases.resolved}/{coverage.aliases.total} ({percent(coverage.aliases.ratio)}) ·
-              {' '}assumed {percent(coverage.assumed.ratio)} · 무시 {coverage.ignored.aliases.length}
-            </p>
-            <h3>미매핑 alias</h3>
-            {coverage.unmapped.length === 0 ? <p>미매핑 alias가 없습니다.</p> : (
-              <ul aria-label="미매핑 alias">
-                {coverage.unmapped.map(({ alias, references }) => <li key={alias}>{alias} · 영향도 {references}</li>)}
+    <div className="grid gap-4">
+      <Panel title="⑤ 검증 (dry-run)" subtitle="저장된 규칙 파일과 현재 레이아웃 초안 기준입니다. 저장하지 않은 자동 초안은 미매핑으로 계산됩니다.">
+        <div className="grid gap-4">
+          {computeError && <StateMessage compact tone="danger" icon={TriangleAlert} title="검증을 계산하지 못했습니다" body={computeError} />}
+          {!run && !computeError && <LoadingBlock label="계산 중…" rows={2} />}
+          {run && run.issues.length > 0 && (
+            <Callout tone="red" title="Publish를 막는 규칙 문제" icon={<TriangleAlert className="size-3.5" aria-hidden />}>
+              <ul className="m-0 list-disc pl-5" aria-label="Publish를 막는 규칙 문제">
+                {run.issues.map((issue) => <li key={JSON.stringify([issue.code, issue.path])}>{issue.code}: {issue.message}</li>)}
               </ul>
-            )}
-          </>
-        )}
-        {run?.mapping && (
-          <>
-            <h3>Mapping Conflict</h3>
-            {conflicts.length === 0 ? <p>Mapping Conflict가 없습니다.</p> : (
-              <ul className="m-0 list-none p-0" aria-label="Mapping Conflict">
-                {conflicts.map((conflict) => (
-                  <li key={conflictKey(conflict)} className="mb-1">
-                    <Button type="button" variant={conflictKey(conflict) === active ? 'secondary' : 'outline'} size="sm"
-                      aria-pressed={conflictKey(conflict) === active} onClick={() => toggle(conflict)}>
-                      {describeConflict(conflict)}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </>
-        )}
-      </section>
-
-      <section aria-labelledby={`${ids}-pub`}>
-        <h2 id={`${ids}-pub`}>⑥ Publish</h2>
-        <div className="flex flex-wrap items-center gap-2">
-          <Label>
-            effectiveFrom{' '}
-            <Input
-              type="text" className="min-w-68" value={effectiveFrom} spellCheck={false} aria-invalid={effectiveError !== null}
-              aria-describedby={effectiveError ? errorId : fromHint ? hintId : undefined}
-              onChange={(event) => setFrom({ prefill, value: event.target.value, touched: true })}
-            />
-          </Label>
-          {fromHint && <span id={hintId} className="text-text-secondary">{fromHint}</span>}
-          {effectiveError && <span id={errorId} className="font-semibold text-text-danger">{effectiveError}</span>}
+            </Callout>
+          )}
+          {coverage && (
+            <>
+              <DetailFields items={[{ key: 'coverage', label: '커버리지', value:
+                `참조 ${coverage.references.resolved}/${coverage.references.total} (${percent(coverage.references.ratio)}) · `
+                + `alias ${coverage.aliases.resolved}/${coverage.aliases.total} (${percent(coverage.aliases.ratio)}) · `
+                + `assumed ${percent(coverage.assumed.ratio)} · 무시 ${coverage.ignored.aliases.length}` }]} />
+              <div>
+                <PanelSectionTitle className="mb-2">미매핑 alias</PanelSectionTitle>
+                {coverage.unmapped.length === 0 ? <EmptyState size="sm" title="미매핑 alias가 없습니다." /> : (
+                  <DataTable label="미매핑 alias" columns={['alias', { id: 'impact', header: '영향도', align: 'end' }]}>
+                    {coverage.unmapped.map(({ alias, references }) => (
+                      <DataTable.Row key={alias}>
+                        <DataTable.Cell rowHeader>{alias}</DataTable.Cell>
+                        <DataTable.Cell numeric>{references}</DataTable.Cell>
+                      </DataTable.Row>
+                    ))}
+                  </DataTable>
+                )}
+              </div>
+            </>
+          )}
+          {run?.mapping && (
+            <div>
+              <PanelSectionTitle className="mb-2">Mapping Conflict</PanelSectionTitle>
+              {conflicts.length === 0 ? <EmptyState size="sm" title="Mapping Conflict가 없습니다." /> : (
+                <ul className="m-0 flex list-none flex-wrap gap-2 p-0" aria-label="Mapping Conflict">
+                  {conflicts.map((conflict) => (
+                    <li key={conflictKey(conflict)}>
+                      <Button type="button" variant={conflictKey(conflict) === active ? 'secondary' : 'outline'} size="toolbar"
+                        aria-pressed={conflictKey(conflict) === active} onClick={() => toggle(conflict)}>
+                        {describeConflict(conflict)}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
         </div>
-        {plan && (
-          <div>
-            <p>{plan.diff.layout}</p>
-            <p>Baseline Inventory: {plan.baseline.from} – {plan.baseline.to}</p>
-            {plan.diff.binding.length > 0 && <ul aria-label="Binding 변경">{plan.diff.binding.map((line) => <li key={line}>{line}</li>)}</ul>}
-            {plan.diff.entries.length > 0 && (
-              <>
-                <p>{diffCaption}</p>
-                <DataTable label={diffCaption} columns={['alias', '변경', '이전', '이후']}>
+      </Panel>
+
+      <Panel title="⑥ Publish">
+        <div className="grid gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <Label>
+              effectiveFrom{' '}
+              <Input
+                type="text" className="min-w-68" value={effectiveFrom} spellCheck={false} aria-invalid={effectiveError !== null}
+                aria-describedby={effectiveError ? errorId : fromHint ? hintId : undefined}
+                onChange={(event) => setFrom({ prefill, value: event.target.value, touched: true })}
+              />
+            </Label>
+            {fromHint && <span id={hintId} className="text-text-secondary">{fromHint}</span>}
+            {effectiveError && <span id={errorId} className="font-semibold text-text-danger">{effectiveError}</span>}
+          </div>
+          {plan && (
+            <>
+              <DetailFields items={[
+                { key: 'layout', label: 'Layout', value: plan.diff.layout },
+                { key: 'baseline', label: 'Baseline', value: `Baseline Inventory: ${plan.baseline.from} – ${plan.baseline.to}` },
+                ...(plan.diff.binding.length > 0 ? [{ key: 'binding', label: 'Binding 변경', value: (
+                  <ul aria-label="Binding 변경" className="m-0 list-none p-0">{plan.diff.binding.map((line) => <li key={line}>{line}</li>)}</ul>
+                ) }] : []),
+                { key: 'unchanged', label: '요약', value: `변경 없음 ${plan.diff.unchanged}건 · Mapping Conflict ${plan.diff.conflicts}건 (게시를 막지 않습니다)` },
+              ]} />
+              {plan.diff.entries.length > 0 && (
+                <DataTable label={diffCaption} title={diffCaption} headingLevel={3} columns={['alias', '변경', '이전', '이후']}>
                   {plan.diff.entries.map((entry) => (
                     <DataTable.Row key={entry.alias}>
                       <DataTable.Cell rowHeader>{entry.alias}</DataTable.Cell>
@@ -237,48 +248,50 @@ export function PublishPanel(props: PublishPanelProps) {
                     </DataTable.Row>
                   ))}
                 </DataTable>
-              </>
-            )}
-            <p>변경 없음 {plan.diff.unchanged}건 · Mapping Conflict {plan.diff.conflicts}건 (게시를 막지 않습니다)</p>
+              )}
+            </>
+          )}
+          <div className="flex flex-wrap items-center gap-2">
+            <Button type="button" variant="primary" size="sm" aria-disabled={blocked} aria-describedby={reason ? reasonId : undefined} onClick={publish}>
+              <Send className="size-3.5" aria-hidden />게시
+            </Button>
+            {reason && <span id={reasonId} className="text-text-secondary">{reason}</span>}
           </div>
-        )}
-        <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="primary" aria-disabled={blocked} aria-describedby={reason ? reasonId : undefined} onClick={publish}>
-            게시
-          </Button>
-          {reason && <span id={reasonId} className="text-text-secondary">{reason}</span>}
+          <p role="status" className="m-0 min-h-6 font-semibold">{status}</p>
         </div>
-        <p role="status" className="min-h-6 font-semibold">{status}</p>
-      </section>
+      </Panel>
 
-      <section aria-labelledby={`${ids}-model`}>
-        <h2 id={`${ids}-model`}>같은 Model 일괄 dry-run</h2>
-        <Button type="button" variant="outline" disabled={modelState?.loading} onClick={loadModel}>같은 Model 일괄 dry-run 실행</Button>
-        {modelState?.loading && <p role="status">계산 중…</p>}
-        {modelState?.error && <p className="text-text-warning-label" role="alert">{modelState.error}</p>}
+      <Panel title="같은 Model 일괄 dry-run"
+        actions={(
+          <Button type="button" variant="secondary" size="toolbar" disabled={modelState?.loading} loading={modelState?.loading} onClick={loadModel}>
+            <Play className="size-3.5" aria-hidden />같은 Model 일괄 dry-run 실행
+          </Button>
+        )}>
+        {modelState?.loading && <LoadingBlock label="계산 중…" rows={2} />}
+        {modelState?.error && <StateMessage compact tone="danger" icon={TriangleAlert} title="일괄 dry-run을 계산하지 못했습니다" body={modelState.error} />}
         {modelState?.rows && (
-          <>
-            <p>{modelCaption}</p>
-            <DataTable
-              label={modelCaption}
-              columns={['equipmentId', '상태', '참조 coverage', 'alias coverage', '충돌', '미매핑 참조', '막는 문제', '오류']}
-            >
-              {modelState.rows.map((row) => (
-                <DataTable.Row key={row.equipmentId}>
-                  <DataTable.Cell rowHeader>{renderLink(row.equipmentId)}</DataTable.Cell>
-                  <DataTable.Cell>{row.status}</DataTable.Cell>
-                  <DataTable.Cell>{percent(row.referenceRatio)}</DataTable.Cell>
-                  <DataTable.Cell>{percent(row.aliasRatio)}</DataTable.Cell>
-                  <DataTable.Cell>{count(row.conflicts)}</DataTable.Cell>
-                  <DataTable.Cell>{count(row.unmappedReferences)}</DataTable.Cell>
-                  <DataTable.Cell>{count(row.blockingIssues)}</DataTable.Cell>
-                  <DataTable.Cell>{row.error ?? '—'}</DataTable.Cell>
-                </DataTable.Row>
-              ))}
-            </DataTable>
-          </>
+          <DataTable
+            label={modelCaption}
+            title={modelCaption}
+            headingLevel={3}
+            columns={['equipmentId', '상태', { id: 'reference', header: '참조 coverage', align: 'end' }, { id: 'alias', header: 'alias coverage', align: 'end' },
+              { id: 'conflicts', header: '충돌', align: 'end' }, { id: 'unmapped', header: '미매핑 참조', align: 'end' }, { id: 'blocking', header: '막는 문제', align: 'end' }, '오류']}
+          >
+            {modelState.rows.map((row) => (
+              <DataTable.Row key={row.equipmentId}>
+                <DataTable.Cell rowHeader>{renderLink(row.equipmentId)}</DataTable.Cell>
+                <DataTable.Cell>{row.status}</DataTable.Cell>
+                <DataTable.Cell numeric>{percent(row.referenceRatio)}</DataTable.Cell>
+                <DataTable.Cell numeric>{percent(row.aliasRatio)}</DataTable.Cell>
+                <DataTable.Cell numeric>{count(row.conflicts)}</DataTable.Cell>
+                <DataTable.Cell numeric>{count(row.unmappedReferences)}</DataTable.Cell>
+                <DataTable.Cell numeric>{count(row.blockingIssues)}</DataTable.Cell>
+                <DataTable.Cell>{row.error ?? '—'}</DataTable.Cell>
+              </DataTable.Row>
+            ))}
+          </DataTable>
         )}
-      </section>
+      </Panel>
     </div>
   );
 }

@@ -37,7 +37,7 @@ const props = (change: Partial<PublishPanelProps> = {}): PublishPanelProps => {
 const publishStatus = () => within(screen.getByRole('heading', { name: '⑥ Publish' }).closest('section')!).getByRole('status');
 const publishButton = () => screen.getByRole('button', { name: '게시' });
 const from = () => screen.getByLabelText('effectiveFrom') as HTMLInputElement;
-const ready = () => screen.findByRole('list', { name: '미매핑 alias' });
+const ready = () => screen.findByRole('table', { name: '미매핑 alias' });
 const withBinding: BindingsFile = bindings;
 
 it('shows coverage, the unmapped list ordered by references, and the dry-run heading', async () => {
@@ -45,7 +45,7 @@ it('shows coverage, the unmapped list ordered by references, and the dry-run hea
   await ready();
   expect(screen.getByRole('heading', { name: '⑤ 검증 (dry-run)' })).toBeTruthy();
   expect(screen.getByText(/^참조 \d+\/\d+ \(\d+%\) ·/).textContent).toMatch(/alias \d+\/\d+ \(\d+%\) · assumed \d+% · 무시 1$/);
-  expect(within(screen.getByRole('list', { name: '미매핑 alias' })).getAllByRole('listitem').map((item) => item.textContent)).toEqual(['PM9 · 영향도 1']);
+  expect(within(screen.getByRole('table', { name: '미매핑 alias' })).getAllByRole('row').slice(1).map((row) => Array.from(row.querySelectorAll('th, td'), (cell) => cell.textContent))).toEqual([['PM9', '1']]);
 });
 
 it('names the Baseline Inventory range the plan will write', async () => {
@@ -143,7 +143,7 @@ it('lists same-Model rows with host links and row errors', async () => {
   render(<PublishPanel {...props({ onModelDryRun: async () => ({ rows, unreadable: 1 }) })} />);
   fireEvent.click(screen.getByRole('button', { name: '같은 Model 일괄 dry-run 실행' }));
   const table = await screen.findByRole('table', { name: /synth-maker\/synth-model 설비 2대/ });
-  expect(screen.getByText(/읽지 못한 설비 1대/).tagName).toBe('P');
+  expect(screen.getByRole('heading', { name: /읽지 못한 설비 1대/ })).toBeTruthy();
   expect(within(within(table).getByRole('link', { name: 'eq-b' }).closest('tr')!).getAllByRole('cell')[0]!.textContent).toBe('—');
   expect(within(table).getByRole('link', { name: 'eq-a' }).getAttribute('href')).toBe('/onboarding/eq-a');
   expect(within(within(table).getByRole('link', { name: 'eq-b' }).closest('tr')!).getByText('레이아웃 초안 없음')).toBeTruthy();

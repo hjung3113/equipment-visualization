@@ -1,5 +1,6 @@
-import { OutlineBadge } from '@fops/ui';
-import { DataTable } from '@eqv/ui';
+import { EmptyState, OutlineBadge, PanelSectionTitle } from '@fops/ui';
+import { DataTable, Panel, StatusBadge } from '@eqv/ui';
+import { TriangleAlert } from 'lucide-react';
 import { compareNatural, resolveRole, type InventoryAlias, type ObservedInventory, type TypeDictionaryFile } from '@eqv/core';
 
 export interface InventoryViewProps {
@@ -17,15 +18,13 @@ export function InventoryView({ inventory, dictionaries }: InventoryViewProps) {
   })).sort((a, b) => Number(b.role === 'unknown') - Number(a.role === 'unknown') ||
     compareCode(a.role, b.role) || compareNatural(a.row.alias, b.row.alias));
   return (
-    <section aria-labelledby="eqv-ed-inventory-heading">
-      <h2 id="eqv-ed-inventory-heading">② Inventory</h2>
-      <p>표본 기간: {inventory.from} – {inventory.to}</p>
-      <DataTable label="Alias 목록" columns={['alias', 'ModuleType', 'Role', 'Port/Robot', 'slots', '활동', '참조', '처음/마지막 관측']}>
+    <Panel title="② Inventory" subtitle={`표본 기간: ${inventory.from} – ${inventory.to}`}>
+      <DataTable label="Alias 목록" columns={['alias', 'ModuleType', 'Role', 'Port/Robot', 'slots', '활동', { id: 'references', header: '참조', align: 'end' }, '처음/마지막 관측']}>
         {rows.map(({ row, role }) => (
           <DataTable.Row key={row.alias}>
             <DataTable.Cell rowHeader>{row.alias}</DataTable.Cell>
             <DataTable.Cell>{row.moduleType ?? '—'}</DataTable.Cell>
-            <DataTable.Cell>{role === 'unknown' ? <span className="font-semibold text-text-warning-label">{role}</span> : role}</DataTable.Cell>
+            <DataTable.Cell>{role === 'unknown' ? <StatusBadge tone="warning" icon={TriangleAlert}>{role}</StatusBadge> : role}</DataTable.Cell>
             <DataTable.Cell>Port {flag(row.isPort)} · Robot {flag(row.isRobot)}</DataTable.Cell>
             <DataTable.Cell>{row.slots.length ? row.slots.join(', ') : '—'}</DataTable.Cell>
             <DataTable.Cell>
@@ -33,22 +32,22 @@ export function InventoryView({ inventory, dictionaries }: InventoryViewProps) {
                 <OutlineBadge key={kind}>{kind} {count}</OutlineBadge>
               ))}
             </DataTable.Cell>
-            <DataTable.Cell><span className="tabular-nums">{row.references}</span></DataTable.Cell>
+            <DataTable.Cell numeric>{row.references}</DataTable.Cell>
             <DataTable.Cell>{row.firstSeen ?? '—'} / {row.lastSeen ?? '—'}</DataTable.Cell>
           </DataTable.Row>
         ))}
       </DataTable>
-      <h3>관측된 이송</h3>
-      {inventory.transfers.length === 0 ? <p>관측된 이송 없음</p> : (
-        <DataTable label="관측된 이송" columns={['from → to', '건수']}>
+      <PanelSectionTitle className="mt-4 mb-2">관측된 이송</PanelSectionTitle>
+      {inventory.transfers.length === 0 ? <EmptyState size="sm" title="관측된 이송 없음" /> : (
+        <DataTable label="관측된 이송" columns={['from → to', { id: 'count', header: '건수', align: 'end' }]}>
           {inventory.transfers.map(({ from, to, count }) => (
             <DataTable.Row key={`${from}\u0000${to}`}>
               <DataTable.Cell rowHeader>{from} → {to}</DataTable.Cell>
-              <DataTable.Cell><span className="tabular-nums">{count}</span></DataTable.Cell>
+              <DataTable.Cell numeric>{count}</DataTable.Cell>
             </DataTable.Row>
           ))}
         </DataTable>
       )}
-    </section>
+    </Panel>
   );
 }
