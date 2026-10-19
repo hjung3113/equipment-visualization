@@ -147,6 +147,8 @@ const many = (count: number) => {
 };
 const ids = () => Array.from(document.querySelectorAll('tbody tr')).map((tr) => tr.getAttribute('data-occurrence-id'));
 const NOTICE = /Occurrence 2,000개 중 .*번째 500개를 표시합니다/;
+// #118: rendering 500 rows of a 2,000-row batch in jsdom takes 5–6 s on a loaded CI runner; #113 (virtualization) removes the cost.
+const CAPPED_TIMEOUT = 20_000;
 
 it('caps a large Occurrence list at 500 rows around the cursor row, with a notice, and moves the slice with the selection', () => {
   const big = many(2000);
@@ -159,7 +161,7 @@ it('caps a large Occurrence list at 500 rows around the cursor row, with a notic
   expect(ids()).toContain('occ-gen-1700');
   expect(ids()).toHaveLength(500);
   expect(screen.getByRole('status').textContent).toMatch(NOTICE);
-});
+}, CAPPED_TIMEOUT);
 
 it('keeps ArrowDown/ArrowUp working at the edge of a capped slice by moving the slice', () => {
   render(<OccurrenceList batch={many(2000)} timeline={timeline} bindings={null} appliedSeq={1} selectedOccurrenceId={null} onSelectOccurrence={vi.fn()} />);
@@ -170,7 +172,7 @@ it('keeps ArrowDown/ArrowUp working at the edge of a capped slice by moving the 
   fireEvent.keyDown(last, { key: 'ArrowDown' });
   expect(ids()).toContain('occ-gen-500');
   expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe('occ-gen-500');
-});
+}, CAPPED_TIMEOUT);
 
 const props2 = { timeline, bindings: null, appliedSeq: 1, onSelectOccurrence: vi.fn() };
 const tabStops = () => document.querySelectorAll('tbody tr[tabindex="0"]');
@@ -194,13 +196,13 @@ it.each([['ArrowDown', 'occ-gen-500'], ['ArrowUp', 'occ-gen-1499']])(
     expect(document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id')).toBe(selected);
     expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe(selected);
     expect(tabStops().length).toBe(1);
-  });
+  }, CAPPED_TIMEOUT);
 
 it('centres a capped list on the anchor Occurrence, also when it is untimed and the cursor is elsewhere', () => {
   render(<OccurrenceList {...props2} batch={many(2000)} appliedSeq={2 * 1999 + 1} anchorOccurrenceId="occ-gen-1000" selectedOccurrenceId={null} />);
   expect(ids()).toContain('occ-gen-1000');
   expect(ids()).toHaveLength(500);
-});
+}, CAPPED_TIMEOUT);
 
 it('caps the Data Quality list too, around the cursor', () => {
   const issues = Array.from({ length: 2000 }, (_, i) => ({ id: `dqi-${i}`, issueType: 'unmatched-end', seq: i + 1, at: null }));
@@ -208,4 +210,4 @@ it('caps the Data Quality list too, around the cursor', () => {
   expect(screen.getAllByRole('row')).toHaveLength(501);
   expect(screen.getByText('dqi-999')).toBeTruthy();
   expect(screen.getByRole('status').textContent).toMatch(/Data Quality Issue 2,000개 중 .*번째 500개를 표시합니다/);
-});
+}, CAPPED_TIMEOUT);
