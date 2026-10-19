@@ -493,12 +493,14 @@ function replayLayer(scene: Scene, state: SceneState, illustrative?: readonly Il
   return buildReplayLayer(scene, { state, illustrative }, 1 / scene.pxPerUnit);
 }
 
+/** Everything drawn for one component: its transformed mark group plus its scene-space material cluster. */
 function markOf(node: SvgNode, comp: SceneComponent): SvgNode {
   const m = comp.matrix;
   const transform = `matrix(${[m.a, m.b, m.c, m.d, m.e, m.f].map((value) => formatNum(value)).join(' ')})`;
-  const found = node.children.find((child) => typeof child !== 'string' && child.tag === 'g' && child.attrs.transform === transform);
-  if (!found || typeof found === 'string') throw new Error(`missing mark for ${comp.id}`);
-  return found;
+  const found = node.children.filter((child): child is SvgNode => typeof child !== 'string'
+    && ((child.tag === 'g' && child.attrs.transform === transform) || child.attrs['data-material-cluster'] === comp.id));
+  if (found.length === 0) throw new Error(`missing mark for ${comp.id}`);
+  return { tag: 'g', attrs: {}, children: found.flatMap((child) => child.attrs['data-material-cluster'] ? [child] : child.children) };
 }
 
 const EVIDENCE_ORDER = ['observed', 'derived', 'unknown'] as const;
@@ -773,5 +775,32 @@ it('scales a token to about 12 screen px under a parent scaled by 2', () => {
   });
   const token = shapes(markOf(replayLayer(scene, state), comp)).find((node) => node.tag === 'rect');
   if (!token) throw new Error('missing token');
-  expect(Number(token.attrs.width) * comp.S / (1 / scene.pxPerUnit)).toBeCloseTo(12, 5);
+  expect(Number(token.attrs.width) / (1 / scene.pxPerUnit)).toBeCloseTo(12, 5);
+});
+
+it('draws a material cluster upright in scene space on a component rotated 150 degrees, on the bbox bottom side', () => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const comp = scene.components.get('a')!;
+  const rotated = { ...comp, matrix: { ...comp.matrix, a: -0.866, b: 0.5, c: -0.5, d: -0.866 } };
+  const rotatedScene: Scene = { ...scene, components: new Map([['a', rotated]]) };
+  const state = replayState({
+    materials: [stateMaterial({
+      key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed',
+    })],
+    components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+  });
+  const result = replayLayer(rotatedScene, state);
+  const rotatedGroups = result.children.filter((child): child is SvgNode => typeof child !== 'string' && child.attrs.transform != null);
+  const cluster = result.children.find((child): child is SvgNode => typeof child !== 'string' && child.attrs['data-material-cluster'] === 'a');
+  if (!cluster) throw new Error('missing cluster');
+  expect(rotatedGroups).toHaveLength(1);
+  expect(shapes(rotatedGroups[0]!).some((node) => node.tag === 'text' || node.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)')).toBe(false);
+  expect(cluster.attrs.transform).toBeUndefined();
+  const inside = shapes(cluster);
+  expect(inside.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['W1']);
+  for (const node of inside.filter((n) => n.tag === 'circle' || n.tag === 'text')) {
+    expect(node.attrs.transform).toBeUndefined();
+    expect(Number(node.attrs.cy ?? node.attrs.y)).toBeGreaterThan(comp.center[1]);
+    expect(Number(node.attrs.cy ?? node.attrs.y)).toBeLessThanOrEqual(comp.bbox.y1);
+  }
 });

@@ -63,6 +63,8 @@ const ACTIVITY_KO: Record<StateActivity, string> = { processing: '처리 중', '
 const TOKEN_PX = 8;
 const DISC_PX = 12;
 const DISC_GAP_PX = 3;
+/** Gap between the cluster and the inner bottom edge of the component bbox, screen px. */
+const CLUSTER_INSET_PX = 2;
 const GROUP_GAP_PX = 10;
 const LABEL_PX = 10;
 const LABEL_CHARS = 8;
@@ -216,7 +218,7 @@ export function buildOverlay(scene: Scene, state: OverlayState, k: number): { in
   };
 }
 
-function materialToken(material: StateMaterial, cx: number, cy: number, kLocal: number, labelled: boolean): SvgNode[] {
+function materialToken(material: StateMaterial, cx: number, cy: number, k: number, labelled: boolean): SvgNode[] {
   const attrs: Record<string, string> = {
     fill: PAINT.materialFill,
     stroke: PAINT.materialStroke,
@@ -228,35 +230,35 @@ function materialToken(material: StateMaterial, cx: number, cy: number, kLocal: 
   const title = el('title', {}, [
     `${material.id ?? '익명'} · ${material.location?.holdingSiteId ?? '위치 Component 단위'} · 위치 ${EVIDENCE_KO[material.locationEvidence]} · 식별 ${EVIDENCE_KO[material.identityEvidence]}`,
   ]);
-  const half = DISC_PX / 2 * kLocal;
+  const half = DISC_PX / 2 * k;
   const token = material.kind === 'wafer' || material.kind === 'reticle'
     ? el('circle', { ...attrs, cx: formatNum(cx), cy: formatNum(cy), r: formatNum(half) }, [title])
     : el('rect', {
       ...attrs,
       x: formatNum(cx - half),
       y: formatNum(cy - half),
-      width: formatNum(DISC_PX * kLocal),
-      height: formatNum(DISC_PX * kLocal),
-      rx: formatNum(2 * kLocal),
+      width: formatNum(DISC_PX * k),
+      height: formatNum(DISC_PX * k),
+      rx: formatNum(2 * k),
     }, [title]);
   const nodes = [token];
   if (labelled && material.id != null) {
     nodes.push(el('text', {
       x: formatNum(cx),
-      y: formatNum(cy - (DISC_PX / 2 + 2) * kLocal),
+      y: formatNum(cy - (DISC_PX / 2 + 2) * k),
       'text-anchor': 'middle',
       'font-family': 'inherit',
-      'font-size': formatNum(LABEL_PX * kLocal),
+      'font-size': formatNum(LABEL_PX * k),
       fill: PAINT.ink,
     }, [ellipsis(material.id)]));
   }
   if (material.identityEvidence !== 'unknown' && material.locationEvidence !== 'unknown') return nodes;
   nodes.push(el('text', {
     x: formatNum(cx),
-    y: formatNum(cy + 0.35 * TOKEN_PX * kLocal),
+    y: formatNum(cy + 0.35 * TOKEN_PX * k),
     'text-anchor': 'middle',
     'font-family': 'inherit',
-    'font-size': formatNum(TOKEN_PX * kLocal),
+    'font-size': formatNum(TOKEN_PX * k),
     fill: PAINT.evidence,
   }, ['?']));
   return nodes;
@@ -282,9 +284,13 @@ function siteOrdered(comp: SceneComponent, materials: readonly StateMaterial[]):
   return rows;
 }
 
-/** Disc clusters along the component's bottom edge, one per Holding Site group, centred; screen-pixel sizes through `kLocal`. */
+
+/**
+ * Disc clusters in screen-upright scene space (never the component's rotated frame): one row centred on the
+ * component's scene centre, on the inner bottom edge of its axis-aligned bbox, one group per Holding Site;
+ * screen-pixel sizes through `k`.
+ */
 function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[], k: number): SvgNode[] {
-  const kLocal = k / comp.S;
   const ordered = siteOrdered(comp, materials);
   const overflow = ordered.length > MAX_LABELLED;
   const shown = overflow ? ordered.slice(0, SHOWN_WITH_CHIP) : ordered;
@@ -303,12 +309,13 @@ function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[
     rowPx += item.width + (i === 0 ? 0 : item.group === items[i - 1]!.group ? DISC_GAP_PX : GROUP_GAP_PX);
   });
   if (plus) rowPx += (items.length > 0 ? DISC_GAP_PX : 0) + chipPx;
-  const cy = comp.h / 2 - DISC_PX / 2 * kLocal;
+  const cy = comp.bbox.y1 - (CLUSTER_INSET_PX + DISC_PX / 2) * k;
   const nodes: SvgNode[] = [];
   let xPx = -rowPx / 2;
+  const cx = comp.center[0];
   items.forEach((item, i) => {
     if (i > 0) xPx += item.group === items[i - 1]!.group ? DISC_GAP_PX : GROUP_GAP_PX;
-    nodes.push(...materialToken(item.material, (xPx + item.width / 2) * kLocal, cy, kLocal, !overflow));
+    nodes.push(...materialToken(item.material, cx + (xPx + item.width / 2) * k, cy, k, !overflow));
     xPx += item.width;
   });
   if (plus) {
@@ -318,22 +325,22 @@ function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[
     nodes.push(el('g', {}, [
       el('title', {}, [`${plus} · ${listed}`]),
       el('rect', {
-        x: formatNum(xPx * kLocal),
-        y: formatNum(cy - DISC_PX / 2 * kLocal),
-        width: formatNum(chipPx * kLocal),
-        height: formatNum(DISC_PX * kLocal),
-        rx: formatNum(3 * kLocal),
+        x: formatNum(cx + xPx * k),
+        y: formatNum(cy - DISC_PX / 2 * k),
+        width: formatNum(chipPx * k),
+        height: formatNum(DISC_PX * k),
+        rx: formatNum(3 * k),
         fill: PAINT.board,
         stroke: PAINT.materialStroke,
         'stroke-width': formatNum(1),
         'vector-effect': 'non-scaling-stroke',
       }),
       el('text', {
-        x: formatNum((xPx + chipPx / 2) * kLocal),
-        y: formatNum(cy + 0.35 * LABEL_PX * kLocal),
+        x: formatNum(cx + (xPx + chipPx / 2) * k),
+        y: formatNum(cy + 0.35 * LABEL_PX * k),
         'text-anchor': 'middle',
         'font-family': 'inherit',
-        'font-size': formatNum(LABEL_PX * kLocal),
+        'font-size': formatNum(LABEL_PX * k),
         fill: PAINT.ink,
       }, [plus]),
     ]));
@@ -404,9 +411,9 @@ export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number)
         `${ACTIVITY_KO[state.activity]} · ${EVIDENCE_KO[state.activityEvidence]}`,
       ));
     }
-    const located = byComponent.get(state.componentId);
-    if (located) parts.push(...materialTokens(comp, located, k));
     if (parts.length > 0) nodes.push(mark(comp, parts));
+    const located = byComponent.get(state.componentId);
+    if (located) nodes.push(el('g', { 'data-material-cluster': comp.id }, materialTokens(comp, located, k)));
   }
   for (const marker of replay.state.markers) {
     if (marker.kind !== 'occupancy-conflict') continue;
