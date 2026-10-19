@@ -2,7 +2,9 @@ import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode
 import { CircleCheck, Download, FileJson, Save, Send, ServerCrash } from 'lucide-react';
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
-import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
+import { publishRevision, readFile, saveDraft } from './api.js';
+import { REVISION_FILE, dirOrEmpty } from './layout-baseline.js';
+import { PublishDialog } from './PublishDialog.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
 import { Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
@@ -11,7 +13,6 @@ const VIEW_WIDTH = 960;
 const VIEW_HEIGHT = 600;
 /** Width used until the document column has been measured (and where ResizeObserver is missing). */
 const FALLBACK_WIDTH = 640;
-const REVISION_FILE = /^([0-9a-f]{64})\.layout\.json$/;
 
 interface Doc {
   /** The value exactly as read from a file or import; this is what save and publish write. */
@@ -48,15 +49,6 @@ function parseDoc(raw: unknown): { doc: Doc } | { issues: string } {
   const result = validateLayout(raw);
   if (result.ok) return { doc: { raw, layout: result.layout } };
   return { issues: result.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('\n') };
-}
-
-async function dirOrEmpty(dir: string) {
-  try {
-    return await listDir(dir);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return [];
-    throw error;
-  }
 }
 
 async function loadListing(): Promise<Listing> {
@@ -103,6 +95,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [revision, setRevision] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The document the open publish dialog previews; `onPublish` writes exactly this. */
+  const [publishing, setPublishing] = useState<Doc | null>(null);
   const [listingReload, setListingReload] = useState(0);
   const [fileReload, setFileReload] = useState(0);
   const [seed, setSeed] = useState<{ file: string; doc: Doc } | null>(null);
@@ -131,6 +125,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     if (seed?.file !== file) setDocumentEpoch(documentEpoch + 1);
     setImportSequence(importSequence + 1);
     setBusy(false);
+    setPublishing(null);
     setImported(null);
     setActionError(null);
     setRevision(null);
@@ -190,6 +185,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
         activeDocumentEpoch.current = epoch;
         setDocumentEpoch(epoch);
         setBusy(false);
+        setPublishing(null);
         setRevision(null);
         setImported(parsed.doc);
         setActionError(null);
@@ -239,8 +235,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
     }
   });
 
-  const onPublish = () => current && run(async (isActive) => {
-    const result = await publishRevision(current.raw);
+  const onPublish = (doc: Doc) => run(async (isActive) => {
+    const result = await publishRevision(doc.raw);
     if (!isActive()) return;
     setRevision(result.revision);
     setListingReload((count) => count + 1);
@@ -293,7 +289,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
             <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || busy}>
               <Save className="size-3.5" aria-hidden />초안 저장
             </Button>
-            <Button type="button" variant="primary" size="toolbar" onClick={onPublish} disabled={!current || busy}>
+            <Button type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || busy}>
               <Send className="size-3.5" aria-hidden />Revision 게시
             </Button>
           </>}
@@ -323,6 +319,12 @@ export function LayoutsPage({ file }: { file: string | null }) {
           </div>
         </Panel>
       </div>
+      {publishing && (
+        <PublishDialog
+          layout={publishing.layout} onCancel={() => setPublishing(null)}
+          onPublish={() => { setPublishing(null); void onPublish(publishing); }}
+        />
+      )}
     </Page>
   );
 }
