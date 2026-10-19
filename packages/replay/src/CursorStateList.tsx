@@ -1,11 +1,23 @@
 import type { SceneState } from '@eqv/core';
+import { MapPinOff, OctagonAlert, TriangleAlert, MoveRight, Inbox } from 'lucide-react';
+import { DataTable, Panel, StatusBadge } from '@eqv/ui';
+import { Callout, EmptyState, FieldRow, PanelSectionTitle } from '@fops/ui';
 import type { IllustrativeGhost } from './ghosts.js';
 import { Evidence } from './Evidence.js';
 import { ACTIVITY_KO, UNKNOWN_LANE } from './words.js';
 
-const P = 'my-0.5 break-words';
-const H4 = 'mb-0.5 mt-2 text-sm text-text-secondary';
-const UL = 'my-0.5 list-disc pl-5';
+const COMPONENT_COLUMNS = [
+  { id: 'component', header: 'Component', className: 'whitespace-nowrap' },
+  { id: 'activity', header: '활동' },
+  { id: 'evidence', header: 'Evidence' },
+] as const;
+
+const MATERIAL_COLUMNS = [
+  { id: 'material', header: '물질', className: 'whitespace-nowrap' },
+  { id: 'location', header: '위치' },
+  { id: 'location-evidence', header: '위치 근거' },
+  { id: 'identity-evidence', header: '식별 근거' },
+] as const;
 
 export interface CursorStateListProps {
   state: SceneState;
@@ -17,57 +29,64 @@ export interface CursorStateListProps {
 export function CursorStateList({ state, illustrative = [] }: CursorStateListProps) {
   const active = state.components.filter((c) => c.activity !== 'no recorded activity');
   return (
-    <section className="text-text-primary" aria-label="커서 시점 상태">
-      <h3 className="mb-1.5 text-base font-semibold">커서 시점 상태 ({state.at})</h3>
-      <p className={P}>{state.binding ? `Binding: ${state.binding.layoutId} · ${state.binding.mappingHash}` : '적용된 Binding 없음'}</p>
-      <h4 className={H4}>Component 활동</h4>
-      {active.length === 0 ? <p className={P}>기록된 활동 없음</p> : (
-        <ul className={UL}>
-          {active.map((c) => (
-            <li key={c.componentId}>
-              {c.componentId}: {ACTIVITY_KO[c.activity as keyof typeof ACTIVITY_KO]} · 활동 근거 <Evidence level={c.activityEvidence} />
-            </li>
-          ))}
-        </ul>
-      )}
-      <h4 className={H4}>물질</h4>
-      {state.materials.length === 0 ? <p className={P}>열려 있는 물질 없음</p> : (
-        <ul className={UL}>
-          {state.materials.map((m) => (
-            <li key={m.key}>
-              {m.kind} {m.id ?? '익명'}: {m.location === null ? UNKNOWN_LANE
-                : `${m.location.componentId}${m.location.holdingSiteId === undefined ? '' : ` / ${m.location.holdingSiteId}`}`}
-              {' '}· 위치 근거 <Evidence level={m.locationEvidence} /> · 식별 근거 <Evidence level={m.identityEvidence} />
-            </li>
-          ))}
-        </ul>
-      )}
+    <Panel title="커서 시점 상태" subtitle={state.at}>
+      <FieldRow label="Binding" layout="property">
+        {state.binding ? `${state.binding.layoutId} · ${state.binding.mappingHash}` : '적용된 Binding 없음'}
+      </FieldRow>
+      <PanelSectionTitle size="tiny">Component 활동</PanelSectionTitle>
+      <DataTable label="Component 활동" columns={COMPONENT_COLUMNS} state={active.length === 0 ? (
+        <EmptyState size="sm" density="compact" icon={<Inbox className="size-4" aria-hidden />} title="기록된 활동 없음" />
+      ) : undefined}>
+        {active.map((component) => (
+          <DataTable.Row key={component.componentId}>
+            <DataTable.Cell mono>{component.componentId}</DataTable.Cell>
+            <DataTable.Cell>{ACTIVITY_KO[component.activity as keyof typeof ACTIVITY_KO]}</DataTable.Cell>
+            <DataTable.Cell><Evidence level={component.activityEvidence} /></DataTable.Cell>
+          </DataTable.Row>
+        ))}
+      </DataTable>
+
+      <PanelSectionTitle size="tiny">물질</PanelSectionTitle>
+      <DataTable label="물질" columns={MATERIAL_COLUMNS} state={state.materials.length === 0 ? (
+        <EmptyState size="sm" density="compact" icon={<Inbox className="size-4" aria-hidden />} title="열려 있는 물질 없음" />
+      ) : undefined}>
+        {state.materials.map((material) => (
+          <DataTable.Row key={material.key}>
+            <DataTable.Cell rowHeader mono>{material.kind} {material.id ?? '익명'}</DataTable.Cell>
+            <DataTable.Cell>{material.location === null ? UNKNOWN_LANE
+              : `${material.location.componentId}${material.location.holdingSiteId === undefined ? '' : ` / ${material.location.holdingSiteId}`}`}</DataTable.Cell>
+            <DataTable.Cell><Evidence level={material.locationEvidence} /></DataTable.Cell>
+            <DataTable.Cell><Evidence level={material.identityEvidence} /></DataTable.Cell>
+          </DataTable.Row>
+        ))}
+      </DataTable>
+
       {illustrative.length > 0 && (
-        <>
-          <h4 className={H4}>예시 이동</h4>
-          <ul className={UL}>
+        <Callout tone="cyan" title="예시 이동" icon={<MoveRight className="size-3.5" aria-hidden />} className="mt-3">
+          <ul className="my-0 list-disc pl-5">
             {illustrative.map((ghost) => (
               <li key={ghost.materialKey}>{ghost.label}: {ghost.fromComponentId} → {ghost.toComponentId} · 예시 이동 (관측 아님)</li>
             ))}
           </ul>
-        </>
+        </Callout>
       )}
+
       {state.markers.length > 0 && (
         <>
-          <h4 className={H4}>표식</h4>
-          <ul className={UL}>
+          <PanelSectionTitle size="tiny">표식</PanelSectionTitle>
+          <ul className="my-0 flex flex-wrap gap-2">
             {state.markers.map((marker) => {
               switch (marker.kind) {
-                case 'after-watermark': return <li key={marker.kind}>Watermark 이후 ({marker.watermarkAt})</li>;
-                case 'time-anomaly': return <li key={`${marker.kind}:${marker.occurrenceId}`}>시각 역전 ({marker.occurrenceId})</li>;
+                case 'after-watermark': return <li key={marker.kind}><StatusBadge tone="warning" icon={TriangleAlert}>Watermark 이후 ({marker.watermarkAt})</StatusBadge></li>;
+                case 'time-anomaly': return <li key={`${marker.kind}:${marker.occurrenceId}`}><StatusBadge tone="danger" icon={OctagonAlert}>시각 역전 ({marker.occurrenceId})</StatusBadge></li>;
                 case 'occupancy-conflict':
-                  return <li key={`${marker.kind}:${marker.componentId}:${marker.holdingSiteId}`}>점유 충돌 ({marker.componentId} / {marker.holdingSiteId}: {marker.materialKeys.join(', ')})</li>;
-                case 'unmapped-alias': return <li key={`${marker.kind}:${marker.alias}:${marker.occurrenceId}`}>미매핑 alias ({marker.alias}, {marker.occurrenceId})</li>;
+                  return <li key={`${marker.kind}:${marker.componentId}:${marker.holdingSiteId}`}><StatusBadge tone="danger" icon={TriangleAlert}>점유 충돌 ({marker.componentId} / {marker.holdingSiteId}: {marker.materialKeys.join(', ')})</StatusBadge></li>;
+                case 'unmapped-alias': return <li key={`${marker.kind}:${marker.alias}:${marker.occurrenceId}`}><StatusBadge tone="warning" icon={MapPinOff}>미매핑 alias ({marker.alias}, {marker.occurrenceId})</StatusBadge></li>;
               }
             })}
           </ul>
         </>
       )}
-    </section>
+    </Panel>
   );
 }

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import type { BindingsFile, Occurrence, OccurrenceBatch, ReplayTimeline } from '@eqv/core';
-import { DataTable } from '@eqv/ui';
-import { Button } from '@fops/ui';
+import { Inbox, Circle } from 'lucide-react';
+import { DataTable, StatusBadge } from '@eqv/ui';
+import { Button, EmptyState } from '@fops/ui';
 import { capNotice, rowSlice } from './row-cap.js';
 import { LEVEL_KO, NO_TIME } from './words.js';
 
@@ -20,7 +21,16 @@ export interface OccurrenceListProps {
 }
 
 const alias = (a: { moduleAlias: string; slotAlias?: string | undefined }) => a.slotAlias === undefined ? a.moduleAlias : `${a.moduleAlias} / ${a.slotAlias}`;
-const COLUMNS = ['원시 시각', 'Record Sequence', '종류', '대상', 'Evidence', 'Mapping Version', '원본 참조', 'Data Quality'];
+const COLUMNS = [
+  { id: 'time', header: '원시 시각', className: 'whitespace-nowrap' },
+  { id: 'sequence', header: 'Record Sequence', align: 'end', className: 'whitespace-nowrap' },
+  { id: 'kind', header: '종류' },
+  { id: 'target', header: '대상' },
+  { id: 'evidence', header: 'Evidence' },
+  { id: 'mapping-version', header: 'Mapping Version', className: 'whitespace-nowrap' },
+  { id: 'record-ref', header: '원본 참조' },
+  { id: 'data-quality', header: 'Data Quality' },
+] as const;
 const MAPPING_PREFIX = 'sha256:'.length + 8;
 
 function target(o: Occurrence): string {
@@ -73,7 +83,11 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
     const next = rows[indexOf(event.currentTarget.dataset.occurrenceId ?? null) + (down ? 1 : -1)];
     if (next) { event.preventDefault(); setNav({ id: next.id, selected: selectedOccurrenceId }); }
   };
-  if (rows.length === 0) return <p className="text-text-secondary">이 구간에 겹치는 Occurrence가 없습니다</p>;
+  if (rows.length === 0) {
+    return <DataTable label="Occurrence 목록" role="grid" columns={COLUMNS} state={
+      <EmptyState size="sm" density="compact" icon={<Inbox className="size-4" aria-hidden />} title="이 구간에 겹치는 Occurrence가 없습니다" />
+    }>{null}</DataTable>;
+  }
   return (
     <div ref={body}>
       {slice.capped && (
@@ -98,9 +112,9 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
               <DataTable.Cell className="whitespace-nowrap">
                 <div>시작 {o.start.at ?? NO_TIME}</div>
                 <div>끝 {o.end === null ? '열림' : o.end.at ?? NO_TIME}</div>
-                {running && <strong className="font-semibold text-accent-primary">진행 중</strong>}
+                {running && <StatusBadge tone="info" icon={Circle}>진행 중</StatusBadge>}
               </DataTable.Cell>
-              <DataTable.Cell className="whitespace-nowrap">{o.start.seq} / {o.end?.seq ?? '—'}</DataTable.Cell>
+              <DataTable.Cell numeric>{o.start.seq} / {o.end?.seq ?? '—'}</DataTable.Cell>
               <DataTable.Cell>{o.kind}</DataTable.Cell>
               <DataTable.Cell>{target(o)}</DataTable.Cell>
               <DataTable.Cell>
@@ -108,7 +122,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
                 {o.material && <> · 식별 {LEVEL_KO[o.material.identityEvidence]}</>}
                 {o.synthetic && <> · 합성</>}
               </DataTable.Cell>
-              <DataTable.Cell>{mappingOf(o)}</DataTable.Cell>
+              <DataTable.Cell mono>{mappingOf(o)}</DataTable.Cell>
               <DataTable.Cell>{o.source.recordRef ?? '—'}{renderRecordRef?.(o)}</DataTable.Cell>
               <DataTable.Cell>{issues.length ? issues.join(', ') : '—'}</DataTable.Cell>
             </DataTable.Row>

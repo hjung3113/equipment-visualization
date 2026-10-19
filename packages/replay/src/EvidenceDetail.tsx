@@ -1,3 +1,5 @@
+import { MousePointerClick, SearchX } from 'lucide-react';
+import { EmptyState, FieldRow, PanelSectionTitle } from '@fops/ui';
 import { RULESET_VERSION, type Boundary, type OccurrenceBatch, type SceneState } from '@eqv/core';
 import { Evidence } from './Evidence.js';
 import { ACTIVITY_KO, NO_TIME, UNKNOWN_LANE } from './words.js';
@@ -9,50 +11,54 @@ export interface EvidenceDetailProps {
   selectedOccurrenceId: string | null;
 }
 
-const P = 'my-0.5 break-words';
-const H4 = 'mb-0.5 mt-2 text-sm text-text-secondary';
-
 function boundary(label: string, b: Boundary | null) {
-  if (b === null) return <p className={P}>{label}: 열림 (끝 Record 없음)</p>;
   return (
-    <p className={P}>
-      {label}: {b.at ?? NO_TIME} · Record Sequence {b.seq} · 근거 <Evidence level={b.evidence} />{b.reason === undefined ? '' : ` · 사유 ${b.reason}`}
-    </p>
+    <FieldRow label={label} layout="property">
+      {b === null ? '열림 (끝 Record 없음)' : <>
+        {b.at ?? NO_TIME} · Record Sequence {b.seq} · 근거 <Evidence level={b.evidence} />{b.reason === undefined ? '' : ` · 사유 ${b.reason}`}
+      </>}
+    </FieldRow>
   );
 }
 
 export function EvidenceDetail({ batch, state, selectedOccurrenceId }: EvidenceDetailProps) {
-  if (selectedOccurrenceId === null) return <p className="text-text-secondary">Occurrence를 선택하세요</p>;
+  if (selectedOccurrenceId === null) {
+    return <EmptyState size="sm" icon={<MousePointerClick className="size-4" aria-hidden />} title="Occurrence를 선택하세요" />;
+  }
   const o = batch.occurrences.find((candidate) => candidate.id === selectedOccurrenceId);
-  if (!o) return <p className="text-text-secondary">Occurrence {selectedOccurrenceId}를 찾을 수 없습니다</p>;
+  if (!o) {
+    return <EmptyState size="sm" icon={<SearchX className="size-4" aria-hidden />} title={`Occurrence ${selectedOccurrenceId}를 찾을 수 없습니다`} />;
+  }
   const material = state.materials.find((m) => m.occurrenceId === o.id);
   const component = state.components.find((c) => c.occurrenceIds.includes(o.id));
   return (
     <section className="text-text-primary" aria-label={`근거 상세 ${o.id}`}>
-      <h3 className="mb-1.5 text-base font-semibold">{o.id} <small>{o.kind}</small></h3>
-      <h4 className={H4}>위치</h4>
+      <PanelSectionTitle size="tiny">{o.id} <small>{o.kind}</small></PanelSectionTitle>
+      <PanelSectionTitle size="tiny">위치</PanelSectionTitle>
       {material && (
-        <p className={P}>
+        <FieldRow label="위치" layout="property">
           {material.location === null ? UNKNOWN_LANE
             : `${material.location.componentId}${material.location.holdingSiteId === undefined ? '' : ` / ${material.location.holdingSiteId}`}`}
           {' '}· 위치 근거 <Evidence level={material.locationEvidence} />
-        </p>
+        </FieldRow>
       )}
       {component && (
-        <p className={P}>활동 {ACTIVITY_KO[component.activity as keyof typeof ACTIVITY_KO]} · {component.componentId} · 활동 근거 <Evidence level={component.activityEvidence} /></p>
+        <FieldRow label="활동" layout="property">
+          {ACTIVITY_KO[component.activity as keyof typeof ACTIVITY_KO]} · {component.componentId} · 활동 근거 <Evidence level={component.activityEvidence} />
+        </FieldRow>
       )}
-      {!material && !component && <p className={P}>이 시점에 열려 있지 않음</p>}
-      <h4 className={H4}>식별</h4>
+      {!material && !component && <FieldRow label="위치" layout="property">이 시점에 열려 있지 않음</FieldRow>}
+      <PanelSectionTitle size="tiny">식별</PanelSectionTitle>
       {o.material
-        ? <p className={P}>{o.material.kind} {o.material.id ?? '익명'} · 식별 근거 {material ? <Evidence level={material.identityEvidence} /> : <><Evidence level={o.material.identityEvidence} /> (원본)</>}</p>
-        : <p className={P}>물질 없음</p>}
-      <h4 className={H4}>경계</h4>
+        ? <FieldRow label="식별" layout="property">{o.material.kind} {o.material.id ?? '익명'} · 식별 근거 {material ? <Evidence level={material.identityEvidence} /> : <><Evidence level={o.material.identityEvidence} /> (원본)</>}</FieldRow>
+        : <FieldRow label="식별" layout="property">물질 없음</FieldRow>}
+      <PanelSectionTitle size="tiny">경계</PanelSectionTitle>
       {boundary('시작', o.start)}
       {boundary('끝', o.end)}
-      <h4 className={H4}>출처</h4>
-      <p className={P}>synthetic: {o.synthetic ? '예' : '아니오'}</p>
-      <p className={P}>Mapping Version: {state.binding?.mappingHash ?? '—'}</p>
-      <p className={P}>Ruleset: {RULESET_VERSION}</p>
+      <PanelSectionTitle size="tiny">출처</PanelSectionTitle>
+      <FieldRow label="synthetic" layout="property">{o.synthetic ? '예' : '아니오'}</FieldRow>
+      <FieldRow label="Mapping Version" layout="property">{state.binding?.mappingHash ?? '—'}</FieldRow>
+      <FieldRow label="Ruleset" layout="property">{RULESET_VERSION}</FieldRow>
     </section>
   );
 }

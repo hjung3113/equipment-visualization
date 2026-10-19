@@ -1,5 +1,6 @@
 import type { ReplayTimeline } from '@eqv/core';
-import { Button } from '@fops/ui';
+import { Inbox } from 'lucide-react';
+import { Button, EmptyState } from '@fops/ui';
 import { DataTable } from '@eqv/ui';
 import { capNotice, rowSlice } from './row-cap.js';
 import { NO_TIME } from './words.js';
@@ -11,10 +12,20 @@ export interface DataQualityListProps {
   onSelectOccurrence: (id: string) => void;
 }
 
-const COLUMNS = ['시각', 'Record Sequence', '종류', 'id', '관련 Occurrence'];
+const COLUMNS = [
+  { id: 'time', header: '시각', className: 'whitespace-nowrap' },
+  { id: 'sequence', header: 'Record Sequence', align: 'end', className: 'whitespace-nowrap' },
+  { id: 'kind', header: '종류' },
+  { id: 'id', header: 'id', className: 'whitespace-nowrap' },
+  { id: 'related-occurrence', header: '관련 Occurrence', className: 'whitespace-nowrap' },
+] as const;
 
 export function DataQualityList({ timeline, appliedSeq = null, onSelectOccurrence }: DataQualityListProps) {
-  if (timeline.issues.length === 0) return <p className="text-text-secondary">이 구간에 Data Quality Issue가 없습니다</p>;
+  if (timeline.issues.length === 0) {
+    return <DataTable label="Data Quality" columns={COLUMNS} state={
+      <EmptyState size="sm" density="compact" icon={<Inbox className="size-4" aria-hidden />} title="이 구간에 Data Quality Issue가 없습니다" />
+    }>{null}</DataTable>;
+  }
   const issues = [...timeline.issues].sort((a, b) => a.seq - b.seq);
   const slice = rowSlice(issues.length, appliedSeq === null ? 0 : Math.max(issues.findLastIndex((issue) => issue.seq <= appliedSeq), 0));
   return (
@@ -24,13 +35,13 @@ export function DataQualityList({ timeline, appliedSeq = null, onSelectOccurrenc
       {issues.slice(slice.start, slice.end).map((issue) => (
         <DataTable.Row key={issue.id}>
           <DataTable.Cell className="whitespace-nowrap">{issue.at ?? NO_TIME}</DataTable.Cell>
-          <DataTable.Cell className="whitespace-nowrap">{issue.seq}</DataTable.Cell>
+          <DataTable.Cell numeric>{issue.seq}</DataTable.Cell>
           <DataTable.Cell>{issue.issueType}</DataTable.Cell>
-          <DataTable.Cell className="whitespace-nowrap">{issue.id}</DataTable.Cell>
+          <DataTable.Cell mono>{issue.id}</DataTable.Cell>
           <DataTable.Cell>
             {issue.relatedOccurrenceId === undefined ? '—' : (
-              <Button type="button" variant="outline" size="toolbar" aria-label={`관련 Occurrence ${issue.relatedOccurrenceId} 선택`}
-                onClick={() => onSelectOccurrence(issue.relatedOccurrenceId!)}>{issue.relatedOccurrenceId}</Button>
+              <Button type="button" variant="link" size="sm" aria-label={`관련 Occurrence ${issue.relatedOccurrenceId} 선택`}
+                onClick={() => onSelectOccurrence(issue.relatedOccurrenceId!)}><span className="font-mono text-xs">{issue.relatedOccurrenceId}</span></Button>
             )}
           </DataTable.Cell>
         </DataTable.Row>

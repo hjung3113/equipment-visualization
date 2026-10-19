@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
-import { ChartGantt, Inbox } from 'lucide-react';
+import { ArrowRight, ChartGantt, Inbox, Info, MapPinOff, ServerCrash } from 'lucide-react';
 import {
   replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
   type ReplayInput, type ReplayTimeline, type ReplayTimelineFrame, type SceneState, type SiteWallClock,
@@ -10,8 +10,8 @@ import {
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
 import { TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focus-data.js';
-import { Button, Checkbox, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@fops/ui';
-import { EvidenceBadge, Page, StateMessage, ViewerZoomControls } from '@eqv/ui';
+import { Button, Callout, Checkbox, EmptyState, Input, Label } from '@fops/ui';
+import { EvidenceBadge, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { Link, hrefFor, navigate } from './router.js';
 import { windowHex } from './onboarding-data.js';
 import { WindowPicker } from './WindowPicker.js';
@@ -74,6 +74,8 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
   const [view, setView] = useState<View>(fresh);
   const [tab, setTab] = useState<Tab>('list');
   const rangeId = useId();
+  const rangeFormId = `${rangeId}-form`;
+  const rangeErrorId = `${rangeId}-error`;
   // Everything below belongs to the load key and the entry key: a change clears it during render, and a late result of a
   // previous load is dropped by the effect cleanup. The cursor, range and selection belong to one batch.
   if (view.loadKey !== loadKey) setView(fresh());
@@ -173,47 +175,69 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
   };
 
   return (
-    <Page title={<>Focus · <code>{equipmentId}</code></>}>
+    <Page title={<>Focus · <code>{equipmentId}</code></>}
+      description={anchor !== null ? <>진입 키: <code>{entityType ?? '—'}</code> / <code>{anchor}</code></> : '진입 키 없음'}
+      breadcrumb={{ label: '경로', items: [
+        { key: 'fleet', label: 'Fleet', href: hrefFor({ name: 'fleet' }) },
+        { key: 'equipment', label: equipmentId, href: hrefFor({ name: 'equipment', equipmentId }) },
+        { key: 'focus', label: 'Focus' },
+      ] }} linkComponent={Link}
+      actions={result?.kind === 'ok' ? (
+        <Button asChild variant="secondary" size="toolbar">
+          <Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow ?? windowHex(result.selectedWindow) })}>
+            <ArrowRight className="size-3.5" aria-hidden />Onboarding으로 이동
+          </Link>
+        </Button>
+      ) : result?.kind === 'not-found' || result?.kind === 'error' ? (
+        <Button asChild variant="secondary" size="toolbar">
+          <Link href={hrefFor({ name: 'fleet' })}><ArrowRight className="size-3.5" aria-hidden />Fleet으로 이동</Link>
+        </Button>
+      ) : undefined}>
       <WindowPicker equipmentId={equipmentId} hint={PICKER_HINT}
         value={sampleWindow ?? (ok ? windowHex(ok.selectedWindow) : null)}
         details={ok ? { dataGeneration: ok.batch.dataGeneration, timeDomain: ok.batch.timeDomain, hash: ok.selectedWindow.hash } : null}
         onChange={(hex) => navigate(hrefFor({ name: 'focus', equipmentId, entityType, anchor, window: hex }))} />
-      <p>{anchor !== null ? <>진입 키: <code>{entityType ?? '—'}</code> / <code>{anchor}</code></> : '진입 키 없음'}</p>
-      {result === null ? <p>불러오는 중…</p> : result.kind === 'not-found' ? (
-        <>
-          <p>설비를 찾을 수 없습니다</p>
-          <p><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></p>
-        </>
+      {result === null ? <LoadingBlock label="불러오는 중…" /> : result.kind === 'not-found' ? (
+        <StateMessage icon={MapPinOff} title="설비를 찾을 수 없습니다" body="등록된 설비 기록이 없습니다." />
       ) : result.kind === 'no-observations' ? (
         <StateMessage icon={Inbox} title="Sample Window를 가져오세요"
           body="이 설비는 등록되었지만 아직 가져온 관측이 없습니다. 재생할 Sample Window가 없습니다."
           action={<Button asChild variant="secondary" size="sm"><Link href={hrefFor({ name: 'equipment', equipmentId })}>설비 데이터 열기</Link></Button>} />
       ) : result.kind === 'error' ? (
-        <>
-          <p role="alert">데이터 오류: {result.error}</p>
-          <p><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></p>
-        </>
+        <StateMessage tone="danger" icon={ServerCrash} title="데이터 오류" body={result.error} />
       ) : (
         <>
-          <p><Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow ?? windowHex(result.selectedWindow) })}>Onboarding으로 이동</Link></p>
-          {[...result.notices, ...(entry?.notice ? [entry.notice] : [])].map((notice) => <p key={notice} role="status">{notice}</p>)}
+          {[...result.notices, ...(entry?.notice ? [entry.notice] : [])].map((notice) => (
+            <Callout key={notice} tone="blue" icon={<Info className="size-3.5" aria-hidden />} className="mb-2">
+              <span role="status">{notice}</span>
+            </Callout>
+          ))}
           {range && (
-            <form aria-label="구간" className="my-2 flex flex-wrap items-center gap-x-3 gap-y-2" onSubmit={(event) => { event.preventDefault(); apply(); }}>
-              <div className="flex items-center gap-2">
-                <Label htmlFor={`${rangeId}-from`}>시작</Label>
-                <Input id={`${rangeId}-from`} type="text" className="w-72" value={draft.from} onChange={(event) => patch({ draft: { ...draft, from: event.target.value } })} />
-              </div>
-              <div className="flex items-center gap-2">
-                <Label htmlFor={`${rangeId}-to`}>끝</Label>
-                <Input id={`${rangeId}-to`} type="text" className="w-72" value={draft.to} onChange={(event) => patch({ draft: { ...draft, to: event.target.value } })} />
-              </div>
-              <Button type="submit">적용</Button>
-              {view.rangeError && <span role="alert">{view.rangeError}</span>}
-            </form>
+            <Panel title="재생 구간" className="mb-4" actions={
+              <Button type="submit" form={rangeFormId} variant="secondary" size="toolbar"><ArrowRight className="size-3.5" aria-hidden />적용</Button>
+            }>
+              <form id={rangeFormId} aria-label="구간" className="grid gap-3" onSubmit={(event) => { event.preventDefault(); apply(); }}>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-1">
+                    <Label htmlFor={`${rangeId}-from`}>시작</Label>
+                    <Input id={`${rangeId}-from`} type="text" className="w-full max-w-72" value={draft.from}
+                      aria-invalid={view.rangeError !== null} aria-describedby={view.rangeError ? rangeErrorId : undefined}
+                      onChange={(event) => patch({ draft: { ...draft, from: event.target.value } })} />
+                  </div>
+                  <div className="grid gap-1">
+                    <Label htmlFor={`${rangeId}-to`}>끝</Label>
+                    <Input id={`${rangeId}-to`} type="text" className="w-full max-w-72" value={draft.to}
+                      aria-invalid={view.rangeError !== null} aria-describedby={view.rangeError ? rangeErrorId : undefined}
+                      onChange={(event) => patch({ draft: { ...draft, to: event.target.value } })} />
+                  </div>
+                </div>
+                {view.rangeError && <p id={rangeErrorId} role="alert" className="m-0 text-xs text-text-danger-label">{view.rangeError}</p>}
+              </form>
+            </Panel>
           )}
-          {framed && 'error' in framed && <p role="alert">Replay 오류: {framed.error}</p>}
-          {computed && 'error' in computed && <p role="alert">Replay 오류: {computed.error}</p>}
-          {sceneState && 'error' in sceneState && <p role="alert">Replay 오류: {sceneState.error}</p>}
+          {framed && 'error' in framed && <StateMessage compact tone="danger" icon={ServerCrash} title={`Replay 오류: ${framed.error}`} />}
+          {computed && 'error' in computed && <StateMessage compact tone="danger" icon={ServerCrash} title={`Replay 오류: ${computed.error}`} />}
+          {sceneState && 'error' in sceneState && <StateMessage compact tone="danger" icon={ServerCrash} title={`Replay 오류: ${sceneState.error}`} />}
           {input && frame && state && cursor && (
             <>
               <PlaybackControls playing={playback.playing} onPlay={() => { patch({ mode: { kind: 'time' } }); playback.play(); }} onPause={playback.pause}
@@ -226,25 +250,24 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                   onPrevious: stepIndex > 0 ? () => moveStep(stepIndex - 1) : null,
                   onNext: stepIndex >= 0 && stepIndex < steps.length - 1 ? () => moveStep(stepIndex + 1) : null,
                   step: sequenceSeq === null ? null : { seq: sequenceSeq, at: state.at } }} />
-              <div className="mb-2 flex items-center gap-2">
-                <Checkbox id={`${rangeId}-illustrative`} checked={view.illustrative} onCheckedChange={(value) => patch({ illustrative: value === true })} />
-                <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
-              </div>
               <div className="flex flex-wrap items-start gap-4">
-                <section aria-label="Top View" className="max-w-full flex-none overflow-auto">
-                  <h2>Top View{view.illustrative && <> <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge></>}</h2>
+                <Panel title="Top View" className="max-w-full min-w-0 flex-none overflow-auto"
+                  actions={<>
+                    <Checkbox id={`${rangeId}-illustrative`} checked={view.illustrative} onCheckedChange={(value) => patch({ illustrative: value === true })} />
+                    <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
+                    {view.illustrative && <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge>}
+                  </>}>
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}
                       selectedId={view.selectedComponentId} onSelectedChange={(id) => patch({ selectedComponentId: id })}
                       renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
-                  ) : <p>이 시점에 적용된 Binding이 없어 Top View를 표시할 수 없습니다</p>}
-                </section>
+                  ) : <EmptyState size="sm" icon={<MapPinOff className="size-4" aria-hidden />} title="이 시점에 적용된 Binding이 없어 Top View를 표시할 수 없습니다" />}
+                </Panel>
                 <div className="min-w-0 flex-1 basis-72">
                   <CursorStateList state={state} {...(ghosts ? { illustrative: ghosts } : {})} />
                 </div>
               </div>
-              <section aria-label="Gantt">
-                <h2>Gantt</h2>
+              <Panel title="Gantt">
                 {timeline ? (
                   <FocusGantt timeline={timeline} layout={layout} batch={ok!.batch} cursor={state.at}
                     onCursorChange={toTime} selectedOccurrenceId={selectedId}
@@ -258,7 +281,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                   <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
                     body={`범위를 좁히세요. 지금 범위는 breakpoint ${count(cost.breakpoints)}개 × record ${count(cost.records)}개 = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
                 )}
-              </section>
+              </Panel>
               <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-4">
                 <TabsList aria-label="Focus 상세">
                   {TABS.map((item) => <TabsTrigger key={item.id} value={item.id}>{item.label}</TabsTrigger>)}
