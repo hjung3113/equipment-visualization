@@ -37,6 +37,14 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
       - name: Test
+        # The 4-vCPU runner ran every package's vitest at once with ncpu-1 workers each, which pushed 0.1 s jsdom tests
+        # past 5 s (#78, #88, #118, #130). Cap the workers as ~/.zshenv does locally; the root script runs 2 packages at a time.
+        env:
+          VITEST_MAX_WORKERS: '2'
+          VITEST_MAX_FORKS: '2'
+          VITEST_MAX_THREADS: '2'
+          VITEST_MIN_FORKS: '1'
+          VITEST_MIN_THREADS: '1'
         run: pnpm test
       - name: Build
         run: pnpm build
