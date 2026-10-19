@@ -27,9 +27,10 @@ export type FocusLoad =
 /**
  * `replayTimeline` sorts the records once and then reads the Scene State at every breakpoint, each read costing about the
  * Occurrences open at that point plus the Time Anomaly inversions it scans (see `timelineCost`). Above this the Gantt is
- * not computed; the value is the cost that takes about 1 s (measured in the PR that set it).
+ * not computed. The value bounds the worst measured rate (a window whose every read places materials, about 2.5 µs per
+ * unit) to about 1 s; the 50k-Occurrence window costs 200,000 and takes about 55 ms (measured in #106).
  */
-export const TIMELINE_BUDGET = 4_000_000;
+export const TIMELINE_BUDGET = 400_000;
 
 /**
  * Work of `replayTimeline` for `frame`, from the batch alone: `records + breakpoints × (open + inversions)`.
@@ -43,13 +44,14 @@ export function timelineCost(batch: OccurrenceBatch, frame: ReplayTimelineFrame)
   const records = batch.issues.length + batch.occurrences.reduce((sum, o) => sum + (o.end ? 2 : 1), 0);
   const boundaries = [...batch.occurrences.flatMap((o) => [o.start, ...(o.end ? [o.end] : [])]), ...batch.issues].sort((a, b) => a.seq - b.seq);
   const starts = new Set(batch.occurrences.map((o) => o.start.seq));
+  const issueSeqs = new Set(batch.issues.map((i) => i.seq));
   let running = 0;
   let open = 0;
   let previous: string | null = null;
   let inversions = 0;
   for (const { seq, at } of boundaries) {
     if (starts.has(seq)) open = Math.max(open, ++running);
-    else if (batch.occurrences.length > 0 && !batch.issues.some((i) => i.seq === seq)) running--;
+    else if (!issueSeqs.has(seq)) running--;
     if (at !== null) {
       if (previous !== null && at < previous) inversions++;
       previous = at;
