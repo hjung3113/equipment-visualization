@@ -22,8 +22,8 @@
   --eqv-assumed-fg: rgb(var(--text-warning-label));
 }
 
-/* Studio base typography: app-owned element defaults (@fops/ui compat.css leaves bare elements to the app). @fops/ui tokens only.
-   Layered, so d1/d2 utilities (text-*, mb-*, font-*) still win. */
+/* Studio base: body typography, mono `code` and inline text links, the only bare elements left: @fops/ui has no link component.
+   Headings, lists, sections and alerts come from @eqv/ui / @fops/ui components. @fops/ui tokens only; layered, so utilities still win. */
 @layer base {
   body {
     margin: 0;
@@ -33,20 +33,7 @@
     font-size: var(--text-body);
     line-height: var(--leading-normal);
   }
-  h2 { margin: var(--spacing-16) 0 var(--spacing-8); font-size: var(--text-lg); font-weight: 600; }
-  h3 { margin: var(--spacing-8) 0 var(--spacing-4); font-size: var(--text-md); font-weight: 600; }
-  main ul, main ol { padding-left: 1.5em; }
-  main ul { list-style: disc; }
-  main ol { list-style: decimal; }
   code { font-family: var(--font-mono); }
   main a { color: var(--color-accent-primary); }
   main a:focus-visible { outline: 2px solid rgb(var(--focus-ring)); outline-offset: 2px; }
-  main a[aria-current='page'] { font-weight: 600; }
-  main section[aria-label] { margin-bottom: var(--spacing-16); }
-  /* The text stays the cue; colour and wash only reinforce it. No @fops/ui warning surface exists: this is Callout's amber wash. */
-  main [role='alert'] {
-    color: rgb(var(--text-warning-label));
-    background: rgb(var(--text-warning) / 0.08);
-    padding: var(--spacing-8) var(--spacing-12);
-  }
 }

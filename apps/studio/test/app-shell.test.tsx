@@ -60,3 +60,10 @@ it('moves focus to the new page heading after a pathname change, not after a que
   act(() => navigate('/layouts?file=templates%2Fx.template.json'));
   expect(document.activeElement).toBe(document.body);
 });
+
+it('offers the way back to Fleet from an unknown address inside a status message', () => {
+  window.history.replaceState(null, '', '/no-such-page');
+  render(<App />);
+  const status = within(screen.getByRole('main')).getByRole('status');
+  expect(within(status).getByRole('link', { name: 'Fleet으로 이동' }).getAttribute('href')).toBe('/fleet');
+});

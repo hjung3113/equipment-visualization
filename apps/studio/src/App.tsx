@@ -1,6 +1,6 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
-import { Factory, LayoutTemplate } from 'lucide-react';
-import { APP_FRAME_MAIN_ID, AppFrame, Page } from '@eqv/ui';
+import { Factory, FileQuestion, LayoutTemplate } from 'lucide-react';
+import { APP_FRAME_MAIN_ID, AppFrame, Page, StateMessage } from '@eqv/ui';
 import { Button } from '@fops/ui';
 import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
 import { FocusPage } from './FocusPage.js';
@@ -31,10 +31,8 @@ function RoutePage({ route }: { route: Route }) {
     case 'not-found':
       return (
         <Page title="페이지를 찾을 수 없습니다">
-          <div role="status" className="max-w-md space-y-3 rounded-lg border border-border-subtle bg-surface-card p-6">
-            <p className="text-text-secondary">주소가 바뀌었거나 없는 페이지입니다.</p>
-            <Button asChild variant="outline"><Link href="/fleet">Fleet으로 이동</Link></Button>
-          </div>
+          <StateMessage icon={FileQuestion} title="주소가 바뀌었거나 없는 페이지입니다."
+            action={<Button asChild variant="secondary" size="sm"><Link href="/fleet">Fleet으로 이동</Link></Button>} />
         </Page>
       );
   }

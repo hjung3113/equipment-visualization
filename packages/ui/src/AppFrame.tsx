@@ -120,7 +120,7 @@ export function AppFrame({ appName, brand, items, linkComponent: LinkComponent =
         <main
           id={APP_FRAME_MAIN_ID}
           tabIndex={-1}
-          className="min-h-0 min-w-0 flex-1 overflow-y-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
+          className="min-h-0 min-w-0 flex-1 scroll-pt-toolbar overflow-y-auto outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-focus-ring"
         >
           {children}
         </main>
