@@ -1,0 +1,547 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-demo-01",
+  "layoutId": "eq-demo-01-layout",
+  "entries": [
+    {
+      "alias": "ALN1",
+      "target": {
+        "componentId": "aligner-1",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            }
+          ]
+        }
+      },
+      "certainty": "assumed",
+      "rule": {
+        "scope": {
+          "level": "equipment",
+          "equipmentId": "eq-demo-01"
+        },
+        "ruleId": "aligner-assumed"
+      }
+    },
+    {
+      "alias": "EFEM_R1",
+      "target": {
+        "componentId": "robot-1",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "blade-a"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "blade-b"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "efem-robot"
+      }
+    },
+    {
+      "alias": "LL1",
+      "target": {
+        "componentId": "ll-a",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "ll"
+      }
+    },
+    {
+      "alias": "LL2",
+      "target": {
+        "componentId": "ll-b",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "ll"
+      }
+    },
+    {
+      "alias": "LP1",
+      "target": {
+        "componentId": "lp-1",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 0,
+              "to": 0,
+              "holdingSiteId": "carrier"
+            },
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            },
+            {
+              "from": 3,
+              "to": 3,
+              "holdingSiteId": "slot-3"
+            },
+            {
+              "from": 4,
+              "to": 4,
+              "holdingSiteId": "slot-4"
+            },
+            {
+              "from": 5,
+              "to": 5,
+              "holdingSiteId": "slot-5"
+            },
+            {
+              "from": 6,
+              "to": 6,
+              "holdingSiteId": "slot-6"
+            },
+            {
+              "from": 7,
+              "to": 7,
+              "holdingSiteId": "slot-7"
+            },
+            {
+              "from": 8,
+              "to": 8,
+              "holdingSiteId": "slot-8"
+            },
+            {
+              "from": 9,
+              "to": 9,
+              "holdingSiteId": "slot-9"
+            },
+            {
+              "from": 10,
+              "to": 10,
+              "holdingSiteId": "slot-10"
+            },
+            {
+              "from": 11,
+              "to": 11,
+              "holdingSiteId": "slot-11"
+            },
+            {
+              "from": 12,
+              "to": 12,
+              "holdingSiteId": "slot-12"
+            },
+            {
+              "from": 13,
+              "to": 13,
+              "holdingSiteId": "slot-13"
+            },
+            {
+              "from": 14,
+              "to": 14,
+              "holdingSiteId": "slot-14"
+            },
+            {
+              "from": 15,
+              "to": 15,
+              "holdingSiteId": "slot-15"
+            },
+            {
+              "from": 16,
+              "to": 16,
+              "holdingSiteId": "slot-16"
+            },
+            {
+              "from": 17,
+              "to": 17,
+              "holdingSiteId": "slot-17"
+            },
+            {
+              "from": 18,
+              "to": 18,
+              "holdingSiteId": "slot-18"
+            },
+            {
+              "from": 19,
+              "to": 19,
+              "holdingSiteId": "slot-19"
+            },
+            {
+              "from": 20,
+              "to": 20,
+              "holdingSiteId": "slot-20"
+            },
+            {
+              "from": 21,
+              "to": 21,
+              "holdingSiteId": "slot-21"
+            },
+            {
+              "from": 22,
+              "to": 22,
+              "holdingSiteId": "slot-22"
+            },
+            {
+              "from": 23,
+              "to": 23,
+              "holdingSiteId": "slot-23"
+            },
+            {
+              "from": 24,
+              "to": 24,
+              "holdingSiteId": "slot-24"
+            },
+            {
+              "from": 25,
+              "to": 25,
+              "holdingSiteId": "slot-25"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "lp"
+      }
+    },
+    {
+      "alias": "LP2",
+      "target": {
+        "componentId": "lp-2",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 0,
+              "to": 0,
+              "holdingSiteId": "carrier"
+            },
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "slot-1"
+            },
+            {
+              "from": 2,
+              "to": 2,
+              "holdingSiteId": "slot-2"
+            },
+            {
+              "from": 3,
+              "to": 3,
+              "holdingSiteId": "slot-3"
+            },
+            {
+              "from": 4,
+              "to": 4,
+              "holdingSiteId": "slot-4"
+            },
+            {
+              "from": 5,
+              "to": 5,
+              "holdingSiteId": "slot-5"
+            },
+            {
+              "from": 6,
+              "to": 6,
+              "holdingSiteId": "slot-6"
+            },
+            {
+              "from": 7,
+              "to": 7,
+              "holdingSiteId": "slot-7"
+            },
+            {
+              "from": 8,
+              "to": 8,
+              "holdingSiteId": "slot-8"
+            },
+            {
+              "from": 9,
+              "to": 9,
+              "holdingSiteId": "slot-9"
+            },
+            {
+              "from": 10,
+              "to": 10,
+              "holdingSiteId": "slot-10"
+            },
+            {
+              "from": 11,
+              "to": 11,
+              "holdingSiteId": "slot-11"
+            },
+            {
+              "from": 12,
+              "to": 12,
+              "holdingSiteId": "slot-12"
+            },
+            {
+              "from": 13,
+              "to": 13,
+              "holdingSiteId": "slot-13"
+            },
+            {
+              "from": 14,
+              "to": 14,
+              "holdingSiteId": "slot-14"
+            },
+            {
+              "from": 15,
+              "to": 15,
+              "holdingSiteId": "slot-15"
+            },
+            {
+              "from": 16,
+              "to": 16,
+              "holdingSiteId": "slot-16"
+            },
+            {
+              "from": 17,
+              "to": 17,
+              "holdingSiteId": "slot-17"
+            },
+            {
+              "from": 18,
+              "to": 18,
+              "holdingSiteId": "slot-18"
+            },
+            {
+              "from": 19,
+              "to": 19,
+              "holdingSiteId": "slot-19"
+            },
+            {
+              "from": 20,
+              "to": 20,
+              "holdingSiteId": "slot-20"
+            },
+            {
+              "from": 21,
+              "to": 21,
+              "holdingSiteId": "slot-21"
+            },
+            {
+              "from": 22,
+              "to": 22,
+              "holdingSiteId": "slot-22"
+            },
+            {
+              "from": 23,
+              "to": 23,
+              "holdingSiteId": "slot-23"
+            },
+            {
+              "from": 24,
+              "to": 24,
+              "holdingSiteId": "slot-24"
+            },
+            {
+              "from": 25,
+              "to": 25,
+              "holdingSiteId": "slot-25"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "lp"
+      }
+    },
+    {
+      "alias": "PM1",
+      "target": {
+        "componentId": "pm-a",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "pm"
+      }
+    },
+    {
+      "alias": "PM2",
+      "target": {
+        "componentId": "pm-b",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "pm"
+      }
+    },
+    {
+      "alias": "PM3",
+      "target": {
+        "componentId": "pm-c",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "pm"
+      }
+    },
+    {
+      "alias": "PM4",
+      "target": {
+        "componentId": "pm-d",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "pm"
+      }
+    },
+    {
+      "alias": "TM_R1",
+      "target": {
+        "componentId": "robot-2",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "blade-a"
+            }
+          ]
+        }
+      },
+      "certainty": "verified",
+      "rule": {
+        "scope": {
+          "level": "model",
+          "maker": "synth-maker",
+          "model": "synth-demo"
+        },
+        "ruleId": "tm-robot"
+      }
+    }
+  ],
+  "hash": "sha256:83d16342c4ab79c47be5b2505383b23dcd963e57691e030b64adb832002a0eef"
+}

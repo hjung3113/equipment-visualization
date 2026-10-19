@@ -1,0 +1,12 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-demo-01",
+  "bindings": [
+    {
+      "layoutId": "eq-demo-01-layout",
+      "mappingHash": "sha256:83d16342c4ab79c47be5b2505383b23dcd963e57691e030b64adb832002a0eef",
+      "layoutRevision": "sha256:22e9954e86ab9cbc6ccda069ec52aaea3ea5c5e1f41ecac9311e9d90c2879150",
+      "effectiveFrom": "2026-01-02T08:00:00.000"
+    }
+  ]
+}

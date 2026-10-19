@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "0.4",
+  "scope": {
+    "level": "model",
+    "maker": "synth-maker",
+    "model": "synth-demo"
+  },
+  "entries": [
+    {
+      "moduleType": "DEMO_LOADPORT",
+      "role": "lp"
+    },
+    {
+      "moduleType": "DEMO_ATM_ROBOT",
+      "role": "robot"
+    },
+    {
+      "moduleType": "DEMO_ALIGNER",
+      "role": "aligner"
+    },
+    {
+      "moduleType": "DEMO_LOADLOCK",
+      "role": "ll"
+    },
+    {
+      "moduleType": "DEMO_VAC_ROBOT",
+      "role": "robot"
+    },
+    {
+      "moduleType": "DEMO_PROC_CH",
+      "role": "pm"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "0.4",
+  "equipmentId": "eq-demo-01",
+  "aliases": [
+    {
+      "alias": "LP1",
+      "moduleType": "DEMO_LOADPORT",
+      "isPort": true,
+      "isRobot": false
+    },
+    {
+      "alias": "LP2",
+      "moduleType": "DEMO_LOADPORT",
+      "isPort": true,
+      "isRobot": false
+    },
+    {
+      "alias": "ALN1",
+      "moduleType": "DEMO_ALIGNER",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "EFEM_R1",
+      "moduleType": "DEMO_ATM_ROBOT",
+      "isPort": false,
+      "isRobot": true
+    },
+    {
+      "alias": "LL1",
+      "moduleType": "DEMO_LOADLOCK",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "LL2",
+      "moduleType": "DEMO_LOADLOCK",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "TM_R1",
+      "moduleType": "DEMO_VAC_ROBOT",
+      "isPort": false,
+      "isRobot": true
+    },
+    {
+      "alias": "PM1",
+      "moduleType": "DEMO_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "PM2",
+      "moduleType": "DEMO_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "PM3",
+      "moduleType": "DEMO_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "PM4",
+      "moduleType": "DEMO_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    },
+    {
+      "alias": "PM5",
+      "moduleType": "DEMO_PROC_CH",
+      "isPort": false,
+      "isRobot": false
+    }
+  ]
+}
