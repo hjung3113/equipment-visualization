@@ -1,7 +1,7 @@
 # @eqv/studio
 
 Standalone Studio app: shell and router (`/fleet`, `/fleet/new` (설비 등록), `/equipment/:equipmentId` (설비 데이터: record, Sample Windows, alias metadata and Type Dictionary status, import status notices), `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`; `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board` and `/focus/:equipmentId` take `?window=<hex>` to open one Sample Window; Onboarding has a Sample Window picker, and the window it shows feeds the Inventory, the Template proposals, the Mapping Board and the Publish Baseline Inventory), a layouts page
-(viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet and Onboarding (read-only
+(viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Layout Revision publish opens a change preview first: it compares the document with the revision a Binding pins for that layout (the only existing revision when there is just one) at id level, says so when the same content is already published or when it is the first revision, and shows no comparison when several revisions exist and none is pinned; `게시` in the dialog writes the revision. Fleet and Onboarding (read-only
 Inventory and Template proposals, #14a) and the Mapping Board (#14b) are implemented. `/dev/ui` is a dev-only `@eqv/ui` component gallery for design review. It is not in the nav, it is absent from `vite build` output, and the data is synthetic.
 
 Focus (`/focus/:equipmentId?entityType=&anchor=`, #15c) is the first analysis mode: a Top View with the cursor-time replay
