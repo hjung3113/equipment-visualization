@@ -244,6 +244,10 @@ perf role is added only once the Studio has a measured interaction budget.
   and `git worktree remove` refuses ("working trees containing submodules"). Archive `.review/`, confirm `git status
   --porcelain` is empty, then `trash <wt>`, `git worktree prune`, `git branch -D <branch>`; do not rely on `ship-pr.sh
   --worktree` cleanup (2026-10-19; hjung3113/conductor-engine#27).
+- Ego Lite cannot time paint or frame rate: while its agent window is occluded, requestAnimationFrame fires about once per
+  second (`Page.bringToFront` does not help), so click-to-paint and playback-fps numbers taken there are wrong. Time paint
+  in headless Chromium (a throwaway Playwright script against the preview) and say so in VERIFY; Ego Lite stays the tool
+  for interaction, focus and screenshots (#129, 2026-10-19; hjung3113/conductor-engine#39).
 - `launch-worker.py` copies only the brief and the rules into the worktree's `.review/`. Copy every other `.review/`
   file the brief names (an inventory, an audit) before launching, or the worker works without it (#73 f2c, 2026-10-19;
   hjung3113/conductor-engine#28).
