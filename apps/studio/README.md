@@ -9,8 +9,8 @@ layer, a text equivalent of that layer, a Component-lane Gantt and Occurrence li
 sharing one page-local cursor. `anchor` is read as an Occurrence id (`entityType` is shown, not interpreted); the default range
 is that Occurrence widened by a margin, or the whole batch with a notice. Focus replays one Sample Window, chosen with a picker
 (`?window=`); without `?window=` it is the latest-`from` window containing the anchor Occurrence (a notice when several do), else the
-latest window, and an unknown `?window=` is an error, never a fallback. The Gantt is computed only up to `TIMELINE_BUDGET`
-(`src/focus-data.ts`, 2,000,000 breakpoints × records, measured at about 1 s on a 50k-Occurrence window); above it a notice asks
+latest window, and an unknown `?window=` is an error, never a fallback. The Gantt is bounded twice. It is computed only up to `TIMELINE_BUDGET`
+(`src/focus-data.ts`, 4,800,000 of records + breakpoints × (Binding/Layout search and component build + (most Occurrences open at once + Time Anomaly inversions) × one location resolution), about 1 s at the worst measured rate), and drawn only up to `GANTT_SPAN_LIMIT` (5,000 spans: material and activity spans plus markers, about 100 ms to repaint; a whole 50k-Occurrence window has 100,000); above it a notice asks
 for a narrower range, and the Top View, state list, Occurrence list, Data Quality and evidence detail stay. `loadFocus` (`src/focus-data.ts`) reads and checks
 the batch, every Mapping Version a Binding names and each Binding's Layout (its published Layout Revision, else the draft with
 a notice); it never rejects. Playback (#15d) moves only the cursor: play/pause, speed x0.25–x4 (screen time), previous/next breakpoint, and a debug

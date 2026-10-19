@@ -1,8 +1,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
-  bindingsFileSchema, layoutDocumentSchema, mappingVersionSchema, millisToWallClock, occurrenceBatchSchema,
-  replayTimeline, replayTimelineFrame, seekSceneState, wallClockToMillis, type ReplayInput, type SiteWallClock,
+  bindingsFileSchema, canonicalJson, layoutDocumentSchema, mappingVersionSchema, millisToWallClock, occurrenceBatchSchema,
+  replayTimeline, replayTimelineFrame, seekSceneState, wallClockToMillis, type ActivitySpan, type MappingVersion, type MarkerSpan, type MaterialSpan, type ReplayInput, type ReplayTimeline,
+  type SiteWallClock, type TimelineRange,
 } from '../src/index.js';
 
 const root = new URL('../../../fixtures/cluster-single/', import.meta.url);
@@ -115,3 +116,150 @@ it('uses no time API in src', () => {
     expect(readFileSync(new URL(file, import.meta.url), 'utf8')).not.toMatch(/\bDate\b|getTime|toISOString|\bIntl\b/);
   }
 });
+
+// Oracle: the timeline as it was defined before the one-pass rewrite, one `seekSceneState` sample per breakpoint
+// and the same run-length merge. `replayTimeline` must equal it exactly, down to key order.
+function sampledTimeline(replayInput: ReplayInput, range: TimelineRange): ReplayTimeline {
+  type Span = { from: SiteWallClock; to: SiteWallClock };
+  const strip = (value: object, ...keys: string[]) => Object.fromEntries(Object.entries(value).filter(([key]) => !keys.includes(key)));
+  const cmp = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
+  const ids = (m: { kind: string; [key: string]: unknown }): string[] => {
+    switch (m.kind) {
+      case 'after-watermark': return [m.kind, m['watermarkAt'] as string];
+      case 'occupancy-conflict': return [m.kind, m['componentId'] as string, m['holdingSiteId'] as string];
+      case 'time-anomaly': return [m.kind, m['occurrenceId'] as string];
+      default: return [m.kind, m['alias'] as string, m['occurrenceId'] as string];
+    }
+  };
+  const cmpIds = (a: string[], b: string[]) => {
+    for (let i = 0; i < Math.min(a.length, b.length); i++) { const order = cmp(a[i]!, b[i]!); if (order) return order; }
+    return 0;
+  };
+  const { breakpoints, bindingBoundaries, issues } = replayTimelineFrame(replayInput, range);
+  const open = { materials: new Map<string, MaterialSpan>(), activities: new Map<string, ActivitySpan>(), markers: new Map<string, MarkerSpan>() };
+  const done = { materials: [] as MaterialSpan[], activities: [] as ActivitySpan[], markers: [] as MarkerSpan[] };
+  const place = <T extends Span>(group: Map<string, T>, finished: T[], identity: string, from: SiteWallClock, to: SiteWallClock, next: object, seen: Set<string>) => {
+    seen.add(identity);
+    const current = group.get(identity);
+    if (current) {
+      if (canonicalJson(strip(current, 'from', 'to')) === canonicalJson(next)) { current.to = to; return; }
+      finished.push(current);
+    }
+    group.set(identity, { ...next, from, to } as T);
+  };
+  const close = (group: Map<string, Span>, finished: Span[], seen: Set<string>) => {
+    for (const [identity, span] of group) {
+      if (seen.has(identity)) continue;
+      finished.push(span);
+      group.delete(identity);
+    }
+  };
+  breakpoints.forEach((from, i) => {
+    const to = breakpoints[i + 1] ?? range.to;
+    const state = seekSceneState(replayInput, from);
+    const seen = { materials: new Set<string>(), activities: new Set<string>(), markers: new Set<string>() };
+    for (const placed of state.materials) {
+      const material = strip(placed, 'lastObservedAt') as { key: string };
+      place(open.materials, done.materials, material.key, from, to, material, seen.materials);
+    }
+    for (const component of state.components) {
+      if (component.activity === 'no recorded activity') continue;
+      place(open.activities, done.activities, component.componentId, from, to, component, seen.activities);
+    }
+    for (const marker of state.markers) place(open.markers, done.markers, canonicalJson(ids(marker)), from, to, { marker }, seen.markers);
+    close(open.materials, done.materials, seen.materials);
+    close(open.activities, done.activities, seen.activities);
+    close(open.markers, done.markers, seen.markers);
+  });
+  return { range, breakpoints,
+    materials: [...done.materials, ...open.materials.values()].sort((a, b) => cmp(a.key, b.key) || cmp(a.from, b.from)),
+    activities: [...done.activities, ...open.activities.values()].sort((a, b) => cmp(a.componentId, b.componentId) || cmp(a.from, b.from)),
+    markers: [...done.markers, ...open.markers.values()].sort((a, b) => cmpIds(ids(a.marker), ids(b.marker)) || cmp(a.from, b.from)),
+    bindingBoundaries, issues };
+}
+const sameAsSampled = (replayInput: ReplayInput, range: TimelineRange) =>
+  expect(JSON.stringify(replayTimeline(replayInput, range))).toBe(JSON.stringify(sampledTimeline(replayInput, range)));
+
+it.each([
+  ['cluster-single, whole range', data, window],
+  ['cluster-single, a sub-range across the Binding switch', data, { from: time('10:03:00'), to: time('10:11:00') }],
+  ['cluster-single, a sub-range after the Watermark', data, { from: time('10:26:00'), to: time('10:29:00') }],
+  ['import w1', w1, { from: w1.batch.from, to: w1.batch.to }],
+  ['import w2', w2, { from: w2.batch.from, to: w2.batch.to }],
+])('replayTimeline equals sampling seekSceneState per breakpoint: %s', (_name, replayInput, range) => sameAsSampled(replayInput, range));
+
+// mulberry32: a tiny seeded PRNG, so the random batches are the same on every run.
+const prng = (seed: number) => () => {
+  seed = (seed + 0x6d2b79f5) | 0;
+  let x = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+  x = (x + Math.imul(x ^ (x >>> 7), 61 | x)) ^ x;
+  return ((x ^ (x >>> 14)) >>> 0) / 4294967296;
+};
+const EQUIPMENT = 'eq-rand';
+const mappingFiles = readdirSync(new URL('onboarding/mappings/eq-synth-01/', root)).sort();
+const randomInput = (seed: number): ReplayInput => {
+  const rnd = prng(seed);
+  const int = (n: number) => Math.floor(rnd() * n);
+  const pick = <T,>(items: readonly T[]): T => items[int(items.length)]!;
+  const maybe = (p: number) => rnd() < p;
+  const mappings = mappingFiles.map((file) => ({ ...(mappingVersionSchema.parse(read('onboarding/mappings/eq-synth-01/' + file)) as MappingVersion), equipmentId: EQUIPMENT }));
+  const aliases = mappings[0]!.entries.map((entry) => entry.alias);
+  const from = time('10:00:00');
+  const to = time('10:00:30');
+  const at = (second: number): SiteWallClock => millisToWallClock(wallClockToMillis(from) + second * 1000 + (maybe(0.3) ? 500 : 0));
+
+  const count = 3 + int(10);
+  const issueCount = int(4);
+  // Record Sequences 1..M in a random order, then each Occurrence's end is moved after its start (start.seq < end.seq).
+  const total = 2 * count + issueCount;
+  const seqs = Array.from({ length: total }, (_, i) => i + 1);
+  for (let i = total - 1; i > 0; i--) { const j = int(i + 1); [seqs[i], seqs[j]] = [seqs[j]!, seqs[i]!]; }
+  const chaos = pick([0, 0.15, 1]);
+  const boundary = (seq: number, nullable: boolean) => {
+    // Mostly time grows with the sequence (ties from the coarse grid); `chaos` of the records get a random instant instead.
+    const second = maybe(chaos) ? int(32) - 1 : Math.floor((seq / total) * 30);
+    return { at: nullable && maybe(0.12) ? null : at(second), seq, evidence: pick(['observed', 'observed', 'derived', 'illustrative', 'unknown'] as const) };
+  };
+  const place = () => {
+    const slot = pick(['1', '1', '2', '3', 'x', undefined]);
+    return { moduleAlias: maybe(0.1) ? 'ALIAS_NOT_MAPPED' : pick(aliases), ...(slot === undefined ? {} : { slotAlias: slot }) };
+  };
+  const occurrences = Array.from({ length: count }, (_, i) => {
+    let [a, b] = [seqs[2 * i]!, seqs[2 * i + 1]!];
+    if (a > b) [a, b] = [b, a];
+    const kind = pick(['PROCESS', 'POST_PROCESS', 'FUNCTION', 'TRANSFER', 'VISIT', 'CARRIER_PRESENCE'] as const);
+    const wafer = pick(['W1', 'W2', 'W3', null]);
+    return { id: `occ-${i}`, equipmentId: EQUIPMENT, kind, start: i === 0 ? { ...boundary(a, false), at: null } : boundary(a, true),
+      end: maybe(0.25) ? null : boundary(b, true), location: place(), synthetic: maybe(0.15),
+      source: { parserContractVersion: 'synthetic-1', dataGeneration: 'g1' },
+      ...(maybe(0.8) ? { material: { kind: pick(['wafer', 'wafer', 'carrier'] as const), id: wafer, identityEvidence: pick(['observed', 'derived', 'unknown'] as const) } } : {}),
+      ...(kind === 'TRANSFER' ? { from: place(), to: place() } : {}) };
+  });
+  const issues = Array.from({ length: issueCount }, (_, i) => ({ id: `dqi-${i}`, equipmentId: EQUIPMENT, issueType: 'UnmatchedEnd',
+    seq: seqs[2 * count + i]!, at: maybe(0.2) ? null : at(int(30)) }));
+  const batch = occurrenceBatchSchema.parse({ equipmentId: EQUIPMENT, from, to, timeDomain: 'site-synth', parserContractVersion: 'synthetic-1',
+    dataGeneration: 'g1', watermark: { seq: total + 1, at: pick([at(int(30)), at(30), to, time('10:01:00')]) }, occurrences, issues });
+
+  // Two Bindings, the boundary inside the range; the hashes are drawn in either order, and a gap sometimes separates them.
+  const [first, second] = maybe(0.5) ? mappings : [...mappings].reverse();
+  const switchAt = at(5 + int(20));
+  const gap = maybe(0.3) ? 1000 : 0;
+  const bindings = bindingsFileSchema.parse({ schemaVersion: '0.4', equipmentId: EQUIPMENT, bindings: [
+    { layoutId: 'eq-synth-01-layout', mappingHash: first!.hash, effectiveFrom: '2026-01-01T09:00:00.000', effectiveTo: switchAt },
+    { layoutId: 'eq-synth-01-layout', mappingHash: second!.hash, effectiveFrom: millisToWallClock(wallClockToMillis(switchAt) + gap) },
+  ] });
+  return { batch, layouts: data.layouts, bindings, mappings };
+};
+
+// 147 ms locally, 5.5 s on a loaded CI runner (PR #131 run 39209279865): the oracle replays 400 timelines by sampling.
+it('replayTimeline equals sampling seekSceneState per breakpoint: 200 seeded random batches', () => {
+  for (let seed = 1; seed <= 200; seed++) {
+    const random = randomInput(seed);
+    const rnd = prng(seed * 7919);
+    const a = wallClockToMillis(random.batch.from) + Math.floor(rnd() * 20000);
+    const sub = { from: millisToWallClock(a), to: millisToWallClock(a + 500 + Math.floor(rnd() * 9000)) };
+    for (const range of [{ from: random.batch.from, to: random.batch.to }, sub]) {
+      try { sameAsSampled(random, range); } catch (error) { throw new Error(`seed ${seed}, ${range.from}..${range.to}: ${(error as Error).message.slice(0, 300)}`, { cause: error }); }
+    }
+  }
+}, 30_000);
