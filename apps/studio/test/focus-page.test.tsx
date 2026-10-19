@@ -3,7 +3,7 @@ import { readFile, rm } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { seekSceneState, type ReplayInput } from '@eqv/core';
+import { layoutRevision, seekSceneState, validateLayout, type ReplayInput } from '@eqv/core';
 import { CursorStateList, type PlaybackScheduler } from '@eqv/replay';
 import { App } from '../src/App.js';
 import { FocusPage } from '../src/FocusPage.js';
@@ -299,4 +299,49 @@ it('the example-motion toggle is off by default, badges and draws one ghost at 1
   await screen.findByRole('heading', { name: 'Focus · eq-synth-02' });
   await loaded();
   expect([checked(), badge()]).toEqual(['false', null]);
+});
+
+// ADR-0011: two Bindings of one layoutId pin two Layout Revisions; the second adds one Component.
+const pinRevisions = async () => {
+  const raw = JSON.parse(await readFile(join(repo, 'fixtures/cluster-single/layout.json'), 'utf8'));
+  const checked = validateLayout(raw);
+  if (!checked.ok || checked.layout.kind !== 'equipment-layout') throw new Error('Expected the fixture layout');
+  const older = checked.layout;
+  const added = 'pm-added';
+  const newer = { ...older, components: [...older.components, { ...older.components.at(-1)!, id: added }] };
+  const [olderHash, newerHash] = [await layoutRevision(older), await layoutRevision(newer)];
+  const path = 'onboarding/bindings/eq-synth-01.bindings.json';
+  const bindings = JSON.parse(await readFile(join(root, path), 'utf8'));
+  bindings.bindings[0].layoutRevision = olderHash;
+  bindings.bindings[1].layoutRevision = newerHash;
+  await writeJson(root, path, bindings);
+  for (const [hash, layout] of [[olderHash, older], [newerHash, newer]] as const) {
+    await writeJson(root, `layouts/eq-synth-01-layout/${hash.slice('sha256:'.length)}.layout.json`, layout);
+  }
+  return { olderHash, newerHash, added, newer };
+};
+
+it('loadFocus loads one verified file per pinned Revision of a Layout id, with no notice and no draft', async () => {
+  const { olderHash, newerHash } = await pinRevisions();
+  const result = await loadFocus('eq-synth-01');
+  expect(result.kind === 'ok' && [result.layouts, Object.keys(result.layoutRevisions).sort(), result.notices]).toEqual(
+    [[], [olderHash, newerHash].sort(), []]);
+});
+
+it('loadFocus rejects a Revision file whose content does not hash to its name', async () => {
+  const { olderHash, newer } = await pinRevisions();
+  const path = `layouts/eq-synth-01-layout/${olderHash.slice('sha256:'.length)}.layout.json`;
+  await writeJson(root, path, newer);
+  expect(await loadFocus('eq-synth-01')).toMatchObject({ kind: 'error', error: `${path}: 내용 hash가 binding의 layoutRevision과 다릅니다` });
+});
+
+it('draws the Layout Revision pinned by the Binding at the cursor', async () => {
+  const { added } = await pinRevisions();
+  at('/focus/eq-synth-01');
+  render(<App />);
+  await loaded();
+  applyRange('2026-01-01T10:01:20.000', '2026-01-01T10:02:30.000');
+  expect(document.querySelector(`[data-component-id="${added}"]`)).toBeNull();
+  applyRange('2026-01-01T10:05:30.000');
+  await waitFor(() => expect(document.querySelector(`[data-component-id="${added}"]`)).not.toBeNull());
 });

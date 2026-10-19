@@ -1,5 +1,5 @@
 import {
-  mappingVersionSchema, validateLayout, verifyMappingHash,
+  layoutRevision, mappingVersionSchema, validateLayout, verifyMappingHash,
   type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch, type ReplayInput, type ReplayTimelineFrame,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
@@ -14,8 +14,10 @@ export type FocusData = {
   bindings: BindingsFile;
   /** Every Mapping Version a Binding names. */
   mappings: MappingVersion[];
-  /** One Layout per distinct Binding `layoutId`. */
+  /** The draft Layout of each `layoutId` that has an unpinned Binding. */
   layouts: EquipmentLayoutDocument[];
+  /** Each distinct `layoutRevision` a Binding pins, content-verified against its hash (ADR-0011). */
+  layoutRevisions: Record<string, EquipmentLayoutDocument>;
   notices: string[];
 };
 export type FocusLoad =
@@ -56,7 +58,8 @@ const maxOf = (values: number[]) => values.reduce((max, value) => Math.max(max, 
 export function timelineCost(input: ReplayInput, frame: ReplayTimelineFrame): {
   breakpoints: number; records: number; open: number; inversions: number; context: number; resolve: number; cost: number;
 } {
-  const { batch, bindings, layouts, mappings } = input;
+  const { batch, bindings, mappings } = input;
+  const layouts = [...input.layouts, ...Object.values(input.layoutRevisions ?? {})];
   const records = batch.issues.length + batch.occurrences.reduce((sum, o) => sum + (o.end ? 2 : 1), 0);
   const boundaries = [...batch.occurrences.flatMap((o) => [o.start, ...(o.end ? [o.end] : [])]), ...batch.issues].sort((a, b) => a.seq - b.seq);
   const starts = new Set(batch.occurrences.map((o) => o.start.seq));
@@ -120,6 +123,7 @@ async function loadLayout(layoutId: string, revision: string | undefined, notice
   const { layout } = result;
   if (layout.kind !== 'equipment-layout') throw new DataError(`${path}: equipment-layout이 아닙니다 (${layout.kind})`);
   if (layout.id !== layoutId) throw new DataError(`${path}: id(${layout.id})가 ${layoutId}와 다릅니다`);
+  if (revision !== undefined && await layoutRevision(layout) !== revision) throw new DataError(`${path}: 내용 hash가 binding의 layoutRevision과 다릅니다`);
   return layout;
 }
 
@@ -171,19 +175,17 @@ export async function loadFocus(equipmentId: string, options: { window?: string;
         if (!mappings.has(key)) mappings.set(key, await loadMapping(equipmentId, binding));
       }
 
-      // One Layout per id; the latest Binding of that id names its revision (revision lookup in the reducer is #53).
-      const latest = new Map<string, Binding>();
-      for (const binding of bindings.bindings) {
-        const seen = latest.get(binding.layoutId);
-        if (!seen || binding.effectiveFrom > seen.effectiveFrom) latest.set(binding.layoutId, binding);
-      }
+      // A pinned Binding replays its own Layout Revision; an unpinned one the draft of its layoutId (ADR-0011).
+      const drafts = [...new Set(bindings.bindings.filter((b) => b.layoutRevision === undefined).map((b) => b.layoutId))];
       const layouts: EquipmentLayoutDocument[] = [];
-      for (const [layoutId, binding] of latest) {
-        const revisions = new Set(bindings.bindings.filter((b) => b.layoutId === layoutId).map((b) => b.layoutRevision ?? null));
-        if (revisions.size > 1) notices.push(`Layout ${layoutId}의 Binding들이 서로 다른 Layout Revision을 가리켜 최신 Binding의 것을 사용합니다`);
-        layouts.push(await loadLayout(layoutId, binding.layoutRevision, notices));
+      for (const layoutId of drafts) layouts.push(await loadLayout(layoutId, undefined, notices));
+      const layoutRevisions: Record<string, EquipmentLayoutDocument> = {};
+      for (const binding of bindings.bindings) {
+        const revision = binding.layoutRevision;
+        if (revision === undefined || revision in layoutRevisions) continue;
+        layoutRevisions[revision] = await loadLayout(binding.layoutId, revision, notices);
       }
-      return { kind: 'ok', record, batch, selectedWindow: loaded.data.selectedWindow, bindings, mappings: [...mappings.values()], layouts, notices };
+      return { kind: 'ok', record, batch, selectedWindow: loaded.data.selectedWindow, bindings, mappings: [...mappings.values()], layouts, layoutRevisions, notices };
     } catch (error) {
       return { kind: 'error', record, error: message(error) };
     }
