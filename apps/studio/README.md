@@ -43,6 +43,65 @@ reports `enabled: false` with that reason. A root inside another git work tree i
 It exists only in `vite` serve mode (`apply: 'serve'`); `vite build` output has no server code. There is no auth and no
 permission check (ONBOARDING §8).
 
+## Start with your own equipment
+
+Start Studio from the repository root with a writable absolute data root outside this repository:
+
+```sh
+EQV_STUDIO_ASSETS=/abs/path pnpm dev
+```
+
+Without `EQV_STUDIO_ASSETS`, Studio uses `<repo>/assets` and disables imports. The status notice says `가져오기를 쓸 수 없습니다`
+and gives the reason `저장소 밖 경로를 EQV_STUDIO_ASSETS로 지정하세요`; `GET /api/import/status` reports `enabled: false`.
+
+Follow this order:
+
+1. **Register** — In Fleet, open `/fleet/new` (**설비 등록**), enter `설비 ID`, `Maker`, and `Model`, then choose **등록**.
+   This creates `equipment/<equipmentId>.json` once.
+2. **Model Type Dictionary** — On **설비 데이터**, choose **Type Dictionary(Model 범위)**, select the dictionary JSON,
+   review it, and choose **가져오기**. This creates `onboarding/scopes/model/<maker>/<model>/type-dictionary.json` once.
+3. **Alias metadata** — On **설비 데이터**, choose **Alias metadata**, review the preview, then choose **가져오기**.
+   This writes `observations/<equipmentId>/alias-metadata.json`; replacement shows the added/removed/changed aliases and requires **교체**.
+4. **Sample Window** — Choose **Sample Window 가져오기**, review one complete `OccurrenceBatch`, then choose **가져오기**.
+   Studio appends `observations/<equipmentId>/windows/<from>_<to>_<hex>.batch.json` with its name computed by the server.
+5. **Onboarding and Board** — Open **Onboarding**, choose a window with **사용할 window**, and start from a proposal with
+   **이 템플릿으로 시작** or **Generic Layout으로 시작**. This creates `layouts/<layoutId>/draft.layout.json` only when absent
+   (`<layoutId>` is `<equipmentId>-layout` for a new equipment record) and opens the Board. If a draft already exists, use
+   **④ Mapping Board 열기**. On the Board, **저장** persists changed Model and/or Equipment rules to
+   `onboarding/scopes/model/<maker>/<model>/alias-rules.json` and `onboarding/scopes/equipment/<equipmentId>/alias-rules.json`.
+6. **Publish** — After `⑤ 검증 (dry-run)` completes, set `effectiveFrom` in `⑥ Publish` and choose **게시**. Publish writes
+   `layouts/<layoutId>/<hex>.layout.json`, `onboarding/mappings/<equipmentId>/<hex>.mapping.json`,
+   `onboarding/baselines/<equipmentId>/<hex>.inventory.json`, and `onboarding/bindings/<equipmentId>.bindings.json`.
+7. **Focus** — Open **Focus** and choose the same window with **사용할 window** if needed. Focus reads one Sample Window and
+   writes no files.
+
+### What gets rejected and why
+
+- Equipment identifiers, makers, and models must match `[A-Za-z0-9][A-Za-z0-9._-]*`; a case-only collision for an
+  `equipmentId`, `maker`, or same-maker `model` is rejected. Equipment registration and the Model Type Dictionary import
+  are create-only (an existing path returns 412).
+- Sample Windows are immutable. A different window that overlaps an existing window is rejected as `window-overlap`;
+  `time-domain-mismatch` rejects a different `timeDomain`. Identical content is idempotent.
+- Import only accepts a complete `OccurrenceBatch`: `continuationToken` is rejected with `continuation`. Raw logs and
+  Start/End point events are not OccurrenceBatches and fail with `schema`.
+- Site Wall-clock requires exactly three fractional digits; values are never truncated. Inputs with more than three digits,
+  including sub-millisecond precision, are rejected as `fraction-too-long` (ADR-0009 also defines `fraction-missing`, `offset`, and `malformed-time`).
+- Other `validateSampleWindow` rejection codes are `empty-range`, `empty-time-domain`, `equipment-mismatch`, `record-owner`,
+  `duplicate-seq`, `duplicate-id`, `generation-mismatch`, and `outside-window`. The preview shows each code and path.
+- Import bodies over 32 MiB return 413. See [ADR-0009](../../docs/adr/0009-site-wall-clock-millisecond-precision.md) and
+  [ADR-0010](../../docs/adr/0010-studio-data-import.md) for the decisions.
+
+### Keep source converters outside this repository
+
+Studio accepts only source-paired `OccurrenceBatch` JSON. Put raw-log conversion in a separate, permissioned deployment layer;
+keep examples and tests synthetic, as required by [AGENTS.md: “Use synthetic test data”](../../AGENTS.md).
+
+Try the synthetic files in [`fixtures/import/README.md`](../../fixtures/import/README.md):
+`eq-synth-03.equipment.json`, `synth-maker-b.synth-wet.type-dictionary.json`, `eq-synth-03.alias-metadata.json`,
+`eq-synth-03.w1.batch.json`, and `eq-synth-03.w2.batch.json`. Negative examples are
+`invalid/sub-ms.batch.json`, `invalid/continuation.batch.json`, and `invalid/point-events.json`.
+See the [File API](#file-api) table for the endpoint contract.
+
 ## File API
 
 | Request | Result |
