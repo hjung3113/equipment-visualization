@@ -251,6 +251,7 @@ const randomInput = (seed: number): ReplayInput => {
   return { batch, layouts: data.layouts, bindings, mappings };
 };
 
+// 147 ms locally, 5.5 s on a loaded CI runner (PR #131 run 39209279865): the oracle replays 400 timelines by sampling.
 it('replayTimeline equals sampling seekSceneState per breakpoint: 200 seeded random batches', () => {
   for (let seed = 1; seed <= 200; seed++) {
     const random = randomInput(seed);
@@ -261,4 +262,4 @@ it('replayTimeline equals sampling seekSceneState per breakpoint: 200 seeded ran
       try { sameAsSampled(random, range); } catch (error) { throw new Error(`seed ${seed}, ${range.from}..${range.to}: ${(error as Error).message.slice(0, 300)}`, { cause: error }); }
     }
   }
-});
+}, 30_000);
