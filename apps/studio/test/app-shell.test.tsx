@@ -35,6 +35,7 @@ it.each([
   ['/onboarding/eq-x', 'Fleet'],
   ['/onboarding/eq-x/board', 'Fleet'],
   ['/focus/eq-x', 'Fleet'],
+  ['/journey/eq-x', 'Fleet'],
   ['/fleet/new', 'Fleet'],
   ['/equipment/eq-x', 'Fleet'],
   ['/layouts', '레이아웃'],

@@ -6,6 +6,7 @@ import {
   bringIntoView, clampCenter, defaultCamera, fitScale, panByFraction, pxPerUnit, screenToLayout,
   viewBoxOf, zoomAtPoint, zoomFromWheel, ZOOM_MAX, ZOOM_MIN, type Camera, type Frame, type Size,
 } from './camera.js';
+import { buildJourneyLayer, type JourneyOverlay } from './journey.js';
 import { buildOverlay, buildReplayLayer, type Highlight, type ReplayOverlay } from './overlay.js';
 import { buildScene, type Scene } from './scene.js';
 import { formatNum, renderNode } from './svg.js';
@@ -30,6 +31,9 @@ export interface TopViewerProps extends TopViewProps {
   highlight?: Highlight | null;
   /** Cursor-time replay layer: activity rings, material tokens, conflicts, illustrative ghosts. Given, never computed here. */
   replay?: ReplayOverlay | null;
+  /** One wafer's discrete hops as numbered badges on their Components. Given, never computed here; draws no line between hops
+   * and, while set, a selected Component draws no Transfer Capability segments. */
+  journey?: JourneyOverlay | null;
   /** Host slot for the zoom controls. Absent: the default 확대/축소/맞춤 buttons render. */
   renderControls?: (controls: TopViewerControls) => ReactNode;
 }
@@ -137,7 +141,7 @@ function staticParts(scene: Scene): {
  * updates `aria-pressed` and the overlay, so a click does not rebuild the picture.
  */
 export function TopViewer({
-  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay, renderControls,
+  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay, journey, renderControls,
 }: TopViewerProps) {
   const controlled = selectedId !== undefined;
   const [internalSelection, setInternalSelection] = useState<string | null>(null);
@@ -208,8 +212,9 @@ export function TopViewer({
   const overlay = useMemo(
     () => buildOverlay(scene, {
       selectedId: selection, hoveredId: hover, focusedId: focusForOverlay, showAllCapabilities: showAll, highlight,
+      suppressCapabilities: journey != null,
     }, 1 / scene.pxPerUnit),
-    [scene, selection, hover, focusForOverlay, showAll, highlight],
+    [scene, selection, hover, focusForOverlay, showAll, highlight, journey != null],
   );
   const overlayNodes = useMemo(() => ({
     interaction: renderNode(overlay.interaction),
@@ -219,6 +224,11 @@ export function TopViewer({
   const replayNodes = useMemo(
     () => (replay ? renderNode(buildReplayLayer(scene, replay, 1 / scene.pxPerUnit)) : null),
     [scene, replay],
+  );
+
+  const journeyNodes = useMemo(
+    () => (journey ? renderNode(buildJourneyLayer(scene, journey, 1 / scene.pxPerUnit)) : null),
+    [scene, journey],
   );
 
   const queueRelayout = () => {
@@ -488,6 +498,7 @@ export function TopViewer({
         {parts.interfaces}
         {overlayNodes.capabilities}
         {replayNodes}
+        {journeyNodes}
         {overlayNodes.highlight}
         {overlayNodes.highlight && overlayNodes.interaction}
         {parts.labels}

@@ -1,6 +1,7 @@
 export { TopView, type TopViewProps } from './TopView.js';
 export { TopViewer, type TopViewerControls, type TopViewerProps } from './TopViewer.js';
 export type { Highlight, IllustrativeGhost, ReplayOverlay } from './overlay.js';
+export type { JourneyHopMark, JourneyOverlay } from './journey.js';
 export {
   buildScene, type Scene, type SceneCapability, type SceneComponent, type SceneLayers, type SceneOptions,
 } from './scene.js';

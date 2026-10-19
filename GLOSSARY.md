@@ -101,6 +101,10 @@ _Avoid_: dashboard, heatmap 모드
 wafer journey 하나의 경유지를 레이아웃 위 이산 hop으로 보는 화면 모드. 이동 궤적을 그리지 않는다.
 _Avoid_: path animation, trace
 
+**Hop**:
+Journey에서 물질 한 장이 머문 하나의 Location. 번호는 도착 Record Sequence 순서이고, 같은 alias·Location이 이어지면 한 hop이다. Handler 위 구간도 hop이다(`derived`).
+_Avoid_: path, trace, waypoint
+
 **Component Metric**:
 원천 alias(또는 alias 쌍) 기준으로 외부에서 계산되어 들어오는 기간 지표 값과 표본 수·품질. Mapping Version으로 Component·Transfer Capability에 대응된다.
 _Avoid_: KPI, 지표(단독)

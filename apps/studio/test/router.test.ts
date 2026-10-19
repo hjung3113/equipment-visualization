@@ -27,6 +27,9 @@ const NAMED: [string, string, Route][] = [
   ['/focus/eq-synth-01', `?entityType=wafer&anchor=occ-1&window=${HEX}`,
     { name: 'focus', equipmentId: 'eq-synth-01', entityType: 'wafer', anchor: 'occ-1', window: HEX }],
   ['/focus/eq-synth-01', '', { name: 'focus', equipmentId: 'eq-synth-01', entityType: null, anchor: null, window: null }],
+  ['/journey/eq-synth-01', '?anchor=occ-1', { name: 'journey', equipmentId: 'eq-synth-01', anchor: 'occ-1', window: null }],
+  ['/journey/eq-synth-01', `?anchor=occ-1&window=${HEX}`, { name: 'journey', equipmentId: 'eq-synth-01', anchor: 'occ-1', window: HEX }],
+  ['/journey/eq-synth-01', '', { name: 'journey', equipmentId: 'eq-synth-01', anchor: null, window: null }],
   ['/onboarding/a%2Fb%20c', '', { name: 'onboarding', equipmentId: 'a/b c', window: null }],
 ];
 

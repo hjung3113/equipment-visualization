@@ -10,7 +10,7 @@ import { FocusPage } from '../src/FocusPage.js';
 import { loadFocus } from '../src/focus-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
-import { addEquipment, addSynth03, seedOnboardingRoot, writeDraft, writeJson } from './seed.js';
+import { addEquipment, addSynth03, seedOnboardingRoot, windowHex, writeDraft, writeJson } from './seed.js';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -93,6 +93,25 @@ it('selects an Occurrence in every view: row, Top View highlight on its Componen
   fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
   const detail = within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' }));
   expect(detail.getByText('시작', { exact: true }).parentElement?.lastElementChild?.textContent).toMatch(/^2026-01-01T10:06:00.000 · Record Sequence/);
+});
+
+it.each([
+  ['occ-lp-slot-one', true],
+  ['occ-carrier', false],
+  ['occ-identity-empty', false],
+  ['occ-forced', false],
+])('offers Journey 열기 in the Top View panel only for a wafer Occurrence with an id: %s → %s', async (id, offered) => {
+  await writeDraft(root, 'eq-synth-01-layout');
+  at(ENTRY);
+  render(<App />);
+  await loaded();
+  const topView = () => within(screen.getByRole('region', { name: 'Top View' }));
+  expect(topView().queryByRole('link', { name: 'Journey 열기' })).toBeNull();
+  applyRange('2026-01-01T09:58:00.000');
+  fireEvent.click(row(id));
+  const link = topView().queryByRole('link', { name: 'Journey 열기' });
+  expect(link === null ? null : link.getAttribute('href')).toBe(offered
+    ? `/journey/eq-synth-01?anchor=${id}&window=${await windowHex(JSON.parse(await readFile(join(repo, 'fixtures/cluster-single/occurrence-batch.json'), 'utf8')))}` : null);
 });
 
 it('switches tabs with the arrow keys', async () => {

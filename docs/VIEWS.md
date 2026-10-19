@@ -55,6 +55,11 @@ type ComponentMetric = {
 - wafer journey 하나의 경유지를 레이아웃 위 **이산 hop**(번호 붙은 점)으로 표시하고 목록을 병기. 경로 궤적·이동 애니메이션은 그리지 않는다.
 - Handler 위 구간은 Handler Component에 hop으로 표시(`derived`).
 - 물리 경유 순서(Visit, arrival Record Sequence)와 실행 이력(FNC/PostProcess 포함)은 다른 시퀀스다 — 목록에서 탭으로 분리.
+- 진입 키: `equipmentId` + anchor. anchor는 wafer를 실은 Occurrence id이고(Focus·`docs/INTEGRATION.md`와 같은 뜻) 그 Occurrence의 `material`(kind `wafer`, id 있음)이 Journey의 대상이다. 한 Sample Window 안에서만 본다. window를 주지 않으면 anchor를 담은 가장 늦은 window를 고른다.
+- hop 규칙: 대상 wafer의 위치가 있는 Occurrence를 `start` Record Sequence 순으로 읽고, 각 지점의 Location은 reducer의 Scene State(`sceneStateAt`)에서 얻는다(규칙을 복제하지 않는다). 연속한 지점의 alias·Location·Layout 정체(`layoutId`와 있으면 `layoutRevision`)가 모두 같을 때만 한 hop으로 합친다 — Layout Revision이 바뀌면 id가 같아도 새 hop이다(ADR-0011). hop의 위치 근거·식별 근거는 합쳐진 지점 중 가장 낮은 값이고, 도착은 첫 지점의 start, 떠남은 합쳐진 Occurrence 중 하나라도 `end`가 없으면 `열림`(null)이고, 아니면 합쳐진 Occurrence의 end 중 Record Sequence가 가장 큰 Boundary(그 `at`·근거, illustrative는 unknown으로 읽음)다 — 중첩된 PROCESS의 end가 더 긴 VISIT의 떠남을 대신하지 않는다. 실행 이력의 `end` 값은 그대로다. 매핑되지 않은 alias의 hop은 alias와 `unknown`으로 목록에만 있고 그리지 않는다.
+- 표시: hop은 해당 Component의 bbox 위쪽 가장자리 안쪽에 번호 원 배지로 그린다(material 원판은 아래쪽). 테두리 선 모양이 위치 근거(관측 실선 · 파생 `6 4` 점선 · 미확인 `2 3` 점선)이고, 선택한 hop은 굵은 테두리와 채움으로 강조한다. Component당 배지는 4개까지이고 그 이상이면 앞 3개와 `+N`이다. 화면에 있는 Layout(Binding이 가리키는 Layout 정체)에 속하지 않는 hop은 목록에만 있다. hop 사이 선·애니메이션은 없다.
+- 탭: `물리 경유`(hop 목록)와 `실행 이력`(PROCESS·POST_PROCESS·FUNCTION, 위치가 없거나 무시된 행 포함 — 위치가 없는 행은 이전 위치를 빌리지 않는다).
+- 구현: Studio `/journey/:equipmentId` (#152)
 
 ## Compare (2차)
 
