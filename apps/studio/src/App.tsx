@@ -4,6 +4,7 @@ import { APP_FRAME_MAIN_ID, AppFrame, Page, StateMessage } from '@eqv/ui';
 import { Button } from '@fops/ui';
 import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
 import { FocusPage } from './FocusPage.js';
+import { JourneyPage } from './JourneyPage.js';
 import { LayoutsPage } from './LayoutsPage.js';
 import { BoardPage, FleetPage, OnboardingPage } from './OnboardingPages.js';
 import { Link, hrefFor, navigate, useLocation, useRoute, type Route } from './router.js';
@@ -26,6 +27,8 @@ function RoutePage({ route }: { route: Route }) {
       return <BoardPage key={route.window ?? ''} equipmentId={route.equipmentId} sampleWindow={route.window} />;
     case 'focus':
       return <FocusPage equipmentId={route.equipmentId} sampleWindow={route.window} entityType={route.entityType} anchor={route.anchor} />;
+    case 'journey':
+      return <JourneyPage equipmentId={route.equipmentId} sampleWindow={route.window} anchor={route.anchor} />;
     case 'dev-ui':
       return UiGallery ? <Suspense fallback={null}><UiGallery /></Suspense> : null;
     case 'not-found':
@@ -58,7 +61,7 @@ export function App() {
     if (window.location.pathname === '/') navigate('/fleet', { replace: true });
   }, [location]);
   const items = [
-    { key: 'fleet', label: 'Fleet', icon: <Factory className="size-4" />, href: '/fleet', current: ['fleet', 'equipment-new', 'equipment', 'onboarding', 'board', 'focus'].includes(route.name) },
+    { key: 'fleet', label: 'Fleet', icon: <Factory className="size-4" />, href: '/fleet', current: ['fleet', 'equipment-new', 'equipment', 'onboarding', 'board', 'focus', 'journey'].includes(route.name) },
     { key: 'layouts', label: '레이아웃', icon: <LayoutTemplate className="size-4" />, href: hrefFor({ name: 'layouts', file: null }), current: route.name === 'layouts' },
   ];
   return (

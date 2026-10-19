@@ -14,6 +14,8 @@ export interface OverlayState {
   showAllCapabilities: boolean;
   /** Components to ring and observed transfers to mark as dashed lines. Display only: it is not a path or a capability. */
   highlight?: Highlight | null;
+  /** True while a Journey is shown: a selected Component is ringed but draws no Transfer Capability segments. */
+  suppressCapabilities?: boolean;
 }
 
 export interface Highlight {
@@ -39,7 +41,7 @@ export interface ReplayOverlay {
 const DASH = '6 4';
 const RAD: Record<SceneComponent['cls'], number> = { process: 8, holding: 8, robot: 8, structure: 12 };
 
-const PAINT = {
+export const PAINT = {
   selection: 'var(--eqv-selection, #1428a0)',
   selectionFill: 'var(--eqv-selection-fill, #e4e8f6)',
   board: 'var(--eqv-board, #fbfdff)',
@@ -52,12 +54,12 @@ const PAINT = {
 } as const;
 
 type StateMaterial = SceneState['materials'][number];
-type StateEvidence = StateMaterial['locationEvidence'];
+export type StateEvidence = StateMaterial['locationEvidence'];
 type StateActivity = Exclude<SceneState['components'][number]['activity'], 'no recorded activity'>;
 
 const DASH_UNKNOWN = '2 3';
-const EVIDENCE_DASH: Record<StateEvidence, string | undefined> = { observed: undefined, derived: DASH, unknown: DASH_UNKNOWN };
-const EVIDENCE_KO: Record<StateEvidence, string> = { observed: '관측', derived: '파생', unknown: '미확인' };
+export const EVIDENCE_DASH: Record<StateEvidence, string | undefined> = { observed: undefined, derived: DASH, unknown: DASH_UNKNOWN };
+export const EVIDENCE_KO: Record<StateEvidence, string> = { observed: '관측', derived: '파생', unknown: '미확인' };
 const ACTIVITY_KO: Record<StateActivity, string> = { processing: '처리 중', 'post-processing': '후처리', function: '기능' };
 /** Ghost diameter and label size; materials use `DISC_PX`. */
 const TOKEN_PX = 8;
@@ -77,7 +79,7 @@ function matrixAttr(matrix: Mat): string {
   return `matrix(${formatNum(matrix.a)} ${formatNum(matrix.b)} ${formatNum(matrix.c)} ${formatNum(matrix.d)} ${formatNum(matrix.e)} ${formatNum(matrix.f)})`;
 }
 
-function visible(scene: Scene, id: string | null): SceneComponent | null {
+export function visible(scene: Scene, id: string | null): SceneComponent | null {
   if (!id) return null;
   const row = scene.components.get(id);
   if (!row || row.hidden) return null;
@@ -213,7 +215,7 @@ export function buildOverlay(scene: Scene, state: OverlayState, k: number): { in
   }
   return {
     interaction: withPointerEventsNone(el('g', { 'data-layer': 'interaction' }, shapes)),
-    capabilities: withPointerEventsNone(el('g', { 'data-layer': 'capabilities' }, capabilityNodes(scene, state.selectedId, state.showAllCapabilities, k))),
+    capabilities: withPointerEventsNone(el('g', { 'data-layer': 'capabilities' }, state.suppressCapabilities ? [] : capabilityNodes(scene, state.selectedId, state.showAllCapabilities, k))),
     highlight: withPointerEventsNone(el('g', { 'data-layer': 'highlight' }, highlightNodes(scene, state.highlight, k))),
   };
 }

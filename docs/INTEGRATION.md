@@ -49,7 +49,7 @@ Analytics Workspace
        └─ linkTo() → Equipment Detail / Top View
              ├─ Focus (equipmentId + entityType/anchor) — Top View · Gantt · Occurrence 목록, 커서 공유
              ├─ Aggregate (from/to + metric) — Component Metric 인코딩
-             ├─ Journey (wafer anchor) — 이산 hop
+             ├─ Journey (anchor = wafer를 실은 Occurrence id) — 이산 hop
              └─ ReturnLink ← 원 분석 화면·드릴다운 문맥 복원
 
 Equipment Management

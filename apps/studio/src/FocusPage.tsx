@@ -148,6 +148,8 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     ];
     return ids.length ? { componentIds: [...new Set(ids)] } : null;
   }, [state, selectedId]);
+  const selectedMaterial = selectedId === null ? undefined : ok?.batch.occurrences.find((o) => o.id === selectedId)?.material;
+  const journeyAnchor = selectedMaterial?.kind === 'wafer' && selectedMaterial.id !== null ? selectedId : null;
   const ghosts = useMemo(
     () => view.illustrative && input && state ? illustrativeGhosts(input, state, layout) : null,
     [view.illustrative, input, state, layout]);
@@ -264,6 +266,11 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                     <Checkbox id={`${rangeId}-illustrative`} checked={view.illustrative} onCheckedChange={(value) => patch({ illustrative: value === true })} />
                     <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
                     {view.illustrative && <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge>}
+                    {journeyAnchor !== null && (
+                      <Button asChild variant="secondary" size="toolbar">
+                        <Link href={hrefFor({ name: 'journey', equipmentId, anchor: journeyAnchor, window: sampleWindow ?? windowHex(result.selectedWindow) })}>Journey 열기</Link>
+                      </Button>
+                    )}
                   </>}>
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}

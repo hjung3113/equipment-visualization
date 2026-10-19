@@ -9,3 +9,5 @@ export { recordSteps, type RecordStep } from './steps.js';
 export { illustrativeGhosts, type IllustrativeGhost } from './ghosts.js';
 export { usePlayback, SPEEDS, type PlaybackScheduler, type PlaybackSpeed, type UsePlaybackOptions } from './use-playback.js';
 export { PlaybackControls, type PlaybackControlsProps } from './PlaybackControls.js';
+export { JourneyHopList, JourneyExecutionList, type JourneyHopListProps, type JourneyExecutionListProps } from './JourneyLists.js';
+export { Evidence } from './Evidence.js';
