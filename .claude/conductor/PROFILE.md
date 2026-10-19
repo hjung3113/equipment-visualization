@@ -240,3 +240,10 @@ perf role is added only once the Studio has a measured interaction budget.
 - A merge of a change that loads ESLint/Tailwind inside the parallel test run pushed an unrelated 5 s editor test
   over its timeout in CI twice: read the CI timings of the slowest tests in other packages before merging such a
   change (2026-10-18; hjung3113/conductor-engine#20).
+- A worktree with the submodule initialised cannot be removed: `orca worktree rm` returns `ok` but leaves the directory,
+  and `git worktree remove` refuses ("working trees containing submodules"). Archive `.review/`, confirm `git status
+  --porcelain` is empty, then `trash <wt>`, `git worktree prune`, `git branch -D <branch>`; do not rely on `ship-pr.sh
+  --worktree` cleanup (2026-10-19; hjung3113/conductor-engine#27).
+- `launch-worker.py` copies only the brief and the rules into the worktree's `.review/`. Copy every other `.review/`
+  file the brief names (an inventory, an audit) before launching, or the worker works without it (#73 f2c, 2026-10-19;
+  hjung3113/conductor-engine#28).
