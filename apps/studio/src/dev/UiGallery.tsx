@@ -20,6 +20,18 @@ interface Row {
 
 const NOTE = '합성 메모: 긴 문장이 칸 안에서 줄바꿈되는지 확인합니다. A long synthetic note that has to wrap inside the cell without widening the table.';
 
+const VIRTUAL_COUNT = 5000;
+const virtualRows = {
+  count: VIRTUAL_COUNT,
+  render: (index: number) => (
+    <DataTable.Row>
+      <DataTable.Cell rowHeader mono>eq-synth-{String(index + 1).padStart(4, '0')}</DataTable.Cell>
+      <DataTable.Cell>{index % 2 === 0 ? 'synth-model-a' : 'synth-model-b'}</DataTable.Cell>
+      <DataTable.Cell>{(index * 37) % 101}%</DataTable.Cell>
+    </DataTable.Row>
+  ),
+};
+
 const ROWS: readonly Row[] = Array.from({ length: 40 }, (_, i) => ({
   id: `eq-synth-${String(i + 1).padStart(2, '0')}`,
   model: i % 2 === 0 ? 'synth-model-a' : 'synth-model-b',
@@ -127,6 +139,7 @@ export default function UiGallery() {
                 </DataTable.Row>
               ))}
             </DataTable>
+            <DataTable label="5,000행 · 가상 스크롤" title="5,000행 · 가상 스크롤" count="5,000건" columns={['설비', 'Model', '커버리지']} rows={virtualRows} />
             <DataTable
               label="빈 상태"
               title="빈 상태"

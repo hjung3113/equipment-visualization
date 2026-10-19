@@ -284,7 +284,15 @@ describe('large-window guard', () => {
     expect(screen.queryByText(GUARD)).toBeNull();
   });
 
-  it('a 2,000-Occurrence window renders at most 500 list rows and says so', async () => {
+  // jsdom has no layout: the virtual list would see a 0-size region and render no row. These two tests mock offsetHeight (region 480, rows 32) and offsetWidth.
+  const mockLayout = () => {
+    const height = vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) { return this.getAttribute('role') === 'region' ? 480 : 32; });
+    const width = vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(800);
+    return () => { height.mockRestore(); width.mockRestore(); };
+  };
+
+  it('a 2,000-Occurrence window renders a bounded list window and no cap notice', async () => {
+    const restoreLayout = mockLayout();
     const t0 = wallClockToMillis(batch.from);
     const occurrences = Array.from({ length: 2000 }, (_, i) => ({
       id: `occ-gen-${i}`, equipmentId: batch.equipmentId, kind: 'PROCESS' as const,
@@ -296,11 +304,15 @@ describe('large-window guard', () => {
     await rm(join(root, 'observations/eq-synth-03/windows'), { recursive: true, force: true });
     await addWindow(root, 'eq-synth-03', big);
     page(undefined, 'eq-synth-03', await hexOf(big));
-    await screen.findByText(/Occurrence 2,000개 중 .*번째 500개를 표시합니다/);
-    expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBe(500);
+    try {
+      await waitFor(() => expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBeGreaterThan(0));
+      expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBeLessThan(60);
+      expect(screen.queryByText(/개를 표시합니다/)).toBeNull();
+    } finally { restoreLayout(); }
   });
 
-  it('an untimed anchor Occurrence in a 2,000-Occurrence window stays in the capped list', async () => {
+  it('an untimed anchor Occurrence in a 2,000-Occurrence window is rendered by the initial scroll', async () => {
+    const restoreLayout = mockLayout();
         const occurrences = Array.from({ length: 2000 }, (_, i) => ({
       id: `occ-gen-${i}`, equipmentId: batch.equipmentId, kind: 'PROCESS' as const,
       start: { at: null, seq: i + 1, evidence: 'unknown' as const },
@@ -311,8 +323,9 @@ describe('large-window guard', () => {
     await rm(join(root, 'observations/eq-synth-03/windows'), { recursive: true, force: true });
     await addWindow(root, 'eq-synth-03', big);
     render(<FocusPage equipmentId="eq-synth-03" sampleWindow={await hexOf(big)} entityType="occurrence" anchor="occ-gen-1000" />);
-    await screen.findByText(/Occurrence 2,000개 중 .*번째 500개를 표시합니다/);
-    expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBe(500);
-    expect(row('occ-gen-1000')).not.toBeNull();
+    try {
+      await waitFor(() => expect(row('occ-gen-1000')).not.toBeNull());
+      expect(document.querySelectorAll('tr[data-occurrence-id]').length).toBeLessThan(60);
+    } finally { restoreLayout(); }
   });
 });

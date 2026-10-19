@@ -127,6 +127,11 @@ export default defineConfig([
     files: ['packages/ui/src/Tabs.tsx'],
     rules: { 'shadcn/no-restyle': 'off' },
   },
+  {
+    // #113: the virtualizer's runtime geometry (spacer-row heights, measured row offsets) needs `style`; AP's PlatformDataTable does the same. Only geometry, never colours or spacing tokens.
+    files: ['packages/ui/src/DataTable.tsx'],
+    rules: { 'shadcn/no-inline-styles': 'off' },
+  },
   globalIgnores([
     '**/node_modules/**',
     '**/dist/**',

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { afterEach, expect, it, vi } from 'vitest';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { replayTimeline } from '@eqv/core';
 import { CursorStateList, DataQualityList, EvidenceDetail, OccurrenceList } from '../src/index.js';
 import { batch, input, stateAt, time, timeline } from './data.js';
@@ -175,69 +175,99 @@ const many = (count: number) => {
   const occurrences = Array.from({ length: count }, (_, i) => ({ ...base, id: `occ-gen-${i}`, start: { ...base.start, at: null, seq: 2 * i + 1 }, end: null }));
   return { ...batch, occurrences, issues: [] };
 };
-const ids = () => Array.from(document.querySelectorAll('tbody tr')).map((tr) => tr.getAttribute('data-occurrence-id'));
-const NOTICE = /Occurrence 2,000개 중 .*번째 500개를 표시합니다/;
-// #118: rendering 500 rows of a 2,000-row batch in jsdom takes 5–6 s on a loaded CI runner; #113 (virtualization) removes the cost.
-const CAPPED_TIMEOUT = 20_000;
-
-it('caps a large Occurrence list at 500 rows around the cursor row, with a notice, and moves the slice with the selection', () => {
-  const big = many(2000);
-  const props = { batch: big, timeline, bindings: null, onSelectOccurrence: vi.fn() };
-  const { rerender } = render(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId={null} />);
-  expect(ids()).toHaveLength(500);
-  expect(ids()[0]).toBe('occ-gen-750');
-  expect(screen.getByRole('status').textContent).toBe('Occurrence 2,000개 중 751–1,250번째 500개를 표시합니다. 커서를 옮기거나 목록에서 위아래로 이동하면 표시 범위가 따라갑니다.');
-  rerender(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId="occ-gen-1700" />);
-  expect(ids()).toContain('occ-gen-1700');
-  expect(ids()).toHaveLength(500);
-  expect(screen.getByRole('status').textContent).toMatch(NOTICE);
-}, CAPPED_TIMEOUT);
-
-it('keeps ArrowDown/ArrowUp working at the edge of a capped slice by moving the slice', () => {
-  render(<OccurrenceList batch={many(2000)} timeline={timeline} bindings={null} appliedSeq={1} selectedOccurrenceId={null} onSelectOccurrence={vi.fn()} />);
-  expect(ids()[0]).toBe('occ-gen-0');
-  expect(ids()).toHaveLength(500);
-  const last = document.querySelector<HTMLElement>('tr[data-occurrence-id="occ-gen-499"]')!;
-  last.focus();
-  fireEvent.keyDown(last, { key: 'ArrowDown' });
-  expect(ids()).toContain('occ-gen-500');
-  expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe('occ-gen-500');
-}, CAPPED_TIMEOUT);
-
+const ids = () => Array.from(document.querySelectorAll('tbody tr[data-occurrence-id]')).map((tr) => tr.getAttribute('data-occurrence-id'));
 const props2 = { timeline, bindings: null, appliedSeq: 1, onSelectOccurrence: vi.fn() };
 const tabStops = () => document.querySelectorAll('tbody tr[tabindex="0"]');
+const active = () => document.activeElement?.getAttribute('data-occurrence-id');
 
-it.each([['ArrowDown', 'occ-gen-500'], ['ArrowUp', 'occ-gen-1499']])(
-  'keeps the selection and a Tab stop after %s past a slice edge, and offers a way back to the selection', (key, to) => {
-    const selected = key === 'ArrowDown' ? 'occ-gen-0' : 'occ-gen-1999';
-    const start = key === 'ArrowDown' ? 0 : 1500;
-    render(<OccurrenceList {...props2} batch={many(2000)} selectedOccurrenceId={selected} />);
-    const edge = document.querySelector<HTMLElement>(`tr[data-occurrence-id="${key === 'ArrowDown' ? 'occ-gen-499' : 'occ-gen-1500'}"]`)!;
-    expect(edge).not.toBeNull();
-    edge.focus();
-    fireEvent.keyDown(edge, { key });
-    expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe(to);
-    expect(ids()).not.toContain(selected);
+// jsdom has no layout, so the virtualizer sees a 0-size region and renders no row. Mocked: offsetHeight (region 480, rows 32) and
+// offsetWidth give a window of ~15 rows plus overscan; scrollHeight and Element.scrollTo (sets scrollTop, fires `scroll`) serve scrolls after mount.
+describe('large lists are virtualized', () => {
+  beforeEach(() => {
+    vi.spyOn(HTMLElement.prototype, 'offsetHeight', 'get').mockImplementation(function (this: HTMLElement) { return this.getAttribute('role') === 'region' ? 480 : 32; });
+    vi.spyOn(HTMLElement.prototype, 'offsetWidth', 'get').mockReturnValue(800);
+    vi.spyOn(Element.prototype, 'scrollHeight', 'get').mockReturnValue(10_000_000);
+    Element.prototype.scrollTo = function (this: Element, options?: ScrollToOptions | number) {
+      this.scrollTop = typeof options === 'object' ? options.top ?? 0 : 0;
+      this.dispatchEvent(new Event('scroll'));
+    } as typeof Element.prototype.scrollTo;
+  });
+  afterEach(() => { vi.restoreAllMocks(); });
+
+  it('opens a 2,000-Occurrence list on the cursor row with a bounded window and no cap notice, and follows the selection', () => {
+    const props = { batch: many(2000), timeline, bindings: null, onSelectOccurrence: vi.fn() };
+    const { rerender } = render(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId={null} />);
+    expect(ids()).toContain('occ-gen-1000');
+    expect(ids().length).toBeLessThan(60);
+    expect(screen.getByRole('grid', { name: 'Occurrence 목록' }).getAttribute('aria-rowcount')).toBe('2001');
+    expect(screen.queryByRole('status')).toBeNull();
+    rerender(<OccurrenceList {...props} appliedSeq={2 * 1000 + 1} selectedOccurrenceId="occ-gen-1700" />);
+    expect(ids()).toContain('occ-gen-1700');
+    expect(ids().length).toBeLessThan(60);
+  });
+
+  it('opens on the selection when there is one, ahead of the anchor and the cursor', () => {
+    render(<OccurrenceList {...props2} batch={many(2000)} appliedSeq={2 * 1999 + 1} anchorOccurrenceId="occ-gen-1000" selectedOccurrenceId="occ-gen-300" />);
+    expect(ids()).toContain('occ-gen-300');
+    expect(ids()).not.toContain('occ-gen-1000');
+  });
+
+  it('opens on the anchor Occurrence, also when it is untimed and the cursor is elsewhere', () => {
+    render(<OccurrenceList {...props2} batch={many(2000)} appliedSeq={2 * 1999 + 1} anchorOccurrenceId="occ-gen-1000" selectedOccurrenceId={null} />);
+    expect(ids()).toContain('occ-gen-1000');
+    expect(ids().length).toBeLessThan(60);
+  });
+
+  it('does not follow the cursor after mount', () => {
+    const props = { ...props2, batch: many(2000), selectedOccurrenceId: null };
+    const { rerender } = render(<OccurrenceList {...props} appliedSeq={1} />);
+    rerender(<OccurrenceList {...props} appliedSeq={2 * 1500 + 1} />);
+    expect(ids()).toContain('occ-gen-0');
+    expect(ids()).not.toContain('occ-gen-1500');
+  });
+
+  it.each([['End', 'occ-gen-1999'], ['Home', 'occ-gen-0'], ['ArrowDown', 'occ-gen-1001'], ['ArrowUp', 'occ-gen-999']])(
+    '%s from the selected row moves focus to %s, scrolling it into the window first; one Tab stop remains', (key, to) => {
+      render(<OccurrenceList {...props2} batch={many(2000)} selectedOccurrenceId="occ-gen-1000" />);
+      const from = document.querySelector<HTMLElement>('tr[data-occurrence-id="occ-gen-1000"]')!;
+      from.focus();
+      fireEvent.keyDown(from, { key });
+      expect(active()).toBe(to);
+      expect(ids()).toContain(to);
+      expect(tabStops().length).toBe(1);
+    });
+
+  it('moves the single Tab stop to the first rendered row once the caret row has scrolled out', () => {
+    render(<OccurrenceList {...props2} batch={many(2000)} selectedOccurrenceId="occ-gen-1000" />);
+    const from = document.querySelector<HTMLElement>('tr[data-occurrence-id="occ-gen-1000"]')!;
+    from.focus();
+    fireEvent.keyDown(from, { key: 'End' });
+    expect(ids()).not.toContain('occ-gen-1000');
     expect(tabStops().length).toBe(1);
-    expect(screen.getByRole('status').textContent).toContain('선택한 Occurrence는 표시 범위 밖에 있습니다');
-    fireEvent.click(screen.getByRole('button', { name: '선택한 Occurrence로 이동' }));
-    expect(ids()).toContain(selected);
-    expect(ids()[0]).toBe(`occ-gen-${start}`);
-    expect(document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id')).toBe(selected);
-    expect(document.activeElement?.getAttribute('data-occurrence-id')).toBe(selected);
+    expect(document.querySelector('tbody tr[tabindex="0"]')?.getAttribute('data-occurrence-id')).toBe('occ-gen-1999');
+    const view = screen.getByRole('region', { name: 'Occurrence 목록' });
+    act(() => { view.scrollTo({ top: 0 }); });
     expect(tabStops().length).toBe(1);
-  }, CAPPED_TIMEOUT);
+    expect(document.querySelector('tbody tr[tabindex="0"]')?.getAttribute('data-occurrence-id')).toBe(ids()[0]);
+  });
 
-it('centres a capped list on the anchor Occurrence, also when it is untimed and the cursor is elsewhere', () => {
-  render(<OccurrenceList {...props2} batch={many(2000)} appliedSeq={2 * 1999 + 1} anchorOccurrenceId="occ-gen-1000" selectedOccurrenceId={null} />);
-  expect(ids()).toContain('occ-gen-1000');
-  expect(ids()).toHaveLength(500);
-}, CAPPED_TIMEOUT);
+  it('shows the cursor row of a 2,000-issue Data Quality list, bounded, and keeps the related-Occurrence buttons', () => {
+    const issues = Array.from({ length: 2000 }, (_, i) => ({ id: `dqi-${i}`, issueType: 'unmatched-end', seq: i + 1, at: null, relatedOccurrenceId: `occ-${i}` }));
+    const onSelect = vi.fn();
+    render(<DataQualityList timeline={{ issues } as unknown as typeof timeline} appliedSeq={1000} onSelectOccurrence={onSelect} />);
+    expect(screen.getByText('dqi-999')).toBeTruthy();
+    expect(screen.getAllByRole('row').length).toBeLessThan(60);
+    expect(screen.queryByRole('status')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: '관련 Occurrence occ-999 선택' }));
+    expect(onSelect).toHaveBeenCalledWith('occ-999');
+  });
 
-it('caps the Data Quality list too, around the cursor', () => {
-  const issues = Array.from({ length: 2000 }, (_, i) => ({ id: `dqi-${i}`, issueType: 'unmatched-end', seq: i + 1, at: null }));
-  render(<DataQualityList timeline={{ issues } as unknown as typeof timeline} appliedSeq={1000} onSelectOccurrence={vi.fn()} />);
-  expect(screen.getAllByRole('row')).toHaveLength(501);
-  expect(screen.getByText('dqi-999')).toBeTruthy();
-  expect(screen.getByRole('status').textContent).toMatch(/Data Quality Issue 2,000개 중 .*번째 500개를 표시합니다/);
-}, CAPPED_TIMEOUT);
+  it('renders a 50,000-Occurrence window as a bounded list', () => {
+    const big = many(50_000);
+    const t0 = performance.now();
+    render(<OccurrenceList {...props2} batch={big} appliedSeq={2 * 25_000 + 1} selectedOccurrenceId={null} />);
+    console.info(`50k OccurrenceList mount: ${Math.round(performance.now() - t0)} ms, ${ids().length} rows`);
+    expect(ids()).toContain('occ-gen-25000');
+    expect(ids().length).toBeLessThan(60);
+  });
+});
