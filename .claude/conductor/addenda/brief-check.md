@@ -28,3 +28,10 @@ E3. **Fixtures are synthetic and generalized.** No vendor-specific dimensions, r
     images; archetype fixtures are structural (`docs/ASSET-REVIEW.md`), not OEM-faithful.
 E4. **Format changes carry an ADR.** A breaking change to a layout, catalog, mapping or observation format names
     the ADR (`ls docs/adr` for the next free number; parallel issues collide) or is split out.
+E5. **Acceptance commands cover the test files.** The lint and typecheck commands in a brief name the package's
+    `test/` folders as well as `src/` (`pnpm exec eslint packages/<p>` rather than `packages/<p>/src`); a brief that
+    named only `src` let `no-explicit-any` and `preserve-caught-error` in a new test reach host verification (#106).
+E6. **A large-input change is measured where it renders.** When a brief lifts a size guard or speeds up a
+    computation for large inputs, its acceptance includes a real-browser timing on a generated large input with
+    realistic context (Binding, Layout, Mapping), not only a Node benchmark: #106 made a 50k-window Gantt computable
+    in 285 ms, and the browser then drew 200k SVG rects (6.2 s load, 1.9 s per step).
