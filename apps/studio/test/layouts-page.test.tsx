@@ -565,7 +565,7 @@ it('compares with the revision a Binding pins, not with the other revision', asy
   expect(within(table).getByText('머리 필드')).toBeTruthy();
 });
 
-it('uses the only existing revision as the baseline and reports an unchanged document', async () => {
+it('uses the only existing revision as the baseline when no Binding pins one', async () => {
   const hex = await writeRevision((raw) => { raw.name = 'Older name'; });
   const { dialog } = await openPublishDialog();
   await within(dialog).findByText('비교 기준:');
