@@ -1,8 +1,12 @@
-import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import type { AliasRulesFile } from '@eqv/core';
-import { Button, Dialog, DialogContent, DialogTitle, Input, Label, OutlineBadge, RadioGroup, RadioGroupItem } from '@fops/ui';
+import {
+  Button, Callout, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Input, KeyboardShortcut, Label,
+  OutlineBadge, PanelSectionTitle, RadioGroup, RadioGroupItem,
+} from '@fops/ui';
+import { Check, CheckCheck, ChevronRight, Diamond, Redo2, Save, Search, TriangleAlert, Undo2 } from 'lucide-react';
 import { TopViewer, type TopViewerProps } from '@eqv/renderer';
-import { ViewerZoomControls } from '@eqv/ui';
+import { DetailFields, Panel, StatusBadge, ViewerZoomControls, type StatusBadgeTone } from '@eqv/ui';
 import {
   addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
   paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,
@@ -23,15 +27,24 @@ export interface MappingBoardProps extends BoardInput {
 const VIEW = { width: 560, height: 420 };
 const LEVEL_TEXT: Record<string, string> = { global: '전역', maker: 'Maker', model: 'Model', equipment: '설비' };
 const MARKED_NAME = ', 선택한 component에 배정됨';
-const NOTE = 'mb-2 border-l-2 border-text-warning-label px-2 py-1 text-text-warning-label';
-const ISSUES = 'mb-2 border-l-2 border-text-warning-label py-1 pr-2 pl-6 text-text-warning-label';
-const PANE = 'min-w-0 rounded-md border border-border-subtle bg-surface-card p-2';
-const STATUS_TONE: Record<BoardStatus, string> = {
-  conflict: 'font-semibold text-text-danger-label', verified: 'text-accent-primary', assumed: 'text-text-warning-label',
-  unmapped: 'text-text-secondary', ignored: 'text-text-secondary',
+const STATUS_TONE: Record<BoardStatus, StatusBadgeTone> = {
+  conflict: 'danger', verified: 'info', assumed: 'warning', unmapped: 'neutral', ignored: 'neutral',
 };
+const SHORTCUTS: readonly (readonly [string, string?])[] = [
+  ['j/k', '이동'], ['Shift', '선택 확장'], ['Space', '선택'], ['Enter', '확정'], ['A', '배정'], ['I', '무시'], ['R', '규칙화'], ['/', '검색'], ['⌘Z/⇧⌘Z'],
+];
+const ICON = <TriangleAlert className="size-3.5" aria-hidden />;
+const TOOL_ICON = 'size-3.5';
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);
 const isModified = (event: KeyboardEvent) => event.ctrlKey || event.metaKey || event.altKey;
+
+/** An amber notice; `id` lets a button name it with `aria-describedby`. */
+function Note({ id, children }: { id?: string; children: ReactNode }) {
+  return <div id={id} className="mb-2"><Callout tone="amber" icon={ICON}>{children}</Callout></div>;
+}
+function Issues({ label, children }: { label: string; children: ReactNode }) {
+  return <div className="mb-2"><Callout tone="amber" icon={ICON}><ul className="m-0 list-disc pl-4" aria-label={label}>{children}</ul></Callout></div>;
+}
 
 type Pick = { kind: 'alias' } | { kind: 'component'; id: string | null };
 const OUTCOME_TEXT = (row: PatternPreview['rows'][number]): string => {
@@ -350,7 +363,11 @@ export function MappingBoard(props: MappingBoardProps) {
       <div inert={modalOpen} onClickCapture={(event) => {
         if (modalOpen) { event.preventDefault(); event.stopPropagation(); }
       }}>
-      <p className="mb-3 text-xs text-text-muted">j/k 이동 · Shift 선택 확장 · Space 선택 · Enter 확정 · A 배정 · I 무시 · R 규칙화 · / 검색 · ⌘Z/⇧⌘Z</p>
+      <div role="group" aria-label="키보드 단축키" className="mb-3 text-xs text-text-muted">
+        {SHORTCUTS.map(([key, label], index) => (
+          <span key={key}>{index > 0 && ' · '}<KeyboardShortcut>{key}</KeyboardShortcut>{label !== undefined && ` ${label}`}</span>
+        ))}
+      </div>
       <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-2">
         <div className="flex flex-wrap items-center gap-3">
           <span aria-hidden="true" className="font-semibold">저장 범위</span>
@@ -363,47 +380,50 @@ export function MappingBoard(props: MappingBoardProps) {
             ))}
           </RadioGroup>
         </div>
-        <Button type="button" variant="outline" size="sm" disabled={saving || !canUndo(state)} onClick={() => setState(undo)}>실행 취소</Button>
-        <Button type="button" variant="outline" size="sm" disabled={saving || !canRedo(state)} onClick={() => setState(redo)}>다시 실행</Button>
-        <Button type="button" variant="outline" size="sm" disabled={saving || autoRows.length === 0} aria-describedby={`${ids}-auto-warnings`} onClick={() => bulk(autoRows, 'confirm')}>자동 일괄 확정 ({autoRows.length})</Button>
-        <Button type="button" variant="primary" size="sm" disabled={saving || !canSave} onClick={save}>저장</Button>
+        <Button type="button" variant="secondary" size="toolbar" disabled={saving || !canUndo(state)} aria-keyshortcuts="Control+Z Meta+Z" onClick={() => setState(undo)}><Undo2 className={TOOL_ICON} aria-hidden />실행 취소</Button>
+        <Button type="button" variant="secondary" size="toolbar" disabled={saving || !canRedo(state)} aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y" onClick={() => setState(redo)}><Redo2 className={TOOL_ICON} aria-hidden />다시 실행</Button>
+        <Button type="button" variant="secondary" size="toolbar" disabled={saving || autoRows.length === 0} aria-describedby={`${ids}-auto-warnings`} onClick={() => bulk(autoRows, 'confirm')}><CheckCheck className={TOOL_ICON} aria-hidden />자동 일괄 확정 ({autoRows.length})</Button>
+        <Button type="button" variant="primary" size="toolbar" disabled={saving || !canSave} onClick={save}><Save className={TOOL_ICON} aria-hidden />저장</Button>
         <span ref={saveStatusRef} role="status" tabIndex={-1}>{saving ? '저장 중…' : notice?.state === state && notice.alias === alias && notice.scope === saveScope ? notice.text : status}</span>
-        {saveError && <span role="alert" className="font-semibold text-text-danger-label">{saveError}</span>}
+        {saveError && <div role="alert" className="basis-full"><Callout tone="red" icon={ICON}>{saveError}</Callout></div>}
       </div>
       <div id={`${ids}-auto-warnings`}>
-        {saveScope === 'model' && <p className={NOTE}>Model 범위에 저장: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
-        {saveScope === 'model' && autoRows.some((row) => row.changedModelRule) && <p className={NOTE}>Model 규칙을 바꿉니다: {[...new Set(autoRows.flatMap((row) => row.changedModelRule ? [row.changedModelRule] : []))].join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
-        {autoRows.some((row) => row.overriddenBy) && <p className={NOTE}>설비 범위 규칙이 우선하는 alias: {autoRows.filter((row) => row.overriddenBy).map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</p>}
+        {saveScope === 'model' && <Note>Model 범위에 저장: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</Note>}
+        {saveScope === 'model' && autoRows.some((row) => row.changedModelRule) && <Note>Model 규칙을 바꿉니다: {[...new Set(autoRows.flatMap((row) => row.changedModelRule ? [row.changedModelRule] : []))].join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</Note>}
+        {autoRows.some((row) => row.overriddenBy) && <Note>설비 범위 규칙이 우선하는 alias: {autoRows.filter((row) => row.overriddenBy).map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</Note>}
       </div>
-      {view.missingTemplate && <p className={NOTE}>Template {view.missingTemplate}을(를) 찾을 수 없어 자동 배정이 없습니다.</p>}
+      {view.missingTemplate && <Note>Template {view.missingTemplate}을(를) 찾을 수 없어 자동 배정이 없습니다.</Note>}
       {view.unattributed.length > 0 && (
-        <ul className={ISSUES} aria-label="규칙 문제">
+        <Issues label="규칙 문제">
           {view.unattributed.map((issue) => <li key={JSON.stringify([issue.code, issue.path])}>{issue.code}: {issue.message}</li>)}
-        </ul>
+        </Issues>
       )}
       <div className="grid grid-cols-3 items-start gap-3 max-[1100px]:grid-cols-1">
-        <div className={PANE}>
-          <Input
-            ref={searchRef} type="search" aria-label="Alias 검색" placeholder="/ 검색" value={query}
-            onChange={(event) => changeQuery(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === 'Escape') { changeQuery(''); listRef.current?.focus(); }
-              else if (event.key === 'Enter' || event.key === 'ArrowDown') listRef.current?.focus();
-              else return;
-              event.preventDefault();
-            }}
-          />
+        <Panel title="Alias" className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Search className="size-4 shrink-0 text-text-muted" aria-hidden />
+            <Input
+              ref={searchRef} type="search" aria-label="Alias 검색" placeholder="/ 검색" value={query}
+              onChange={(event) => changeQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Escape') { changeQuery(''); listRef.current?.focus(); }
+                else if (event.key === 'Enter' || event.key === 'ArrowDown') listRef.current?.focus();
+                else return;
+                event.preventDefault();
+              }}
+            />
+          </div>
           <div
             ref={listRef} role="listbox" tabIndex={0} aria-label="Alias 목록" className="mt-2 max-h-[480px] overflow-y-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-focus-ring" aria-multiselectable="true"
             aria-activedescendant={selected ? optionId(selected.alias) : undefined} onKeyDown={onListKeyDown}
           >
             {groups.map((group) => (
               <div key={group.role} role="group" aria-label={`Role ${group.role}`}>
-                <div className="px-1 pt-1 pb-0.5 font-semibold text-text-secondary" aria-hidden="true">{group.role}</div>
+                <PanelSectionTitle size="tiny" className="mb-0 px-1 pt-1 pb-0.5" aria-hidden="true">{group.role}</PanelSectionTitle>
                 {group.rows.map((row) => (
                   <div
                     key={row.alias} id={optionId(row.alias)} role="option" aria-selected={markedRows.length ? marks.has(row.alias) : row === selected} draggable={!saving}
-                    className={`flex items-baseline gap-2 px-2 py-1 ${saving ? 'cursor-pointer' : 'cursor-grab'} ${row === selected ? 'bg-surface-row-selected outline outline-2 -outline-offset-2 outline-accent-primary' : marks.has(row.alias) ? 'border-l-2 border-l-accent-primary bg-surface-canvas' : 'border-l-2 border-l-transparent'}`}
+                    className={`flex items-center gap-2 px-2 py-1 ${saving ? 'cursor-pointer' : 'cursor-grab'} ${row === selected ? 'bg-surface-row-selected outline outline-2 -outline-offset-2 outline-accent-primary' : `hover:bg-surface-row-hover border-l-2 ${marks.has(row.alias) ? 'border-l-accent-primary bg-surface-canvas' : 'border-l-transparent'}`}`}
                     aria-label={`${row.alias}, ${row.statusText}, ${row.componentId ? targetText(row) : '배정 없음'}${marked(row) ? MARKED_NAME : ''}${marks.has(row.alias) ? ', 일괄 선택됨' : ''}`}
                     onClick={(event) => onRowClick(event, row)}
                     onDragStart={(event) => {
@@ -413,19 +433,19 @@ export function MappingBoard(props: MappingBoardProps) {
                     }}
                     onDragEnd={() => { dragAlias.current = null; }}
                   >
-                    {row === selected && <span aria-hidden="true">▸</span>}
+                    {row === selected && <ChevronRight data-marker="active" className="size-3.5 shrink-0" aria-hidden />}
                     <span className="flex-auto font-semibold">{row.alias}</span>
-                    <span className={`whitespace-nowrap ${STATUS_TONE[row.status]}`}>{row.statusText}</span>
+                    <StatusBadge tone={STATUS_TONE[row.status]}>{row.statusText}</StatusBadge>
                     <span className="min-w-16 text-right tabular-nums">{targetText(row)}</span>
-                    {marks.has(row.alias) && <span className="text-accent-primary" aria-hidden="true">✓</span>}
-                    {marked(row) && <span className="text-accent-primary" aria-hidden="true">◆</span>}
+                    {marks.has(row.alias) && <Check data-marker="marked" className="size-3.5 shrink-0 text-accent-primary" aria-hidden />}
+                    {marked(row) && <Diamond data-marker="assigned" className="size-3.5 shrink-0 text-accent-primary" aria-hidden />}
                   </div>
                 ))}
               </div>
             ))}
           </div>
-          {rows.length === 0 && <p>일치하는 alias가 없습니다</p>}
-        </div>
+          {rows.length === 0 && <EmptyState size="sm" title="일치하는 alias가 없습니다" />}
+        </Panel>
         <div className="min-w-0 max-w-full overflow-auto rounded-md border border-border-subtle bg-surface-canvas" ref={viewRef} onDragOver={(event) => { if (dragAlias.current && componentAt(event)) event.preventDefault(); }} onDrop={onDrop}>
           <TopViewer
             layout={layout} width={VIEW.width} height={VIEW.height} selectedId={viewerId}
@@ -433,53 +453,57 @@ export function MappingBoard(props: MappingBoardProps) {
             renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />}
           />
         </div>
-        <div className={PANE} aria-label="선택한 항목" role="region">
+        <Panel title="선택한 항목" className="min-w-0">
           {bulkRows ? (
             <>
               <h3 className="mb-2 font-semibold">{bulkRows.length}개 선택</h3>
-              {changedModelRules.length > 0 && <p className={NOTE}>Model 규칙을 바꿉니다: {changedModelRules.join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
-              {overriddenRows.length > 0 && <p className={NOTE}>설비 범위 규칙이 우선하는 alias: {overriddenRows.map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</p>}
+              {changedModelRules.length > 0 && <Note>Model 규칙을 바꿉니다: {changedModelRules.join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</Note>}
+              {overriddenRows.length > 0 && <Note>설비 범위 규칙이 우선하는 alias: {overriddenRows.map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</Note>}
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => bulk(bulkRows, 'confirm')}>일괄 확정 (Enter)</Button>
-                <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => bulk(bulkRows, 'ignore')}>일괄 무시 (I)</Button>
+                <Button type="button" variant="secondary" size="toolbar" disabled={saving} aria-keyshortcuts="Enter" onClick={() => bulk(bulkRows, 'confirm')}>일괄 확정 (Enter)</Button>
+                <Button type="button" variant="secondary" size="toolbar" disabled={saving} aria-keyshortcuts="I" onClick={() => bulk(bulkRows, 'ignore')}>일괄 무시 (I)</Button>
               </div>
             </>
           ) : selected ? (
             <>
               <h3 className="mb-2 font-semibold">{selected.alias}</h3>
-              <dl className="mb-2 grid grid-cols-[max-content_1fr] gap-x-3 gap-y-0.5">
-                <dt className="text-text-secondary">ModuleType</dt><dd className="break-words">{selected.moduleType ?? '—'}</dd>
-                <dt className="text-text-secondary">Role</dt><dd className="break-words">{selected.role}</dd>
-                <dt className="text-text-secondary">slots</dt><dd className="break-words">{selected.slots.length ? selected.slots.join(', ') : '—'}</dd>
-                <dt className="text-text-secondary">상태</dt><dd className="break-words">{selected.statusText}</dd>
-                <dt className="text-text-secondary">대상 component</dt><dd className="break-words">{targetText(selected)}</dd>
-                <dt className="text-text-secondary">규칙</dt>
-                <dd className="break-words">{selected.draft ? `초안 (저장 시 ${selected.rule?.ruleId})` : selected.rule ? `${LEVEL_TEXT[selected.rule.level] ?? selected.rule.level} · ${selected.rule.ruleId} · ${selected.rule.kind === 'exact' ? '정확' : '패턴'}` : '—'}</dd>
-                <dt className="text-text-secondary">확실성</dt><dd className="break-words">{selected.certainty ?? '—'}</dd>
-              </dl>
-              {saveScope === 'model' && selected.changedModelRule && <p className={NOTE}>Model 규칙 {selected.changedModelRule}을(를) 바꿉니다: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</p>}
-              {selected.rule?.level === 'model' && selected.issues.some(({ code }) => code === 'unknown-target') && <p className={NOTE}>이 설비만 다르면 저장 범위를 설비로 바꾸세요</p>}
-              {selected.overriddenBy && <p className={NOTE}>설비 범위 규칙({selected.overriddenBy})이 우선합니다. 확정하려면 저장 범위를 설비로 바꾸세요.</p>}
-              {lines.length > 0 && <ul className={ISSUES} aria-label="충돌과 문제">{lines.map((line) => <li key={line}>{line}</li>)}</ul>}
-              {confirmReason && <p id={`${ids}-confirm-reason`} className={NOTE}>{confirmReason}</p>}
+              <div className="mb-2">
+                <DetailFields items={[
+                  { key: 'moduleType', label: 'ModuleType', value: selected.moduleType ?? '—' },
+                  { key: 'role', label: 'Role', value: selected.role },
+                  { key: 'slots', label: 'slots', value: selected.slots.length ? selected.slots.join(', ') : '—' },
+                  { key: 'status', label: '상태', value: selected.statusText },
+                  { key: 'target', label: '대상 component', value: targetText(selected) },
+                  { key: 'rule', label: '규칙', value: selected.draft ? `초안 (저장 시 ${selected.rule?.ruleId})` : selected.rule ? `${LEVEL_TEXT[selected.rule.level] ?? selected.rule.level} · ${selected.rule.ruleId} · ${selected.rule.kind === 'exact' ? '정확' : '패턴'}` : '—' },
+                  { key: 'certainty', label: '확실성', value: selected.certainty ?? '—' },
+                ]} />
+              </div>
+              {saveScope === 'model' && selected.changedModelRule && <Note>Model 규칙 {selected.changedModelRule}을(를) 바꿉니다: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</Note>}
+              {selected.rule?.level === 'model' && selected.issues.some(({ code }) => code === 'unknown-target') && <Note>이 설비만 다르면 저장 범위를 설비로 바꾸세요</Note>}
+              {selected.overriddenBy && <Note>설비 범위 규칙({selected.overriddenBy})이 우선합니다. 확정하려면 저장 범위를 설비로 바꾸세요.</Note>}
+              {lines.length > 0 && <Issues label="충돌과 문제">{lines.map((line) => <li key={line}>{line}</li>)}</Issues>}
+              {confirmReason && <Note id={`${ids}-confirm-reason`}>{confirmReason}</Note>}
               <div className="flex flex-wrap gap-2">
-                <Button type="button" variant="outline" size="sm" disabled={saving} onClick={openPalette}>배정 (A)</Button>
-                <Button type="button" variant="outline" size="sm" disabled={saving} aria-disabled={saving || !!confirmReason} aria-describedby={confirmReason ? `${ids}-confirm-reason` : undefined} onClick={() => edit({ kind: 'confirm', alias: selected.alias })}>확정 (Enter)</Button>
-                <Button type="button" variant="outline" size="sm" disabled={saving} onClick={() => edit({ kind: 'ignore', alias: selected.alias })}>무시 (I)</Button>
-                <Button type="button" variant="outline" size="sm" disabled={saving} onClick={openRule}>규칙화 (R)</Button>
+                <Button type="button" variant="secondary" size="toolbar" disabled={saving} aria-keyshortcuts="A" onClick={openPalette}>배정 (A)</Button>
+                <Button type="button" variant="secondary" size="toolbar" disabled={saving} aria-keyshortcuts="Enter" aria-disabled={saving || !!confirmReason} aria-describedby={confirmReason ? `${ids}-confirm-reason` : undefined} onClick={() => edit({ kind: 'confirm', alias: selected.alias })}>확정 (Enter)</Button>
+                <Button type="button" variant="secondary" size="toolbar" disabled={saving} aria-keyshortcuts="I" onClick={() => edit({ kind: 'ignore', alias: selected.alias })}>무시 (I)</Button>
+                <Button type="button" variant="secondary" size="toolbar" disabled={saving} aria-keyshortcuts="R" onClick={openRule}>규칙화 (R)</Button>
               </div>
             </>
-          ) : <p>왼쪽에서 alias를 선택하세요.</p>}
-        </div>
+          ) : <EmptyState size="sm" title="왼쪽에서 alias를 선택하세요." />}
+        </Panel>
       </div>
       </div>
       {palette && (
         <Dialog open onOpenChange={(open) => { if (!open) closePalette(); }}>
         <DialogContent
-          ref={dialogRef} closeLabel="창 닫기" aria-modal="true" aria-describedby={undefined} className="w-[420px] max-w-[min(420px,calc(100vw-32px))]"
+          ref={dialogRef} closeLabel="창 닫기" aria-modal="true" className="w-[420px] max-w-[min(420px,calc(100vw-32px))]"
           onKeyDown={onDialogKeyDown} onInteractOutside={(event) => event.preventDefault()} onCloseAutoFocus={returnFocusToList}
         >
-          <DialogTitle>{palette.alias}를 배정할 component</DialogTitle>
+          <DialogHeader>
+            <DialogTitle>{palette.alias}를 배정할 component</DialogTitle>
+            <DialogDescription>↑↓로 고르고 Enter로 배정합니다. Esc로 닫습니다.</DialogDescription>
+          </DialogHeader>
           <Input
             ref={filterRef} type="text" role="combobox" aria-label="component 필터" aria-expanded="true" aria-autocomplete="list"
             aria-controls={`${ids}-palette-list`} value={palette.filter}
@@ -496,21 +520,26 @@ export function MappingBoard(props: MappingBoardProps) {
                 <code>{option.id}</code> {option.label} <OutlineBadge>{option.role}</OutlineBadge>
               </div>
             ))}
-            {options.length === 0 && <p>일치하는 component가 없습니다.</p>}
+            {options.length === 0 && <EmptyState size="sm" density="compact" title="일치하는 component가 없습니다." />}
           </div>
-          <Button type="button" variant="outline" size="sm" onClick={closePalette}>닫기</Button>
+          <DialogFooter spacing="compact">
+            <Button type="button" variant="secondary" size="toolbar" onClick={closePalette}>닫기</Button>
+          </DialogFooter>
         </DialogContent>
         </Dialog>
       )}
       {rule && preview && (
         <Dialog open onOpenChange={(open) => { if (!open) closeRule(); }}>
         <DialogContent
-          ref={dialogRef} closeLabel="창 닫기" aria-modal="true" aria-describedby={undefined}
+          ref={dialogRef} closeLabel="창 닫기" aria-modal="true"
           className="max-h-[80vh] w-[560px] max-w-[min(560px,calc(100vw-32px))] overflow-y-auto"
           onKeyDown={onRuleKeyDown} onInteractOutside={(event) => event.preventDefault()} onCloseAutoFocus={returnFocusToList}
         >
-          <DialogTitle>{rule.alias}에서 규칙 만들기 · 저장 범위 {LEVEL_TEXT[saveScope]}</DialogTitle>
-          {rule.hint && <p className={NOTE}>패턴을 제안할 숫자가 없습니다</p>}
+          <DialogHeader>
+            <DialogTitle>{rule.alias}에서 규칙 만들기 · 저장 범위 {LEVEL_TEXT[saveScope]}</DialogTitle>
+            <DialogDescription>패턴에 맞는 alias를 한 번에 같은 규칙으로 배정합니다. Enter로 추가하고 Esc로 닫습니다.</DialogDescription>
+          </DialogHeader>
+          {rule.hint && <Note>패턴을 제안할 숫자가 없습니다</Note>}
           <div className="mb-2">
             <Label htmlFor={`${ids}-rule-pattern`}>패턴</Label>
             <Input id={`${ids}-rule-pattern`} ref={patternRef} type="text" value={rule.pattern} onChange={(event) => setRule({ ...rule, pattern: event.target.value })} />
@@ -525,17 +554,17 @@ export function MappingBoard(props: MappingBoardProps) {
           </ul>
           {preview.removes.length > 0 && <p>정리되는 정확 규칙: {preview.removes.join(', ')}</p>}
           {preview.problems.length > 0 && (
-            <ul className={ISSUES} aria-label="규칙 문제">
+            <Issues label="규칙 문제">
               {preview.problems.map((problem, index) => <li key={problem} id={index === 0 ? `${ids}-rule-problem` : undefined}>{problem}</li>)}
-            </ul>
+            </Issues>
           )}
-          <div className="flex flex-wrap gap-2">
+          <DialogFooter spacing="compact">
             <Button
-              type="button" variant="primary" size="sm" disabled={saving} aria-disabled={saving || preview.problems.length > 0}
+              type="button" variant="primary" size="toolbar" disabled={saving} aria-disabled={saving || preview.problems.length > 0}
               aria-describedby={preview.problems.length ? `${ids}-rule-problem` : undefined} onClick={addRule}
             >규칙 추가</Button>
-            <Button type="button" variant="outline" size="sm" onClick={closeRule}>닫기</Button>
-          </div>
+            <Button type="button" variant="secondary" size="toolbar" onClick={closeRule}>닫기</Button>
+          </DialogFooter>
         </DialogContent>
         </Dialog>
       )}

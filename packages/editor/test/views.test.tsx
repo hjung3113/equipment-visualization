@@ -92,11 +92,11 @@ it('shows the top 3 proposals in rank order with the fitting template first', ()
   const found = cards();
   expect(found).toHaveLength(3);
   expect(within(found[0]!).getByRole('heading').textContent).toMatch(/^1\. .*cluster-single$/);
-  expect(within(found[0]!).getByText('✓ 적합')).toBeTruthy();
+  expect(within(found[0]!).getByText('적합')).toBeTruthy();
   expect(within(found[0]!).getByText(/^LL 1 \(1–2\) ✓, LP 1 \(1–4\) ✓, PM 3 \(1–9\) ✓/)).toBeTruthy();
   expect(within(found[0]!).getByText('설명 안 되는 alias: VIRT_SCH')).toBeTruthy();
   expect(found.slice(1).map((card) => within(card).getByRole('heading').textContent?.[0])).toEqual(['2', '3']);
-  expect(within(found[1]!).getByText('✗ 부적합')).toBeTruthy();
+  expect(within(found[1]!).getByText('부적합')).toBeTruthy();
   for (const card of found) expect(within(card).getByRole('img', { name: /미리보기$/ }).querySelector('svg')).toBeTruthy();
   expect(screen.queryByText('모든 형상·배정은 assumed입니다')).toBeNull();
 });

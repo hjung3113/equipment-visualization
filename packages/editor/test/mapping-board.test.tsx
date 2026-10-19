@@ -86,13 +86,13 @@ it('marks the aliases assigned to a clicked component and selects the component 
   const { container } = mount();
   fireEvent.click(component(container, 'pm-a'));
   expect(option('PM1').getAttribute('aria-label')).toMatch(/, 선택한 component에 배정됨$/);
-  expect(option('PM1').textContent).toContain('◆');
+  expect(option('PM1').querySelector('[data-marker="assigned"]')).not.toBeNull();
   expect(option('PM2').getAttribute('aria-label')).not.toMatch(/선택한 component/);
   expect(component(container, 'pm-a').getAttribute('aria-pressed')).toBe('true');
   fireEvent.click(option('PM2'));
   expect(component(container, 'pm-b').getAttribute('aria-pressed')).toBe('true');
   expect(component(container, 'pm-a').getAttribute('aria-pressed')).toBe('false');
-  expect(option('PM2').textContent).toContain('◆');
+  expect(option('PM2').querySelector('[data-marker="assigned"]')).not.toBeNull();
 });
 
 it('writes the scope that the toggle selects', async () => {
@@ -262,7 +262,7 @@ it('UX-1 never marks an alias whose effective target is absent from the layout',
     rule.id === 'lp' ? { ...rule, target: { componentId: 'missing-lp' } } : rule) };
   mount(undefined, input);
   fireEvent.click(option('LP1'));
-  expect(option('LP1').textContent).not.toContain('◆');
+  expect(option('LP1').querySelector('[data-marker="assigned"]')).toBeNull();
   expect(option('LP1').getAttribute('aria-label')).not.toContain('선택한 component');
 });
 
@@ -390,7 +390,7 @@ it('UX-12 labels draft rule ids as future rules and shows the supported keyboard
   const pane = screen.getByRole('region', { name: '선택한 항목' });
   expect(pane.textContent).toContain('초안 (저장 시 board-lp1)');
   expect(within(pane).getByText('확실성')).toBeTruthy();
-  expect(screen.getByText('j/k 이동 · Shift 선택 확장 · Space 선택 · Enter 확정 · A 배정 · I 무시 · R 규칙화 · / 검색 · ⌘Z/⇧⌘Z')).toBeTruthy();
+  expect(screen.getByRole('group', { name: '키보드 단축키' }).textContent).toBe('j/k 이동 · Shift 선택 확장 · Space 선택 · Enter 확정 · A 배정 · I 무시 · R 규칙화 · / 검색 · ⌘Z/⇧⌘Z');
 });
 
 it('UX-12 explains a missing target without appending the raw English diagnostic', () => {
@@ -621,7 +621,7 @@ it('keeps a separate active caret while ignored rows remain marked', () => {
   press(list(), 'j', { shiftKey: true });
   press(list(), 'i');
   const caretRows = () => Array.from(list().querySelectorAll('[role="option"]'))
-    .filter((row) => row.textContent?.includes('▸')).map((row) => row.id);
+    .filter((row) => row.querySelector('[data-marker="active"]')).map((row) => row.id);
   expect(caretRows()).toEqual([option('LP1').id]);
   press(list(), 'k');
   expect(caretRows()).toEqual([option('LLA').id]);
@@ -670,7 +670,7 @@ it('describes auto-confirm sharing and overrides before one-click confirmation',
 it('keeps the active row apart from the bulk-marked rows', () => {
   mount();
   const caretRows = () => Array.from(list().querySelectorAll('[role="option"]'))
-    .filter((row) => row.textContent?.includes('▸')).map((row) => row.id);
+    .filter((row) => row.querySelector('[data-marker="active"]')).map((row) => row.id);
   fireEvent.click(option('LLA'));
   const expectState = (active: string, selected: string[]) => {
     expect(caretRows()).toEqual([option(active).id]);

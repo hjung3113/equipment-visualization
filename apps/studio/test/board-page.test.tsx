@@ -271,7 +271,7 @@ it('ignores a late dirty callback from the board of the previous equipment', asy
   await dirtyOnA();
   const callbackOfA = captured.props.findLast((props) => props.equipment.equipmentId === 'eq-synth-01')!.onDirtyChange!;
   act(() => navigate('/onboarding/eq-b/board'));
-  await screen.findByText('eq-b', { selector: 'code' });
+  await within(await screen.findByRole('navigation', { name: '경로' })).findByText('eq-b');
   await screen.findByRole('heading', { name: '④ Mapping Board' });
   act(() => callbackOfA(true));
   expect(beforeUnloadPrevented()).toBe(false);
@@ -292,7 +292,7 @@ it('drops A at once on navigation and ignores a late result of A', async () => {
   await screen.findByRole('heading', { name: '④ Mapping Board' });
   expect((await option('B_PM1'))).toBeTruthy();
   await act(async () => { gate.release(); await gate.wait; await new Promise((done) => setTimeout(done, 50)); });
-  expect(screen.getByText('eq-b', { selector: 'code' })).toBeTruthy();
+  expect(within(screen.getByRole('navigation', { name: '경로' })).getByText('eq-b')).toBeTruthy();
   expect(within(await list()).queryByRole('option', { name: /^PM1,/ })).toBeNull();
 });
 
