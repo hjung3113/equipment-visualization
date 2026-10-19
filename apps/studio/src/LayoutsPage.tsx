@@ -127,7 +127,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
     const owner = focusOpenerFor.current;
     if (owner === null || publishing !== null || busy) return;
     focusOpenerFor.current = null;
-    if (owner === documentEpoch) publishOpener.current?.focus();
+    // Only while focus is lost: a user who moved focus during a pending publish keeps it.
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (owner === documentEpoch && lost) publishOpener.current?.focus();
   }, [publishing, busy, documentEpoch]);
 
   // After navigation is approved, opening another file clears the import and previous notices.

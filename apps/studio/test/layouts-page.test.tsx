@@ -496,6 +496,32 @@ it('returns focus to the Revision 게시 opener once a publish has settled', asy
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Revision 게시' })));
 });
 
+it('leaves focus where the user put it when a delayed publish settles', async () => {
+  const { dialog } = await openPublishDialog();
+  const fetchFromApi = globalThis.fetch;
+  let release!: () => void;
+  let started!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const posting = new Promise<void>((resolve) => { started = resolve; });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const response = await fetchFromApi(input, init);
+    if (init?.method === 'POST') {
+      started();
+      await pending;
+    }
+    return response;
+  });
+  const publish = within(dialog).getByRole('button', { name: '게시' }) as HTMLButtonElement;
+  await waitFor(() => expect(publish.disabled).toBe(false));
+  fireEvent.click(publish);
+  await act(async () => { await posting; });
+  const exportButton = screen.getByRole('button', { name: '내보내기' });
+  act(() => { exportButton.focus(); });
+  await act(async () => { release(); await pending; });
+  await screen.findByText('게시된 Revision');
+  expect(document.activeElement).toBe(exportButton);
+});
+
 it('keeps 게시 disabled while the baseline is computing', async () => {
   const fetchFromApi = globalThis.fetch;
   let release!: () => void;
