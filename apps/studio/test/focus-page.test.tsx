@@ -64,10 +64,7 @@ it('opens Focus at the entry Occurrence with the draft notice, the Top View, the
   expect(screen.getByDisplayValue('2026-01-01T10:11:00.000')).toBeTruthy();
   screen.getByRole('group', { name: 'Synthetic single-hub cluster' });
   screen.getByRole('group', { name: 'Component lane Gantt' });
-  expect(screen.getAllByRole('tab')).toHaveLength(3);
-  screen.getByRole('tab', { name: 'Occurrence 목록' });
-  screen.getByRole('tab', { name: 'Data Quality' });
-  screen.getByRole('tab', { name: '근거 상세' });
+  expect(screen.getAllByRole('tab')).toEqual(['Occurrence 목록', 'Data Quality', '근거 상세'].map((name) => screen.getByRole('tab', { name })));
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:06:00.000)');
   const before = document.querySelector('[data-layer="replay"]');
   expect(before).not.toBeNull();
@@ -94,7 +91,8 @@ it('selects an Occurrence in every view: row, Top View highlight on its Componen
   expect(ring.getAttribute('transform')).toBe('matrix(1 0 0 1 24 32)');
   expect(document.querySelector('[data-component-id="pm-a"]')!.getAttribute('transform')).toMatch(/^translate\(24 32\) /);
   fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
-  within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' })).getByText(/^2026-01-01T10:06:00.000 · Record Sequence/);
+  const detail = within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' }));
+  expect(detail.getByText('시작', { exact: true }).parentElement?.lastElementChild?.textContent).toMatch(/^2026-01-01T10:06:00.000 · Record Sequence/);
 });
 
 it('switches tabs with the arrow keys', async () => {
@@ -265,8 +263,8 @@ it('sequence mode shows the record-ordered state; the previous record differs fr
   fireEvent.click(screen.getByRole('button', { name: '이전 record' }));
   expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 6 · 2026-01-01T10:02:00.000');
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
-  const priorMaterial = materialTable().getAllByRole('row').find((item) => item.textContent?.includes('wafer W01'));
-  expect(priorMaterial?.textContent ?? '').not.toContain('ll-a / slot-1');
+  const priorW01 = materialTable().getAllByRole('row').find((row) => within(row).queryByRole('rowheader')?.textContent === 'wafer W01');
+  expect(priorW01 ? within(priorW01).getAllByRole('cell')[0]!.textContent : '').not.toMatch(/^ll-a\b/);
   expect((screen.getByRole('button', { name: '이전 record' }) as HTMLButtonElement).disabled).toBe(true);
   const slider = screen.getByRole('slider', { name: '커서 시각' });
   slider.focus();
