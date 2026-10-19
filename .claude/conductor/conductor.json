@@ -188,7 +188,7 @@
     "forbidden_pattern": "biome-ignore|eslint-disable|@ts-ignore|@ts-nocheck",
     "forbidden_header": "NEW lint/type suppression (forbidden by the implementation rules):",
     "reason_allowed": false,
-    "suppressions_no_growth": null,
+    "suppressions_no_growth": "eslint-suppressions.json",
     "churn_paths": [
       "."
     ],
