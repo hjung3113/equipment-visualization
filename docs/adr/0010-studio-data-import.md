@@ -52,7 +52,7 @@ Studio는 다음 네 가지를 **가져오기 endpoint**(`/api/import/*`, dev �
 
 ## Consequences
 
-- **구현 상태:** 이 ADR의 결정은 승인되었으나 아직 구현되지 않았다. 아래 항목과 본문의 `validateSampleWindow`, `/api/import/*`, `windows/` 배치, 데이터 루트 거부는 모두 제안 단계다. 구현 이슈: core 검증 #97, synthetic fixture #98, windows 배치와 loader #99, import endpoint #100, 등록·Fleet 진입·데이터 페이지 #101, 가져오기 흐름 #102, window 선택 #103, 문서 정리 #104. 보류 항목은 #105, replay 성능은 #106이 맡는다.
+- **구현 상태:** 이 ADR의 결정은 #97–#103에서 구현되었다(문서 정리 #104). 구현 이슈: core 검증 #97, synthetic fixture #98, windows 배치와 loader #99, import endpoint #100, 등록·Fleet 진입·데이터 페이지 #101, 가져오기 흐름 #102, window 선택 #103, 문서 정리 #104. 보류 항목은 #105, replay 성능은 #106이 맡는다.
 - **ONBOARDING §7 규칙 변경:** "`equipment/`와 `observations/`는 Studio에서 읽기 전용이다(쓰기는 403)"를 다음으로 바꾼다. "일반 파일 API로는 쓰지 않는다(403). 가져오기 endpoint만 쓴다. 설비 기록은 create-only, Sample Window는 불변 추가, alias metadata는 확인 후 교체다. 데이터 루트가 이 저장소 안이면 가져오기를 거부한다." §7 파일 배치의 `occurrence-batch.json` 줄은 `windows/<from>_<to>_<hex>.batch.json`(불변)으로 바뀐다. "저장소에는 synthetic 설비만 둔다"는 그대로이며, 이제 서버가 강제한다.
 - **`GLOSSARY.md`에 Sample Window를 추가한다:** "한 설비에 대해 가져온 완전한 OccurrenceBatch 하나와 그 조회 구간 `[from, to)`. 불변이며 Inventory와 Replay의 단위다. Studio는 window를 합치지 않는다. _Avoid_: Observation(입력 단위로서), snapshot." ONBOARDING §2의 "샘플 기간"은 Sample Window의 구간이다.
 - **core:** `validateSampleWindow`, window 이름 계산·해석, 관측 집합 해시 함수(`replayKey`와 공유), ADR-0009 시각 진단, `assertBatchRecords`의 id 유일성 검사가 추가된다. 기존 batch와 fixture는 id가 유일하므로 계속 유효하다.

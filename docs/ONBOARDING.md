@@ -1,6 +1,6 @@
 # Onboarding — 로그 관측으로 레이아웃·매핑 만들기 v0.4
 
-**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면, Mapping Board, 샘플 기간 dry-run, Publish(Layout Revision·Mapping Version·Baseline Inventory·Binding, [ADR-0007](adr/0007-publish-writes-revision-mapping-baseline-binding.md))는 Studio에 구현됨; 데이터 가져오기(설비 등록, Sample Window, [ADR-0010](adr/0010-studio-data-import.md))는 승인되었으나 아직 구현되지 않았다(구현: #97–#103). 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
+**상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면, Mapping Board, 샘플 기간 dry-run, Publish(Layout Revision·Mapping Version·Baseline Inventory·Binding, [ADR-0007](adr/0007-publish-writes-revision-mapping-baseline-binding.md))는 Studio에 구현됨; 설비 등록, Model Type Dictionary, alias metadata, Sample Window 가져오기는 [ADR-0010](adr/0010-studio-data-import.md)에 따라 #97–#103에서 구현됨. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
 Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다.
 
@@ -17,8 +17,8 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 | ② Inventory | alias 목록 + 관측 이송 그래프 | alias별 ModuleType·Role·Port/Robot 여부·slot 집합·활동 배지(PRC/FNC/XFR/Carrier)·건수·처음/마지막 관측. 관측 이송 쌍(A→B, 건수)은 공간 정보 없는 node-link |
 | ③ Template 제안 | 상위 3개 썸네일 비교 | 점수와 근거 문장("PM 4/4 ✓, LL 2/2 ✓, TM robot ✓, 설명 안 되는 alias 1"). 맞는 것이 없으면 Generic Layout |
 | ④ Mapping Board | alias 목록 · Top View · 선택 상세 (§4) | 배정·규칙화·무시·충돌 해결 |
-| ⑤ 검증 | 샘플 기간 dry-run replay | 커버리지, Mapping Conflict 목록, 미매핑 영향도. 충돌 클릭 → SVG 강조. 구현: #14d (샘플 기간 조정은 #60, reducer 실행 없음) |
-| ⑥ Publish | 이전 버전 diff | 규칙 평탄화 → 불변 Mapping Version + Binding(effectiveFrom). 구현: #14d |
+| ⑤ 검증 | 샘플 기간 dry-run replay | 선택한 Sample Window로 검증한다. 커버리지, Mapping Conflict 목록, 미매핑 영향도. 충돌 클릭 → SVG 강조. reducer는 실행하지 않는다. |
+| ⑥ Publish | 이전 버전 diff | 규칙 평탄화 → 불변 Mapping Version + Binding(effectiveFrom) |
 | ⑦ Drift | Fleet 상태 배지 + 검토 대기열 | 게시 후 새 alias·slot, Transfer Capability 없는 관측 이송 |
 
 ## 2. Observed Inventory
@@ -190,7 +190,7 @@ type Coverage = {
 ```text
 assets/equipment/<equipmentId>.json                      # 설비 기록: equipmentId, maker, model
 assets/observations/<equipmentId>/
-  windows/<from>_<to>_<hex>.batch.json                   # Sample Window: 불변, append-only (ADR-0010, 가져오기 쓰기 구현: #100)
+  windows/<from>_<to>_<hex>.batch.json                   # Sample Window: 불변, append-only (ADR-0010)
   alias-metadata.json                                    # 선택
 assets/onboarding/
   scopes/global/type-dictionary.json
