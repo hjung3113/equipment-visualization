@@ -244,6 +244,10 @@ perf role is added only once the Studio has a measured interaction budget.
   and `git worktree remove` refuses ("working trees containing submodules"). Archive `.review/`, confirm `git status
   --porcelain` is empty, then `trash <wt>`, `git worktree prune`, `git branch -D <branch>`; do not rely on `ship-pr.sh
   --worktree` cleanup (2026-10-19; hjung3113/conductor-engine#27).
+- End the conductor's own browser-evidence scripts with `await task.finish({ keep: [] })` before any reviewer probe or
+  launch: in the demo slice the step-7d probe hung three times out of three right after a conductor script that left its
+  task space open, and a kill + reopen of Ego Lite fixed it each time (cause unconfirmed; 2026-10-20;
+  hjung3113/conductor-engine#47).
 - Ego Lite cannot time paint or frame rate: while its agent window is occluded, requestAnimationFrame fires about once per
   second (`Page.bringToFront` does not help), so click-to-paint and playback-fps numbers taken there are wrong. Time paint
   in headless Chromium (a throwaway Playwright script against the preview) and say so in VERIFY; Ego Lite stays the tool

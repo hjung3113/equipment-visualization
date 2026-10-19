@@ -35,3 +35,6 @@ E6. **A large-input change is measured where it renders.** When a brief lifts a 
     computation for large inputs, its acceptance includes a real-browser timing on a generated large input with
     realistic context (Binding, Layout, Mapping), not only a Node benchmark: #106 made a 50k-window Gantt computable
     in 285 ms, and the browser then drew 200k SVG rects (6.2 s load, 1.9 s per step).
+E7. **UI copy uses glossary terms.** Every label, button text and accessible name a brief prescribes is checked
+    against `GLOSSARY.md`, including each entry's _Avoid_ list: the #145 brief prescribed a `Replay` action for the
+    screen GLOSSARY calls **Focus** (_Avoid_: replay 화면), and the slice-close quality review had to rename it (#150).
