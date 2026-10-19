@@ -9,14 +9,14 @@ import { ACTIVITY_KO, UNKNOWN_LANE } from './words.js';
 const COMPONENT_COLUMNS = [
   { id: 'component', header: 'Component', className: 'whitespace-nowrap' },
   { id: 'activity', header: '활동' },
-  { id: 'evidence', header: 'Evidence' },
+  { id: 'evidence', header: 'Evidence', className: 'whitespace-nowrap' },
 ] as const;
 
 const MATERIAL_COLUMNS = [
   { id: 'material', header: '물질', className: 'whitespace-nowrap' },
   { id: 'location', header: '위치' },
-  { id: 'location-evidence', header: '위치 근거' },
-  { id: 'identity-evidence', header: '식별 근거' },
+  { id: 'location-evidence', header: '위치 근거', className: 'whitespace-nowrap' },
+  { id: 'identity-evidence', header: '식별 근거', className: 'whitespace-nowrap' },
 ] as const;
 
 export interface CursorStateListProps {
@@ -31,7 +31,7 @@ export function CursorStateList({ state, illustrative = [] }: CursorStateListPro
   return (
     <Panel title="커서 시점 상태" subtitle={state.at}>
       <FieldRow label="Binding" layout="property">
-        {state.binding ? `${state.binding.layoutId} · ${state.binding.mappingHash}` : '적용된 Binding 없음'}
+        {state.binding ? <span className="break-all">{state.binding.layoutId} · {state.binding.mappingHash}</span> : '적용된 Binding 없음'}
       </FieldRow>
       <PanelSectionTitle size="tiny">Component 활동</PanelSectionTitle>
       <DataTable label="Component 활동" columns={COMPONENT_COLUMNS} state={active.length === 0 ? (
@@ -41,7 +41,7 @@ export function CursorStateList({ state, illustrative = [] }: CursorStateListPro
           <DataTable.Row key={component.componentId}>
             <DataTable.Cell mono>{component.componentId}</DataTable.Cell>
             <DataTable.Cell>{ACTIVITY_KO[component.activity as keyof typeof ACTIVITY_KO]}</DataTable.Cell>
-            <DataTable.Cell><Evidence level={component.activityEvidence} /></DataTable.Cell>
+            <DataTable.Cell className="whitespace-nowrap"><Evidence level={component.activityEvidence} /></DataTable.Cell>
           </DataTable.Row>
         ))}
       </DataTable>
@@ -55,8 +55,8 @@ export function CursorStateList({ state, illustrative = [] }: CursorStateListPro
             <DataTable.Cell rowHeader mono>{material.kind} {material.id ?? '익명'}</DataTable.Cell>
             <DataTable.Cell>{material.location === null ? UNKNOWN_LANE
               : `${material.location.componentId}${material.location.holdingSiteId === undefined ? '' : ` / ${material.location.holdingSiteId}`}`}</DataTable.Cell>
-            <DataTable.Cell><Evidence level={material.locationEvidence} /></DataTable.Cell>
-            <DataTable.Cell><Evidence level={material.identityEvidence} /></DataTable.Cell>
+            <DataTable.Cell className="whitespace-nowrap"><Evidence level={material.locationEvidence} /></DataTable.Cell>
+            <DataTable.Cell className="whitespace-nowrap"><Evidence level={material.identityEvidence} /></DataTable.Cell>
           </DataTable.Row>
         ))}
       </DataTable>

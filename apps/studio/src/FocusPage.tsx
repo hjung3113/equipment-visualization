@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ArrowRight, ChartGantt, Inbox, Info, MapPinOff, ServerCrash } from 'lucide-react';
 import {
   replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
@@ -73,6 +74,8 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [tab, setTab] = useState<Tab>('list');
+  // The zoom controls render into the Top View panel header (not over the fixed-width viewer, where a narrow page clips them).
+  const [zoomHost, setZoomHost] = useState<HTMLElement | null>(null);
   const rangeId = useId();
   const rangeFormId = `${rangeId}-form`;
   const rangeErrorId = `${rangeId}-error`;
@@ -176,11 +179,10 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
 
   return (
     <Page title={<>Focus · <code>{equipmentId}</code></>}
-      description={anchor !== null ? <>진입 키: <code>{entityType ?? '—'}</code> / <code>{anchor}</code></> : '진입 키 없음'}
+      description={anchor !== null ? <span title={`${entityType ?? '—'} / ${anchor}`}>진입 키: <code>{entityType ?? '—'}</code> / <code>{anchor}</code></span> : '진입 키 없음'}
       breadcrumb={{ label: '경로', items: [
         { key: 'fleet', label: 'Fleet', href: hrefFor({ name: 'fleet' }) },
         { key: 'equipment', label: equipmentId, href: hrefFor({ name: 'equipment', equipmentId }) },
-        { key: 'focus', label: 'Focus' },
       ] }} linkComponent={Link}
       actions={result?.kind === 'ok' ? (
         <Button asChild variant="secondary" size="toolbar">
@@ -253,6 +255,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
               <div className="flex flex-wrap items-start gap-4">
                 <Panel title="Top View" className="max-w-full min-w-0 flex-none overflow-auto"
                   actions={<>
+                    <span ref={setZoomHost} className="contents" />
                     <Checkbox id={`${rangeId}-illustrative`} checked={view.illustrative} onCheckedChange={(value) => patch({ illustrative: value === true })} />
                     <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
                     {view.illustrative && <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge>}
@@ -260,10 +263,10 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}
                       selectedId={view.selectedComponentId} onSelectedChange={(id) => patch({ selectedComponentId: id })}
-                      renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
+                      renderControls={(controls) => zoomHost && createPortal(<ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />, zoomHost)} />
                   ) : <EmptyState size="sm" icon={<MapPinOff className="size-4" aria-hidden />} title="이 시점에 적용된 Binding이 없어 Top View를 표시할 수 없습니다" />}
                 </Panel>
-                <div className="min-w-0 flex-1 basis-72">
+                <div className="min-w-0 flex-1 basis-96">
                   <CursorStateList state={state} {...(ghosts ? { illustrative: ghosts } : {})} />
                 </div>
               </div>
