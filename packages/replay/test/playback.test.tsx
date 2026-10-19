@@ -169,6 +169,9 @@ it('PlaybackControls: record buttons are disabled at the ends; the status names 
   expect(screen.getByRole('status').textContent).toBe('');
   cleanup();
   controls({}, { available: false, unavailableReason: '이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다' });
-  expect((screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement).disabled).toBe(true);
-  expect(screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다').getAttribute('role')).toBeNull();
+  const disabledToggle = screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement;
+  const reason = screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다');
+  expect(disabledToggle.disabled).toBe(true);
+  expect(disabledToggle.getAttribute('aria-describedby')).toBe(reason.id);
+  expect(reason.getAttribute('role')).toBeNull();
 });

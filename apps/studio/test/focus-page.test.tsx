@@ -40,7 +40,10 @@ afterEach(async () => {
 const at = (path: string) => window.history.replaceState(null, '', path);
 const loaded = () => waitFor(() => expect(screen.queryByText('불러오는 중…')).toBeNull());
 const ENTRY = '/focus/eq-synth-01?entityType=occurrence&anchor=occ-pm1-process';
-const heading = () => screen.getByRole('heading', { name: /^커서 시점 상태/ }).textContent;
+const heading = () => {
+  const panel = within(screen.getByRole('region', { name: '커서 시점 상태' }));
+  return `${panel.getByRole('heading', { name: '커서 시점 상태' }).textContent} (${panel.getByText(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/).textContent})`;
+};
 const row = (id: string) => document.querySelector(`tr[data-occurrence-id="${id}"]`)!;
 const MAPPING_OLD = 'onboarding/mappings/eq-synth-01/30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2.mapping.json';
 
@@ -50,12 +53,18 @@ it('opens Focus at the entry Occurrence with the draft notice, the Top View, the
   render(<App />);
   await loaded();
   screen.getByRole('heading', { name: 'Focus · eq-synth-01' });
+  const pageHeader = within(screen.getByRole('banner'));
+  pageHeader.getByRole('navigation', { name: '경로' });
+  pageHeader.getByRole('link', { name: 'Onboarding으로 이동' });
+  pageHeader.getByText(/^진입 키:/);
+  pageHeader.getByText('occurrence');
+  pageHeader.getByText('occ-pm1-process');
   expect(screen.getByText('게시된 Layout Revision이 없어 초안 레이아웃으로 표시합니다 (eq-synth-01-layout)').getAttribute('role')).toBe('status');
   expect(screen.getByDisplayValue('2026-01-01T10:05:00.000')).toBeTruthy();
   expect(screen.getByDisplayValue('2026-01-01T10:11:00.000')).toBeTruthy();
   screen.getByRole('group', { name: 'Synthetic single-hub cluster' });
   screen.getByRole('group', { name: 'Component lane Gantt' });
-  expect(screen.getAllByRole('tab').map((tab) => tab.textContent)).toEqual(['Occurrence 목록', 'Data Quality', '근거 상세']);
+  expect(screen.getAllByRole('tab')).toEqual(['Occurrence 목록', 'Data Quality', '근거 상세'].map((name) => screen.getByRole('tab', { name })));
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:06:00.000)');
   const before = document.querySelector('[data-layer="replay"]');
   expect(before).not.toBeNull();
@@ -82,7 +91,8 @@ it('selects an Occurrence in every view: row, Top View highlight on its Componen
   expect(ring.getAttribute('transform')).toBe('matrix(1 0 0 1 24 32)');
   expect(document.querySelector('[data-component-id="pm-a"]')!.getAttribute('transform')).toMatch(/^translate\(24 32\) /);
   fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
-  within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' })).getByText(/^시작: 2026-01-01T10:06:00.000/);
+  const detail = within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' }));
+  expect(detail.getByText('시작', { exact: true }).parentElement?.lastElementChild?.textContent).toMatch(/^2026-01-01T10:06:00.000 · Record Sequence/);
 });
 
 it('switches tabs with the arrow keys', async () => {
@@ -106,7 +116,9 @@ it('applies a typed range, and keeps the old range with an error for an invalid 
   const [from] = screen.getAllByRole('textbox') as HTMLInputElement[];
   fireEvent.change(from!, { target: { value: 'nope' } });
   fireEvent.click(screen.getByRole('button', { name: '적용' }));
-  screen.getByRole('alert');
+  const rangeError = screen.getByRole('alert');
+  expect(from!.getAttribute('aria-invalid')).toBe('true');
+  expect(from!.getAttribute('aria-describedby')).toBe(rangeError.id);
   fireEvent.change(from!, { target: { value: '2026-01-01T10:08:00.000' } });
   fireEvent.click(screen.getByRole('button', { name: '적용' }));
   expect(screen.queryByRole('alert')).toBeNull();
@@ -125,7 +137,8 @@ it('shows 게시된 Binding 없음 and still lists Occurrences when there are no
   at('/focus/no-such');
   render(<App />);
   await loaded();
-  screen.getByText('설비를 찾을 수 없습니다');
+  within(screen.getByRole('status')).getByText('설비를 찾을 수 없습니다');
+  within(screen.getByRole('banner')).getByRole('link', { name: 'Fleet으로 이동' });
 });
 
 it('drops selection and range when the route moves to another equipment', async () => {
@@ -230,7 +243,9 @@ it('playing frames show the same state as a direct seek to that cursor', async (
   cleanup();
   render(<CursorStateList state={seekSceneState(data, '2026-01-01T10:01:35.000')} />);
   expect(played).toBe(stateList().textContent);
-  screen.getByText(/wafer W01: efem-robot/);
+  const materialTable = within(screen.getByRole('table', { name: '물질' }));
+  const materialRow = materialTable.getAllByRole('row').find((item) => item.textContent?.includes('wafer W01'))!;
+  expect(within(materialRow).getAllByRole('cell')[0]?.textContent).toBe('efem-robot');
 });
 
 it('sequence mode shows the record-ordered state; the previous record differs from the seek at the same time; a slider key leaves it', async () => {
@@ -240,13 +255,16 @@ it('sequence mode shows the record-ordered state; the previous record differs fr
   await loaded();
   applyRange('2026-01-01T10:02:00.000');
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
-  screen.getByText((_, el) => el?.tagName === 'LI' && /^wafer W01: ll-a \/ slot-1 · 위치 근거 관측/.test(el.textContent ?? ''));
+  const materialTable = () => within(screen.getByRole('table', { name: '물질' }));
+  const waferRow = () => materialTable().getAllByRole('row').find((item) => item.textContent?.includes('wafer W01'))!;
+  expect(within(waferRow()).getAllByRole('cell').slice(0, 2).map((cell) => cell.textContent)).toEqual(['ll-a / slot-1', '관측']);
   fireEvent.click(screen.getByRole('button', { name: 'Sequence step' }));
   expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 7 · 2026-01-01T10:02:00.000');
   fireEvent.click(screen.getByRole('button', { name: '이전 record' }));
   expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 6 · 2026-01-01T10:02:00.000');
   expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
-  expect(screen.queryByText(/wafer W01: ll-a/)).toBeNull();
+  const priorW01 = materialTable().getAllByRole('row').find((row) => within(row).queryByRole('rowheader')?.textContent === 'wafer W01');
+  expect(priorW01 ? within(priorW01).getAllByRole('cell')[0]!.textContent : '').not.toMatch(/^ll-a\b/);
   expect((screen.getByRole('button', { name: '이전 record' }) as HTMLButtonElement).disabled).toBe(true);
   const slider = screen.getByRole('slider', { name: '커서 시각' });
   slider.focus();

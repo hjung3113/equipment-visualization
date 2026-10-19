@@ -87,15 +87,39 @@ it('lists Data Quality Issues and selects the related Occurrence', () => {
   expect(onSelectOccurrence).toHaveBeenCalledWith('occ-time-anomaly');
 });
 
+it('keeps empty replay lists inside their named DataTable state frames', () => {
+  const emptyBatch = { ...batch, occurrences: [] };
+  render(<>
+    <DataQualityList timeline={{ issues: [] }} onSelectOccurrence={vi.fn()} />
+    <OccurrenceList batch={emptyBatch} timeline={timeline} bindings={null} appliedSeq={null} selectedOccurrenceId={null} onSelectOccurrence={vi.fn()} />
+  </>);
+  screen.getByRole('table', { name: 'Data Quality' });
+  screen.getByRole('grid', { name: 'Occurrence 목록' });
+  screen.getByText('이 구간에 Data Quality Issue가 없습니다');
+  screen.getByText('이 구간에 겹치는 Occurrence가 없습니다');
+});
+
+it('presents cursor activities and materials in named tables', () => {
+  render(<CursorStateList state={stateAt(time('10:26:00'))} />);
+  screen.getByRole('table', { name: 'Component 활동' });
+  const materials = screen.getByRole('table', { name: '물질' });
+  within(materials).getByRole('row', { name: /wafer W11/ });
+  expect(screen.getByText(/^Watermark 이후/).getAttribute('data-tone')).toBe('warning');
+});
+
 it('reads an unlocated wafer as 위치 미확인 with unknown location evidence and observed identity (10:05:30)', () => {
   const state = stateAt(time('10:05:30'));
   render(<><CursorStateList state={state} /><EvidenceDetail batch={batch} state={state} selectedOccurrenceId="occ-tm-out" /></>);
-  const item = screen.getByText(/^wafer W01:/);
-  expect(item.textContent).toBe('wafer W01: 위치 미확인 · 위치 근거 미확인 · 식별 근거 관측');
+  const materialRow = within(screen.getByRole('table', { name: '물질' })).getByRole('row', { name: /wafer W01/ });
+  const materialCells = within(materialRow).getAllByRole('cell');
+  expect(within(materialRow).getByRole('rowheader').textContent).toBe('wafer W01');
+  expect(materialCells.map((cell) => cell.textContent)).toEqual(['위치 미확인', '미확인', '관측']);
   const detail = within(screen.getByRole('region', { name: '근거 상세 occ-tm-out' }));
-  expect(detail.getByText((_, el) => el?.tagName === 'P' && el.textContent === '위치 미확인 · 위치 근거 미확인')).toBeTruthy();
-  expect(detail.getByText((_, el) => el?.tagName === 'P' && /식별 근거 관측$/.test(el.textContent ?? ''))).toBeTruthy();
-  expect(detail.getByText(/Mapping Version: sha256:0abf3e9f/)).toBeTruthy();
+  const locationLabel = detail.getAllByText('위치', { exact: true }).at(-1)!;
+  const identityLabel = detail.getAllByText('식별', { exact: true }).at(-1)!;
+  expect(locationLabel.parentElement?.lastElementChild?.textContent).toBe('위치 미확인 · 위치 근거 미확인');
+  expect(identityLabel.parentElement?.lastElementChild?.textContent).toBe('wafer W01 · 식별 근거 관측');
+  expect(detail.getByText(/^sha256:0abf3e9f/)).toBeTruthy();
   expect(screen.queryByText('Watermark 이후', { exact: false })).toBeNull();
 });
 
@@ -103,7 +127,9 @@ it('lists Watermark 이후 and an unknown location evidence for the open wafer (
   const state = stateAt(time('10:26:00'));
   render(<CursorStateList state={state} />);
   expect(screen.getByText(/^Watermark 이후/)).toBeTruthy();
-  expect(screen.getByText(/^wafer W11:/).textContent).toBe('wafer W11: pm-b / station-1 · 위치 근거 미확인 · 식별 근거 관측');
+  const row = within(screen.getByRole('table', { name: '물질' })).getByRole('row', { name: /wafer W11/ });
+  expect(within(row).getByRole('rowheader').textContent).toBe('wafer W11');
+  expect(within(row).getAllByRole('cell').map((cell) => cell.textContent)).toEqual(['pm-b / station-1', '미확인', '관측']);
 });
 
 it('says an unselected or closed Occurrence has no location facet instead of guessing', () => {
@@ -120,7 +146,10 @@ it.each([...LEVELS, ['illustrative', '예시'] as const])('EvidenceDetail shows 
   const id = 'occ-pm1-process';
   const changed = { ...batch, occurrences: batch.occurrences.map((o) => o.id === id ? { ...o, start: { ...o.start, evidence: level } } : o) };
   render(<EvidenceDetail batch={changed} state={stateAt(time('10:06:00'))} selectedOccurrenceId={id} />);
-  const badge = within(screen.getByText(/^시작:/)).getByText(word);
+  const startLabel = screen.getByText('시작', { exact: true });
+  const boundary = startLabel.parentElement?.lastElementChild;
+  expect(boundary?.textContent).toContain('· Record Sequence');
+  const badge = within(boundary as HTMLElement).getByText(word, { selector: '[data-evidence]' });
   expect(badge.getAttribute('data-evidence')).toBe(level);
 });
 
@@ -133,7 +162,8 @@ it.each(LEVELS)('CursorStateList shows %s activity, location and identity eviden
     materials: base.materials.map((m) => ({ ...m, locationEvidence: level, identityEvidence: level })),
   };
   render(<CursorStateList state={state} />);
-  const activity = within(screen.getByText(`${first!.componentId}:`, { exact: false })).getByText(word, { selector: '[data-evidence]' });
+  const activityRow = within(screen.getByRole('table', { name: 'Component 활동' })).getByRole('row', { name: new RegExp(first!.componentId) });
+  const activity = within(activityRow).getByText(word, { selector: '[data-evidence]' });
   expect(activity.getAttribute('data-evidence')).toBe(level);
   const badges = screen.getAllByText(word, { selector: '[data-evidence]' });
   expect(badges.length).toBeGreaterThanOrEqual(3);
