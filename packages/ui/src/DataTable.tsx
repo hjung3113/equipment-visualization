@@ -1,4 +1,6 @@
-import type { HTMLAttributes, KeyboardEvent, ReactNode, TdHTMLAttributes, ThHTMLAttributes } from 'react';
+import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { HTMLAttributes, Key, KeyboardEvent, ReactElement, ReactNode, Ref, TdHTMLAttributes, ThHTMLAttributes } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { cn } from '@fops/ui';
 
@@ -20,13 +22,37 @@ export interface DataTableSort {
   direction: DataTableSortDirection;
 }
 
+/** At or above this many rows `rows` windows the body; below it every row renders as plain DOM. */
+export const VIRTUAL_ROW_THRESHOLD = 200;
+
+/** Rows by index instead of `children`, for tables that can hold thousands of rows. Implies `capped`. */
+export interface DataTableRows {
+  count: number;
+  /**
+   * One `DataTable.Row` per index. The table adds `key`, `data-index`, `aria-rowindex` and the measuring `ref` to it.
+   * `rendered` is the inclusive index window of the rows in the DOM now (every row below the threshold), for a roving tab stop.
+   */
+  render: (index: number, rendered: { start: number; end: number }) => ReactElement<DataTableRowProps>;
+  /** Row height before it is measured, in px. Default 32. */
+  estimateSize?: number;
+  /** Stable key per index; default the index. */
+  getKey?: (index: number) => Key;
+  /** First position when the table mounts (centred); `scrollToIndex` wins when both are set. */
+  initialIndex?: number;
+  /** Brings this row into the scroll viewport whenever the value changes; a no-op while it is visible. Only the table scrolls, never the page. */
+  scrollToIndex?: number | null;
+  /** Scrolls to `scrollToIndex` again when this value changes, also when the index did not: a repeated key command. */
+  scrollKey?: number;
+}
+
 export interface DataTableProps extends Omit<HTMLAttributes<HTMLTableElement>, 'aria-label' | 'children' | 'title'> {
   /** Accessible name of the table; also names its scroll region. */
   label: string;
   /** A string is `{ id: header, header }`. */
   columns: readonly (string | DataTableColumn)[];
-  /** `DataTable.Row` elements only. */
-  children: ReactNode;
+  /** `DataTable.Row` elements only; pass `rows` instead for a long table. */
+  children?: ReactNode;
+  rows?: DataTableRows;
   title?: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
@@ -47,6 +73,8 @@ export interface DataTableRowProps extends Omit<HTMLAttributes<HTMLTableRowEleme
   onActivate?: () => void;
   /** Sets `aria-selected`; leave undefined for rows that are not selectable. A selected row shows the accent bar. */
   selected?: boolean;
+  /** React 19 passes `ref` as a prop; the virtual table merges its measuring ref with this one. */
+  ref?: Ref<HTMLTableRowElement>;
 }
 
 export interface DataTableCellProps extends TdHTMLAttributes<HTMLTableCellElement> {
@@ -62,11 +90,57 @@ export interface DataTableCellProps extends TdHTMLAttributes<HTMLTableCellElemen
  * state block and controlled two-state sort. The data model stays with the consumer.
  */
 export function DataTable({
-  label, columns, children, className, title, subtitle, actions, headingLevel = 2, count, state, capped, sort, onSortChange, ...rest
+  label, columns, children, rows, className, title, subtitle, actions, headingLevel = 2, count, state, capped, sort, onSortChange, ...rest
 }: DataTableProps) {
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   const hasHeader = title !== undefined || actions !== undefined;
   const aboveRegion = hasHeader || count !== undefined;
+  const region = useRef<HTMLDivElement>(null);
+  const tbody = useRef<HTMLTableSectionElement>(null);
+  const virtualRows = rows !== undefined && rows.count >= VIRTUAL_ROW_THRESHOLD ? rows : undefined;
+  const virtual = virtualRows !== undefined;
+  const [bodyOffset, setBodyOffset] = useState(0);
+  // The sticky header covers the top of the viewport: items start below it, and a scrolled-to row must clear it.
+  useLayoutEffect(() => {
+    if (region.current === null || tbody.current === null) return;
+    setBodyOffset(Math.round(tbody.current.getBoundingClientRect().top - region.current.getBoundingClientRect().top + region.current.scrollTop));
+  }, [virtual, columns.length]);
+  const [start] = useState(() => rows?.scrollToIndex ?? rows?.initialIndex ?? 0);
+  const mounted = useRef(false);
+  // The plain table's scroll offset, tracked while it is not virtual (the virtualizer rewrites the offset on enabling).
+  const scrollTop = useRef(0);
+  const virtualizer = useVirtualizer({
+    enabled: virtual,
+    count: rows?.count ?? 0,
+    getScrollElement: () => region.current,
+    estimateSize: () => rows?.estimateSize ?? 32,
+    getItemKey: (index) => rows?.getKey?.(index) ?? index,
+    overscan: 8,
+    useFlushSync: false,
+    // A table that turns virtual after mount (rows grew past the threshold) opens at the offset the user had.
+    initialOffset: () => (mounted.current ? scrollTop.current : start * (rows?.estimateSize ?? 32)),
+    scrollMargin: bodyOffset,
+    scrollPaddingStart: bodyOffset,
+  });
+  const target = rows?.scrollToIndex ?? null;
+  const scrollKey = rows?.scrollKey;
+  useEffect(() => {
+    if (rows === undefined) return;
+    const first = !mounted.current;
+    mounted.current = true;
+    const index = first ? target ?? rows.initialIndex ?? null : target;
+    if (index === null || index < 0 || index >= rows.count) return;
+    if (virtual) virtualizer.scrollToIndex(index, { align: first ? 'center' : 'auto' });
+    else if (region.current !== null) {
+      const row = region.current.querySelector<HTMLElement>(`tbody > tr[data-index="${index}"]`);
+      if (row !== null) revealRow(region.current, row, bodyOffset);
+    }
+    // Only a new target scrolls; the virtualizer and offsets change on every render.
+  }, [target, scrollKey, virtual]);
+  const items = virtual ? virtualizer.getVirtualItems() : [];
+  const rendered = virtual ? { start: items[0]?.index ?? 0, end: items[items.length - 1]?.index ?? 0 } : { start: 0, end: (rows?.count ?? 1) - 1 };
+  const above = items.length === 0 ? 0 : items[0]!.start - bodyOffset;
+  const below = items.length === 0 ? 0 : virtualizer.getTotalSize() - (items[items.length - 1]!.end - bodyOffset);
   return (
     <div className="flex min-w-0 flex-col overflow-hidden rounded-lg border border-border-subtle bg-surface-card">
       {hasHeader && (
@@ -84,16 +158,18 @@ export function DataTable({
         </div>
       )}
       <div
+        ref={region}
         role="region"
         aria-label={label}
         tabIndex={0}
+        onScroll={(event) => { if (!virtual) scrollTop.current = event.currentTarget.scrollTop; }}
         onFocus={(event) => {
           // Keyboard focus on a clipped row action must bring it fully into the scroll viewport (default behavior is instant, never smooth).
           if (event.target !== event.currentTarget) event.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
         }}
-        className={cn('overflow-x-auto', capped && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
+        className={cn('overflow-x-auto', (capped || rows !== undefined) && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
       >
-        <table aria-label={label} className={cn('w-full border-separate border-spacing-0 text-sm text-text-primary', className)} {...rest}>
+        <table aria-label={label} {...(virtualRows ? { 'aria-rowcount': virtualRows.count + 1 } : {})} className={cn('w-full border-separate border-spacing-0 text-sm text-text-primary', className)} {...rest}>
           <thead>
             <tr className="h-8">
               {columns.map((column) => {
@@ -129,12 +205,56 @@ export function DataTable({
               })}
             </tr>
           </thead>
-          <tbody>{children}</tbody>
+          <tbody ref={tbody}>
+            {rows === undefined ? children : virtualRows ? (
+              <>
+                <Spacer height={above} columns={columns.length} />
+                {items.map((item) => {
+                  const element = virtualRows.render(item.index, rendered);
+                  return cloneElement(element, {
+                    key: item.key,
+                    'data-index': item.index,
+                    'aria-rowindex': item.index + 2,
+                    ref: mergeRefs(element.props.ref, virtualizer.measureElement),
+                  } as Partial<DataTableRowProps>);
+                })}
+                <Spacer height={below} columns={columns.length} />
+              </>
+            ) : (
+              Array.from({ length: rows.count }, (_, index) => cloneElement(rows.render(index, rendered), { key: rows.getKey?.(index) ?? index, 'data-index': index } as Partial<DataTableRowProps>))
+            )}
+          </tbody>
         </table>
       </div>
       {state !== undefined && <div className="border-t border-border-subtle p-3">{state}</div>}
     </div>
   );
+}
+
+/** The virtualizer's runtime geometry is the one place this package sets `style` (see eslint.config.js). */
+function Spacer({ height, columns }: { height: number; columns: number }) {
+  return (
+    <tr aria-hidden style={{ height }}>
+      <td colSpan={columns} className="p-0" />
+    </tr>
+  );
+}
+
+function mergeRefs<T>(...refs: (Ref<T> | undefined)[]) {
+  return (node: T | null) => {
+    for (const ref of refs) {
+      if (typeof ref === 'function') ref(node);
+      else if (ref) ref.current = node;
+    }
+  };
+}
+
+/** Scrolls only the table's own viewport so `row` clears the sticky header and the bottom edge. */
+function revealRow(region: HTMLElement, row: HTMLElement, headerHeight: number) {
+  const view = region.getBoundingClientRect();
+  const box = row.getBoundingClientRect();
+  if (box.top < view.top + headerHeight) region.scrollTop -= view.top + headerHeight - box.top;
+  else if (box.bottom > view.bottom) region.scrollTop += box.bottom - view.bottom;
 }
 
 function Row({ onActivate, selected, onKeyDown, className, children, ...rest }: DataTableRowProps) {

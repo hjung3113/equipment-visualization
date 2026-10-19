@@ -15,16 +15,17 @@ const STATUS: Record<FleetStatus, { text: string; tone: StatusBadgeProps['tone']
   published: { text: '게시됨', tone: 'success', icon: CircleCheck },
   'no-observations': { text: '관측 없음', tone: 'neutral', icon: Inbox },
 };
+const NUMERIC_COLUMNS = ['커버리지', 'assumed 비율', '미매핑 참조'].map((header) => ({ id: header, header, align: 'end' as const }));
 const percent = (ratio: number | null) => ratio === null ? '—' : `${Math.round(ratio * 100)}%`;
 
 export function FleetTable({ rows, renderLink }: FleetTableProps) {
   const descriptionId = useId();
   return (
-    <>
-      <DataTable
-        label="Fleet 표" aria-describedby={descriptionId}
-        columns={['설비', 'Maker', 'Model', '상태', '커버리지', 'assumed 비율', '미매핑 참조']}
-      >
+    <DataTable
+      label="Fleet 표" aria-describedby={descriptionId} title="설비 목록"
+      subtitle={<span id={descriptionId}>커버리지: 해석된 참조 수 / 전체 참조 수(무시한 alias 제외). assumed 비율: assumed 규칙으로 해석된 참조 수 / 해석된 참조 수.</span>}
+      columns={['설비', 'Maker', 'Model', '상태', ...NUMERIC_COLUMNS]}
+    >
         {rows.map((row) => (
           <DataTable.Row key={row.equipmentId}>
             <DataTable.Cell rowHeader className="whitespace-nowrap">{renderLink(row.equipmentId, row.equipmentId, row)}</DataTable.Cell>
@@ -35,15 +36,13 @@ export function FleetTable({ rows, renderLink }: FleetTableProps) {
             ) : (
               <>
                 <DataTable.Cell><StatusBadge tone={STATUS[row.status!].tone} icon={STATUS[row.status!].icon}>{STATUS[row.status!].text}</StatusBadge></DataTable.Cell>
-                <DataTable.Cell>{percent(row.coverage?.references.ratio ?? null)}</DataTable.Cell>
-                <DataTable.Cell>{percent(row.assumedRatio)}</DataTable.Cell>
-                <DataTable.Cell><span className="tabular-nums">{row.unmappedReferences ?? '—'}</span></DataTable.Cell>
+                <DataTable.Cell numeric>{percent(row.coverage?.references.ratio ?? null)}</DataTable.Cell>
+                <DataTable.Cell numeric>{percent(row.assumedRatio)}</DataTable.Cell>
+                <DataTable.Cell numeric>{row.unmappedReferences ?? '—'}</DataTable.Cell>
               </>
             )}
           </DataTable.Row>
         ))}
-      </DataTable>
-      <p id={descriptionId}>커버리지: 해석된 참조 수 / 전체 참조 수(무시한 alias 제외). assumed 비율: assumed 규칙으로 해석된 참조 수 / 해석된 참조 수.</p>
-    </>
+    </DataTable>
   );
 }

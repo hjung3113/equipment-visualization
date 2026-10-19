@@ -43,6 +43,8 @@ afterEach(async () => {
 });
 
 const open = (file: string) => window.history.replaceState(null, '', `/layouts?${new URLSearchParams({ file })}`);
+// The viewer's own svg: toolbar icons are svgs too, so a bare `main svg` finds one of them first.
+const viewerSvg = (container: HTMLElement) => container.querySelector('[data-component-id]')!.closest('svg')!;
 const componentIds = (container: HTMLElement) =>
   Array.from(container.querySelectorAll('[data-component-id]'), (node) => node.getAttribute('data-component-id')).sort();
 
@@ -258,9 +260,9 @@ it.each([
   const id = component.getAttribute('data-component-id');
   fireEvent.click(component);
   expect(component.getAttribute('aria-pressed')).toBe('true');
-  const fitted = container.querySelector('main svg')!.getAttribute('viewBox');
+  const fitted = viewerSvg(container).getAttribute('viewBox');
   fireEvent.click(screen.getByRole('button', { name: '확대' }));
-  const zoomed = container.querySelector('main svg')!.getAttribute('viewBox');
+  const zoomed = viewerSvg(container).getAttribute('viewBox');
   expect(zoomed).not.toBe(fitted);
 
   const fetchFromApi = globalThis.fetch;
@@ -280,7 +282,7 @@ it.each([
     await screen.findByRole('link', { name: revision.slice('sha256:'.length, 'sha256:'.length + 12) });
   }
   expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
-  expect(container.querySelector('main svg')!.getAttribute('viewBox')).toBe(zoomed);
+  expect(viewerSvg(container).getAttribute('viewBox')).toBe(zoomed);
 });
 
 it('keeps the saved viewer until a differing draft read replaces its content', async () => {
@@ -291,7 +293,7 @@ it('keeps the saved viewer until a differing draft read replaces its content', a
   const id = component.getAttribute('data-component-id');
   fireEvent.click(component);
   fireEvent.click(screen.getByRole('button', { name: '확대' }));
-  const zoomed = container.querySelector('main svg')!.getAttribute('viewBox');
+  const zoomed = viewerSvg(container).getAttribute('viewBox');
   const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
   raw.name = 'Changed draft from disk';
   const draft = 'layouts/cluster-single/draft.layout.json';
@@ -311,7 +313,7 @@ it('keeps the saved viewer until a differing draft read replaces its content', a
   await waitFor(() => expect(reading).toBe(true));
   try {
     expect(container.querySelector(`[data-component-id="${id}"]`)?.getAttribute('aria-pressed')).toBe('true');
-    expect(container.querySelector('main svg')!.getAttribute('viewBox')).toBe(zoomed);
+    expect(viewerSvg(container).getAttribute('viewBox')).toBe(zoomed);
   } finally {
     await act(async () => { release(); });
     await screen.findByRole('group', { name: 'Changed draft from disk' });

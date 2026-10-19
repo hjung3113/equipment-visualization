@@ -359,7 +359,7 @@ export function MappingBoard(props: MappingBoardProps) {
   const marked = (row: BoardRow) => viewerId !== null && layout.components.some(({ id }) => id === viewerId) && row.componentId === viewerId;
 
   return (
-    <section aria-label="④ Mapping Board" onKeyDown={onRootKeyDown}>
+    <section aria-label="④ Mapping Board" className="mb-4" onKeyDown={onRootKeyDown}>
       <div inert={modalOpen} onClickCapture={(event) => {
         if (modalOpen) { event.preventDefault(); event.stopPropagation(); }
       }}>
@@ -456,7 +456,7 @@ export function MappingBoard(props: MappingBoardProps) {
         <Panel title="선택한 항목" className="min-w-0">
           {bulkRows ? (
             <>
-              <h3 className="mb-2 font-semibold">{bulkRows.length}개 선택</h3>
+              <h3 className="mt-2 mb-2 text-md font-semibold">{bulkRows.length}개 선택</h3>
               {changedModelRules.length > 0 && <Note>Model 규칙을 바꿉니다: {changedModelRules.join(', ')} — {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</Note>}
               {overriddenRows.length > 0 && <Note>설비 범위 규칙이 우선하는 alias: {overriddenRows.map((row) => `${row.alias} (${row.overriddenBy})`).join(', ')} — 확정·무시하려면 저장 범위를 설비로 바꾸세요</Note>}
               <div className="flex flex-wrap gap-2">
@@ -466,7 +466,7 @@ export function MappingBoard(props: MappingBoardProps) {
             </>
           ) : selected ? (
             <>
-              <h3 className="mb-2 font-semibold">{selected.alias}</h3>
+              <h3 className="mt-2 mb-2 text-md font-semibold">{selected.alias}</h3>
               <div className="mb-2">
                 <DetailFields items={[
                   { key: 'moduleType', label: 'ModuleType', value: selected.moduleType ?? '—' },
@@ -549,7 +549,7 @@ export function MappingBoard(props: MappingBoardProps) {
             <Input id={`${ids}-rule-target`} type="text" value={rule.target} onChange={(event) => setRule({ ...rule, target: event.target.value })} />
           </div>
           <p role="status">{preview.summary}</p>
-          <ul className="mb-2 max-h-[200px] overflow-y-auto pl-5 tabular-nums" aria-label="규칙 미리보기">
+          <ul className="mb-2 max-h-[200px] list-disc overflow-y-auto pl-5 tabular-nums" aria-label="규칙 미리보기">
             {preview.rows.map((row) => <li key={row.alias}>{row.alias} → {row.target} · {OUTCOME_TEXT(row)}</li>)}
           </ul>
           {preview.removes.length > 0 && <p>정리되는 정확 규칙: {preview.removes.join(', ')}</p>}

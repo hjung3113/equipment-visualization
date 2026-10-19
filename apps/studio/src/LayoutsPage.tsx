@@ -1,9 +1,10 @@
-import { Component, useEffect, useLayoutEffect, useRef, useState, type ChangeEvent, type ReactNode, type RefObject } from 'react';
+import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { CircleCheck, Download, FileJson, Save, Send, ServerCrash } from 'lucide-react';
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
-import { Page, ViewerZoomControls } from '@eqv/ui';
-import { Button, Input, Label, cn } from '@fops/ui';
+import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
+import { Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const VIEW_WIDTH = 960;
@@ -38,7 +39,7 @@ class ViewerBoundary extends Component<{ children: ReactNode }, { error: string 
 
   render() {
     return this.state.error !== null
-      ? <p role="alert">이 레이아웃을 그릴 수 없습니다: {this.state.error}</p>
+      ? <StateMessage compact tone="danger" icon={ServerCrash} title={`이 레이아웃을 그릴 수 없습니다: ${this.state.error}`} />
       : this.props.children;
   }
 }
@@ -111,7 +112,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
 
   const [importSequence, setImportSequence] = useState(0);
   const activeImportSequence = useRef<number | null>(importSequence);
-  const documentRef = useRef<HTMLElement>(null);
+  const documentRef = useRef<HTMLDivElement>(null);
   const viewWidth = useColumnWidth(documentRef);
 
   useLayoutEffect(() => {
@@ -176,14 +177,10 @@ export function LayoutsPage({ file }: { file: string | null }) {
 
   const current: Doc | null = imported ?? (loaded?.state === 'ready' ? loaded : null);
 
-  async function onImport(event: ChangeEvent<HTMLInputElement>) {
-    const input = event.currentTarget;
-    const picked = input.files?.[0];
-    if (!picked) return;
+  async function onImport(picked: File) {
     const sequence = (activeImportSequence.current ?? importSequence) + 1;
     activeImportSequence.current = sequence;
     setImportSequence(sequence);
-    input.value = '';
     try {
       const raw: unknown = JSON.parse(await picked.text());
       if (activeImportSequence.current !== sequence) return;
@@ -263,56 +260,68 @@ export function LayoutsPage({ file }: { file: string | null }) {
     </li>
   );
 
-  const CARD = 'min-w-0 rounded-lg border border-border-subtle bg-surface-card p-4';
-  const HEADING = 'text-xs uppercase text-text-secondary';
   return (
     <Page title="레이아웃">
       <div className="grid items-start gap-4 lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)]">
-        <section aria-label="레이아웃 목록" className={CARD}>
-          {listingError !== null && <p role="alert">{listingError}</p>}
-          {listing === null && listingError === null && <p>목록을 불러오는 중…</p>}
-          {listing && (
-            <nav aria-label="레이아웃 파일">
-              <h2 className={cn(HEADING, 'mt-0')}>템플릿 (읽기 전용)</h2>
-              <ul className="list-none space-y-0.5 p-0">{listing.templates.map(item)}</ul>
-              <h2 className={HEADING}>레이아웃</h2>
-              {listing.layouts.length === 0 && <p>저장된 레이아웃이 없습니다.</p>}
-              {listing.layouts.map((entry) => (
-                <div key={entry.id}>
-                  <h3 className="text-sm text-text-primary">{entry.id}</h3>
-                  <ul className="list-none space-y-0.5 p-0">{entry.files.map(item)}</ul>
-                </div>
-              ))}
-            </nav>
-          )}
-        </section>
-        <section aria-label="문서" ref={documentRef} className={CARD}>
-          <div className="flex flex-wrap items-center gap-2">
-            <Label>
-              가져오기 <Input type="file" accept=".json,application/json" onChange={onImport} />
-            </Label>
-            <Button type="button" variant="outline" onClick={onExport} disabled={!current}>내보내기</Button>
-            <Button type="button" variant="outline" onClick={onSaveDraft} disabled={!current || busy}>초안 저장</Button>
-            <Button type="button" onClick={onPublish} disabled={!current || busy}>Revision 게시</Button>
+        <Panel title="레이아웃 목록" className="min-w-0">
+          <div className="space-y-3">
+            {listingError !== null && <StateMessage compact tone="danger" icon={ServerCrash} title={listingError} />}
+            {listing === null && listingError === null && <LoadingBlock label="목록을 불러오는 중…" />}
+            {listing && (
+              <nav aria-label="레이아웃 파일">
+                <PanelSectionTitle className="mb-2">템플릿 (읽기 전용)</PanelSectionTitle>
+                <ul className="list-none space-y-0.5 p-0">{listing.templates.map(item)}</ul>
+                <PanelSectionTitle className="mt-4 mb-2">레이아웃</PanelSectionTitle>
+                {listing.layouts.length === 0 && <EmptyState size="sm" icon={<FileJson className="size-4" aria-hidden />} title="저장된 레이아웃이 없습니다." />}
+                {listing.layouts.map((entry) => (
+                  <div key={entry.id}>
+                    <PanelSectionTitle className="mt-2 mb-1">{entry.id}</PanelSectionTitle>
+                    <ul className="list-none space-y-0.5 p-0">{entry.files.map(item)}</ul>
+                  </div>
+                ))}
+              </nav>
+            )}
           </div>
-          {actionError !== null && <p role="alert">{actionError}</p>}
-          {revision !== null && <p role="status">게시된 Revision: <code>{revision}</code></p>}
-          {loaded?.state === 'loading' && !imported && <p>문서를 불러오는 중…</p>}
-          {loaded?.state === 'error' && !imported && <p role="alert">{loaded.message}</p>}
-          {!current && loaded === null && <p>목록에서 파일을 선택하거나 JSON 파일을 가져오세요.</p>}
-          {current && (
-            <>
-              <p>
-                <code>{current.layout.id}</code>
-                {imported && <> <strong>저장 안 됨</strong></>}
-              </p>
-              <ViewerBoundary key={documentEpoch}>
-                <TopViewer layout={current.layout} width={viewWidth} height={Math.round(viewWidth * VIEW_HEIGHT / VIEW_WIDTH)}
-                  renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
-              </ViewerBoundary>
-            </>
-          )}
-        </section>
+        </Panel>
+        <Panel
+          title="문서" className="min-w-0"
+          actions={<>
+            <FileButton label="가져오기" accept=".json,application/json" onFile={(picked) => { void onImport(picked); }} />
+            <Button type="button" variant="secondary" size="toolbar" onClick={onExport} disabled={!current}>
+              <Download className="size-3.5" aria-hidden />내보내기
+            </Button>
+            <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || busy}>
+              <Save className="size-3.5" aria-hidden />초안 저장
+            </Button>
+            <Button type="button" variant="primary" size="toolbar" onClick={onPublish} disabled={!current || busy}>
+              <Send className="size-3.5" aria-hidden />Revision 게시
+            </Button>
+          </>}
+        >
+          <div ref={documentRef} className="space-y-3">
+            {actionError !== null && <StateMessage compact tone="danger" icon={ServerCrash} title={actionError} />}
+            {revision !== null && (
+              <StateMessage compact icon={CircleCheck} title="게시된 Revision" body={<code className="font-mono">{revision}</code>} />
+            )}
+            {loaded?.state === 'loading' && !imported && <LoadingBlock label="문서를 불러오는 중…" />}
+            {loaded?.state === 'error' && !imported && <StateMessage compact tone="danger" icon={ServerCrash} title={loaded.message} />}
+            {!current && loaded === null && (
+              <EmptyState size="sm" icon={<FileJson className="size-4" aria-hidden />} title="목록에서 파일을 선택하거나 JSON 파일을 가져오세요." />
+            )}
+            {current && (
+              <>
+                <div className="flex flex-wrap items-center gap-2">
+                  <code className="font-mono text-xs">{current.layout.id}</code>
+                  {imported && <StatusBadge tone="warning">저장 안 됨</StatusBadge>}
+                </div>
+                <ViewerBoundary key={documentEpoch}>
+                  <TopViewer layout={current.layout} width={viewWidth} height={Math.round(viewWidth * VIEW_HEIGHT / VIEW_WIDTH)}
+                    renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
+                </ViewerBoundary>
+              </>
+            )}
+          </div>
+        </Panel>
       </div>
     </Page>
   );

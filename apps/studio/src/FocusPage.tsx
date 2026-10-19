@@ -10,7 +10,7 @@ import {
   CursorStateList, DataQualityList, EvidenceDetail, FocusGantt, focusRange, illustrativeGhosts, OccurrenceList, PlaybackControls, recordSteps,
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
-import { TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focus-data.js';
+import { GANTT_SPAN_LIMIT, TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focus-data.js';
 import { Button, Callout, Checkbox, EmptyState, Input, Label } from '@fops/ui';
 import { EvidenceBadge, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { Link, hrefFor, navigate } from './router.js';
@@ -60,10 +60,12 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
   return { range: { from: a.data, to: b.data } };
 }
 
-export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler, timelineBudget = TIMELINE_BUDGET }: {
+export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT }: {
   equipmentId: string; sampleWindow: string | null; entityType: string | null; anchor: string | null;
-  /** Largest breakpoints × records the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
+  /** Largest `timelineCost` (records + breakpoints × (context + (open + inversions) × resolve)) the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
   timelineBudget?: number;
+  /** Most Gantt spans (materials + activities + markers) drawn; tests only, `GANTT_SPAN_LIMIT` by default. */
+  ganttSpanLimit?: number;
   /** Frame clock for playback; tests only, the browser's by default. */
   scheduler?: PlaybackScheduler;
 }) {
@@ -109,7 +111,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     }
   }, [input, range]);
   const frame = framed && 'frame' in framed ? framed.frame : null;
-  const cost = useMemo(() => ok && frame ? timelineCost(ok.batch, frame) : null, [ok, frame]);
+  const cost = useMemo(() => input && frame ? timelineCost(input, frame) : null, [input, frame]);
   const tooLarge = cost !== null && cost.cost > timelineBudget;
   // The Gantt is the only view that needs the full timeline; above the budget everything else still runs on `input` and `frame`.
   const computed = useMemo((): { timeline: ReplayTimeline } | { error: string } | null => {
@@ -120,7 +122,10 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
       return { error: message(error) };
     }
   }, [input, range, cost, tooLarge]);
-  const timeline = computed && 'timeline' in computed ? computed.timeline : null;
+  const computedTimeline = computed && 'timeline' in computed ? computed.timeline : null;
+  const spans = computedTimeline ? computedTimeline.materials.length + computedTimeline.activities.length + computedTimeline.markers.length : 0;
+  const tooManySpans = spans > ganttSpanLimit;
+  const timeline = tooManySpans ? null : computedTimeline;
   const steps = useMemo(() => ok && range ? recordSteps(ok.batch, range) : [], [ok, range]);
   const { mode } = view;
   const sequenceSeq = mode.kind === 'sequence' && steps.some((s) => s.seq === mode.seq) ? mode.seq : null;
@@ -280,9 +285,12 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                       if (!expanded.delete(id)) expanded.add(id);
                       return { ...previous, expanded };
                     })} />
-                ) : tooLarge && (
+                ) : tooLarge ? (
                   <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
-                    body={`범위를 좁히세요. 지금 범위는 breakpoint ${count(cost.breakpoints)}개 × record ${count(cost.records)}개 = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
+                    body={`범위를 좁히세요. 지금 범위는 record ${count(cost.records)}개 + breakpoint ${count(cost.breakpoints)}개 × (읽기마다 Binding·Layout 탐색 ${count(cost.context)} + (동시 open Occurrence ${count(cost.open)}개 + 시간 역전 ${count(cost.inversions)}개) × 위치 해석 ${count(cost.resolve)}) = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
+                ) : tooManySpans && (
+                  <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
+                    body={`범위를 좁히세요. 지금 범위의 Gantt 막대는 ${count(spans)}개로 그리기 한도 ${count(ganttSpanLimit)}개를 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
                 )}
               </Panel>
               <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-4">

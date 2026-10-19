@@ -1,8 +1,8 @@
-import type { DataQualityIssue } from '../occurrence/schema.js';
+import type { DataQualityIssue, Occurrence } from '../occurrence/schema.js';
 import type { SceneComponent, SceneMarker, SceneMaterial } from '../scene/schema.js';
 import { canonicalJson } from '../canonical.js';
 import { millisToWallClock, wallClockToMillis, type SiteWallClock } from '../site-wall-clock.js';
-import { assertReplayInput, seekSceneState, type ReplayInput } from './reduce.js';
+import { assertReplayInput, prepare, sceneStateAt, type ReplayInput } from './reduce.js';
 
 export type TimelineRange = { from: SiteWallClock; to: SiteWallClock };
 // `to` is clipped to `range.to`; whether an Occurrence is open or ended there comes from the batch (join on `occurrenceId`).
@@ -46,7 +46,7 @@ const compareIds = (a: string[], b: string[]) => {
 
 /**
  * The cheap part of a timeline: the instants where the sought state can change, the Binding boundaries and the issues in
- * range. `replayTimeline` samples `seekSceneState` at exactly these breakpoints, so `breakpoints.length` is its sampling cost.
+ * range. `replayTimeline` reads the Scene State at exactly these breakpoints, so `breakpoints.length` is its sampling count.
  */
 export function replayTimelineFrame(input: ReplayInput, range: TimelineRange): ReplayTimelineFrame {
   assertReplayInput(input);
@@ -74,11 +74,15 @@ export function replayTimelineFrame(input: ReplayInput, range: TimelineRange): R
   return { range, breakpoints, bindingBoundaries, issues };
 }
 
-// Run-length encoding of `seekSceneState`: sample it at every instant where the sought state can change
-// (see `breakpoints`) and merge equal adjacent samples. No reducer rule is re-implemented here.
+// Run-length encoding of `seekSceneState`: read the Scene State at every instant where the sought state can change
+// (see `breakpoints`) and merge equal adjacent samples. One ordered pass: the records are sorted once, the cut moves
+// forward with the instant and the open set follows it. The Scene State rules are `sceneStateAt` (reduce.ts), not copied here.
 export function replayTimeline(input: ReplayInput, range: TimelineRange): ReplayTimeline {
   const { breakpoints, bindingBoundaries, issues } = replayTimelineFrame(input, range);
 
+  const prepared = prepare(input);
+  let cut = 0;
+  const started = new Set<Occurrence>();
   const open = { materials: new Map<string, MaterialSpan>(), activities: new Map<string, ActivitySpan>(), markers: new Map<string, MarkerSpan>() };
   const done = { materials: [] as MaterialSpan[], activities: [] as ActivitySpan[], markers: [] as MarkerSpan[] };
   // Extend the open span for `identity` when the content is unchanged, else close it and start a new one.
@@ -102,7 +106,14 @@ export function replayTimeline(input: ReplayInput, range: TimelineRange): Replay
 
   breakpoints.forEach((from, i) => {
     const to = breakpoints[i + 1] ?? range.to;
-    const state = seekSceneState(input, from);
+    // The first record after `from` stays out of the prefix, as in `seekSceneState`; the cut never moves back.
+    while (cut < prepared.all.length && !(prepared.all[cut]!.at !== null && prepared.all[cut]!.at! > from)) {
+      const { owner, seq } = prepared.all[cut++]!;
+      if (!owner) continue;
+      if (seq === owner.start.seq) started.add(owner);
+      else started.delete(owner);
+    }
+    const state = sceneStateAt(input, from, prepared, cut === 0 ? null : prepared.all[cut - 1]!.seq, [...started]);
     const seen = { materials: new Set<string>(), activities: new Set<string>(), markers: new Set<string>() };
     for (const placed of state.materials) {
       const material = without(placed, 'lastObservedAt');
