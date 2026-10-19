@@ -3,7 +3,7 @@ import {
   type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch, type ReplayTimelineFrame,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
-import { DataError, listSampleWindows, loadEquipment, problems, readOptional, readSampleWindow, type SampleWindowEntry } from './onboarding-data.js';
+import { DataError, listSampleWindows, loadEquipment, problems, readOptional, readSampleWindow, windowHex, type SampleWindowEntry } from './onboarding-data.js';
 
 export type FocusData = {
   record: FleetData['record'];
@@ -92,7 +92,7 @@ async function windowForAnchor(equipmentId: string, anchor: string): Promise<{ h
   if (!latest) return { hex: undefined, notice: null };
   const notice = containing.length < 2 ? null
     : `진입 Occurrence ${anchor}가 Sample Window ${containing.length}개에 있어 가장 늦은 window(${latest.from} – ${latest.to})를 재생합니다`;
-  return { hex: latest.hash.slice('sha256:'.length), notice };
+  return { hex: windowHex(latest), notice };
 }
 
 /** Never rejects. Everything Focus replays is read and checked here: the batch, every Binding's Mapping Version and Layout. */

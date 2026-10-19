@@ -164,10 +164,9 @@ export async function validateSampleWindow(raw: unknown, ctx: { equipmentId: str
   }
   // A hash is defined only for a batch without duplicate ids: with them, array order would decide it.
   const hash = problems.some((problem) => problem.code === 'duplicate-id') ? null : await observationHash(batch);
-  for (const ref of ctx.existing) {
-    if (ref.timeDomain !== batch.timeDomain) {
-      reject('time-domain-mismatch', ['timeDomain'], `timeDomain ${JSON.stringify(batch.timeDomain)} differs from existing window [${ref.from}, ${ref.to}) (${JSON.stringify(ref.timeDomain)})`);
-    }
+  const timeDomainMismatch = ctx.existing.find((ref) => ref.timeDomain !== batch.timeDomain);
+  if (timeDomainMismatch) {
+    reject('time-domain-mismatch', ['timeDomain'], `timeDomain ${JSON.stringify(batch.timeDomain)} differs from existing window [${timeDomainMismatch.from}, ${timeDomainMismatch.to}) (${JSON.stringify(timeDomainMismatch.timeDomain)})`);
   }
   if (!emptyRange) {
     for (const ref of ctx.existing) {
@@ -178,11 +177,15 @@ export async function validateSampleWindow(raw: unknown, ctx: { equipmentId: str
   const warnings = warningsOf(batch);
   const summary = summarize(batch);
   if (issues.length > 0 || hash === null) return { ok: false, issues, warnings, summary };
-  return { ok: true, batch, warnings, summary: { ...summary, hash, name: await sampleWindowName(batch) } };
+  return { ok: true, batch, warnings, summary: { ...summary, hash, name: nameOf(batch.from, batch.to, hash) } };
+}
+
+function nameOf(from: SiteWallClock, to: SiteWallClock, hash: string): string {
+  return `${compact(from)}_${compact(to)}_${hash.slice('sha256:'.length)}`;
 }
 
 export async function sampleWindowName(batch: OccurrenceBatch): Promise<string> {
-  return `${compact(batch.from)}_${compact(batch.to)}_${(await observationHash(batch)).slice('sha256:'.length)}`;
+  return nameOf(batch.from, batch.to, await observationHash(batch));
 }
 
 export function parseSampleWindowName(name: string): { from: SiteWallClock; to: SiteWallClock; hash: string } | null {

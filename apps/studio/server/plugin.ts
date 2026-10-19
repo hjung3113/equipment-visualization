@@ -3,15 +3,14 @@ import { join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Plugin } from 'vite';
 import { createFileApi } from './files.js';
+import { IMPORT_API_PREFIX, MAX_IMPORT_BYTES } from './import.js';
 
 const MiB = 1024 * 1024;
 const MAX_BODY = 5 * MiB;
-const MAX_IMPORT_BODY = 32 * MiB;
-
 class BodyTooLarge extends Error {}
 
 const bodyLimit = (url: string): number =>
-  new URL(url, 'http://studio.local').pathname.startsWith('/api/import/') ? MAX_IMPORT_BODY : MAX_BODY;
+  new URL(url, 'http://studio.local').pathname.startsWith(IMPORT_API_PREFIX) ? MAX_IMPORT_BYTES : MAX_BODY;
 
 function readBody(req: IncomingMessage, limit: number): Promise<string> {
   return new Promise((resolveBody, reject) => {

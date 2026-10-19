@@ -6,12 +6,12 @@ import {
 } from '@eqv/editor';
 import { Database, Inbox, MapPinOff, Plus, ServerCrash } from 'lucide-react';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
-import { listEquipmentIds, loadEquipment, loadOnboarding, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
+import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
 import { Button } from '@fops/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
-import { WindowPicker, windowHex } from './WindowPicker.js';
+import { WindowPicker } from './WindowPicker.js';
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 

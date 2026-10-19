@@ -13,7 +13,8 @@ import { TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focu
 import { Button, Checkbox, Input, Label, Tabs, TabsContent, TabsList, TabsTrigger } from '@fops/ui';
 import { EvidenceBadge, Page, StateMessage, ViewerZoomControls } from '@eqv/ui';
 import { Link, hrefFor, navigate } from './router.js';
-import { WindowPicker, windowHex } from './WindowPicker.js';
+import { windowHex } from './onboarding-data.js';
+import { WindowPicker } from './WindowPicker.js';
 
 type Range = { from: SiteWallClock; to: SiteWallClock };
 type View = {
@@ -186,7 +187,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
       ) : result.kind === 'no-observations' ? (
         <StateMessage icon={Inbox} title="Sample Window를 가져오세요"
           body="이 설비는 등록되었지만 아직 가져온 관측이 없습니다. 재생할 Sample Window가 없습니다."
-          action={<Button asChild variant="secondary" size="sm"><Link href={`/equipment/${encodeURIComponent(equipmentId)}`}>설비 데이터 열기</Link></Button>} />
+          action={<Button asChild variant="secondary" size="sm"><Link href={hrefFor({ name: 'equipment', equipmentId })}>설비 데이터 열기</Link></Button>} />
       ) : result.kind === 'error' ? (
         <>
           <p role="alert">데이터 오류: {result.error}</p>
