@@ -58,6 +58,18 @@ it('draws a TRANSFER on the Handler as derived and merges a VISIT and PROCESS at
   ]);
 });
 
+it.each([
+  { name: 'closed', visitEnd: [6, '10:06:00'] as [number, string], departure: { seq: 6 } },
+  { name: 'open', visitEnd: null, departure: null },
+])('keeps the longer or open VISIT as the departure of a merged hop with a nested PROCESS ($name VISIT)', ({ visitEnd, departure }) => {
+  const { hops } = materialJourney(input([
+    { id: 'v', alias: 'PM1', wafer: 'W1', start: [1, '10:00:00'], end: visitEnd },
+    { id: 'p', kind: 'PROCESS', alias: 'PM1', wafer: 'W1', start: [2, '10:01:00'], end: [3, '10:02:00'] },
+  ]), W);
+  expect(hops).toHaveLength(1);
+  expect(hops[0]).toMatchObject({ occurrenceIds: ['v', 'p'], departure });
+});
+
 it('keeps an unmapped alias as an unknown hop with its alias, and caps an assumed mapping at derived', () => {
   const unmapped = materialJourney(input([{ id: 'x', alias: 'PM5', wafer: 'W1', start: [1, '10:00:00'], end: null }]), W);
   expect(unmapped.hops).toMatchObject([{ alias: { moduleAlias: 'PM5' }, location: null, locationEvidence: 'unknown' }]);
@@ -137,4 +149,23 @@ it('starts another hop when the Layout Revision changes, even with the same alia
 it('is a pure function of its input', () => {
   const data = input([{ id: 'a', alias: 'LP1', slot: '1', wafer: 'W1', start: [1, '10:00:00'], end: null }]);
   expect(materialJourney(data, W)).toEqual(materialJourney(data, W));
+});
+
+it('agrees with stepSceneState at every sample with other materials opening and closing between samples', () => {
+  const data = input([
+    { id: 'a', alias: 'LP1', slot: '1', wafer: 'W1', start: [1, '10:00:00'], end: [9, '10:05:00'] },
+    { id: 'o1', alias: 'LP1', slot: '2', wafer: 'W2', start: [2, '10:01:00'], end: [4, '10:02:00'] },
+    { id: 'o2', alias: 'PM1', wafer: 'W2', start: [3, null], end: [8, '10:04:00'] },
+    { id: 'o3', alias: 'ROBOT', wafer: 'W3', start: [5, '10:03:00'], end: null },
+    { id: 'b', kind: 'TRANSFER', alias: 'ROBOT', wafer: 'W1', start: [10, '10:06:00'], end: [13, '10:08:00'] },
+    { id: 'o4', alias: 'PM1', wafer: 'W2', start: [11, '10:07:00'], end: [14, '10:09:00'] },
+    { id: 'c', alias: 'PM1', wafer: 'W1', start: [15, '10:03:30'], end: null },
+  ], { issues: [{ id: 'dqi-1', equipmentId: 'eq-j', issueType: 'synthetic', seq: 12, at: time('10:07:30') }] });
+  const { hops } = materialJourney(data, W);
+  expect(hops.length).toBeGreaterThanOrEqual(3);
+  for (const hop of hops) {
+    const material = stepSceneState(data, hop.arrival.seq).materials.find((m) => m.key === W);
+    expect({ location: hop.location, evidence: hop.locationEvidence, identity: hop.identityEvidence })
+      .toEqual({ location: material?.location ?? null, evidence: material?.locationEvidence, identity: material?.identityEvidence });
+  }
 });

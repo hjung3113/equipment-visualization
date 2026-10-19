@@ -92,6 +92,16 @@ it('selects a hop from the Top View, a row and the keyboard, with repeated visit
   expect(document.querySelector('[data-layer="capabilities"]')!.children).toHaveLength(0);
 });
 
+it('leaves Enter on a hop’s Focus link to the link instead of selecting the row', async () => {
+  await open();
+  const row = document.querySelector('tr[data-hop="2"]')!;
+  const link = within(row as HTMLElement).getByRole('link', { name: 'Focus 열기' });
+  expect(fireEvent.keyDown(link, { key: 'Enter' })).toBe(true);
+  expect(row.getAttribute('aria-selected')).toBe('false');
+  fireEvent.click(link);
+  expect(window.location.pathname).toBe('/focus/eq-synth-01');
+});
+
 it.each([
   ['', 'anchor가 없습니다'],
   ['?anchor=occ-nope', 'Occurrence를 찾을 수 없습니다'],

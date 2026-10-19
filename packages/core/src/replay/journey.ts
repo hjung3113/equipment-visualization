@@ -1,5 +1,5 @@
 import type { EvidenceLevel, Occurrence } from '../occurrence/schema.js';
-import type { SceneMaterial, SceneState } from '../scene/schema.js';
+import type { SceneMaterial } from '../scene/schema.js';
 import { assertReplayInput, prepare, sceneStateAt, type ReplayInput } from './reduce.js';
 
 export type JourneyEvidence = SceneMaterial['locationEvidence'];
@@ -47,36 +47,47 @@ export function materialJourney(input: ReplayInput, materialKey: string): Materi
   assertReplayInput(input);
   const prepared = prepare(input);
   const own = input.batch.occurrences.filter((o) => keyOf(o) === materialKey).sort((a, b) => a.start.seq - b.start.seq);
-  const cache = new Map<string, SceneState>();
-  const state = (o: Occurrence) => {
-    const cached = cache.get(o.id);
-    if (cached) return cached;
+  // One pass over the samples in ascending start.seq: the record prefix and the open set only move forward. Every
+  // placement and evidence decision stays in `sceneStateAt`; only the sampled material and Binding identity are kept.
+  type Sample = { material: SceneMaterial | undefined; layoutId: string | null; layoutRevision: string | undefined };
+  const samples = new Map<string, Sample>();
+  const starts = [...input.batch.occurrences].sort((a, b) => a.start.seq - b.start.seq);
+  let record = 0;
+  let appliedSeq: number | null = null;
+  let t = input.batch.from;
+  let started = 0;
+  let open: Occurrence[] = [];
+  for (const o of own) {
+    if (!o.location) continue;
     const seq = o.start.seq;
-    const prefix = prepared.all.filter((record) => record.seq <= seq);
-    const t = prefix.filter((record) => record.at !== null).at(-1)?.at ?? input.batch.from;
-    const open = input.batch.occurrences.filter((x) => x.start.seq <= seq && (x.end === null || x.end.seq > seq))
-      .sort((a, b) => a.start.seq - b.start.seq);
-    const scene = sceneStateAt(input, t, prepared, prefix.at(-1)?.seq ?? null, open);
-    cache.set(o.id, scene);
-    return scene;
-  };
+    while (record < prepared.all.length && prepared.all[record]!.seq <= seq) {
+      const r = prepared.all[record++]!;
+      appliedSeq = r.seq;
+      if (r.at !== null) t = r.at;
+    }
+    while (started < starts.length && starts[started]!.start.seq <= seq) open.push(starts[started++]!);
+    open = open.filter((x) => x.end === null || x.end.seq > seq);
+    const scene = sceneStateAt(input, t, prepared, appliedSeq, appliedSeq === null ? [] : open);
+    samples.set(o.id, { material: scene.materials.find((m) => m.key === materialKey),
+      layoutId: scene.binding?.layoutId ?? null, layoutRevision: scene.binding?.layoutRevision });
+  }
 
   const hops: JourneyHop[] = [];
   let last: { identity: string; hop: JourneyHop } | null = null;
   for (const o of own) {
     if (!o.location) continue;
-    const scene = state(o);
-    const material = scene.materials.find((m) => m.key === materialKey);
+    const { material, layoutId, layoutRevision } = samples.get(o.id)!;
     if (!material) continue;
-    const layoutId = scene.binding?.layoutId ?? null;
-    const layoutRevision = scene.binding?.layoutRevision;
     const identity = JSON.stringify([material.alias.moduleAlias, material.alias.slotAlias ?? null,
       material.location?.componentId ?? null, material.location?.holdingSiteId ?? null, layoutId, layoutRevision ?? null]);
     if (last && last.identity === identity) {
       last.hop.locationEvidence = lowest(last.hop.locationEvidence, material.locationEvidence);
       last.hop.identityEvidence = lowest(last.hop.identityEvidence, material.identityEvidence);
       last.hop.occurrenceIds.push(o.id);
-      last.hop.departure = o.end ? boundary(o.end) : null;
+      // Open stays open; otherwise the latest end by Record Sequence (a nested PROCESS never shortens a longer VISIT).
+      if (last.hop.departure !== null) {
+        last.hop.departure = o.end === null ? null : o.end.seq > last.hop.departure.seq ? boundary(o.end) : last.hop.departure;
+      }
       continue;
     }
     const hop: JourneyHop = { number: hops.length + 1, alias: { ...material.alias },
@@ -89,7 +100,7 @@ export function materialJourney(input: ReplayInput, materialKey: string): Materi
   }
 
   const executions = own.filter((o) => ACTIVITY.has(o.kind)).map((o): JourneyExecution => {
-    const sampled = o.location ? state(o).materials.find((m) => m.key === materialKey && m.occurrenceId === o.id) : undefined;
+    const sampled = samples.get(o.id)?.material?.occurrenceId === o.id ? samples.get(o.id)!.material : undefined;
     return { occurrenceId: o.id, kind: o.kind as JourneyExecution['kind'],
       alias: o.location ? { ...o.location } : null,
       location: sampled?.location ? { ...sampled.location } : null,

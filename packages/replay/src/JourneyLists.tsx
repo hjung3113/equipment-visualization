@@ -45,8 +45,8 @@ const where = (location: JourneyLocation | null, moduleAlias: string | null) => 
   : moduleAlias === null ? UNKNOWN_LANE : `${UNKNOWN_LANE} (alias ${moduleAlias})`;
 
 function Boundary({ boundary, open }: { boundary: JourneyBoundary | null; open?: string }) {
-  if (boundary === null) return <><div>{open}</div><Evidence level="unknown" /></>;
-  return <><div>{boundary.at === null ? NO_TIME : clock(boundary.at)} · seq {boundary.seq}</div><Evidence level={boundary.evidence} /></>;
+  const text = boundary === null ? open : `${boundary.at === null ? NO_TIME : clock(boundary.at)} · seq ${boundary.seq}`;
+  return <div className="flex items-center gap-2"><span>{text}</span><Evidence level={boundary === null ? 'unknown' : boundary.evidence} /></div>;
 }
 
 export function JourneyHopList({ hops, selectedHop, onSelectHop, renderAction }: JourneyHopListProps) {
@@ -55,9 +55,9 @@ export function JourneyHopList({ hops, selectedHop, onSelectHop, renderAction }:
       {hops.map((hop) => (
         <DataTable.Row key={hop.number} data-hop={hop.number} selected={hop.number === selectedHop} onActivate={() => onSelectHop(hop.number)}>
           <DataTable.Cell rowHeader numeric>{hop.number}</DataTable.Cell>
-          <DataTable.Cell>{where(hop.location, hop.alias.moduleAlias)}</DataTable.Cell>
-          <DataTable.Cell><Evidence level={hop.locationEvidence} /></DataTable.Cell>
-          <DataTable.Cell><Evidence level={hop.identityEvidence} /></DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap">{where(hop.location, hop.alias.moduleAlias)}</DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap"><Evidence level={hop.locationEvidence} /></DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap"><Evidence level={hop.identityEvidence} /></DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap"><Boundary boundary={hop.arrival} /></DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap"><Boundary boundary={hop.departure} open="열림" /></DataTable.Cell>
           <DataTable.Cell>{renderAction?.(hop)}</DataTable.Cell>
@@ -79,9 +79,9 @@ export function JourneyExecutionList({ executions, selectedOccurrenceId = null, 
         <DataTable.Row key={row.occurrenceId} data-occurrence-id={row.occurrenceId} selected={onSelectOccurrence ? row.occurrenceId === selectedOccurrenceId : undefined}
           {...(onSelectOccurrence ? { onActivate: () => onSelectOccurrence(row.occurrenceId) } : {})}>
           <DataTable.Cell rowHeader>{KIND_KO[row.kind]}</DataTable.Cell>
-          <DataTable.Cell>{where(row.location, row.alias?.moduleAlias ?? null)}</DataTable.Cell>
-          <DataTable.Cell><Evidence level={row.locationEvidence} /></DataTable.Cell>
-          <DataTable.Cell><Evidence level={row.identityEvidence} /></DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap">{where(row.location, row.alias?.moduleAlias ?? null)}</DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap"><Evidence level={row.locationEvidence} /></DataTable.Cell>
+          <DataTable.Cell className="whitespace-nowrap"><Evidence level={row.identityEvidence} /></DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap"><Boundary boundary={row.start} /></DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap"><Boundary boundary={row.end} open="열림" /></DataTable.Cell>
         </DataTable.Row>
