@@ -389,7 +389,7 @@ export function BoardPage({ equipmentId, sampleWindow }: { equipmentId: string; 
     <Page
       title={boardLoaded ? '④ Mapping Board' : <>Mapping Board <code>{equipmentId}</code></>}
       linkComponent={Link} breadcrumb={crumbs(equipmentId, sampleWindow, true)}
-      description={boardLoaded ? <>Sample Window {result.data.selectedWindow.from} – {result.data.selectedWindow.to}</> : undefined}
+      description={boardLoaded ? <span className="hidden xl:inline">Sample Window {result.data.selectedWindow.from} – {result.data.selectedWindow.to}</span> : undefined}
       actions={(
         <Button asChild variant="secondary" size="toolbar">
           <Link href={hrefFor({ name: 'onboarding', equipmentId, window: sampleWindow })}><ArrowLeft className="size-3.5" aria-hidden />Onboarding으로 이동</Link>

@@ -27,13 +27,18 @@ export function InventoryView({ inventory, dictionaries }: InventoryViewProps) {
             <DataTable.Cell>{role === 'unknown' ? <StatusBadge tone="warning" icon={TriangleAlert}>{role}</StatusBadge> : role}</DataTable.Cell>
             <DataTable.Cell className="whitespace-nowrap">Port {flag(row.isPort)} · Robot {flag(row.isRobot)}</DataTable.Cell>
             <DataTable.Cell>{row.slots.length ? row.slots.join(', ') : '—'}</DataTable.Cell>
-            <DataTable.Cell className="whitespace-nowrap">
-              {row.activity.length === 0 ? '—' : row.activity.map(({ kind, count }) => (
-                <OutlineBadge key={kind}>{kind} {count}</OutlineBadge>
-              ))}
+            <DataTable.Cell>
+              {row.activity.length === 0 ? '—' : (
+                <span className="flex flex-wrap gap-1">
+                  {row.activity.map(({ kind, count }) => <OutlineBadge key={kind}>{kind} {count}</OutlineBadge>)}
+                </span>
+              )}
             </DataTable.Cell>
             <DataTable.Cell numeric>{row.references}</DataTable.Cell>
-            <DataTable.Cell>{row.firstSeen ?? '—'} / {row.lastSeen ?? '—'}</DataTable.Cell>
+            <DataTable.Cell>
+              <span className="block whitespace-nowrap">{row.firstSeen ?? '—'} /</span>
+              <span className="block whitespace-nowrap">{row.lastSeen ?? '—'}</span>
+            </DataTable.Cell>
           </DataTable.Row>
         ))}
       </DataTable>
