@@ -9,7 +9,7 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 ## Flow
 
 - `<base>` is `develop` (user decision 2026-10-14). Each issue gets `feature/<n>-<slug>` from `origin/develop` and a
-  PR to `develop`. A finished slice goes `develop` → `main` through a release PR after `scripts/release-gate.sh`; the
+  PR to `develop`. A finished slice goes `develop` → `main` through a release PR after `$CONDUCTOR/scripts/release-gate.sh`; the
   **user** merges it, always as a merge commit. Never merge to `main`.
 - Shared `ship-pr.sh` refuses base `main` by default; `workerops.protectedBases` is unset in this clone, keep it so.
 - `$MAIN` is `EV_MAIN` (`~/orca/projects/equipment-visualization`). Orca chooses the worktree location; the launcher
@@ -58,7 +58,7 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
 
 ## Verify
 
-1. `scripts/verify.sh <worktree>` (needs `WAVE_STATE`): root `lint`, `typecheck`, `test`, `build` when defined, the
+1. `$CONDUCTOR/scripts/verify.sh <worktree>` (needs `WAVE_STATE`): root `lint`, `typecheck`, `test`, `build` when defined, the
    package-boundary check, `asset-check.py` and `$ENGINE/worker-hygiene.py`; prints a summary.
 2. **Replay changes:** tests exist for each replay case the brief listed (ties, open occurrences, Data Quality
    Issues, Time Anomalies, Watermark and Binding boundaries, invalid mappings, duplicate occupancy, evidence
@@ -185,7 +185,7 @@ check.
 - `review-quality` range: slice start (or the previous release merge)`...origin/develop`.
 - When the slice changed the Studio, the `review-ux` walkthrough runs on previews of `origin/main` and
   `origin/develop`.
-- Release gate: `scripts/release-gate.sh "$EV_MAIN"` on a clean checkout at `origin/develop`. On success it prints
+- Release gate: `$CONDUCTOR/scripts/release-gate.sh "$EV_MAIN"` on a clean checkout at `origin/develop`. On success it prints
   the `gh pr create --base main --head develop` command; open the release PR. The user merges it (merge commit) and
   owns any tag; the conductor merges only with explicit approval in the session (`gh pr merge <n> --merge`).
 
@@ -201,9 +201,9 @@ Upstream), and a local workaround goes in § Traps with the issue link.
 | Tool | What it does | Tests |
 | --- | --- | --- |
 | `$ENGINE/launch-worker.py <n> <slug>` | Launch above | – |
-| `scripts/verify.sh <worktree>` | Verify step 1; logs in `$WAVE_STATE/verify-<basename>/` | – |
-| `scripts/release-gate.sh <checkout>` | fetches `develop`/`main`, requires a clean checkout at `origin/develop`, runs the gate, prints the release PR command without creating or merging it | – |
-| `scripts/asset-check.py <checkout> [paths...]` | JSON duplicate keys and validity; SVG well-formedness, `viewBox`, unique ids, no `<script>`/`<foreignObject>`/`on*=`/`javascript:`/external `href` | `test-asset-check.py` |
+| `$CONDUCTOR/scripts/verify.sh <worktree>` | Verify step 1; logs in `$WAVE_STATE/verify-<basename>/` | – |
+| `$CONDUCTOR/scripts/release-gate.sh <checkout>` | fetches `develop`/`main`, requires a clean checkout at `origin/develop`, runs the gate, prints the release PR command without creating or merging it | – |
+| `$CONDUCTOR/scripts/asset-check.py <checkout> [paths...]` | JSON duplicate keys and validity; SVG well-formedness, `viewBox`, unique ids, no `<script>`/`<foreignObject>`/`on*=`/`javascript:`/external `href` | `test-asset-check.py` |
 | `$ENGINE/review-plan.py` | Review plan; refuses uncommitted changes | engine repo |
 | `$ENGINE/worker-hygiene.py <worktree>` | new suppressions fail; whitespace churn is reported (base `origin/develop`, from `conductor.json`) | engine repo |
 | `$ENGINE/wave-status.py [--json] [--prs] [--state-dir <dir>]` | read-only snapshot of workers, previews, worktrees, containers and open PRs; reads `$WAVE_STATE` or every recent session `wave/` dir of this repo | engine repo |

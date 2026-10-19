@@ -1,4 +1,5 @@
 import { canonicalJson, sha256Hex } from '../canonical.js';
+import { layoutRevision } from '../layout/revision.js';
 import type { Binding } from '../mapping/schema.js';
 import type { OccurrenceBatch } from '../occurrence/schema.js';
 import type { SceneState } from '../scene/schema.js';
@@ -22,7 +23,7 @@ export async function replayKey(input: ReplayInput, t: SiteWallClock): Promise<R
   assertReplayInput(input);
   const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
   const layout = bindingLayout(input, binding);
-  const layoutHash = layout ? await sha256Hex(canonicalJson(layout)) : null;
+  const layoutHash = layout ? await layoutRevision(layout) : null;
   if (binding?.layoutRevision !== undefined && layoutHash !== null && layoutHash !== binding.layoutRevision) {
     throw new RangeError(`layoutRevisions[${binding.layoutRevision}] has content hash ${layoutHash}`);
   }
