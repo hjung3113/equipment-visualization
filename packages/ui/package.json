@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "sideEffects": ["**/*.css"],
+  "sideEffects": [
+    "**/*.css"
+  ],
   "exports": {
     ".": "./src/index.ts",
     "./styles.css": "./src/styles.css"
@@ -18,6 +20,7 @@
   },
   "dependencies": {
     "@eqv/core": "workspace:*",
+    "@tanstack/react-virtual": "3.14.13",
     "lucide-react": "0.469.0"
   },
   "devDependencies": {

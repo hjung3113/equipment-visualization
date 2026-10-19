@@ -1,13 +1,13 @@
+import { useMemo, useState } from 'react';
 import type { ReplayTimeline } from '@eqv/core';
 import { Inbox } from 'lucide-react';
 import { Button, EmptyState } from '@fops/ui';
 import { DataTable } from '@eqv/ui';
-import { capNotice, rowSlice } from './row-cap.js';
 import { NO_TIME } from './words.js';
 
 export interface DataQualityListProps {
   timeline: Pick<ReplayTimeline, 'issues'>;
-  /** `SceneState.appliedSeq` at the cursor: a capped list shows the issues around it. */
+  /** `SceneState.appliedSeq` at the cursor: the list opens on the issue at it (it does not follow the cursor afterwards). */
   appliedSeq?: number | null;
   onSelectOccurrence: (id: string) => void;
 }
@@ -21,32 +21,35 @@ const COLUMNS = [
 ] as const;
 
 export function DataQualityList({ timeline, appliedSeq = null, onSelectOccurrence }: DataQualityListProps) {
-  if (timeline.issues.length === 0) {
+  const issues = useMemo(() => [...timeline.issues].sort((a, b) => a.seq - b.seq), [timeline.issues]);
+  const [opening] = useState(() => appliedSeq === null ? 0 : Math.max(issues.findLastIndex((issue) => issue.seq <= appliedSeq), 0));
+  if (issues.length === 0) {
     return <DataTable label="Data Quality" columns={COLUMNS} state={
       <EmptyState size="sm" density="compact" icon={<Inbox className="size-4" aria-hidden />} title="이 구간에 Data Quality Issue가 없습니다" />
     }>{null}</DataTable>;
   }
-  const issues = [...timeline.issues].sort((a, b) => a.seq - b.seq);
-  const slice = rowSlice(issues.length, appliedSeq === null ? 0 : Math.max(issues.findLastIndex((issue) => issue.seq <= appliedSeq), 0));
   return (
-    <div>
-      {slice.capped && <p role="status" className="mb-2 text-text-secondary">{capNotice('Data Quality Issue', issues.length, slice)}</p>}
-      <DataTable label="Data Quality" columns={COLUMNS}>
-      {issues.slice(slice.start, slice.end).map((issue) => (
-        <DataTable.Row key={issue.id}>
-          <DataTable.Cell className="whitespace-nowrap">{issue.at ?? NO_TIME}</DataTable.Cell>
-          <DataTable.Cell numeric>{issue.seq}</DataTable.Cell>
-          <DataTable.Cell>{issue.issueType}</DataTable.Cell>
-          <DataTable.Cell mono>{issue.id}</DataTable.Cell>
-          <DataTable.Cell>
-            {issue.relatedOccurrenceId === undefined ? '—' : (
-              <Button type="button" variant="link" size="sm" aria-label={`관련 Occurrence ${issue.relatedOccurrenceId} 선택`}
-                onClick={() => onSelectOccurrence(issue.relatedOccurrenceId!)}><span className="font-mono text-xs">{issue.relatedOccurrenceId}</span></Button>
-            )}
-          </DataTable.Cell>
-        </DataTable.Row>
-      ))}
-      </DataTable>
-    </div>
+    <DataTable label="Data Quality" columns={COLUMNS} rows={{
+      count: issues.length,
+      getKey: (index) => issues[index]!.id,
+      initialIndex: opening,
+      render: (index) => {
+        const issue = issues[index]!;
+        return (
+          <DataTable.Row>
+            <DataTable.Cell className="whitespace-nowrap">{issue.at ?? NO_TIME}</DataTable.Cell>
+            <DataTable.Cell numeric>{issue.seq}</DataTable.Cell>
+            <DataTable.Cell>{issue.issueType}</DataTable.Cell>
+            <DataTable.Cell mono>{issue.id}</DataTable.Cell>
+            <DataTable.Cell>
+              {issue.relatedOccurrenceId === undefined ? '—' : (
+                <Button type="button" variant="link" size="sm" aria-label={`관련 Occurrence ${issue.relatedOccurrenceId} 선택`}
+                  onClick={() => onSelectOccurrence(issue.relatedOccurrenceId!)}><span className="font-mono text-xs">{issue.relatedOccurrenceId}</span></Button>
+              )}
+            </DataTable.Cell>
+          </DataTable.Row>
+        );
+      },
+    }} />
   );
 }
