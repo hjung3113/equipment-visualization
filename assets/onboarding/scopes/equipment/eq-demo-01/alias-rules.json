@@ -1,0 +1,31 @@
+{
+  "schemaVersion": "0.4",
+  "scope": {
+    "level": "equipment",
+    "equipmentId": "eq-demo-01"
+  },
+  "rules": [
+    {
+      "id": "aligner-assumed",
+      "match": {
+        "exact": [
+          "ALN1"
+        ]
+      },
+      "target": {
+        "componentId": "aligner-1",
+        "slots": {
+          "offset": 0,
+          "assign": [
+            {
+              "from": 1,
+              "to": 1,
+              "holdingSiteId": "station-1"
+            }
+          ]
+        }
+      },
+      "certainty": "assumed"
+    }
+  ]
+}

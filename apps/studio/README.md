@@ -24,6 +24,10 @@ the current import without asking.
 
 The equipment data page imports Sample Windows, alias metadata and the Model Type Dictionary through `/api/import/*`. Each file is checked in the browser first for size and JSON syntax, then with the same `@eqv/core` validators (including `validateSampleWindow`); the server makes the final decision. Rejections list their code and path, and imported values are never fixed. Replacing alias metadata requires confirmation and shows added, removed and changed aliases. The Model Type Dictionary is create-only, and results appear as toasts.
 
+## Demo equipment
+
+`eq-demo-01` (maker `synth-maker`, model `synth-demo`) is a generated, fully published synthetic equipment for demos: the `cluster-single` Layout pinned as a Layout Revision, a Mapping Version, a baseline Inventory, Bindings and two adjacent Sample Windows (2026-01-02 08:00–10:00 and 10:00–12:00), each replaying one 25-wafer lot through carrier, EFEM robot (both blades), aligner, load locks, TM robot and four process chambers. Two things are deliberately imperfect: `PM5` has no Alias Rule (unmapped alias) and each window has one `UnmatchedEnd` Data Quality Issue. The wafers' final load-port visits and the carrier stay source-open past the Watermark. Regenerate the files with `pnpm --filter @eqv/studio demo:generate` (it rewrites `assets/`); `test/demo-assets.test.ts` checks that the committed files equal the generator output.
+
 ## Styling
 
 Studio uses Tailwind v4 (`@tailwindcss/vite`) and the `@fops/ui` theme from the `external/feedbackops` submodule (ADR-0008). The `@import` order at the top of `src/studio.css` (tailwindcss, tokens and semantic in `layer(base)`, theme, compat) is an invariant; `test/theme-tokens.test.ts` pins it. The `--eqv-*` rows in `:root` are declared only where `@fops/ui` defines the platform token, wrapped as `rgb(var(--token))`; every other `--eqv-*` row stays undeclared so the asset fallback hex applies.
