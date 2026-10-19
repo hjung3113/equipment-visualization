@@ -15,6 +15,7 @@ const REACT_ATTR: Record<string, string> = {
   'stroke-miterlimit': 'strokeMiterlimit',
   'stroke-dashoffset': 'strokeDashoffset',
   'stroke-opacity': 'strokeOpacity',
+  'fill-opacity': 'fillOpacity',
   'vector-effect': 'vectorEffect',
   'paint-order': 'paintOrder',
   'font-family': 'fontFamily',
