@@ -62,7 +62,7 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
 
 export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler, timelineBudget = TIMELINE_BUDGET }: {
   equipmentId: string; sampleWindow: string | null; entityType: string | null; anchor: string | null;
-  /** Largest breakpoints × records the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
+  /** Largest `timelineCost` (records + breakpoints × (open + inversions)) the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
   timelineBudget?: number;
   /** Frame clock for playback; tests only, the browser's by default. */
   scheduler?: PlaybackScheduler;
@@ -282,7 +282,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                     })} />
                 ) : tooLarge && (
                   <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
-                    body={`범위를 좁히세요. 지금 범위는 breakpoint ${count(cost.breakpoints)}개 × record ${count(cost.records)}개 = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
+                    body={`범위를 좁히세요. 지금 범위는 record ${count(cost.records)}개 + breakpoint ${count(cost.breakpoints)}개 × (동시 open Occurrence ${count(cost.open)}개 + 시간 역전 ${count(cost.inversions)}개) = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
                 )}
               </Panel>
               <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-4">

@@ -35,30 +35,47 @@ function records(input: ReplayInput): Record[] {
 const evidence = (value: EvidenceLevel): SceneMaterial['identityEvidence'] => value === 'illustrative' ? 'unknown' : value;
 const cap = (value: SceneMaterial['identityEvidence'], assumed: boolean) => assumed && value === 'observed' ? 'derived' : value;
 
+// What the rules read of the batch that does not depend on the instant: the seq-sorted records and the Time Anomaly
+// inversions (each adjacent timed pair, in sequence order, whose time goes backwards). Prepared once per input.
+export type Prepared = { all: Record[]; inversions: { previous: Record; current: Record & { at: SiteWallClock } }[] };
+export function prepare(input: ReplayInput): Prepared {
+  const all = records(input);
+  const timed = all.filter((r): r is Record & { at: SiteWallClock } => r.at !== null);
+  const inversions: Prepared['inversions'] = [];
+  for (let i = 1; i < timed.length; i++) {
+    if (timed[i]!.at < timed[i - 1]!.at) inversions.push({ previous: timed[i - 1]!, current: timed[i]! });
+  }
+  return { all, inversions };
+}
+// Occurrences started and not ended at `appliedSeq`, in start order.
+const openAt = (input: ReplayInput, appliedSeq: number | null) => input.batch.occurrences.filter((o) => appliedSeq !== null &&
+  o.start.seq <= appliedSeq && (o.end === null || o.end.seq > appliedSeq)).sort((a, b) => a.start.seq - b.start.seq);
+
 export function seekSceneState(input: ReplayInput, t: SiteWallClock): SceneState {
   assertReplayInput(input);
-  const all = records(input);
-  const stop = all.findIndex((record) => record.at !== null && record.at > t);
-  return reduce(input, t, all, stop === -1 ? all : all.slice(0, stop));
+  const prepared = prepare(input);
+  const stop = prepared.all.findIndex((record) => record.at !== null && record.at > t);
+  const appliedSeq = (stop === -1 ? prepared.all : prepared.all.slice(0, stop)).at(-1)?.seq ?? null;
+  return sceneStateAt(input, t, prepared, appliedSeq, openAt(input, appliedSeq));
 }
 export function stepSceneState(input: ReplayInput, seq: number): SceneState {
   assertReplayInput(input);
-  const all = records(input);
-  const prefix = all.filter((record) => record.seq <= seq);
+  const prepared = prepare(input);
+  const prefix = prepared.all.filter((record) => record.seq <= seq);
   const t = prefix.filter((record) => record.at !== null).at(-1)?.at ?? input.batch.from;
-  return reduce(input, t, all, prefix);
+  const appliedSeq = prefix.at(-1)?.seq ?? null;
+  return sceneStateAt(input, t, prepared, appliedSeq, openAt(input, appliedSeq));
 }
-function reduce(input: ReplayInput, t: SiteWallClock, all: Record[], prefix: Record[]): SceneState {
+// The one place the Scene State rules live. `open` is the Occurrences open after `appliedSeq`, in start order; the
+// caller owns how it got them (a filter for one instant, an incremental set for a timeline pass).
+export function sceneStateAt(input: ReplayInput, t: SiteWallClock, prepared: Prepared, appliedSeq: number | null, open: Occurrence[]): SceneState {
   const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
   const layout = binding && input.layouts.find((l) => l.id === binding.layoutId);
   const resolve = (o: Occurrence) => resolveLocation({ bindings: input.bindings, mappings: input.mappings,
     alias: o.location!.moduleAlias, ...(o.location!.slotAlias === undefined ? {} : { slot: o.location!.slotAlias }), at: t });
   const anomalies = new Set<string>();
-  const timed = all.filter((r): r is Record & { at: SiteWallClock } => r.at !== null);
-  for (let i = 1; i < timed.length; i++) {
-    const previous = timed[i - 1]!;
-    const current = timed[i]!;
-    if (current.at < previous.at && current.at <= t && t <= previous.at) {
+  for (const { previous, current } of prepared.inversions) {
+    if (current.at <= t && t <= previous.at!) {
       for (const record of [previous, current]) {
         if (record.owner && !(record.owner.location && resolve(record.owner).kind === 'ignored')) anomalies.add(record.owner.id);
       }
@@ -67,9 +84,6 @@ function reduce(input: ReplayInput, t: SiteWallClock, all: Record[], prefix: Rec
   const markers: SceneMarker[] = [...anomalies].map((occurrenceId) => ({ kind: 'time-anomaly', occurrenceId }));
   const afterWatermark = t > input.batch.watermark.at;
   if (afterWatermark) markers.push({ kind: 'after-watermark', watermarkAt: input.batch.watermark.at });
-  const appliedSeq = prefix.at(-1)?.seq ?? null;
-  const open = input.batch.occurrences.filter((o) => appliedSeq !== null && o.start.seq <= appliedSeq &&
-    (o.end === null || o.end.seq > appliedSeq)).sort((a, b) => a.start.seq - b.start.seq);
   const materials = new Map<string, SceneMaterial>();
   const activities = new Map<string, { occurrence: Occurrence; evidence: SceneComponent['activityEvidence'] }[]>();
   for (const o of open) {

@@ -25,16 +25,38 @@ export type FocusLoad =
   | ({ kind: 'ok' } & FocusData);
 
 /**
- * `replayTimeline` samples the reducer once per breakpoint and each sample re-sorts every record, so its cost grows with
- * breakpoints × records (measured in the PR that set the value). Above this the Gantt is not computed.
+ * `replayTimeline` sorts the records once and then reads the Scene State at every breakpoint, each read costing about the
+ * Occurrences open at that point plus the Time Anomaly inversions it scans (see `timelineCost`). Above this the Gantt is
+ * not computed; the value is the cost that takes about 1 s (measured in the PR that set it).
  */
-export const TIMELINE_BUDGET = 2_000_000;
+export const TIMELINE_BUDGET = 4_000_000;
 
-/** `records` is the reducer's record set (reduce.ts): Occurrence starts, ends and Data Quality Issues. */
-export function timelineCost(batch: OccurrenceBatch, frame: ReplayTimelineFrame): { breakpoints: number; records: number; cost: number } {
+/**
+ * Work of `replayTimeline` for `frame`, from the batch alone: `records + breakpoints × (open + inversions)`.
+ * `records` is the reducer's record set (reduce.ts: Occurrence starts, ends and Data Quality Issues), sorted once.
+ * `open` is the most Occurrences open at any Record Sequence, an upper bound on the open set one read walks.
+ * `inversions` is the adjacent timed record pairs whose time goes backwards (Time Anomaly candidates), which every read scans.
+ */
+export function timelineCost(batch: OccurrenceBatch, frame: ReplayTimelineFrame): {
+  breakpoints: number; records: number; open: number; inversions: number; cost: number;
+} {
   const records = batch.issues.length + batch.occurrences.reduce((sum, o) => sum + (o.end ? 2 : 1), 0);
+  const boundaries = [...batch.occurrences.flatMap((o) => [o.start, ...(o.end ? [o.end] : [])]), ...batch.issues].sort((a, b) => a.seq - b.seq);
+  const starts = new Set(batch.occurrences.map((o) => o.start.seq));
+  let running = 0;
+  let open = 0;
+  let previous: string | null = null;
+  let inversions = 0;
+  for (const { seq, at } of boundaries) {
+    if (starts.has(seq)) open = Math.max(open, ++running);
+    else if (batch.occurrences.length > 0 && !batch.issues.some((i) => i.seq === seq)) running--;
+    if (at !== null) {
+      if (previous !== null && at < previous) inversions++;
+      previous = at;
+    }
+  }
   const breakpoints = frame.breakpoints.length;
-  return { breakpoints, records, cost: breakpoints * records };
+  return { breakpoints, records, open, inversions, cost: records + breakpoints * (open + inversions) };
 }
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
