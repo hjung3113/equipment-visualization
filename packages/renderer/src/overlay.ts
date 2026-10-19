@@ -47,6 +47,7 @@ const PAINT = {
   evidence: 'var(--eqv-evidence, #374151)',
   materialFill: 'var(--eqv-material-fill, #f7e4cd)',
   materialStroke: 'var(--eqv-material-stroke, #b45309)',
+  activeFill: 'var(--eqv-active-fill, #d6e6fb)',
   ink: 'var(--eqv-ink, #101828)',
 } as const;
 
@@ -58,9 +59,19 @@ const DASH_UNKNOWN = '2 3';
 const EVIDENCE_DASH: Record<StateEvidence, string | undefined> = { observed: undefined, derived: DASH, unknown: DASH_UNKNOWN };
 const EVIDENCE_KO: Record<StateEvidence, string> = { observed: '관측', derived: '파생', unknown: '미확인' };
 const ACTIVITY_KO: Record<StateActivity, string> = { processing: '처리 중', 'post-processing': '후처리', function: '기능' };
+/** Ghost diameter and label size; materials use `DISC_PX`. */
 const TOKEN_PX = 8;
-const TOKEN_GAP_PX = 3;
-const TOKENS_PER_ROW = 6;
+const DISC_PX = 12;
+const DISC_GAP_PX = 3;
+/** Gap between the cluster and the inner bottom edge of the component bbox, screen px. */
+const CLUSTER_INSET_PX = 2;
+const GROUP_GAP_PX = 10;
+const LABEL_PX = 10;
+const LABEL_CHARS = 8;
+const MAX_LABELLED = 4;
+const SHOWN_WITH_CHIP = 3;
+const CHIP_TITLE_IDS = 20;
+const TINT_OPACITY: Record<StateEvidence, number> = { observed: 0.3, derived: 0.15, unknown: 0 };
 
 function matrixAttr(matrix: Mat): string {
   return `matrix(${formatNum(matrix.a)} ${formatNum(matrix.b)} ${formatNum(matrix.c)} ${formatNum(matrix.d)} ${formatNum(matrix.e)} ${formatNum(matrix.f)})`;
@@ -207,7 +218,7 @@ export function buildOverlay(scene: Scene, state: OverlayState, k: number): { in
   };
 }
 
-function materialToken(material: StateMaterial, cx: number, cy: number, kLocal: number): SvgNode[] {
+function materialToken(material: StateMaterial, cx: number, cy: number, k: number, labelled: boolean): SvgNode[] {
   const attrs: Record<string, string> = {
     fill: PAINT.materialFill,
     stroke: PAINT.materialStroke,
@@ -219,51 +230,120 @@ function materialToken(material: StateMaterial, cx: number, cy: number, kLocal: 
   const title = el('title', {}, [
     `${material.id ?? '익명'} · ${material.location?.holdingSiteId ?? '위치 Component 단위'} · 위치 ${EVIDENCE_KO[material.locationEvidence]} · 식별 ${EVIDENCE_KO[material.identityEvidence]}`,
   ]);
-  const half = TOKEN_PX / 2 * kLocal;
+  const half = DISC_PX / 2 * k;
   const token = material.kind === 'wafer' || material.kind === 'reticle'
     ? el('circle', { ...attrs, cx: formatNum(cx), cy: formatNum(cy), r: formatNum(half) }, [title])
     : el('rect', {
       ...attrs,
       x: formatNum(cx - half),
       y: formatNum(cy - half),
-      width: formatNum(TOKEN_PX * kLocal),
-      height: formatNum(TOKEN_PX * kLocal),
-      rx: formatNum(2 * kLocal),
+      width: formatNum(DISC_PX * k),
+      height: formatNum(DISC_PX * k),
+      rx: formatNum(2 * k),
     }, [title]);
-  if (material.identityEvidence !== 'unknown' && material.locationEvidence !== 'unknown') return [token];
-  return [token, el('text', {
+  const nodes = [token];
+  if (labelled && material.id != null) {
+    nodes.push(el('text', {
+      x: formatNum(cx),
+      y: formatNum(cy - (DISC_PX / 2 + 2) * k),
+      'text-anchor': 'middle',
+      'font-family': 'inherit',
+      'font-size': formatNum(LABEL_PX * k),
+      fill: PAINT.ink,
+    }, [ellipsis(material.id)]));
+  }
+  if (material.identityEvidence !== 'unknown' && material.locationEvidence !== 'unknown') return nodes;
+  nodes.push(el('text', {
     x: formatNum(cx),
-    y: formatNum(cy + 0.35 * TOKEN_PX * kLocal),
+    y: formatNum(cy + 0.35 * TOKEN_PX * k),
     'text-anchor': 'middle',
     'font-family': 'inherit',
-    'font-size': formatNum(TOKEN_PX * kLocal),
+    'font-size': formatNum(TOKEN_PX * k),
     fill: PAINT.evidence,
-  }, ['?'])];
+  }, ['?']));
+  return nodes;
 }
 
-/** One row of tokens on the component's bottom edge, centred; screen-pixel sizes through `kLocal`. */
+function ellipsis(id: string): string {
+  const chars = [...id];
+  return chars.length <= LABEL_CHARS ? id : `${chars.slice(0, LABEL_CHARS - 1).join('')}…`;
+}
+
+/**
+ * A component's located materials in display order: grouped by its ordered Holding Site ids, then the
+ * component-level group (no site, or a site the layout does not list). The slot is a display position,
+ * not geometry.
+ */
+function siteOrdered(comp: SceneComponent, materials: readonly StateMaterial[]): { material: StateMaterial; group: number }[] {
+  const last = comp.holdingSiteIds.length;
+  const rows = materials.map((material, index) => {
+    const at = comp.holdingSiteIds.indexOf(material.location?.holdingSiteId ?? '');
+    return { material, group: at < 0 ? last : at, index };
+  });
+  rows.sort((x, y) => x.group - y.group || x.index - y.index);
+  return rows;
+}
+
+
+/**
+ * Disc clusters in screen-upright scene space (never the component's rotated frame): one row centred on the
+ * component's scene centre, on the inner bottom edge of its axis-aligned bbox, one group per Holding Site;
+ * screen-pixel sizes through `k`.
+ */
 function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[], k: number): SvgNode[] {
-  const kLocal = k / comp.S;
-  const shown = materials.slice(0, TOKENS_PER_ROW);
-  const overflow = materials.length - shown.length;
-  const plus = overflow > 0 ? `+${overflow}` : null;
-  const rowPx = shown.length * TOKEN_PX + (shown.length - 1) * TOKEN_GAP_PX
-    + (plus ? TOKEN_GAP_PX + estimateTextWidth(plus, TOKEN_PX, false) : 0);
-  const cy = comp.h / 2 - TOKEN_PX / 2 * kLocal;
+  const ordered = siteOrdered(comp, materials);
+  const overflow = ordered.length > MAX_LABELLED;
+  const shown = overflow ? ordered.slice(0, SHOWN_WITH_CHIP) : ordered;
+  const hidden = overflow ? ordered.slice(SHOWN_WITH_CHIP) : [];
+  const plus = overflow ? `+${hidden.length}` : null;
+  const chipPx = plus ? estimateTextWidth(plus, LABEL_PX, false) + 8 : 0;
+  const items = shown.map(({ material, group }) => ({
+    material,
+    group,
+    width: overflow || material.id == null
+      ? DISC_PX
+      : Math.max(DISC_PX, estimateTextWidth(ellipsis(material.id), LABEL_PX, false)),
+  }));
+  let rowPx = 0;
+  items.forEach((item, i) => {
+    rowPx += item.width + (i === 0 ? 0 : item.group === items[i - 1]!.group ? DISC_GAP_PX : GROUP_GAP_PX);
+  });
+  if (plus) rowPx += (items.length > 0 ? DISC_GAP_PX : 0) + chipPx;
+  const cy = comp.bbox.y1 - (CLUSTER_INSET_PX + DISC_PX / 2) * k;
   const nodes: SvgNode[] = [];
-  let xPx = -rowPx / 2 + TOKEN_PX / 2;
-  for (const material of shown) {
-    nodes.push(...materialToken(material, xPx * kLocal, cy, kLocal));
-    xPx += TOKEN_PX + TOKEN_GAP_PX;
-  }
+  let xPx = -rowPx / 2;
+  const cx = comp.center[0];
+  items.forEach((item, i) => {
+    if (i > 0) xPx += item.group === items[i - 1]!.group ? DISC_GAP_PX : GROUP_GAP_PX;
+    nodes.push(...materialToken(item.material, cx + (xPx + item.width / 2) * k, cy, k, !overflow));
+    xPx += item.width;
+  });
   if (plus) {
-    nodes.push(el('text', {
-      x: formatNum((xPx - TOKEN_PX / 2) * kLocal),
-      y: formatNum(cy + 0.35 * TOKEN_PX * kLocal),
-      'font-family': 'inherit',
-      'font-size': formatNum(TOKEN_PX * kLocal),
-      fill: PAINT.ink,
-    }, [plus]));
+    if (items.length > 0) xPx += DISC_GAP_PX;
+    const ids = hidden.map(({ material }) => material.id ?? '익명');
+    const listed = ids.slice(0, CHIP_TITLE_IDS).join(', ') + (ids.length > CHIP_TITLE_IDS ? ', …' : '');
+    nodes.push(el('g', {}, [
+      el('title', {}, [`${plus} · ${listed}`]),
+      el('rect', {
+        x: formatNum(cx + xPx * k),
+        y: formatNum(cy - DISC_PX / 2 * k),
+        width: formatNum(chipPx * k),
+        height: formatNum(DISC_PX * k),
+        rx: formatNum(3 * k),
+        fill: PAINT.board,
+        stroke: PAINT.materialStroke,
+        'stroke-width': formatNum(1),
+        'vector-effect': 'non-scaling-stroke',
+      }),
+      el('text', {
+        x: formatNum(cx + (xPx + chipPx / 2) * k),
+        y: formatNum(cy + 0.35 * LABEL_PX * k),
+        'text-anchor': 'middle',
+        'font-family': 'inherit',
+        'font-size': formatNum(LABEL_PX * k),
+        fill: PAINT.ink,
+      }, [plus]),
+    ]));
   }
   return nodes;
 }
@@ -301,7 +381,7 @@ function ghostNodes(scene: Scene, ghosts: readonly IllustrativeGhost[], k: numbe
 }
 
 /**
- * Cursor-time replay layer: activity rings, material tokens, occupancy-conflict rings and illustrative
+ * Cursor-time replay layer: activity tint and rings, material discs, occupancy-conflict rings and illustrative
  * ghosts. The state and the ghosts are given (D4); nothing here pairs occurrences, decides evidence
  * or computes motion. `k = 1 / scene.pxPerUnit`, the same `k` as `buildOverlay`.
  */
@@ -319,14 +399,21 @@ export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number)
     if (!comp) continue;
     const parts: SvgNode[] = [];
     if (state.activity !== 'no recorded activity') {
+      if (TINT_OPACITY[state.activityEvidence] > 0) {
+        const tint = ring(comp, 0, 'none', 0, k);
+        parts.push({
+          ...tint,
+          attrs: { ...tint.attrs, fill: PAINT.activeFill, 'fill-opacity': formatNum(TINT_OPACITY[state.activityEvidence]) },
+        });
+      }
       parts.push(titled(
         ring(comp, 6, PAINT.evidence, 2, k, EVIDENCE_DASH[state.activityEvidence]),
         `${ACTIVITY_KO[state.activity]} · ${EVIDENCE_KO[state.activityEvidence]}`,
       ));
     }
-    const located = byComponent.get(state.componentId);
-    if (located) parts.push(...materialTokens(comp, located, k));
     if (parts.length > 0) nodes.push(mark(comp, parts));
+    const located = byComponent.get(state.componentId);
+    if (located) nodes.push(el('g', { 'data-material-cluster': comp.id }, materialTokens(comp, located, k)));
   }
   for (const marker of replay.state.markers) {
     if (marker.kind !== 'occupancy-conflict') continue;

@@ -41,6 +41,8 @@ export interface SceneComponent {
   bbox: Box;
   hidden: boolean;
   bodyStroke: string;
+  /** The layout's ordered Holding Site ids. Order only: Holding Sites have no geometry. */
+  holdingSiteIds: readonly string[];
 }
 
 /** One explicit transfer capability. Endpoints stay paired; a flat handler/target set is not enough. */
@@ -794,6 +796,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       bbox: row.bbox,
       hidden: row.hidden,
       bodyStroke: row.prim.body.attrs.stroke ?? 'none',
+      holdingSiteIds: row.component.holdingSites.map((site) => site.id),
     });
   }
   const capabilities = layout.transferCapabilities.map((edge) => ({

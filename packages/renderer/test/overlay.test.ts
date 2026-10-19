@@ -40,7 +40,7 @@ const templates = Object.fromEntries(TEMPLATE_IDS.map((id) => [id, load(id)])) a
 
 function component(partial: Pick<Component, 'id' | 'assetRef' | 'label'> & {
   role?: string; parentId?: string; levelId?: string;
-  x?: number; y?: number; scale?: number; w?: number; h?: number;
+  x?: number; y?: number; scale?: number; w?: number; h?: number; sites?: string[];
 }): Component {
   return {
     id: partial.id,
@@ -52,7 +52,9 @@ function component(partial: Pick<Component, 'id' | 'assetRef' | 'label'> & {
     transform: { x: partial.x ?? 0, y: partial.y ?? 0, rotation: 0, scale: partial.scale ?? 1 },
     size: partial.w != null && partial.h != null ? { width: partial.w, height: partial.h } : undefined,
     ports: [],
-    holdingSites: [],
+    holdingSites: (partial.sites ?? []).map((id) => ({
+      id, materialKinds: ['wafer' as const], provenance: { certainty: 'assumed' as const, sourceEvidence: [] },
+    })),
     provenance: {},
   };
 }
@@ -491,12 +493,14 @@ function replayLayer(scene: Scene, state: SceneState, illustrative?: readonly Il
   return buildReplayLayer(scene, { state, illustrative }, 1 / scene.pxPerUnit);
 }
 
+/** Everything drawn for one component: its transformed mark group plus its scene-space material cluster. */
 function markOf(node: SvgNode, comp: SceneComponent): SvgNode {
   const m = comp.matrix;
   const transform = `matrix(${[m.a, m.b, m.c, m.d, m.e, m.f].map((value) => formatNum(value)).join(' ')})`;
-  const found = node.children.find((child) => typeof child !== 'string' && child.tag === 'g' && child.attrs.transform === transform);
-  if (!found || typeof found === 'string') throw new Error(`missing mark for ${comp.id}`);
-  return found;
+  const found = node.children.filter((child): child is SvgNode => typeof child !== 'string'
+    && ((child.tag === 'g' && child.attrs.transform === transform) || child.attrs['data-material-cluster'] === comp.id));
+  if (found.length === 0) throw new Error(`missing mark for ${comp.id}`);
+  return { tag: 'g', attrs: {}, children: found.flatMap((child) => child.attrs['data-material-cluster'] ? [child] : child.children) };
 }
 
 const EVIDENCE_ORDER = ['observed', 'derived', 'unknown'] as const;
@@ -521,7 +525,7 @@ it.each([...EVIDENCE_ORDER].flatMap((locationEvidence) => EVIDENCE_ORDER.map((id
     expect(token.attrs.stroke).toBe('var(--eqv-material-stroke, #b45309)');
     expect(token.attrs['stroke-dasharray']).toBe(locationEvidence === 'observed' ? undefined : locationEvidence === 'derived' ? '6 4' : '2 3');
     expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join('')))
-      .toEqual(identityEvidence === 'unknown' || locationEvidence === 'unknown' ? ['?'] : []);
+      .toEqual(identityEvidence === 'unknown' || locationEvidence === 'unknown' ? ['W1', '?'] : ['W1']);
   },
 );
 
@@ -540,13 +544,31 @@ it.each([
     components: [{ componentId: 'a', activity, activityEvidence: evidence, occurrenceIds: [] }],
   });
   const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
-  const ring = drawn.find((node) => node.tag === 'rect');
+  const ring = drawn.find((node) => node.tag === 'rect' && node.attrs.stroke === 'var(--eqv-evidence, #374151)');
   if (!ring) throw new Error('missing activity ring');
-  expect(ring.attrs.stroke).toBe('var(--eqv-evidence, #374151)');
   expect(ring.attrs['stroke-dasharray']).toBe(dash);
   expect(titles(ring)).toEqual([title]);
   expect(ring.children).toHaveLength(1);
-  expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['?']);
+  expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['W1', '?']);
+});
+
+it.each([
+  { evidence: 'observed', tint: '0.3', dash: undefined },
+  { evidence: 'derived', tint: '0.15', dash: '6 4' },
+  { evidence: 'unknown', tint: undefined, dash: '2 3' },
+] as const)('$evidence activity: body tint opacity $tint, ring dash $dash', ({ evidence, tint, dash }) => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const state = replayState({
+    materials: [],
+    components: [{ componentId: 'a', activity: 'processing', activityEvidence: evidence, occurrenceIds: [] }],
+  });
+  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
+  const tinted = drawn.filter((node) => node.attrs.fill === 'var(--eqv-active-fill, #d6e6fb)');
+  expect(tinted.map((node) => node.attrs['fill-opacity'])).toEqual(tint ? [tint] : []);
+  expect(tinted.every((node) => node.attrs.stroke === 'none' && titles(node).length === 0)).toBe(true);
+  const ring = drawn.find((node) => node.attrs.stroke === 'var(--eqv-evidence, #374151)');
+  expect(ring?.attrs['stroke-dasharray']).toBe(dash);
+  expect(titles(ring ?? { tag: 'x', attrs: {}, children: [] })).toHaveLength(1);
 });
 
 it.each([
@@ -609,22 +631,63 @@ it('draws nothing for no recorded activity, location null, a filtered-out level 
   expect(result.children).toEqual([]);
 });
 
-it('caps a component at six tokens in state order and labels the rest with +N', () => {
-  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
-  const state = replayState({
-    materials: Array.from({ length: 7 }, (_, i) => stateMaterial({
-      key: `m:wafer:W${i + 1}`, kind: 'wafer', id: `W${i + 1}`,
-      location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed',
+function sitedState(materials: [string, string | undefined][]): SceneState {
+  return replayState({
+    materials: materials.map(([id, site]) => stateMaterial({
+      key: `m:wafer:${id}`, kind: 'wafer', id,
+      location: { componentId: 'r', ...(site ? { holdingSiteId: site } : {}) },
+      locationEvidence: 'observed', identityEvidence: 'observed',
     })),
-    components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+    components: [{ componentId: 'r', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
   });
-  const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('a')!));
-  const tokens = drawn.filter((node) => node.tag === 'circle');
-  expect(tokens).toHaveLength(6);
-  expect(tokens.map((node) => titles(node)[0])).toEqual(['W1', 'W2', 'W3', 'W4', 'W5', 'W6'].map((id) => TOKEN_TITLE(id, undefined, 'observed', 'observed')));
-  const texts = drawn.filter((node) => node.tag === 'text');
-  expect(texts.map((node) => node.children.join(''))).toEqual(['+1']);
-  expect(texts[0]!.attrs.fill).toBe('var(--eqv-ink, #101828)');
+}
+
+function discs(scene: Scene, state: SceneState): { id: string; cx: number; r: number }[] {
+  return shapes(markOf(replayLayer(scene, state), scene.components.get('r')!))
+    .filter((node) => node.tag === 'circle')
+    .map((node) => ({ id: titles(node)[0]!.split(' · ')[0]!, cx: Number(node.attrs.cx), r: Number(node.attrs.r) }));
+}
+
+const siteScene = () => fixture([component({
+  id: 'r', assetRef: 'primitive:robot-dual', label: 'R', role: 'robot', x: 400, y: 300, w: 96, h: 100, sites: ['blade-a', 'blade-b'],
+})]).scene;
+
+it('draws one disc per material in Holding Site order, with a wider gap between sites and component-level last', () => {
+  const scene = siteScene();
+  const found = discs(scene, sitedState([['W2', 'blade-b'], ['W1', 'blade-a'], ['W3', 'blade-a'], ['W4', undefined]]));
+  expect(found.map((disc) => disc.id)).toEqual(['W1', 'W3', 'W2', 'W4']);
+  const gaps = found.slice(1).map((disc, i) => disc.cx - found[i]!.cx);
+  expect(gaps[0]!).toBeLessThan(gaps[1]!);
+  expect(gaps[0]!).toBeLessThan(gaps[2]!);
+});
+
+it('puts a holding site the layout does not list in the component-level group, never a guessed site', () => {
+  const found = discs(siteScene(), sitedState([['W1', 'blade-a'], ['W2', 'blade-z'], ['W3', undefined]]));
+  expect(found.map((disc) => disc.id)).toEqual(['W1', 'W2', 'W3']);
+  const gaps = found.slice(1).map((disc, i) => disc.cx - found[i]!.cx);
+  expect(gaps[1]!).toBeLessThan(gaps[0]!);
+});
+
+it('labels up to four discs with their id (ellipsised, anonymous unlabelled) and from five shows three discs plus a +N chip', () => {
+  const scene = siteScene();
+  const comp = scene.components.get('r')!;
+  const labelled = shapes(markOf(replayLayer(scene, sitedState([['W1', 'blade-a'], ['WAFER-0001234', 'blade-b']])), comp))
+    .filter((node) => node.tag === 'text');
+  expect(labelled.map((node) => node.children.join(''))).toEqual(['W1', 'WAFER-0…']);
+  expect(labelled.every((node) => node.attrs.fill === 'var(--eqv-ink, #101828)')).toBe(true);
+  const ids = ['W1', 'W2', 'W3', 'W4', 'W5'];
+  const drawn = shapes(markOf(replayLayer(scene, sitedState(ids.map((id) => [id, 'blade-b'] as [string, string]))), comp));
+  expect(drawn.filter((node) => node.tag === 'circle').map((node) => titles(node)[0]!.split(' · ')[0])).toEqual(['W1', 'W2', 'W3']);
+  expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['+2']);
+  expect(titles(markOf(replayLayer(scene, sitedState(ids.map((id) => [id, 'blade-b'] as [string, string]))), comp)).filter((t) => t.startsWith('+')))
+    .toEqual(['+2 · W4, W5']);
+  const anonymous = replayState({
+    materials: [stateMaterial({
+      key: 'o:1', kind: 'wafer', id: null, location: { componentId: 'r' }, locationEvidence: 'observed', identityEvidence: 'observed',
+    })],
+    components: [{ componentId: 'r', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+  });
+  expect(shapes(markOf(replayLayer(scene, anonymous), comp)).filter((node) => node.tag === 'text')).toEqual([]);
 });
 
 it('rings an occupancy conflict with its holding site and material keys', () => {
@@ -687,12 +750,16 @@ it('draws hollow dashed ghost circles between centres, clamped, skipping hidden 
   expect(ghosts[1]!.attrs).toMatchObject({ cx: String(round(b.center[0])), cy: String(round(b.center[1])) });
   expect(titles(ghosts[0]!)).toEqual(['W1 → B · 예시 이동 (관측 아님)']);
   expect(shapes(result).filter((node) => node.tag === 'text').map((node) => node.children.join('')).filter((text) => text === '예시 이동')).toHaveLength(2);
+  expect(ghosts[0]!.attrs.r).toBe(String(round(4 / scene.pxPerUnit)));
+  const ghostLabel = shapes(result).find((node) => node.tag === 'text' && node.children.join('') === '예시 이동');
+  expect(ghostLabel?.attrs['font-size']).toBe(String(round(8 / scene.pxPerUnit)));
+  expect(ghostLabel?.attrs.x).toBe(String(round(a.center[0] + (b.center[0] - a.center[0]) / 2 + 6 / scene.pxPerUnit)));
   expect(shapes(result).some((node) => node.tag === 'line' || node.tag === 'path')).toBe(false);
   const token = shapes(markOf(result, a)).find((node) => node.tag === 'circle');
   expect(titles(token ?? { tag: 'x', attrs: {}, children: [] })).toEqual([TOKEN_TITLE('W1', undefined, 'observed', 'observed')]);
 });
 
-it('scales a token to about 8 screen px under a parent scaled by 2', () => {
+it('scales a token to about 12 screen px under a parent scaled by 2', () => {
   const { scene } = fixture([
     component({ id: 'frame', assetRef: 'primitive:housing', label: 'Frame', x: 400, y: 300, scale: 2, w: 700, h: 400, role: 'housing' }),
     component({ id: 'mod', assetRef: 'primitive:pm', label: 'PM', parentId: 'frame', x: 0, y: 40, w: 70, h: 76 }),
@@ -708,5 +775,32 @@ it('scales a token to about 8 screen px under a parent scaled by 2', () => {
   });
   const token = shapes(markOf(replayLayer(scene, state), comp)).find((node) => node.tag === 'rect');
   if (!token) throw new Error('missing token');
-  expect(Number(token.attrs.width) * comp.S / (1 / scene.pxPerUnit)).toBeCloseTo(8, 5);
+  expect(Number(token.attrs.width) / (1 / scene.pxPerUnit)).toBeCloseTo(12, 5);
+});
+
+it('draws a material cluster upright in scene space on a component rotated 150 degrees, on the bbox bottom side', () => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const comp = scene.components.get('a')!;
+  const rotated = { ...comp, matrix: { ...comp.matrix, a: -0.866, b: 0.5, c: -0.5, d: -0.866 } };
+  const rotatedScene: Scene = { ...scene, components: new Map([['a', rotated]]) };
+  const state = replayState({
+    materials: [stateMaterial({
+      key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed',
+    })],
+    components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+  });
+  const result = replayLayer(rotatedScene, state);
+  const rotatedGroups = result.children.filter((child): child is SvgNode => typeof child !== 'string' && child.attrs.transform != null);
+  const cluster = result.children.find((child): child is SvgNode => typeof child !== 'string' && child.attrs['data-material-cluster'] === 'a');
+  if (!cluster) throw new Error('missing cluster');
+  expect(rotatedGroups).toHaveLength(1);
+  expect(shapes(rotatedGroups[0]!).some((node) => node.tag === 'text' || node.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)')).toBe(false);
+  expect(cluster.attrs.transform).toBeUndefined();
+  const inside = shapes(cluster);
+  expect(inside.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['W1']);
+  for (const node of inside.filter((n) => n.tag === 'circle' || n.tag === 'text')) {
+    expect(node.attrs.transform).toBeUndefined();
+    expect(Number(node.attrs.cy ?? node.attrs.y)).toBeGreaterThan(comp.center[1]);
+    expect(Number(node.attrs.cy ?? node.attrs.y)).toBeLessThanOrEqual(comp.bbox.y1);
+  }
 });
