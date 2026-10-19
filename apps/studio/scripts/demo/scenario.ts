@@ -1,9 +1,9 @@
 import { millisToWallClock, wallClockToMillis, type Occurrence, type OccurrenceBatch } from '@eqv/core';
 
 export const EQUIPMENT_ID = 'eq-demo-01';
-export const PARSER_CONTRACT = 'synthetic-demo-1';
-export const DATA_GENERATION = 'g1';
-export const TIME_DOMAIN = 'site-demo';
+const PARSER_CONTRACT = 'synthetic-demo-1';
+const DATA_GENERATION = 'g1';
+const TIME_DOMAIN = 'site-demo';
 export const PM_COUNT = 4;
 
 const SECOND = 1000;

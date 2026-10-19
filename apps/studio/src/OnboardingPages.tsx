@@ -4,7 +4,7 @@ import {
   FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
 } from '@eqv/editor';
-import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, Play, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
@@ -62,8 +62,8 @@ export function FleetPage() {
             renderActions={(row) => row.status === 'published' ? (
               <Button asChild variant="secondary" size="sm">
                 <Link href={hrefFor({ name: 'focus', equipmentId: row.equipmentId, entityType: null, anchor: null, window: null })}
-                  aria-label={`${row.equipmentId} Replay`}>
-                  <Play className="size-3.5" aria-hidden />Replay
+                  aria-label={`${row.equipmentId} Focus 열기`}>
+                  <Crosshair className="size-3.5" aria-hidden />Focus 열기
                 </Link>
               </Button>
             ) : null} />

@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { layoutDocumentSchema, type Component, type LayoutDocument, type SceneState } from '@eqv/core';
 import { buildScene, TopView, type Scene, type SceneComponent, type SvgNode } from '../src/index.js';
 import { buildOverlay, buildReplayLayer, type IllustrativeGhost, type OverlayState } from '../src/overlay.js';
@@ -668,26 +668,57 @@ it('puts a holding site the layout does not list in the component-level group, n
   expect(gaps[1]!).toBeLessThan(gaps[0]!);
 });
 
-it('labels up to four discs with their id (ellipsised, anonymous unlabelled) and from five shows three discs plus a +N chip', () => {
-  const scene = siteScene();
-  const comp = scene.components.get('r')!;
-  const labelled = shapes(markOf(replayLayer(scene, sitedState([['W1', 'blade-a'], ['WAFER-0001234', 'blade-b']])), comp))
-    .filter((node) => node.tag === 'text');
-  expect(labelled.map((node) => node.children.join(''))).toEqual(['W1', 'WAFER-0…']);
-  expect(labelled.every((node) => node.attrs.fill === 'var(--eqv-ink, #101828)')).toBe(true);
-  const ids = ['W1', 'W2', 'W3', 'W4', 'W5'];
-  const drawn = shapes(markOf(replayLayer(scene, sitedState(ids.map((id) => [id, 'blade-b'] as [string, string]))), comp));
-  expect(drawn.filter((node) => node.tag === 'circle').map((node) => titles(node)[0]!.split(' · ')[0])).toEqual(['W1', 'W2', 'W3']);
-  expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['+2']);
-  expect(titles(markOf(replayLayer(scene, sitedState(ids.map((id) => [id, 'blade-b'] as [string, string]))), comp)).filter((t) => t.startsWith('+')))
-    .toEqual(['+2 · W4, W5']);
-  const anonymous = replayState({
-    materials: [stateMaterial({
-      key: 'o:1', kind: 'wafer', id: null, location: { componentId: 'r' }, locationEvidence: 'observed', identityEvidence: 'observed',
-    })],
-    components: [{ componentId: 'r', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+it('paints every material cluster after every activity tint, whatever the component order', () => {
+  const { scene } = fixture([
+    component({ id: 'r', assetRef: 'primitive:robot-dual', label: 'R', role: 'robot', x: 400, y: 300, w: 96, h: 100, sites: ['blade-a', 'blade-b'] }),
+    component({ id: 'b', assetRef: 'primitive:pm', label: 'B', x: 400, y: 300, w: 200, h: 200 }),
+  ]);
+  const state = replayState({
+    materials: sitedState([['W1', 'blade-a'], ['W2', 'blade-b']]).materials,
+    components: [
+      { componentId: 'r', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] },
+      { componentId: 'b', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] },
+    ],
   });
-  expect(shapes(markOf(replayLayer(scene, anonymous), comp)).filter((node) => node.tag === 'text')).toEqual([]);
+  const order = replayLayer(scene, state).children.map((child) => typeof child !== 'string' && child.attrs['data-material-cluster'] ? 'cluster' : 'other');
+  expect(order.filter((kind) => kind === 'cluster')).toHaveLength(1);
+  expect(order.indexOf('cluster')).toBe(order.length - 1);
+  expect(order.length).toBeGreaterThan(1);
+});
+
+describe('material labels', () => {
+  const ids = ['W1', 'W2', 'W3', 'W4', 'W5'];
+  const overflow = () => {
+    const scene = siteScene();
+    return markOf(replayLayer(scene, sitedState(ids.map((id) => [id, 'blade-b'] as [string, string]))), scene.components.get('r')!);
+  };
+
+  it('labels up to four discs with their id, ellipsising a long one', () => {
+    const scene = siteScene();
+    const labelled = shapes(markOf(replayLayer(scene, sitedState([['W1', 'blade-a'], ['WAFER-0001234', 'blade-b']])), scene.components.get('r')!))
+      .filter((node) => node.tag === 'text');
+    expect(labelled.map((node) => node.children.join(''))).toEqual(['W1', 'WAFER-0…']);
+    expect(labelled.every((node) => node.attrs.fill === 'var(--eqv-ink, #101828)')).toBe(true);
+  });
+
+  it('from five shows three discs plus a +N chip that names the hidden ids in its title', () => {
+    const layer = overflow();
+    const drawn = shapes(layer);
+    expect(drawn.filter((node) => node.tag === 'circle').map((node) => titles(node)[0]!.split(' · ')[0])).toEqual(['W1', 'W2', 'W3']);
+    expect(drawn.filter((node) => node.tag === 'text').map((node) => node.children.join(''))).toEqual(['+2']);
+    expect(titles(layer).filter((t) => t.startsWith('+'))).toEqual(['+2 · W4, W5']);
+  });
+
+  it('leaves an anonymous material unlabelled', () => {
+    const scene = siteScene();
+    const anonymous = replayState({
+      materials: [stateMaterial({
+        key: 'o:1', kind: 'wafer', id: null, location: { componentId: 'r' }, locationEvidence: 'observed', identityEvidence: 'observed',
+      })],
+      components: [{ componentId: 'r', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+    });
+    expect(shapes(markOf(replayLayer(scene, anonymous), scene.components.get('r')!)).filter((node) => node.tag === 'text')).toEqual([]);
+  });
 });
 
 it('rings an occupancy conflict with its holding site and material keys', () => {
