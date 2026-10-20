@@ -320,6 +320,12 @@ describe('Component assembly', () => {
     expect(addComponent(undo(second), spec, null).componentId).toBe('pm-3');
     expect(addComponent(removeComponent(markSaved(second), 'pm-2'), spec, null).componentId).toBe('pm-3');
   });
+  it('allocates a fresh id above the safe integer limit', () => {
+    const state = createLayoutEdit(fixture([{ ...robot, id: 'pm-9007199254740993', role: 'pm' }]));
+    const added = addComponent(state, spec, null);
+    expect(added.componentId).toBe('pm-9007199254740994');
+    expect(new Set(added.state.present.components.map((component) => component.id)).size).toBe(2);
+  });
   it.each(['level', 'drag'])('does not add for invalid %s', (reason) => {
     const state = reason === 'drag' ? dragTo(fresh(), 'robot', 1, 1, null) : fresh();
     expect(addComponent(state, { ...spec, levelId: reason === 'level' ? 'missing' : 'l1' }, null)).toEqual({ state, componentId: null });

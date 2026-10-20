@@ -9,6 +9,7 @@ import {
 import { dirOrEmpty, publishRevision, readFile, saveDraft } from './api.js';
 import { AddComponentRow, EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
 import { REVISION_FILE } from './layout-baseline.js';
+import { newComponentSize } from './new-component-size.js';
 import { PublishDialog } from './PublishDialog.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter, Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
@@ -339,7 +340,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     const entry = PRIMITIVE_CATALOG.find((candidate) => candidate.name === name);
     const levelId = selected?.levelId ?? [...present.levels].sort((a, b) => a.order - b.order)[0]?.id;
     if (!entry || !levelId) return;
-    const { state, componentId } = addComponent(edit, { asset: name, size: { width: entry.width, height: entry.height }, levelId,
+    const { state, componentId } = addComponent(edit, { asset: name, size: newComponentSize(present, name), levelId,
       x: present.viewBox.x + present.viewBox.width / 2, y: present.viewBox.y + present.viewBox.height / 2 }, snapOptions);
     setSession({ ...session, state });
     if (componentId) setSelectedId(componentId);

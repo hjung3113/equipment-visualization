@@ -176,15 +176,18 @@ export function addComponent(state: LayoutEditState, spec: AddComponentSpec, sna
   if (state.drag || !state.present.levels.some((level) => level.id === spec.levelId)) return { state, componentId: null };
   const role = roleForPrimitive(spec.asset);
   const prefix = `${role}-`;
-  let highest = 0;
+  let highest = 0n;
   for (const doc of [state.present, state.baseline, ...state.past, ...state.future]) {
     for (const component of doc.components) {
       if (!component.id.startsWith(prefix)) continue;
       const suffix = component.id.slice(prefix.length);
-      if (/^\d+$/.test(suffix)) highest = Math.max(highest, Number(suffix));
+      if (/^\d+$/.test(suffix)) {
+        const value = BigInt(suffix);
+        if (value > highest) highest = value;
+      }
     }
   }
-  const n = highest + 1;
+  const n = highest + 1n;
   const componentId = `${role}-${n}`;
   const assumed = () => ({ certainty: 'assumed' as const, sourceEvidence: [] });
   const component: Component = {

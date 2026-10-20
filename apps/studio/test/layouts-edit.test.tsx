@@ -4,7 +4,6 @@ import { join } from 'node:path';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { layoutDocumentSchema, layoutRevision } from '@eqv/core';
-import { PRIMITIVE_CATALOG } from '@eqv/renderer';
 import { App } from '../src/App.js';
 import { createFileApi } from '../server/files.js';
 import { seedRoot } from './seed.js';
@@ -327,7 +326,7 @@ async function choosePrimitive(name: string) {
   } finally { Element.prototype.scrollIntoView = originalScroll; }
 }
 
-it('adds and selects a natural-size primitive, saving assumed provenance without connectivity', async () => {
+it('adds and selects a median-sized primitive, saving assumed provenance without connectivity', async () => {
   const { container, raw } = await openAssembly();
   await choosePrimitive('pm');
   fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
@@ -345,8 +344,9 @@ it('adds and selects a natural-size primitive, saving assumed provenance without
   const saved = await readDraft();
   const added = saved.components.find((c) => c.id === 'pm-1')!;
   expect(added).toMatchObject({ role: 'pm', assetRef: 'primitive:pm', label: 'PM 1', levelId: raw.components[0]!.levelId, ports: [], holdingSites: [] });
-  const pm = PRIMITIVE_CATALOG.find((entry) => entry.name === 'pm')!;
-  expect(added).toMatchObject({ size: { width: pm.width, height: pm.height } });
+  // The fixture's 14 longer sides have 84 at both middle positions.
+  const size = (added as typeof added & { size: { width: number; height: number } }).size;
+  expect(Math.max(size.width, size.height)).toBe(84);
   expect(added.provenance).toEqual(Object.fromEntries(['role', 'assetRef', 'label', 'levelId', 'transform'].map((key) => [key, { certainty: 'assumed', sourceEvidence: [] }])));
   for (const graph of ['physicalInterfaces', 'transferCapabilities', 'processRoutes']) expect(saved[graph]).toEqual(raw[graph]);
 });
