@@ -38,6 +38,7 @@ For equipment layouts, select one of 25 catalog primitives and use `Component �
 leave-page prompt, `저장 안 됨` badge). `초안 저장` writes the edited document to `layouts/<id>/draft.layout.json`; export and the
 publish change preview use the edited document too, so the preview lists added, removed and changed Components. Resize, port snapping and
 multi-select are not implemented.
+For a selected Component, four sections list Physical Interfaces, Ports, Holding Sites and Transfer Capabilities and allow explicit additions and deletions (#167, #168), including on Templates (Ports are added through a Physical Interface); new items are assumed with no source evidence, and partner Components and robot Handlers are chosen explicitly. Deleting a Port also removes its Physical Interfaces, and deleting a Holding Site removes its Transfer Capabilities; each add or delete is immediate, without confirmation, and is one undo step.
 
 The equipment data page imports Sample Windows, alias metadata and the Model Type Dictionary through `/api/import/*`. Each file is checked in the browser first for size and JSON syntax, then with the same `@eqv/core` validators (including `validateSampleWindow`); the server makes the final decision. Rejections list their code and path, and imported values are never fixed. Replacing alias metadata requires confirmation and shows added, removed and changed aliases. The Model Type Dictionary is create-only, and results appear as toasts.
 

@@ -435,3 +435,98 @@ it('previews an added Component in the publish dialog', async () => {
   expect(await within(dialog).findByText('추가 1 · 삭제 0 · 변경 0')).toBeTruthy();
   expect(within(within(dialog).getByRole('table', { name: 'Layout 변경 목록' })).getByText('pm-1')).toBeTruthy();
 });
+
+async function chooseEditOption(label: string, name: string, group?: string) {
+  const originalScroll = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView ??= function scrollIntoViewStub() {};
+  try {
+    fireEvent.keyDown(screen.getByRole('combobox', { name: label }), { key: 'ArrowDown' });
+    await screen.findByRole('listbox');
+    const options = group ? within(screen.getByRole('group', { name: group })) : screen;
+    fireEvent.click(options.getByRole('option', { name }));
+  } finally { Element.prototype.scrollIntoView = originalScroll; }
+}
+
+it('keeps overlapping Components independent until an explicit interface add, then undoes both new Ports with it', async () => {
+  const { container, raw } = await openAssembly();
+  await choosePrimitive('pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  for (const label of ['X', 'Y']) {
+    fireEvent.change(field(label), { target: { value: String(raw.components.find((c) => c.id === PM)!.transform[label.toLowerCase()]) } });
+    fireEvent.keyDown(field(label), { key: 'Enter' });
+  }
+  await saveDraft();
+  expect((await readDraft()).physicalInterfaces).toEqual(raw.physicalInterfaces);
+  await chooseEditOption('상대 Component', 'pm-a · PM1');
+  await chooseEditOption('종류', 'gate');
+  fireEvent.click(screen.getByRole('button', { name: 'Physical Interface 추가' }));
+  await saveDraft();
+  const saved = layoutDocumentSchema.parse(await readDraft());
+  expect(saved.physicalInterfaces).toHaveLength((raw.physicalInterfaces as unknown[]).length + 1);
+  expect(saved.physicalInterfaces.at(-1)).toMatchObject({ kind: 'gate', a: { componentId: 'pm-1', portId: 'p-1' }, b: { componentId: PM, portId: 'p-1' }, provenance: { certainty: 'assumed', sourceEvidence: [] } });
+  expect(saved.components.find((c) => c.id === 'pm-1')!.ports).toHaveLength(1);
+  expect(saved.components.find((c) => c.id === PM)!.ports.at(-1)?.id).toBe('p-1');
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect(componentEl(container, 'pm-1')).toBeTruthy();
+  await saveDraft();
+  const restored = layoutDocumentSchema.parse(await readDraft());
+  expect(restored.physicalInterfaces).toEqual(raw.physicalInterfaces);
+  expect(restored.components.find((c) => c.id === 'pm-1')!.ports).toEqual([]);
+  expect(restored.components.find((c) => c.id === PM)!.ports).toEqual(layoutDocumentSchema.parse(raw).components.find((c) => c.id === PM)!.ports);
+}, 15_000); // Several Radix Select interactions: ~1.5 s locally, over the 5 s default on a loaded CI runner (#173)
+
+it('edits assumed Sites and capabilities on a Template and cascades Site deletion', async () => {
+  const { container } = await openTemplate();
+  select(container, PM);
+  fireEvent.click(screen.getByRole('checkbox', { name: 'carrier' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Holding Site 추가' }));
+  await saveDraft();
+  expect(layoutDocumentSchema.parse(await readDraft()).components.find((c) => c.id === PM)!.holdingSites.at(-1)).toEqual({ id: 'slot-1', materialKinds: ['wafer', 'carrier'], provenance: { certainty: 'assumed', sourceEvidence: [] } });
+  await chooseEditOption('Holding Site', 'slot-1');
+  await chooseEditOption('상대 Holding Site', 'pm-b/station-1', 'pm-b');
+  await chooseEditOption('Handler', 'robot-1 · ATM Robot');
+  fireEvent.click(screen.getByRole('button', { name: 'Transfer Capability 추가' }));
+  await saveDraft();
+  const capabilityId = 'pm-a-slot-1-pm-b-station-1';
+  expect(layoutDocumentSchema.parse(await readDraft()).transferCapabilities.at(-1)).toMatchObject({ id: capabilityId, handlerComponentId: 'robot-1', provenance: { certainty: 'assumed', sourceEvidence: [] } });
+  fireEvent.click(screen.getByRole('button', { name: 'slot-1 삭제' }));
+  await saveDraft();
+  expect(layoutDocumentSchema.parse(await readDraft()).transferCapabilities.some((edge) => edge.id === capabilityId)).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect(screen.getByRole('button', { name: `${capabilityId} 삭제` })).toBeTruthy();
+}, 15_000); // Several Radix Select interactions: ~1.5 s locally, over the 5 s default on a loaded CI runner (#173)
+
+it('shows the no-robot hint and disables capability creation', async () => {
+  const raw = layoutDocumentSchema.parse(await original());
+  for (const component of raw.components) if (component.role === 'robot') component.role = 'handler';
+  raw.transferCapabilities = [];
+  if (raw.kind === 'template') delete raw.roleCardinality.robot;
+  await writeFile(join(root, TEMPLATE), JSON.stringify(raw));
+  const { container } = await openTemplate();
+  select(container, PM);
+  expect(screen.getByText('role이 robot인 Component가 없습니다.')).toBeTruthy();
+  expect((screen.getByRole('button', { name: 'Transfer Capability 추가' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('disables all graph controls while the Component delete dialog is open', async () => {
+  const { container } = await openAssembly();
+  select(container, PM);
+  fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+  await screen.findByRole('alertdialog');
+  for (const title of ['Physical Interface', '포트', 'Holding Site', 'Transfer Capability']) {
+    const section = screen.getByRole('region', { name: title, hidden: true });
+    for (const control of section.querySelectorAll('button')) expect(control.disabled).toBe(true);
+  }
+});
+
+it('disables interface creation when undo removes the chosen partner', async () => {
+  const { container } = await openAssembly();
+  await choosePrimitive('pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  select(container, PM);
+  await chooseEditOption('상대 Component', 'pm-1 · PM 1');
+  await chooseEditOption('종류', 'gate');
+  expect((screen.getByRole('button', { name: 'Physical Interface 추가' }) as HTMLButtonElement).disabled).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect((screen.getByRole('button', { name: 'Physical Interface 추가' }) as HTMLButtonElement).disabled).toBe(true);
+});
