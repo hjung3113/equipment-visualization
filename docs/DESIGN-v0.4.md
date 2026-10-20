@@ -149,6 +149,7 @@ P0+P1의 6종이 conformance fixture 대상이며 P2 2종은 설계 검토용이
 - 2차 편집: custom path editing, reference-image overlay alignment, layer-specific editing.
 - Custom SVG 수용 시 스크립트/외부 href/event-handler/foreignObject/remote CSS 차단; 선언적 허용 요소만 통과.
 - Style tokens: renderer는 자체 semantic CSS 변수(`--eqv-*`)와 fallback 값을 소유한다. 플랫폼 `DESIGN.md`/`@ap/ui` 토큰은 `platform-adapter`가 `--eqv-*`에 매핑해 주입하며, renderer는 이를 직접 참조하지 않는다 (ADR-0001). Studio에서는 `--eqv-*` 값을 FeedbackOps 토큰에서 정하고, `replay`·`editor`의 DOM 컨트롤은 `@fops/ui` 프리미티브로 그린다 (ADR-0008).
+- Port 위치는 [GLOSSARY.md](../GLOSSARY.md)의 Port 규칙에 따라 Component 로컬 frame에서 상대 Component를 향한 footprint edge에 둔다. 아직 렌더링하지 않는다.
 - 이동 경로의 수작업 자유 그림보다 `port-to-port` connector/waypoint를 우선. 물리 연결은 선 하나의 픽셀 근접만으로 판정 불가.
 
 ### Studio 저장 (M1)
