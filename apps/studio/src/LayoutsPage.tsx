@@ -1,8 +1,15 @@
-import { Component, useEffect, useLayoutEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { CircleCheck, Download, FileJson, Save, Send, ServerCrash } from 'lucide-react';
 import { validateLayout, type LayoutDocument } from '@eqv/core';
-import { TopViewer } from '@eqv/renderer';
-import { ApiError, listDir, publishRevision, readFile, saveDraft } from './api.js';
+import { TopViewer, type ComponentDrag } from '@eqv/renderer';
+import {
+  DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rotateBy, setTransform, undo,
+  type LayoutEditState,
+} from '@eqv/editor';
+import { dirOrEmpty, publishRevision, readFile, saveDraft } from './api.js';
+import { EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
+import { REVISION_FILE } from './layout-baseline.js';
+import { PublishDialog } from './PublishDialog.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
 import { Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
@@ -11,7 +18,6 @@ const VIEW_WIDTH = 960;
 const VIEW_HEIGHT = 600;
 /** Width used until the document column has been measured (and where ResizeObserver is missing). */
 const FALLBACK_WIDTH = 640;
-const REVISION_FILE = /^([0-9a-f]{64})\.layout\.json$/;
 
 interface Doc {
   /** The value exactly as read from a file or import; this is what save and publish write. */
@@ -19,6 +25,11 @@ interface Doc {
   layout: LayoutDocument;
 }
 type Loaded = { state: 'loading' } | { state: 'error'; message: string } | ({ state: 'ready' } & Doc);
+/** The edit history of one open document; `source` is the `Doc.raw` it started from. */
+interface EditSession {
+  source: unknown;
+  state: LayoutEditState;
+}
 interface LayoutEntry {
   id: string;
   files: { path: string; label: string }[];
@@ -27,6 +38,8 @@ interface Listing {
   templates: { path: string; label: string }[];
   layouts: LayoutEntry[];
 }
+
+const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 
@@ -48,15 +61,6 @@ function parseDoc(raw: unknown): { doc: Doc } | { issues: string } {
   const result = validateLayout(raw);
   if (result.ok) return { doc: { raw, layout: result.layout } };
   return { issues: result.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('\n') };
-}
-
-async function dirOrEmpty(dir: string) {
-  try {
-    return await listDir(dir);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return [];
-    throw error;
-  }
 }
 
 async function loadListing(): Promise<Listing> {
@@ -103,16 +107,24 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [revision, setRevision] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The document the open publish dialog previews; `onPublish` writes exactly this. */
+  const [publishing, setPublishing] = useState<Doc | null>(null);
   const [listingReload, setListingReload] = useState(0);
   const [fileReload, setFileReload] = useState(0);
   const [seed, setSeed] = useState<{ file: string; doc: Doc } | null>(null);
   const [prevFile, setPrevFile] = useState(file);
+  const [session, setSession] = useState<EditSession | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [snap, setSnap] = useState(false);
   const [documentEpoch, setDocumentEpoch] = useState(0);
   const activeDocumentEpoch = useRef<number | null>(documentEpoch);
 
   const [importSequence, setImportSequence] = useState(0);
   const activeImportSequence = useRef<number | null>(importSequence);
   const documentRef = useRef<HTMLDivElement>(null);
+  const publishOpener = useRef<HTMLButtonElement>(null);
+  /** Document epoch whose publish dialog just closed; the opener regains focus once it is enabled again. */
+  const focusOpenerFor = useRef<number | null>(null);
   const viewWidth = useColumnWidth(documentRef);
 
   useLayoutEffect(() => {
@@ -125,12 +137,23 @@ export function LayoutsPage({ file }: { file: string | null }) {
     return () => { activeDocumentEpoch.current = null; };
   }, [documentEpoch]);
 
+  // The dialog unmounts as it closes, so focus returns from here rather than from its onCloseAutoFocus.
+  useEffect(() => {
+    const owner = focusOpenerFor.current;
+    if (owner === null || publishing !== null || busy) return;
+    focusOpenerFor.current = null;
+    // Only while focus is lost: a user who moved focus during a pending publish keeps it.
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (owner === documentEpoch && lost) publishOpener.current?.focus();
+  }, [publishing, busy, documentEpoch]);
+
   // After navigation is approved, opening another file clears the import and previous notices.
   if (prevFile !== file) {
     setPrevFile(file);
     if (seed?.file !== file) setDocumentEpoch(documentEpoch + 1);
     setImportSequence(importSequence + 1);
     setBusy(false);
+    setPublishing(null);
     setImported(null);
     setActionError(null);
     setRevision(null);
@@ -138,16 +161,30 @@ export function LayoutsPage({ file }: { file: string | null }) {
     setSeed(null);
   }
 
+  const base: Doc | null = imported ?? (loaded?.state === 'ready' ? loaded : null);
+  // A new document, or a differing read of the open file, starts a new edit session; a save keeps it (its `source` follows).
+  // Not while a file switch is pending: `base` still holds the previous file, and a save's seeded navigation keeps its session.
+  if (prevFile === file && (session?.source ?? null) !== (base?.raw ?? null)) {
+    setSession(base === null ? null : { source: base.raw, state: createLayoutEdit(base.raw as LayoutDocument) });
+    setSelectedId(null);
+  }
+  const edit = session !== null && base !== null && session.source === base.raw ? session.state : null;
+  const present = edit?.present ?? null;
+  const unsavedEdits = edit !== null && isDirty(edit);
+  const importPending = imported !== null;
+
   useLayoutEffect(() => {
-    if (imported === null) return;
-    setNavigationBlocker(() => window.confirm('저장하지 않은 가져오기 문서가 있습니다. 버리고 이동할까요?'));
+    if (!importPending && !unsavedEdits) return;
+    setNavigationBlocker(() => window.confirm(importPending
+      ? '저장하지 않은 가져오기 문서가 있습니다. 버리고 이동할까요?'
+      : '저장하지 않은 편집이 있습니다. 버리고 이동할까요?'));
     const onBeforeUnload = (event: BeforeUnloadEvent) => { event.preventDefault(); };
     window.addEventListener('beforeunload', onBeforeUnload);
     return () => {
       setNavigationBlocker(null);
       window.removeEventListener('beforeunload', onBeforeUnload);
     };
-  }, [imported]);
+  }, [importPending, unsavedEdits]);
 
   useEffect(() => {
     let cancelled = false;
@@ -175,7 +212,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
     return () => { cancelled = true; };
   }, [file, fileReload]);
 
-  const current: Doc | null = imported ?? (loaded?.state === 'ready' ? loaded : null);
+  /** What the page shows, saves, exports and publishes: the base document with the edits applied. */
+  const current: Doc | null = useMemo(() => present === null ? null : { raw: present, layout: present }, [present]);
 
   async function onImport(picked: File) {
     const sequence = (activeImportSequence.current ?? importSequence) + 1;
@@ -190,6 +228,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
         activeDocumentEpoch.current = epoch;
         setDocumentEpoch(epoch);
         setBusy(false);
+        setPublishing(null);
         setRevision(null);
         setImported(parsed.doc);
         setActionError(null);
@@ -228,6 +267,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const onSaveDraft = () => current && run(async (isActive) => {
     const path = await saveDraft(current.layout.id, current.raw);
     if (!isActive()) return;
+    setSession((previous) => previous !== null && previous.state.present === current.raw
+      ? { source: current.raw, state: markSaved(previous.state) } : previous);
     setListingReload((count) => count + 1);
     setFileReload((count) => count + 1);
     if (path === file) {
@@ -239,12 +280,58 @@ export function LayoutsPage({ file }: { file: string | null }) {
     }
   });
 
-  const onPublish = () => current && run(async (isActive) => {
-    const result = await publishRevision(current.raw);
+  const onPublish = (doc: Doc) => run(async (isActive) => {
+    const result = await publishRevision(doc.raw);
     if (!isActive()) return;
     setRevision(result.revision);
     setListingReload((count) => count + 1);
   });
+
+  const editing = (apply: (state: LayoutEditState) => LayoutEditState) => setSession((previous) => {
+    if (previous === null) return previous;
+    const state = apply(previous.state);
+    return state === previous.state ? previous : { ...previous, state };
+  });
+  const snapOptions = snap ? DEFAULT_SNAP : null;
+  const selected = selectedId === null ? undefined : present?.components.find((component) => component.id === selectedId);
+  const editable = !busy && publishing === null;
+  // A drag held while the page freezes is settled here; the drag events that follow are ignored.
+  useEffect(() => {
+    if (!editable) editing(cancelDrag);
+  }, [editable]);
+
+  function onComponentDrag({ componentId, phase, dx, dy }: ComponentDrag) {
+    if (!editable) return;
+    if (phase === 'cancel') editing(cancelDrag);
+    else editing((state) => phase === 'end' ? endDrag(dragTo(state, componentId, dx, dy, snapOptions)) : dragTo(state, componentId, dx, dy, snapOptions));
+  }
+
+  function rotateSelected(degrees: number) {
+    if (selected) editing((state) => rotateBy(state, selected.id, degrees, snapOptions));
+  }
+
+  function onViewerKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (!selected || !editable || event.defaultPrevented) return;
+    const arrow = ARROWS[event.key];
+    if (arrow && event.altKey && !event.ctrlKey && !event.metaKey) {
+      const step = (snap ? DEFAULT_SNAP.grid : 1) * (event.shiftKey ? 10 : 1);
+      editing((state) => moveBy(state, selected.id, arrow[0] * step, arrow[1] * step, snapOptions));
+    } else if ((event.key === '[' || event.key === ']') && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      rotateSelected(event.key === '[' ? -ROTATE_STEP : ROTATE_STEP);
+    } else return;
+    event.preventDefault();
+  }
+
+  function onRootKeyDown(event: KeyboardEvent<HTMLElement>) {
+    if (event.defaultPrevented || !editable || !(event.metaKey || event.ctrlKey)) return;
+    const target = event.target instanceof Element ? event.target : null;
+    if (target?.closest('input, textarea, select, [contenteditable], [role="dialog"], [role="radio"]')) return;
+    const key = event.key.toLowerCase();
+    if (key === 'z' && !event.shiftKey) editing(undo);
+    else if ((key === 'z' && event.shiftKey) || (key === 'y' && event.ctrlKey)) editing(redo);
+    else return;
+    event.preventDefault();
+  }
 
   const item = (entry: { path: string; label: string }) => (
     <li key={entry.path}>
@@ -262,7 +349,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
 
   return (
     <Page title="레이아웃">
-      <div className="grid items-start gap-4 lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)]">
+      <div className="grid items-start gap-4 lg:grid-cols-[minmax(200px,260px)_minmax(0,1fr)]" onKeyDown={onRootKeyDown}>
         <Panel title="레이아웃 목록" className="min-w-0">
           <div className="space-y-3">
             {listingError !== null && <StateMessage compact tone="danger" icon={ServerCrash} title={listingError} />}
@@ -293,7 +380,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
             <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || busy}>
               <Save className="size-3.5" aria-hidden />초안 저장
             </Button>
-            <Button type="button" variant="primary" size="toolbar" onClick={onPublish} disabled={!current || busy}>
+            <Button ref={publishOpener} type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || busy}>
               <Send className="size-3.5" aria-hidden />Revision 게시
             </Button>
           </>}
@@ -312,17 +399,33 @@ export function LayoutsPage({ file }: { file: string | null }) {
               <>
                 <div className="flex flex-wrap items-center gap-2">
                   <code className="font-mono text-xs">{current.layout.id}</code>
-                  {imported && <StatusBadge tone="warning">저장 안 됨</StatusBadge>}
+                  {(importPending || unsavedEdits) && <StatusBadge tone="warning">저장 안 됨</StatusBadge>}
                 </div>
-                <ViewerBoundary key={documentEpoch}>
-                  <TopViewer layout={current.layout} width={viewWidth} height={Math.round(viewWidth * VIEW_HEIGHT / VIEW_WIDTH)}
-                    renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
-                </ViewerBoundary>
+                {edit && (
+                  <EditToolbar busy={busy} canUndo={canUndo(edit)} canRedo={canRedo(edit)} hasSelection={selected !== undefined} snap={snap}
+                    onUndo={() => editing(undo)} onRedo={() => editing(redo)} onRotate={rotateSelected} onSnapChange={setSnap} />
+                )}
+                <div onKeyDown={onViewerKeyDown}>
+                  <ViewerBoundary key={documentEpoch}>
+                    <TopViewer layout={current.layout} width={viewWidth} height={Math.round(viewWidth * VIEW_HEIGHT / VIEW_WIDTH)}
+                      selectedId={selectedId} onSelectedChange={setSelectedId} onComponentDrag={onComponentDrag}
+                      renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
+                  </ViewerBoundary>
+                </div>
+                <SelectionPanel component={selected} busy={busy}
+                  onTransform={(patch) => { if (selected) editing((state) => setTransform(state, selected.id, patch)); }} />
               </>
             )}
           </div>
         </Panel>
       </div>
+      {publishing && (
+        <PublishDialog
+          layout={publishing.layout}
+          onCancel={() => { focusOpenerFor.current = documentEpoch; setPublishing(null); }}
+          onPublish={() => { focusOpenerFor.current = documentEpoch; setPublishing(null); void onPublish(publishing); }}
+        />
+      )}
     </Page>
   );
 }

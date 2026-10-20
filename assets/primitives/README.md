@@ -33,6 +33,7 @@ The adapter must inject complete CSS colours. analytics-platform tokens hold RGB
 | `--eqv-detail-fill` | Interior stations, hubs and joints | `#ffffff` | `--surface-field-filled` |
 | `--eqv-material-fill` | Material fill | `#f7e4cd` | Literal palette value (no platform token) |
 | `--eqv-material-stroke` | Material outline | `#b45309` | `--cat-amber-stroke` |
+| `--eqv-active-fill` | Replay active-module tint (low opacity) | `#d6e6fb` | Literal palette value (no platform token) |
 | `--eqv-assumed-fg` | Assumed certainty foreground | `#8e5500` | `--text-warning-label` |
 | `--eqv-assumed-bg` | Assumed certainty background | `#f4ece0` | `--accent-warn-soft` |
 | `--eqv-evidence` | Evidence overlay | `#374151` | `--text-secondary` |

@@ -62,7 +62,7 @@ Studio는 다음 네 가지를 **가져오기 endpoint**(`/api/import/*`, dev �
   - window 대체·폐기, 설비 기록 수정, 이름 규칙(`[A-Za-z0-9][A-Za-z0-9._-]*`) 밖의 실제 equipmentId는 지원하지 않는다. 이름은 바꾸지 않고 거부하며, 경로 인코딩은 별도 ADR이다.
   - 동시 가져오기의 겹침 검사는 원자적이지 않다. 단일 사용자 로컬 도구이므로 #60 last-write-wins 행과 같은 판단이다.
   - 큰 window의 Focus는 `replayTimeline`의 O(breakpoint × record) 비용(#60 행)에 걸린다. 이 슬라이스는 범위 안내로 막고, 알고리즘 개선은 별도 이슈다. (#106에서 `replayTimeline`을 한 번의 정렬된 pass로 바꿔 비용이 records + breakpoint × (동시 open Occurrence + 시간 역전)로 줄었고, Gantt 계산 한도는 그 모델에 읽기마다의 Binding·Layout 탐색과 위치 해석 비용을 더한 값 기준이고, 계산한 timeline의 Gantt 막대(span)가 `GANTT_SPAN_LIMIT`을 넘으면 그리지 않는다. 두 한도 모두 범위 안내를 보인다.)
-- **#53과의 관계:** 실제 설비로 여러 번 Publish하면 같은 `layoutId`의 Layout Revision이 여럿 생긴다. 그러면 #53의 재개 조건(한 소비자가 두 revision을 읽음)에 가까워진다. 이 ADR은 #53을 풀지 않는다. Focus loader의 기존 알림(최신 Binding의 revision 사용)이 그대로 동작한다.
+- **#53과의 관계:** 실제 설비로 여러 번 Publish하면 같은 `layoutId`의 Layout Revision이 여럿 생긴다. 그러면 #53의 재개 조건(한 소비자가 두 revision을 읽음)에 가까워진다. 이 ADR은 #53을 풀지 않는다. (#53/ADR-0011에서 해결: 각 Binding이 자기 Layout Revision을 읽고, 최신 Binding의 revision을 쓴다는 Focus loader 알림은 없어졌다.)
 - **같은 PR에서 고칠 문서:**
   - `docs/ONBOARDING.md`: §7, :208 규칙, §2 샘플 기간 문장, 낡은 :3 상태 줄.
   - `GLOSSARY.md`: Sample Window.

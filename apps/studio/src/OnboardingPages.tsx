@@ -58,7 +58,15 @@ export function FleetPage() {
           <FleetTable rows={state.rows}
             renderLink={(equipmentId, children, row) => (
               <Link href={hrefFor(row.status === 'no-observations' ? { name: 'equipment', equipmentId } : { name: 'onboarding', equipmentId, window: null })}>{children}</Link>
-            )} />
+            )}
+            renderActions={(row) => row.status === 'published' ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link href={hrefFor({ name: 'focus', equipmentId: row.equipmentId, entityType: null, anchor: null, window: null })}
+                  aria-label={`${row.equipmentId} Focus 열기`}>
+                  <Crosshair className="size-3.5" aria-hidden />Focus 열기
+                </Link>
+              </Button>
+            ) : null} />
         )}
       </div>
     </Page>

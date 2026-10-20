@@ -11,3 +11,7 @@ export {
   type DiffEntry, type DryRun, type DryRunInput, type ModelDryRunInput, type ModelDryRunRow, type PlanInput, type PublishPlan,
 } from './publish.js';
 export { DIRTY_REASON, PublishPanel, type PublishPanelProps } from './PublishPanel.js';
+export {
+  DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rootDeltaToLocal, rotateBy, setTransform, undo,
+  type LayoutEditState, type SnapOptions, type TransformPatch,
+} from './layout-edit.js';

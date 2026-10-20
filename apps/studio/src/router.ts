@@ -8,6 +8,7 @@ export type Route =
   | { name: 'onboarding'; equipmentId: string; window: string | null }
   | { name: 'board'; equipmentId: string; window: string | null }
   | { name: 'focus'; equipmentId: string; entityType: string | null; anchor: string | null; window: string | null }
+  | { name: 'journey'; equipmentId: string; anchor: string | null; window: string | null }
   | { name: 'dev-ui' }
   | { name: 'not-found'; pathname: string };
 
@@ -34,6 +35,9 @@ export function parseRoute(pathname: string, search: string, dev: boolean = impo
   if (head === 'focus' && equipmentId && extra.length === 0) {
     return { name: 'focus', equipmentId, entityType: query.get('entityType') || null, anchor: query.get('anchor') || null, window: query.get('window') || null };
   }
+  if (head === 'journey' && equipmentId && extra.length === 0) {
+    return { name: 'journey', equipmentId, anchor: query.get('anchor') || null, window: query.get('window') || null };
+  }
   if (dev && segments.length === 2 && head === 'dev' && id === 'ui') return { name: 'dev-ui' };
   return { name: 'not-found', pathname };
 }
@@ -59,6 +63,13 @@ export function hrefFor(route: Route): string {
       if (route.window !== null) query.set('window', route.window);
       const text = query.toString();
       return `/focus/${encodeURIComponent(route.equipmentId)}${text ? `?${text}` : ''}`;
+    }
+    case 'journey': {
+      const query = new URLSearchParams();
+      if (route.anchor !== null) query.set('anchor', route.anchor);
+      if (route.window !== null) query.set('window', route.window);
+      const text = query.toString();
+      return `/journey/${encodeURIComponent(route.equipmentId)}${text ? `?${text}` : ''}`;
     }
     case 'dev-ui':
       return '/dev/ui';

@@ -1,9 +1,10 @@
 import { canonicalJson, sha256Hex } from '../canonical.js';
+import { layoutRevision } from '../layout/revision.js';
 import type { Binding } from '../mapping/schema.js';
 import type { OccurrenceBatch } from '../occurrence/schema.js';
 import type { SceneState } from '../scene/schema.js';
 import type { SiteWallClock } from '../site-wall-clock.js';
-import { RULESET_VERSION, assertReplayInput, type ReplayInput } from './reduce.js';
+import { RULESET_VERSION, assertReplayInput, bindingLayout, type ReplayInput } from './reduce.js';
 
 export type ReplayKey = {
   binding: Binding | null;
@@ -21,9 +22,13 @@ export function observationHash(batch: OccurrenceBatch): Promise<string> {
 export async function replayKey(input: ReplayInput, t: SiteWallClock): Promise<ReplayKey> {
   assertReplayInput(input);
   const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
-  const layout = binding && input.layouts.find((l) => l.id === binding.layoutId);
+  const layout = bindingLayout(input, binding);
+  const layoutHash = layout ? await layoutRevision(layout) : null;
+  if (binding?.layoutRevision !== undefined && layoutHash !== null && layoutHash !== binding.layoutRevision) {
+    throw new RangeError(`layoutRevisions[${binding.layoutRevision}] has content hash ${layoutHash}`);
+  }
   const mapping = binding && input.mappings.find((m) => m.hash === binding.mappingHash && m.layoutId === binding.layoutId && m.equipmentId === input.bindings.equipmentId);
-  return { binding: binding ? { ...binding } : null, layoutHash: layout ? await sha256Hex(canonicalJson(layout)) : null,
+  return { binding: binding ? { ...binding } : null, layoutHash,
     mappingHash: mapping?.hash ?? null, rulesetVersion: RULESET_VERSION, dataGeneration: input.batch.dataGeneration,
     observationHash: await observationHash(input.batch), t };
 }

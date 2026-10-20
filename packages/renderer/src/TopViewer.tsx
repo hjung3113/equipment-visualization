@@ -6,6 +6,8 @@ import {
   bringIntoView, clampCenter, defaultCamera, fitScale, panByFraction, pxPerUnit, screenToLayout,
   viewBoxOf, zoomAtPoint, zoomFromWheel, ZOOM_MAX, ZOOM_MIN, type Camera, type Frame, type Size,
 } from './camera.js';
+import type { LayoutDocument } from '@eqv/core';
+import { buildJourneyLayer, type JourneyOverlay } from './journey.js';
 import { buildOverlay, buildReplayLayer, type Highlight, type ReplayOverlay } from './overlay.js';
 import { buildScene, type Scene } from './scene.js';
 import { formatNum, renderNode } from './svg.js';
@@ -21,6 +23,14 @@ export interface TopViewerControls {
   canFit: boolean;
 }
 
+/** Total pointer delta since a Component drag began, in layout root coordinates (layout units). Never snapped. */
+export interface ComponentDrag {
+  componentId: string;
+  phase: 'move' | 'end' | 'cancel';
+  dx: number;
+  dy: number;
+}
+
 export interface TopViewerProps extends TopViewProps {
   /** `undefined` keeps the selection inside the viewer. Any other value, including null, is controlled. */
   selectedId?: string | null;
@@ -30,6 +40,12 @@ export interface TopViewerProps extends TopViewProps {
   highlight?: Highlight | null;
   /** Cursor-time replay layer: activity rings, material tokens, conflicts, illustrative ghosts. Given, never computed here. */
   replay?: ReplayOverlay | null;
+  /** One wafer's discrete hops as numbered badges on their Components. Given, never computed here; draws no line between hops
+   * and, while set, a selected Component draws no Transfer Capability segments. */
+  journey?: JourneyOverlay | null;
+  /** While set, a drag of more than 4 px that starts on a visible Component reports its delta here instead of panning, and a new
+   * `layout` with the same `id` and `viewBox` keeps the view. The renderer edits nothing and infers no connectivity from a drop. */
+  onComponentDrag?: (drag: ComponentDrag) => void;
   /** Host slot for the zoom controls. Absent: the default 확대/축소/맞춤 buttons render. */
   renderControls?: (controls: TopViewerControls) => ReactNode;
 }
@@ -45,6 +61,9 @@ interface Drag {
   zoom: number;
   px: number;
   moved: boolean;
+  component: boolean;
+  dx: number;
+  dy: number;
 }
 
 interface ViewState {
@@ -89,6 +108,12 @@ function componentIdFrom(target: EventTarget | null, root: Element | null): stri
     node = node.parentElement;
   }
   return null;
+}
+
+function sameViewIdentity(a: LayoutDocument, b: LayoutDocument): boolean {
+  return a.id === b.id
+    && a.viewBox.x === b.viewBox.x && a.viewBox.y === b.viewBox.y
+    && a.viewBox.width === b.viewBox.width && a.viewBox.height === b.viewBox.height;
 }
 
 function withKey(node: ReactNode, key: string): ReactNode {
@@ -137,7 +162,7 @@ function staticParts(scene: Scene): {
  * updates `aria-pressed` and the overlay, so a click does not rebuild the picture.
  */
 export function TopViewer({
-  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay, renderControls,
+  layout, width, height, labels, layers, visibleLevelIds, selectedId, onSelectedChange, highlight, replay, journey, onComponentDrag, renderControls,
 }: TopViewerProps) {
   const controlled = selectedId !== undefined;
   const [internalSelection, setInternalSelection] = useState<string | null>(null);
@@ -148,8 +173,9 @@ export function TopViewer({
   const [modality, setModality] = useState<'pointer' | 'keyboard'>('pointer');
   const [sceneEpoch, setSceneEpoch] = useState({ layout, width, height, labels, layers, visibleLevelIds });
 
-  const layoutChanged = sceneEpoch.layout !== layout;
-  const sceneInputsChanged = layoutChanged
+  const layoutObjectChanged = sceneEpoch.layout !== layout;
+  const layoutChanged = layoutObjectChanged && !(onComponentDrag && sameViewIdentity(sceneEpoch.layout, layout));
+  const sceneInputsChanged = layoutObjectChanged
     || sceneEpoch.width !== width
     || sceneEpoch.height !== height
     || sceneEpoch.labels !== labels
@@ -166,8 +192,14 @@ export function TopViewer({
       setFocusedId(null);
       setModality('pointer');
     } else {
+      if (layoutObjectChanged && internalSelection != null && !layout.components.some((c) => c.id === internalSelection)) {
+        setInternalSelection(null);
+      }
       viewCamera = clampCenter(camera, layout.viewBox);
-      scenePx = fitScale({ width, height }, layout.viewBox) * viewCamera.zoom;
+      const sameViewport = sceneEpoch.width === width && sceneEpoch.height === height && sceneEpoch.layers === layers
+        && sceneEpoch.labels === labels && sceneEpoch.visibleLevelIds === visibleLevelIds;
+      // A host edit alone keeps the committed px, so a pending zoom settlement still lands on its own.
+      if (!(layoutObjectChanged && sameViewport)) scenePx = fitScale({ width, height }, layout.viewBox) * viewCamera.zoom;
     }
     setSceneEpoch({ layout, width, height, labels, layers, visibleLevelIds });
     if (viewCamera !== camera) setCamera(viewCamera);
@@ -183,6 +215,8 @@ export function TopViewer({
     focused = null;
     mode = 'pointer';
     if (!controlled) selection = null;
+  } else if (layoutObjectChanged && !controlled && selection != null && !layout.components.some((c) => c.id === selection)) {
+    selection = null;
   }
 
   const svgRef = useRef<SVGSVGElement>(null);
@@ -208,8 +242,9 @@ export function TopViewer({
   const overlay = useMemo(
     () => buildOverlay(scene, {
       selectedId: selection, hoveredId: hover, focusedId: focusForOverlay, showAllCapabilities: showAll, highlight,
+      suppressCapabilities: journey != null,
     }, 1 / scene.pxPerUnit),
-    [scene, selection, hover, focusForOverlay, showAll, highlight],
+    [scene, selection, hover, focusForOverlay, showAll, highlight, journey != null],
   );
   const overlayNodes = useMemo(() => ({
     interaction: renderNode(overlay.interaction),
@@ -219,6 +254,11 @@ export function TopViewer({
   const replayNodes = useMemo(
     () => (replay ? renderNode(buildReplayLayer(scene, replay, 1 / scene.pxPerUnit)) : null),
     [scene, replay],
+  );
+
+  const journeyNodes = useMemo(
+    () => (journey ? renderNode(buildJourneyLayer(scene, journey, 1 / scene.pxPerUnit)) : null),
+    [scene, journey],
   );
 
   const queueRelayout = () => {
@@ -235,13 +275,18 @@ export function TopViewer({
     viewRef.current = { width, height, frame: layout.viewBox };
     queueRelayoutRef.current = queueRelayout;
     if (layoutSeen.current !== layout) {
+      const kept = onComponentDrag && sameViewIdentity(layoutSeen.current, layout);
       layoutSeen.current = layout;
-      dragRef.current = null;
-      clickTargetRef.current = null;
+      if (!kept) {
+        dragRef.current = null;
+        clickTargetRef.current = null;
+      }
     }
   });
 
   useLayoutEffect(() => {
+    // A retained replacement keeps the committed px while a zoom is still settling; settle it again.
+    if (fitScale(viewRef.current, viewRef.current.frame) * cameraRef.current.zoom !== scenePx) queueRelayoutRef.current();
     return () => {
       if (relayoutTimer.current != null) {
         clearTimeout(relayoutTimer.current);
@@ -275,7 +320,7 @@ export function TopViewer({
       return next.cx === prev.cx && next.cy === prev.cy && next.zoom === prev.zoom ? prev : next;
     });
     // Only when keyboard focus lands. A later resize or settled relayout must not pull the centre back.
-  }, [focused, mode, layout]);
+  }, [focused, mode]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -334,6 +379,14 @@ export function TopViewer({
       return;
     }
     if (key === 'Escape') {
+      const drag = dragRef.current;
+      if (drag?.component && drag.componentId) {
+        dragRef.current = null;
+        releaseCapture(drag);
+        suppressClick.current = true;
+        onComponentDrag?.({ componentId: drag.componentId, phase: 'cancel', dx: drag.dx, dy: drag.dy });
+        return;
+      }
       commit(null);
       return;
     }
@@ -370,6 +423,9 @@ export function TopViewer({
       zoom: viewCamera.zoom,
       px: pxPerUnit(viewCamera, { width, height }, layout.viewBox),
       moved: false,
+      component: false,
+      dx: 0,
+      dy: 0,
     };
     clickTargetRef.current = dragRef.current;
   };
@@ -388,6 +444,16 @@ export function TopViewer({
         } catch { /* setPointerCapture is missing or throws in jsdom */ }
       }
       setHoverId(null);
+      if (onComponentDrag && drag.componentId) {
+        drag.component = true;
+        commit(drag.componentId);
+      }
+    }
+    if (drag.component && drag.componentId) {
+      drag.dx = (event.clientX - drag.x) / drag.px;
+      drag.dy = (event.clientY - drag.y) / drag.px;
+      onComponentDrag?.({ componentId: drag.componentId, phase: 'move', dx: drag.dx, dy: drag.dy });
+      return;
     }
     const next = clampCenter({
       zoom: drag.zoom,
@@ -398,19 +464,28 @@ export function TopViewer({
     setCamera(next);
   };
 
+  const releaseCapture = (drag: Drag) => {
+    const svg = svgRef.current;
+    if (drag.captured && svg && typeof svg.releasePointerCapture === 'function') {
+      try {
+        if (typeof svg.hasPointerCapture !== 'function' || svg.hasPointerCapture(drag.pointerId)) {
+          svg.releasePointerCapture(drag.pointerId);
+        }
+      } catch { /* capture APIs are incomplete in jsdom */ }
+    }
+  };
+
   const endDrag = (event: PointerEvent<SVGSVGElement>, cancel: boolean) => {
     const drag = dragRef.current;
     if (!drag || drag.pointerId !== event.pointerId) return;
     dragRef.current = null;
-    const svg = svgRef.current;
-    if (drag.captured && svg && typeof svg.releasePointerCapture === 'function') {
-      try {
-        if (typeof svg.hasPointerCapture !== 'function' || svg.hasPointerCapture(event.pointerId)) {
-          svg.releasePointerCapture(event.pointerId);
-        }
-      } catch { /* capture APIs are incomplete in jsdom */ }
-    }
+    releaseCapture(drag);
     if (cancel || drag.moved) suppressClick.current = true;
+    if (drag.component && drag.componentId) {
+      onComponentDrag?.(cancel
+        ? { componentId: drag.componentId, phase: 'cancel', dx: drag.dx, dy: drag.dy }
+        : { componentId: drag.componentId, phase: 'end', dx: (event.clientX - drag.x) / drag.px, dy: (event.clientY - drag.y) / drag.px });
+    }
   };
 
   const onClick = (event: MouseEvent<SVGSVGElement>) => {
@@ -476,6 +551,7 @@ export function TopViewer({
         onPointerMove={onPointerMove}
         onPointerUp={(event) => endDrag(event, false)}
         onPointerCancel={(event) => endDrag(event, true)}
+        onLostPointerCapture={(event) => { if (event.target === event.currentTarget && dragRef.current?.component) endDrag(event, true); }}
         onClick={onClick}
         onPointerOver={onPointerOver}
         onPointerOut={onPointerOut}
@@ -488,6 +564,7 @@ export function TopViewer({
         {parts.interfaces}
         {overlayNodes.capabilities}
         {replayNodes}
+        {journeyNodes}
         {overlayNodes.highlight}
         {overlayNodes.highlight && overlayNodes.interaction}
         {parts.labels}

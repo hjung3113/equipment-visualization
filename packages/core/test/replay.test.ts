@@ -2,7 +2,7 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
   bindingsFileSchema, layoutDocumentSchema, mappingVersionSchema, occurrenceBatchSchema, sceneStateSchema,
-  seekSceneState, stepSceneState, replayKey, replayTimeline, sceneStateHash, type ReplayInput, type SiteWallClock,
+  seekSceneState, stepSceneState, replayKey, replayTimeline, sceneStateHash, layoutRevision, bindingLayout, assertReplayInput, type ReplayInput, type SiteWallClock,
 } from '../src/index.js';
 
 const root = new URL('../../../fixtures/cluster-single/', import.meta.url);
@@ -134,7 +134,7 @@ it.each(['10:00:30', '10:05:30'])('identifies the complete active replay inputs 
   const t = time(at);
   const binding = data.bindings.bindings[at === '10:00:30' ? 0 : 1]!;
   expect(await replayKey(data, t)).toMatchObject({ binding, mappingHash: binding.mappingHash,
-    layoutHash: expect.stringMatching(/^sha256:[0-9a-f]{64}$/), rulesetVersion: 'scene-rules-1', dataGeneration: 'g1', t });
+    layoutHash: expect.stringMatching(/^sha256:[0-9a-f]{64}$/), rulesetVersion: 'scene-rules-2', dataGeneration: 'g1', t });
 });
 
 it.each(['watermark', 'binding', 'layout', 'mapping', 'layout-content'] as const)('changes key and state when %s changes', async (change) => {
@@ -245,4 +245,66 @@ it('preserves open placement and activity evidence exactly at the watermark', ()
     activity: 'processing', activityEvidence: 'observed', occurrenceIds: [source.id],
   });
   expect(state.markers).toEqual([]);
+});
+
+// Layout Revision lookup (ADR-0011): two revisions of one layoutId, each pinned by one of the two Bindings (boundary 10:04:30).
+const revisions = async () => {
+  const data = input();
+  const base = data.layouts[0]!;
+  const older = structuredClone(base);
+  const newer = { ...structuredClone(base), components: base.components.slice(0, -1) };
+  const [olderHash, newerHash] = [await layoutRevision(older), await layoutRevision(newer)];
+  data.bindings.bindings[0]!.layoutRevision = olderHash;
+  data.bindings.bindings[1]!.layoutRevision = newerHash;
+  data.layoutRevisions = { [olderHash]: older, [newerHash]: newer };
+  return { data, older, newer, olderHash, newerHash };
+};
+const ids = (layout: { components: { id: string }[] }) => layout.components.map((c) => c.id).sort();
+
+it('resolves each Binding segment to its own pinned revision, whatever the order of the inputs', async () => {
+  const { data, older, newer, olderHash, newerHash } = await revisions();
+  expect(ids(older)).not.toEqual(ids(newer));
+  const flipped = { ...data, layouts: [newer, older], layoutRevisions: { [newerHash]: newer, [olderHash]: older } };
+  for (const candidate of [data, flipped]) {
+    expect(seekSceneState(candidate, time('10:00:30')).components.map((c) => c.componentId)).toEqual(ids(older));
+    expect(seekSceneState(candidate, time('10:05:30')).components.map((c) => c.componentId)).toEqual(ids(newer));
+  }
+  expect(seekSceneState(data, time('10:05:30'))).toEqual(seekSceneState(flipped, time('10:05:30')));
+  expect(await replayKey(data, time('10:00:30'))).toEqual(await replayKey(flipped, time('10:00:30')));
+  expect(await replayKey(data, time('10:00:30'))).toMatchObject({ layoutHash: olderHash });
+  expect(await replayKey(data, time('10:05:30'))).toMatchObject({ layoutHash: newerHash });
+});
+
+it('treats a pinned revision missing from the input as no Layout, even when layouts holds that id', async () => {
+  const { data, olderHash } = await revisions();
+  data.layoutRevisions = {};
+  expect(data.layouts[0]!.id).toBe(data.bindings.bindings[0]!.layoutId);
+  const state = seekSceneState(data, time('10:00:30'));
+  expect(state.components).toEqual([]);
+  expect(state.materials.length).toBeGreaterThan(0);
+  for (const material of state.materials) expect(material).toMatchObject({ location: null, locationEvidence: 'unknown' });
+  expect(state.binding).toMatchObject({ layoutRevision: olderHash });
+  expect((await replayKey(data, time('10:00:30'))).layoutHash).toBeNull();
+});
+
+it('resolves an unpinned Binding by layoutId and carries layoutRevision only for a pinned one', async () => {
+  const { data, olderHash } = await revisions();
+  delete data.bindings.bindings[1]!.layoutRevision;
+  expect(bindingLayout(data, data.bindings.bindings[1]!)).toBe(data.layouts[0]);
+  expect(seekSceneState(data, time('10:05:30')).binding).toEqual({ layoutId: 'eq-synth-01-layout', mappingHash: data.bindings.bindings[1]!.mappingHash });
+  expect(seekSceneState(data, time('10:00:30')).binding).toEqual({ layoutId: 'eq-synth-01-layout', mappingHash: data.bindings.bindings[0]!.mappingHash, layoutRevision: olderHash });
+});
+
+it('rejects a malformed layoutRevisions key and a revision of another layout id', async () => {
+  const { data, older, olderHash } = await revisions();
+  expect(() => assertReplayInput({ ...data, layoutRevisions: { ...data.layoutRevisions, 'sha256:ABC': older } })).toThrow(RangeError);
+  expect(() => assertReplayInput({ ...data, layoutRevisions: { ...data.layoutRevisions, [olderHash]: { ...older, id: 'other-layout' } } }))
+    .toThrow(`layoutRevisions[${olderHash}] is Layout other-layout, but the Binding names eq-synth-01-layout`);
+});
+
+it('rejects a layoutRevisions entry whose content does not hash to its key', async () => {
+  const { data, older, olderHash } = await revisions();
+  data.layoutRevisions = { ...data.layoutRevisions, [olderHash]: { ...older, components: older.components.slice(1) } };
+  await expect(replayKey(data, time('10:00:30'))).rejects.toThrow(RangeError);
+  await expect(replayKey(data, time('10:05:30'))).resolves.toBeDefined();
 });

@@ -655,3 +655,191 @@ it('renders the host control slot instead of the default buttons, wired to the s
   fireEvent.click(screen.getByRole('button', { name: 'host-fit' }));
   expect(svg.getAttribute('viewBox')).toBe(home);
 });
+
+const dragged = (calls: ReturnType<typeof vi.fn>) => calls.mock.calls.map(([drag]) => drag);
+
+it('reports a component drag as root-frame deltas, keeps the camera and swallows the click', () => {
+  const onComponentDrag = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag });
+  const before = svg.getAttribute('viewBox');
+  const other = componentEl(svg, 'other');
+
+  pointer(other, 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 102, 100);
+  expect(onComponentDrag).not.toHaveBeenCalled();
+  pointer(svg, 'pointermove', 130, 90);
+  pointer(svg, 'pointerup', 140, 80);
+  fireEvent.click(other);
+
+  expect(dragged(onComponentDrag)).toEqual([
+    { componentId: 'other', phase: 'move', dx: 30, dy: -10 },
+    { componentId: 'other', phase: 'end', dx: 40, dy: -20 },
+  ]);
+  expect(svg.getAttribute('viewBox')).toBe(before);
+  expect(componentEl(svg, 'other').getAttribute('aria-pressed')).toBe('true');
+});
+
+it.each(['mod', 'other'])('reports the same root-frame delta for %s, scaled by the zoom', (id) => {
+  const onComponentDrag = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag });
+  const drag = (target: Element) => {
+    pointer(target, 'pointerdown', 100, 100);
+    pointer(svg, 'pointermove', 150, 120);
+    pointer(svg, 'pointerup', 150, 120);
+    fireEvent.click(target);
+  };
+  drag(componentEl(svg, id));
+  expect(dragged(onComponentDrag).at(-1)).toMatchObject({ componentId: id, phase: 'end', dx: 50, dy: 20 });
+
+  onComponentDrag.mockClear();
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  drag(componentEl(svg, id));
+  const last = dragged(onComponentDrag).at(-1);
+  expect(last.dx).toBeCloseTo(40, 6);
+  expect(last.dy).toBeCloseTo(16, 6);
+});
+
+it('still pans when the drag starts on the board with onComponentDrag set', () => {
+  const onComponentDrag = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag });
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  const zoomed = svg.getAttribute('viewBox');
+  pointer(boardOf(svg), 'pointerdown', 20, 20);
+  pointer(svg, 'pointermove', 60, 20);
+  pointer(svg, 'pointerup', 60, 20);
+  expect(svg.getAttribute('viewBox')).not.toBe(zoomed);
+  expect(onComponentDrag).not.toHaveBeenCalled();
+});
+
+it.each([
+  ['pointercancel', (svg: SVGSVGElement) => pointer(svg, 'pointercancel', 130, 100)],
+  ['Escape', (svg: SVGSVGElement) => key(svg, 'Escape')],
+])('emits cancel on %s and keeps the selection', (_name, cancel) => {
+  const onComponentDrag = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag });
+  pointer(componentEl(svg, 'other'), 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 130, 100);
+  cancel(svg);
+  pointer(svg, 'pointermove', 160, 100);
+  pointer(svg, 'pointerup', 160, 100);
+
+  expect(dragged(onComponentDrag).map((d) => d.phase)).toEqual(['move', 'cancel']);
+  expect(dragged(onComponentDrag).at(-1)).toMatchObject({ dx: 30, dy: 0 });
+  expect(componentEl(svg, 'other').getAttribute('aria-pressed')).toBe('true');
+});
+
+it('selects the dragged component once at drag start through a controlled selection', () => {
+  const onSelectedChange = vi.fn();
+  const { svg } = mount({ layout, selectedId: null, onSelectedChange, onComponentDrag: vi.fn() });
+  pointer(componentEl(svg, 'other'), 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 120, 100);
+  pointer(svg, 'pointermove', 140, 100);
+  pointer(svg, 'pointerup', 140, 100);
+  expect(onSelectedChange).toHaveBeenCalledTimes(1);
+  expect(onSelectedChange).toHaveBeenCalledWith('other');
+});
+
+it('keeps the view, selection and an active drag across an edited copy of the same layout', () => {
+  const onComponentDrag = vi.fn();
+  const viewed = mount({ layout, onComponentDrag });
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  pointer(boardOf(viewed.svg), 'pointerdown', 20, 20);
+  pointer(viewed.svg, 'pointermove', 60, 20);
+  pointer(viewed.svg, 'pointerup', 60, 20);
+  const view = viewed.svg.getAttribute('viewBox');
+  clickAt(componentEl(viewed.svg, 'other'));
+
+  const moved = (id: string) => layout.components.map((c) => (c.id === id ? { ...c, transform: { ...c.transform, x: c.transform.x + 10 } } : c));
+  const svg = viewed.update({ layout: { ...layout, components: moved('other') } });
+  expect(svg.getAttribute('viewBox')).toBe(view);
+  expect(componentEl(svg, 'other').getAttribute('aria-pressed')).toBe('true');
+
+  const gone = viewed.update({ layout: { ...layout, components: layout.components.filter((c) => c.id !== 'other') } });
+  expect(gone.querySelector('[data-component-id="other"]')).toBeNull();
+  const back = viewed.update({ layout: { ...layout, components: moved('mod') } });
+  expect(componentEl(back, 'other').getAttribute('aria-pressed')).toBe('false');
+});
+
+it.each([
+  ['id', { ...layout, id: 'another' }],
+  ['viewBox', { ...layout, viewBox: { ...layout.viewBox, width: 900 } }],
+])('resets the camera when the replacement layout has a different %s', (_name, replacement) => {
+  const viewed = mount({ layout, onComponentDrag: vi.fn() });
+  const initial = viewed.svg.getAttribute('viewBox');
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  expect(viewed.svg.getAttribute('viewBox')).not.toBe(initial);
+  const svg = viewed.update({ layout: replacement, width: 800, height: 600 });
+  const { view, frame } = viewOf({ layout: replacement, width: 800, height: 600 });
+  expect(svg.getAttribute('viewBox')).toBe(viewBoxAttr(defaultCamera(frame), view, frame));
+});
+
+it('continues an active drag from the original pointerdown across a same-identity replacement', () => {
+  const onComponentDrag = vi.fn();
+  const viewed = mount({ layout, onComponentDrag });
+  pointer(componentEl(viewed.svg, 'other'), 'pointerdown', 100, 100);
+  pointer(viewed.svg, 'pointermove', 130, 100);
+  const edited = layout.components.map((c) => (c.id === 'other' ? { ...c, transform: { ...c.transform, x: 110 } } : c));
+  const svg = viewed.update({ layout: { ...layout, components: edited } });
+  pointer(svg, 'pointermove', 150, 110);
+  pointer(svg, 'pointerup', 150, 110);
+  expect(dragged(onComponentDrag).map((d) => [d.phase, d.dx, d.dy])).toEqual([
+    ['move', 30, 0], ['move', 50, 10], ['end', 50, 10],
+  ]);
+});
+
+it('draws no capability or interface after a drop on another component', () => {
+  const onComponentDrag = vi.fn();
+  const onSelectedChange = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag, onSelectedChange });
+  pointer(componentEl(svg, 'other'), 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 200, 100);
+  pointer(svg, 'pointerup', 300, 100);
+  expect(svg.querySelector('[data-layer="capabilities"]')?.children.length ?? 0).toBe(0);
+  expect(svg.querySelector('[data-layer="interfaces"]')?.children.length ?? 0).toBe(0);
+  expect(onSelectedChange).toHaveBeenCalledTimes(1);
+});
+
+it('ignores a lostpointercapture that bubbles from a descendant and cancels on the svg own', () => {
+  const onComponentDrag = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag });
+  const other = componentEl(svg, 'other');
+  pointer(other, 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 130, 100);
+  fireEvent.lostPointerCapture(other, { pointerId: 1 });
+  pointer(svg, 'pointerup', 140, 100);
+  expect(dragged(onComponentDrag).map((d) => d.phase)).toEqual(['move', 'end']);
+
+  onComponentDrag.mockClear();
+  pointer(other, 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 130, 100);
+  fireEvent.lostPointerCapture(svg, { pointerId: 1 });
+  expect(dragged(onComponentDrag).map((d) => d.phase)).toEqual(['move', 'cancel']);
+});
+
+const copyOf = (source: typeof layout) => ({ ...source, components: source.components.map((c) => ({ ...c })) });
+
+it('keeps the committed label size and settles it on time across a same-identity replacement mid-zoom', () => {
+  vi.useFakeTimers();
+  const viewed = mount({ layout, onComponentDrag: vi.fn() });
+  const original = labelFont(viewed.svg);
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  const svg = viewed.update({ layout: copyOf(layout) });
+  expect(labelFont(svg)).toBe(original);
+  act(() => {
+    vi.advanceTimersByTime(150);
+  });
+  expect(labelFont(svg)).not.toBe(original);
+});
+
+it('does not pull the camera back to a keyboard-focused component on a same-identity replacement', () => {
+  const viewed = mount({ layout, onComponentDrag: vi.fn() });
+  const mod = componentEl(viewed.svg, 'mod') as SVGElement;
+  for (let i = 0; i < 6; i += 1) fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  key(viewed.svg, 'Tab');
+  act(() => mod.focus());
+  for (let i = 0; i < 12; i += 1) key(mod, 'ArrowRight');
+  const view = viewed.svg.getAttribute('viewBox');
+  const svg = viewed.update({ layout: copyOf(layout) });
+  expect(svg.getAttribute('viewBox')).toBe(view);
+  expect(document.activeElement).toBe(mod);
+});

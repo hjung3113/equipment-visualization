@@ -260,7 +260,8 @@ function revealRow(region: HTMLElement, row: HTMLElement, headerHeight: number) 
 function Row({ onActivate, selected, onKeyDown, className, children, ...rest }: DataTableRowProps) {
   const handleKeyDown = (event: KeyboardEvent<HTMLTableRowElement>) => {
     onKeyDown?.(event);
-    if (onActivate === undefined || event.defaultPrevented) return;
+    // A control inside the row (a link, a button) keeps its own Enter/Space.
+    if (onActivate === undefined || event.defaultPrevented || event.target !== event.currentTarget) return;
     if (event.key === 'Enter' || event.key === ' ') {
       event.preventDefault();
       onActivate();

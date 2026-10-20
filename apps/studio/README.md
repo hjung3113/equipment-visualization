@@ -1,7 +1,7 @@
 # @eqv/studio
 
-Standalone Studio app: shell and router (`/fleet`, `/fleet/new` (설비 등록), `/equipment/:equipmentId` (설비 데이터: record, Sample Windows, alias metadata and Type Dictionary status, import status notices), `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`; `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board` and `/focus/:equipmentId` take `?window=<hex>` to open one Sample Window; Onboarding has a Sample Window picker, and the window it shows feeds the Inventory, the Template proposals, the Mapping Board and the Publish Baseline Inventory), a layouts page
-(viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Fleet and Onboarding (read-only
+Standalone Studio app: shell and router (`/fleet`, `/fleet/new` (설비 등록), `/equipment/:equipmentId` (설비 데이터: record, Sample Windows, alias metadata and Type Dictionary status, import status notices), `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`, `/journey/:equipmentId`; `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId` and `/journey/:equipmentId` take `?window=<hex>` to open one Sample Window; Onboarding has a Sample Window picker, and the window it shows feeds the Inventory, the Template proposals, the Mapping Board and the Publish Baseline Inventory), a layouts page
+(viewer, geometry editing, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Layout Revision publish opens a change preview first: it compares the document with the revision a Binding pins for that layout (the only existing revision when there is just one) at id level, says so when the same content is already published or when it is the first revision, and shows no comparison when several revisions exist and none is pinned; `게시` in the dialog writes the revision. Fleet and Onboarding (read-only
 Inventory and Template proposals, #14a) and the Mapping Board (#14b) are implemented. `/dev/ui` is a dev-only `@eqv/ui` component gallery for design review. It is not in the nav, it is absent from `vite build` output, and the data is synthetic.
 
 Focus (`/focus/:equipmentId?entityType=&anchor=`, #15c) is the first analysis mode: a Top View with the cursor-time replay
@@ -17,12 +17,33 @@ a notice); it never rejects. Playback (#15d) moves only the cursor: play/pause, 
 Sequence step that shows the state after a chosen Record Sequence instead of the cursor's seek. `예시 이동 표시` (off by default,
 page-local) adds badged example-motion ghosts between two observed boundaries of an open TRANSFER; they are never log evidence.
 
+Journey (`/journey/:equipmentId?anchor=&window=`, #152) follows one wafer through one Sample Window. `anchor` is an Occurrence id
+whose material is a wafer with an id; Focus links to it (`Journey 열기`) from a selected wafer. The window is chosen as in Focus and
+loaded with the same `loadFocus`. The Top View shows the Layout the anchor's Binding names, with the wafer's hops as numbered badges
+(`docs/VIEWS.md` §Journey: discrete hops, no path or animation), and two tabs: `물리 경유` (the hop list, each hop with a Focus link)
+and `실행 이력` (PROCESS, POST_PROCESS and FUNCTION rows, including rows without a location).
+
 An imported document is unsaved until its draft is saved. While it is unsaved, opening another file or leaving the
 page through Studio navigation or browser back/forward asks before discarding it. Reloading or closing the tab uses
 the browser's own leave-page prompt. Draft save proceeds without a discard prompt; choosing another import replaces
 the current import without asking.
 
+Editing (#158): on `/layouts` any opened document (template, draft, revision or import) can be refined in place. Drag a Component on
+the Top View, or select it and use `Alt`+arrow keys (1 layout unit, `Shift` 10×) and `[` / `]` (15° left / right); the `선택 항목`
+panel shows its ID, name, Role and parent and edits `X`, `Y` and `회전 (°)` as exact values (Enter or blur commits, Escape restores,
+a non-number is refused). X and Y of a child are in its parent's frame. `격자 맞춤` (off by default) snaps drags and key moves to a
+grid of 10 and rotations to 15°; typed values are never snapped. `실행 취소` / `다시 실행` (⌘/Ctrl+Z, ⇧⌘/Ctrl+Z or Ctrl+Y) step
+through the edit history, and a drag is one step. Edits change only `transform` (and mark a verified transform provenance `assumed`),
+never ports, connectivity, `unit` or `viewBox`. Unsaved edits are guarded like an unsaved import (navigation confirm, browser
+leave-page prompt, `저장 안 됨` badge). `초안 저장` writes the edited document to `layouts/<id>/draft.layout.json`; export and the
+publish change preview use the edited document too, so the preview lists only the changed Components. Resize, port snapping and
+multi-select are not implemented.
+
 The equipment data page imports Sample Windows, alias metadata and the Model Type Dictionary through `/api/import/*`. Each file is checked in the browser first for size and JSON syntax, then with the same `@eqv/core` validators (including `validateSampleWindow`); the server makes the final decision. Rejections list their code and path, and imported values are never fixed. Replacing alias metadata requires confirmation and shows added, removed and changed aliases. The Model Type Dictionary is create-only, and results appear as toasts.
+
+## Demo equipment
+
+`eq-demo-01` (maker `synth-maker`, model `synth-demo`) is a generated, fully published synthetic equipment for demos: the `cluster-single` Layout pinned as a Layout Revision, a Mapping Version, a baseline Inventory, Bindings and two adjacent Sample Windows (2026-01-02 08:00–10:00 and 10:00–12:00), each replaying one 25-wafer lot through carrier, EFEM robot (both blades), aligner, load locks, TM robot and four process chambers. Two things are deliberately imperfect: `PM5` has no Alias Rule (unmapped alias) and each window has one `UnmatchedEnd` Data Quality Issue. The wafers' final load-port visits and the carrier stay source-open past the Watermark. The unchanged `cluster-single` template declares no Transfer Capability for the EFEM-side hops the scenario observes (load port → aligner, aligner → load lock, load lock → load port), so the Board dry-run lists five `transfer-without-capability` conflicts per window; they are expected, and no capability is invented to hide them (geometry never establishes connectivity). Regenerate the files with `pnpm --filter @eqv/studio demo:generate` (it rewrites `assets/`); `test/demo-assets.test.ts` checks that the committed files equal the generator output.
 
 ## Styling
 

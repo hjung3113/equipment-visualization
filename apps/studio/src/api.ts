@@ -46,6 +46,16 @@ export async function listDir(dir: string): Promise<DirEntry[]> {
   return (body as { entries: DirEntry[] }).entries;
 }
 
+/** A directory listing where a missing directory (404) is empty; every other failure propagates. */
+export async function dirOrEmpty(dir: string): Promise<DirEntry[]> {
+  try {
+    return await listDir(dir);
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return [];
+    throw error;
+  }
+}
+
 export async function saveDraft(id: string, layout: unknown): Promise<string> {
   const path = `layouts/${id}/draft.layout.json`;
   await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', layout));

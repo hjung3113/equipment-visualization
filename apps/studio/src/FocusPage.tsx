@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, ChartGantt, Inbox, Info, MapPinOff, ServerCrash } from 'lucide-react';
 import {
-  replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
+  bindingLayout, replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
   type ReplayInput, type ReplayTimeline, type ReplayTimelineFrame, type SceneState, type SiteWallClock,
 } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
@@ -101,7 +101,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
   const rawCursor = view.cursor ?? entry?.cursor ?? null;
   const cursor = range && rawCursor && rawCursor >= range.from && rawCursor < range.to ? rawCursor : range?.from ?? null;
 
-  const input = useMemo((): ReplayInput | null => ok ? { batch: ok.batch, layouts: ok.layouts, bindings: ok.bindings, mappings: ok.mappings } : null, [ok]);
+  const input = useMemo((): ReplayInput | null => ok ? { batch: ok.batch, layouts: ok.layouts, layoutRevisions: ok.layoutRevisions, bindings: ok.bindings, mappings: ok.mappings } : null, [ok]);
   const framed = useMemo((): { frame: ReplayTimelineFrame } | { error: string } | null => {
     if (!input || !range) return null;
     try {
@@ -138,7 +138,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     }
   }, [input, frame, cursor, sequenceSeq]);
   const state = sceneState && !('error' in sceneState) ? sceneState : null;
-  const layout = ok && state?.binding ? ok.layouts.find((l) => l.id === state.binding!.layoutId) ?? null : null;
+  const layout = input ? bindingLayout(input, state?.binding) : null;
   const selectedId = view.selectedOccurrenceId;
   const highlight = useMemo(() => {
     if (!state || selectedId === null) return null;
@@ -148,6 +148,8 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     ];
     return ids.length ? { componentIds: [...new Set(ids)] } : null;
   }, [state, selectedId]);
+  const selectedMaterial = selectedId === null ? undefined : ok?.batch.occurrences.find((o) => o.id === selectedId)?.material;
+  const journeyAnchor = selectedMaterial?.kind === 'wafer' && selectedMaterial.id !== null ? selectedId : null;
   const ghosts = useMemo(
     () => view.illustrative && input && state ? illustrativeGhosts(input, state, layout) : null,
     [view.illustrative, input, state, layout]);
@@ -264,6 +266,11 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
                     <Checkbox id={`${rangeId}-illustrative`} checked={view.illustrative} onCheckedChange={(value) => patch({ illustrative: value === true })} />
                     <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
                     {view.illustrative && <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge>}
+                    {journeyAnchor !== null && (
+                      <Button asChild variant="secondary" size="toolbar">
+                        <Link href={hrefFor({ name: 'journey', equipmentId, anchor: journeyAnchor, window: sampleWindow ?? windowHex(result.selectedWindow) })}>Journey 열기</Link>
+                      </Button>
+                    )}
                   </>}>
                   {layout ? (
                     <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}

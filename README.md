@@ -2,7 +2,7 @@
 
 Reusable, standalone equipment Top View editor and explainable log replay toolkit for semiconductor equipment.
 
-> **Status: Runnable Studio shell and layouts page.** Onboarding steps ①–⑥ (Fleet, Inventory, Template proposals, Mapping Board, ⑤ dry-run, ⑥ Publish) are in (#14); Drift ⑦ is pending; Focus (#15) is in: Top View, Gantt, lists, playback, Sequence step and the illustrative toggle (#15a–d). The sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
+> **Status: Runnable Studio shell and layouts page.** Onboarding steps ①–⑥ (Fleet, Inventory, Template proposals, Mapping Board, ⑤ dry-run, ⑥ Publish) are in (#14); Drift ⑦ is pending; Focus (#15) is in: Top View, Gantt, lists, playback, Sequence step and the illustrative toggle (#15a–d); Journey (#152) is in: one wafer's numbered hops on the Top View with hop and execution lists. The sample layouts are generalized **concepts**, not manufacturers' actual mechanical drawings or validated kinematics.
 
 ## Goals
 
@@ -23,12 +23,12 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 ## Packages
 
 ```
-apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–⑥ incl. the Mapping Board, ⑤ dry-run and ⑥ Publish (present, #14); Focus screen with playback (#15c–d) present; Drift ⑦ pending
+apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, geometry editing — drag, nudge, 15° rotate, grid snap, undo/redo (#158) — import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–⑥ incl. the Mapping Board, ⑤ dry-run and ⑥ Publish (present, #14); Focus screen with playback (#15c–d) and Journey (#152) present; Drift ⑦ pending
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
-packages/renderer/            # Present — static `TopView`/`buildScene` plus interactive `TopViewer` (selection, keyboard, pan/zoom, #12b), Scene State replay overlay and highlight (#15b), and host `renderControls` zoom-controls slot (#73)
-packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel. TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
+packages/renderer/            # Present — static `TopView`/`buildScene` plus interactive `TopViewer` (selection, keyboard, pan/zoom, #12b), Scene State replay overlay and highlight (#15b), Journey hop badges (#152), host `renderControls` zoom-controls slot (#73), and an `onComponentDrag` callback for host-side editing (#156)
+packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, #157). TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
 packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use `DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame` and `Page`, the rest arrive with the screen pass
-packages/replay/              # Focus screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps and example-motion ghosts; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
+packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
 packages/platform-adapter/    # Optional analytics-platform integration (planned)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)

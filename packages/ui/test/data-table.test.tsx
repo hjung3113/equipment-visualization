@@ -91,6 +91,25 @@ it('puts a layout className from the column on its header cell', () => {
   expect(th.className).toContain('bg-surface-card-elevated');
 });
 
+it('activates a row on Enter and Space only when the key came from the row, not from a control inside it', () => {
+  const activated: string[] = [];
+  render(
+    <DataTable label="Fleet" columns={columns}>
+      <DataTable.Row onActivate={() => activated.push('row')}>
+        <DataTable.Cell>EQ-1</DataTable.Cell>
+        <DataTable.Cell><a href="/focus">열기</a></DataTable.Cell>
+      </DataTable.Row>
+    </DataTable>,
+  );
+  const link = screen.getByRole('link', { name: '열기' });
+  expect(fireEvent.keyDown(link, { key: 'Enter' })).toBe(true);
+  expect(fireEvent.keyDown(link, { key: ' ' })).toBe(true);
+  expect(activated).toEqual([]);
+  const [, row] = screen.getAllByRole('row');
+  expect(fireEvent.keyDown(row!, { key: 'Enter' })).toBe(false);
+  expect(activated).toEqual(['row']);
+});
+
 it('leaves a row without onActivate unfocusable and not selectable', () => {
   renderTable();
   const [, row] = screen.getAllByRole('row');

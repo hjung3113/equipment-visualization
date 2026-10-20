@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
@@ -42,6 +42,19 @@ afterEach(async () => {
   await rm(base, { recursive: true, force: true });
 });
 
+/** Confirms the open publish dialog once its baseline is computed. */
+async function confirmPublish() {
+  const dialog = await screen.findByRole('alertdialog');
+  const publish = within(dialog).getByRole('button', { name: '게시' }) as HTMLButtonElement;
+  await waitFor(() => expect(publish.disabled).toBe(false));
+  fireEvent.click(publish);
+}
+/** Clicks a toolbar action; `Revision 게시` also confirms its dialog. */
+async function runAction(action: string) {
+  fireEvent.click(screen.getByRole('button', { name: action }));
+  if (action === 'Revision 게시') await confirmPublish();
+}
+
 const open = (file: string) => window.history.replaceState(null, '', `/layouts?${new URLSearchParams({ file })}`);
 // The viewer's own svg: toolbar icons are svgs too, so a bare `main svg` finds one of them first.
 const viewerSvg = (container: HTMLElement) => container.querySelector('[data-component-id]')!.closest('svg')!;
@@ -82,6 +95,7 @@ it('publishes a revision and lists it', async () => {
   const layout = layoutDocumentSchema.parse(JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8')));
   const revision = await layoutRevision(layout);
   fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  await confirmPublish();
   const status = await screen.findByRole('status');
   expect(status.textContent).toContain(revision);
   const label = revision.slice('sha256:'.length, 'sha256:'.length + 12);
@@ -111,10 +125,8 @@ it.each([
     return response;
   });
 
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: action }));
-    await writing;
-  });
+  await runAction(action);
+  await act(async () => { await writing; });
   const raw = JSON.parse(await readFile(join(root, 'templates/cluster-single.template.json'), 'utf8'));
   raw.id = 'imported-b';
   fireEvent.change(screen.getByLabelText(/가져오기/), {
@@ -188,10 +200,8 @@ it.each([
     }
     return response;
   });
-  await act(async () => {
-    fireEvent.click(screen.getByRole('button', { name: action }));
-    await writing;
-  });
+  await runAction(action);
+  await act(async () => { await writing; });
   await act(async () => { releaseText(JSON.stringify(raw)); await text; });
   await screen.findByText('저장 안 됨');
   await act(async () => { releaseResponse(); await pending; });
@@ -272,7 +282,7 @@ it.each([
     if (!init?.method && new URL(input, window.location.origin).searchParams.get('path') === draft) reread = true;
     return response;
   });
-  fireEvent.click(screen.getByRole('button', { name: action }));
+  await runAction(action);
   if (action === '초안 저장') {
     await waitFor(() => expect(reread).toBe(true));
     await act(async () => {});
@@ -412,4 +422,214 @@ it.each(['save', 'discard', 'unmount'])('prevents beforeunload only while an imp
   } finally {
     confirm.mockRestore();
   }
+});
+
+const TEMPLATE = 'templates/cluster-single.template.json';
+const hexOf = (revision: string) => revision.slice('sha256:'.length);
+
+/** Writes a layout revision of `cluster-single` straight to disk (the file API refuses revision paths). */
+async function writeRevision(edit: (raw: Record<string, unknown>) => void) {
+  const raw = JSON.parse(await readFile(join(root, TEMPLATE), 'utf8'));
+  edit(raw);
+  const hex = hexOf(await layoutRevision(layoutDocumentSchema.parse(raw)));
+  await mkdir(join(root, 'layouts/cluster-single'), { recursive: true });
+  await writeFile(join(root, `layouts/cluster-single/${hex}.layout.json`), JSON.stringify(raw));
+  return hex;
+}
+
+async function pinRevision(hex: string) {
+  const response = await globalThis.fetch(`/api/files?${new URLSearchParams({ path: 'onboarding/bindings/eq-pin.bindings.json' })}`, {
+    method: 'PUT', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      schemaVersion: '0.4', equipmentId: 'eq-pin',
+      bindings: [{
+        layoutId: 'cluster-single', mappingHash: `sha256:${'a'.repeat(64)}`, layoutRevision: `sha256:${hex}`,
+        effectiveFrom: '2026-01-01T09:00:00.000',
+      }],
+    }),
+  });
+  expect(response.ok).toBe(true);
+}
+
+/** Opens the publish dialog on the cluster-single template and counts POSTs. */
+async function openPublishDialog() {
+  const posts: unknown[] = [];
+  const fetchFromApi = globalThis.fetch;
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    if (init?.method === 'POST') posts.push(JSON.parse(String(init.body)));
+    return fetchFromApi(input, init);
+  });
+  open(TEMPLATE);
+  const view = render(<App />);
+  await waitFor(() => expect(componentIds(view.container).length).toBeGreaterThan(0));
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  const dialog = await screen.findByRole('alertdialog');
+  return { posts, dialog, view };
+}
+
+it('opens the publish dialog focused on cancel, and cancel publishes nothing', async () => {
+  const { posts, dialog } = await openPublishDialog();
+  const cancel = within(dialog).getByRole('button', { name: '취소' });
+  await waitFor(() => expect(document.activeElement).toBe(cancel));
+  expect(within(dialog).getByText('Layout Revision을 게시할까요?')).toBeTruthy();
+  await within(dialog).findByText('첫 Revision');
+  fireEvent.click(cancel);
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(posts).toEqual([]);
+  expect(screen.queryByText('게시된 Revision')).toBeNull();
+});
+
+it.each([
+  { how: 'Esc', close: (dialog: HTMLElement) => { fireEvent.keyDown(dialog, { key: 'Escape' }); } },
+  { how: '취소', close: (dialog: HTMLElement) => { fireEvent.click(within(dialog).getByRole('button', { name: '취소' })); } },
+])('returns focus to the Revision 게시 opener after $how', async ({ close }) => {
+  const { dialog } = await openPublishDialog();
+  close(dialog);
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Revision 게시' })));
+});
+
+it('returns focus to the Revision 게시 opener once a publish has settled', async () => {
+  await openPublishDialog();
+  await confirmPublish();
+  await screen.findByText('게시된 Revision');
+  await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Revision 게시' })));
+});
+
+it('leaves focus where the user put it when a delayed publish settles', async () => {
+  const { dialog } = await openPublishDialog();
+  const fetchFromApi = globalThis.fetch;
+  let release!: () => void;
+  let started!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const posting = new Promise<void>((resolve) => { started = resolve; });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const response = await fetchFromApi(input, init);
+    if (init?.method === 'POST') {
+      started();
+      await pending;
+    }
+    return response;
+  });
+  const publish = within(dialog).getByRole('button', { name: '게시' }) as HTMLButtonElement;
+  await waitFor(() => expect(publish.disabled).toBe(false));
+  fireEvent.click(publish);
+  await act(async () => { await posting; });
+  const exportButton = screen.getByRole('button', { name: '내보내기' });
+  act(() => { exportButton.focus(); });
+  await act(async () => { release(); await pending; });
+  await screen.findByText('게시된 Revision');
+  expect(document.activeElement).toBe(exportButton);
+});
+
+it('keeps 게시 disabled while the baseline is computing', async () => {
+  const fetchFromApi = globalThis.fetch;
+  let release!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    if (new URL(input, window.location.origin).searchParams.get('dir') === 'layouts/cluster-single') await pending;
+    return fetchFromApi(input, init);
+  });
+  open(TEMPLATE);
+  const { container } = render(<App />);
+  await waitFor(() => expect(componentIds(container).length).toBeGreaterThan(0));
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  const dialog = await screen.findByRole('alertdialog');
+  expect((within(dialog).getByRole('button', { name: '게시' }) as HTMLButtonElement).disabled).toBe(true);
+  await act(async () => { release(); await pending; });
+  await within(dialog).findByText('첫 Revision');
+  expect((within(dialog).getByRole('button', { name: '게시' }) as HTMLButtonElement).disabled).toBe(false);
+});
+
+it('says content that is already published writes no new file', async () => {
+  const layout = layoutDocumentSchema.parse(JSON.parse(await readFile(join(root, TEMPLATE), 'utf8')));
+  const hex = hexOf(await layoutRevision(layout));
+  await mkdir(join(root, 'layouts/cluster-single'), { recursive: true });
+  await writeFile(join(root, `layouts/cluster-single/${hex}.layout.json`), await readFile(join(root, TEMPLATE)));
+  const { dialog } = await openPublishDialog();
+  expect((await within(dialog).findByText(`이 내용은 이미 ${hex.slice(0, 12)}로 게시되어 있습니다`))).toBeTruthy();
+});
+
+it('compares with the revision a Binding pins, not with the other revision', async () => {
+  // Pin the lexicographically smaller hex so that "greatest hex" would pick the wrong baseline.
+  const first = await writeRevision((raw) => { raw.name = 'Revision A'; });
+  const second = await writeRevision((raw) => { raw.name = 'Revision B'; });
+  const [pinned, other] = first < second ? [first, second] : [second, first];
+  await pinRevision(pinned);
+  const { dialog } = await openPublishDialog();
+  await within(dialog).findByText(/Binding이 가리키는 Revision/);
+  expect(dialog.textContent).toContain(pinned.slice(0, 12));
+  expect(dialog.textContent).not.toContain(other.slice(0, 12));
+  const table = within(dialog).getByRole('table', { name: 'Layout 변경 목록' });
+  expect(within(table).getByText('name')).toBeTruthy();
+  expect(within(table).getByText('머리 필드')).toBeTruthy();
+});
+
+it('uses the only existing revision as the baseline when no Binding pins one', async () => {
+  const hex = await writeRevision((raw) => { raw.name = 'Older name'; });
+  const { dialog } = await openPublishDialog();
+  await within(dialog).findByText('비교 기준:');
+  expect(dialog.textContent).toContain(hex.slice(0, 12));
+  expect(dialog.textContent).not.toContain('Binding이 가리키는 Revision');
+});
+
+it('shows no comparison when several revisions exist and no Binding pins one', async () => {
+  await writeRevision((raw) => { raw.name = 'Revision A'; });
+  await writeRevision((raw) => { raw.name = 'Revision B'; });
+  const { dialog } = await openPublishDialog();
+  await within(dialog).findByText('기존 Revision 2개');
+  expect(within(dialog).queryByRole('table')).toBeNull();
+});
+
+it('publishes the previewed document when 게시 is chosen', async () => {
+  window.history.replaceState(null, '', '/layouts');
+  const posts: { id?: string }[] = [];
+  const fetchFromApi = globalThis.fetch;
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    if (init?.method === 'POST') posts.push(JSON.parse(String(init.body)));
+    return fetchFromApi(input, init);
+  });
+  render(<App />);
+  const raw = JSON.parse(await readFile(join(root, TEMPLATE), 'utf8'));
+  raw.id = 'imported-b';
+  fireEvent.change(screen.getByLabelText(/가져오기/), { target: { files: [{ text: async () => JSON.stringify(raw) }] } });
+  await screen.findByText('저장 안 됨');
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  expect(await within(await screen.findByRole('alertdialog')).findByText('imported-b')).toBeTruthy();
+  await confirmPublish();
+  await screen.findByText('게시된 Revision');
+  expect(posts.map((post) => post.id)).toEqual(['imported-b']);
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+});
+
+it('drops a baseline that arrives after an import was accepted', async () => {
+  const fetchFromApi = globalThis.fetch;
+  let release!: () => void;
+  let listed!: () => void;
+  const pending = new Promise<void>((resolve) => { release = resolve; });
+  const requested = new Promise<void>((resolve) => { listed = resolve; });
+  const posts: unknown[] = [];
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    if (init?.method === 'POST') posts.push(init.body);
+    if (new URL(input, window.location.origin).searchParams.get('dir') === 'layouts/cluster-single') {
+      listed();
+      await pending;
+    }
+    return fetchFromApi(input, init);
+  });
+  open(TEMPLATE);
+  const { container } = render(<App />);
+  await waitFor(() => expect(componentIds(container).length).toBeGreaterThan(0));
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  await screen.findByRole('alertdialog');
+  await requested;
+  const raw = JSON.parse(await readFile(join(root, TEMPLATE), 'utf8'));
+  raw.id = 'imported-b';
+  fireEvent.change(screen.getByLabelText(/가져오기/), { target: { files: [{ text: async () => JSON.stringify(raw) }] } });
+  await screen.findByText('저장 안 됨');
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+  await act(async () => { release(); await pending; });
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+  expect(screen.getByText('imported-b')).toBeTruthy();
+  expect(posts).toEqual([]);
 });
