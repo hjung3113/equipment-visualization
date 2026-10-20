@@ -141,7 +141,7 @@ async function windowForAnchor(equipmentId: string, anchor: string): Promise<{ h
   const latest = containing[0];
   if (!latest) return { hex: undefined, notice: null };
   const notice = containing.length < 2 ? null
-    : `진입 Occurrence ${anchor}가 Sample Window ${containing.length}개에 있어 가장 늦은 window(${latest.from} – ${latest.to})를 재생합니다`;
+    : `진입 Occurrence ${anchor}가 Sample Window ${containing.length}개에 있어 가장 늦은 window(${latest.from} – ${latest.to})를 엽니다`;
   return { hex: windowHex(latest), notice };
 }
 

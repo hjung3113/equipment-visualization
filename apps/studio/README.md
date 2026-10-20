@@ -1,6 +1,6 @@
 # @eqv/studio
 
-Standalone Studio app: shell and router (`/fleet`, `/fleet/new` (설비 등록), `/equipment/:equipmentId` (설비 데이터: record, Sample Windows, alias metadata and Type Dictionary status, import status notices), `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`; `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board` and `/focus/:equipmentId` take `?window=<hex>` to open one Sample Window; Onboarding has a Sample Window picker, and the window it shows feeds the Inventory, the Template proposals, the Mapping Board and the Publish Baseline Inventory), a layouts page
+Standalone Studio app: shell and router (`/fleet`, `/fleet/new` (설비 등록), `/equipment/:equipmentId` (설비 데이터: record, Sample Windows, alias metadata and Type Dictionary status, import status notices), `/layouts`, `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId`, `/journey/:equipmentId`; `/onboarding/:equipmentId`, `/onboarding/:equipmentId/board`, `/focus/:equipmentId` and `/journey/:equipmentId` take `?window=<hex>` to open one Sample Window; Onboarding has a Sample Window picker, and the window it shows feeds the Inventory, the Template proposals, the Mapping Board and the Publish Baseline Inventory), a layouts page
 (viewer, import/export, draft save, Layout Revision publish) and a **dev-only** file API. Layout Revision publish opens a change preview first: it compares the document with the revision a Binding pins for that layout (the only existing revision when there is just one) at id level, says so when the same content is already published or when it is the first revision, and shows no comparison when several revisions exist and none is pinned; `게시` in the dialog writes the revision. Fleet and Onboarding (read-only
 Inventory and Template proposals, #14a) and the Mapping Board (#14b) are implemented. `/dev/ui` is a dev-only `@eqv/ui` component gallery for design review. It is not in the nav, it is absent from `vite build` output, and the data is synthetic.
 
@@ -16,6 +16,12 @@ the batch, every Mapping Version a Binding names and each Binding's Layout (its 
 a notice); it never rejects. Playback (#15d) moves only the cursor: play/pause, speed x0.25–x4 (screen time), previous/next breakpoint, and a debug
 Sequence step that shows the state after a chosen Record Sequence instead of the cursor's seek. `예시 이동 표시` (off by default,
 page-local) adds badged example-motion ghosts between two observed boundaries of an open TRANSFER; they are never log evidence.
+
+Journey (`/journey/:equipmentId?anchor=&window=`, #152) follows one wafer through one Sample Window. `anchor` is an Occurrence id
+whose material is a wafer with an id; Focus links to it (`Journey 열기`) from a selected wafer. The window is chosen as in Focus and
+loaded with the same `loadFocus`. The Top View shows the Layout the anchor's Binding names, with the wafer's hops as numbered badges
+(`docs/VIEWS.md` §Journey: discrete hops, no path or animation), and two tabs: `물리 경유` (the hop list, each hop with a Focus link)
+and `실행 이력` (PROCESS, POST_PROCESS and FUNCTION rows, including rows without a location).
 
 An imported document is unsaved until its draft is saved. While it is unsaved, opening another file or leaving the
 page through Studio navigation or browser back/forward asks before discarding it. Reloading or closing the tab uses

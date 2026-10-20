@@ -31,7 +31,7 @@ const HOP_COLUMNS = [
   { id: 'action', header: '동작' },
 ] as const;
 const EXECUTION_COLUMNS = [
-  { id: 'kind', header: '종류' },
+  { id: 'kind', header: '종류', className: 'whitespace-nowrap' },
   { id: 'location', header: '위치' },
   { id: 'location-evidence', header: '위치 근거' },
   { id: 'identity-evidence', header: '식별 근거' },
@@ -78,7 +78,7 @@ export function JourneyExecutionList({ executions, selectedOccurrenceId = null, 
       {executions.map((row) => (
         <DataTable.Row key={row.occurrenceId} data-occurrence-id={row.occurrenceId} selected={onSelectOccurrence ? row.occurrenceId === selectedOccurrenceId : undefined}
           {...(onSelectOccurrence ? { onActivate: () => onSelectOccurrence(row.occurrenceId) } : {})}>
-          <DataTable.Cell rowHeader>{KIND_KO[row.kind]}</DataTable.Cell>
+          <DataTable.Cell rowHeader className="whitespace-nowrap">{KIND_KO[row.kind]}</DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap">{where(row.location, row.alias?.moduleAlias ?? null)}</DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap"><Evidence level={row.locationEvidence} /></DataTable.Cell>
           <DataTable.Cell className="whitespace-nowrap"><Evidence level={row.identityEvidence} /></DataTable.Cell>
