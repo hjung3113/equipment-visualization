@@ -324,7 +324,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
   ].filter(Boolean).join(', ') : '';
 
   function openDeletion(opener: HTMLElement) {
-    if (!editable || template || !selected || impact?.blockedBy !== null) return;
+    if (!editable || !selected || impact?.blockedBy !== null) return;
     editing(cancelDrag);
     deleteOpener.current = opener;
     setDeletion({ id: selected.id, epoch: documentEpoch, source: session?.source });
@@ -365,7 +365,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
   function onViewerKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (!selected || !editable || event.defaultPrevented) return;
     if ((event.key === 'Delete' || event.key === 'Backspace') && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-      if (!template && impact?.blockedBy === null) { event.preventDefault(); openDeletion(event.target as HTMLElement); }
+      if (impact?.blockedBy === null) { event.preventDefault(); openDeletion(event.target as HTMLElement); }
       return;
     }
     const arrow = ARROWS[event.key];
@@ -469,7 +469,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
                       renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
                   </ViewerBoundary>
                 </div>
-                <SelectionPanel component={selected} busy={!editable} deleteDisabled={template || impact?.blockedBy !== null} deleteHint={deleteHint}
+                <SelectionPanel component={selected} busy={!editable} deleteDisabled={impact?.blockedBy !== null} deleteHint={deleteHint}
                   onDelete={openDeletion} onLabel={(label) => { if (selected && editable) editing((state) => setLabel(state, selected.id, label)); }}
                   onTransform={(patch) => { if (selected) editing((state) => setTransform(state, selected.id, patch)); }} />
                 {selected && present && <ConnectionsPanel key={`${documentEpoch}-${selected.id}`} layout={present} component={selected} busy={!editable}

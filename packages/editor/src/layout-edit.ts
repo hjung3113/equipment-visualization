@@ -1,4 +1,4 @@
-import { canonicalJson, componentWorldCenter, portPositionToward, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge, type TransferCapabilityEdge } from '@eqv/core';
+import { MATERIAL_KINDS, canonicalJson, componentWorldCenter, portPositionToward, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge, type TransferCapabilityEdge } from '@eqv/core';
 
 export type SnapOptions = { grid: number; rotationStep: number };
 /** Layout units (`abstract` or `mm` alike); the document unit is never changed. */
@@ -173,23 +173,10 @@ export interface AddComponentSpec {
 
 /** Adds geometry only; no Port, Holding Site or graph is inferred. */
 export function addComponent(state: LayoutEditState, spec: AddComponentSpec, snap: SnapOptions | null): { state: LayoutEditState; componentId: string | null } {
-  if (state.drag || !state.present.levels.some((level) => level.id === spec.levelId)) return { state, componentId: null };
+  if (state.drag || state.present.kind === 'template' || !state.present.levels.some((level) => level.id === spec.levelId)) return { state, componentId: null };
   const role = roleForPrimitive(spec.asset);
-  const prefix = `${role}-`;
-  let highest = 0n;
-  for (const doc of [state.present, state.baseline, ...state.past, ...state.future]) {
-    for (const component of doc.components) {
-      if (!component.id.startsWith(prefix)) continue;
-      const suffix = component.id.slice(prefix.length);
-      if (/^\d+$/.test(suffix)) {
-        const value = BigInt(suffix);
-        if (value > highest) highest = value;
-      }
-    }
-  }
-  const n = highest + 1n;
+  const n = nextNumericSuffix(state, `${role}-`, (doc) => doc.components.map((component) => component.id));
   const componentId = `${role}-${n}`;
-  const assumed = () => ({ certainty: 'assumed' as const, sourceEvidence: [] });
   const component: Component = {
     id: componentId, role, assetRef: `primitive:${spec.asset}`, label: `${role.toUpperCase()} ${n}`, levelId: spec.levelId,
     transform: { x: round3(snap ? snapTo(spec.x, snap.grid) : spec.x), y: round3(snap ? snapTo(spec.y, snap.grid) : spec.y), rotation: 0, scale: 1 },
@@ -200,7 +187,7 @@ export function addComponent(state: LayoutEditState, spec: AddComponentSpec, sna
 }
 
 export interface RemovalImpact {
-  blockedBy: 'children' | 'last' | null;
+  blockedBy: 'children' | 'last' | 'template' | null;
   physicalInterfaces: number;
   transferCapabilities: number;
   processRouteSteps: number;
@@ -211,7 +198,7 @@ const touches = (edge: { a: { componentId: string }; b: { componentId: string } 
 export function removalImpact(layout: LayoutDocument, componentId: string): RemovalImpact {
   if (!layout.components.some((component) => component.id === componentId)) return { blockedBy: null, physicalInterfaces: 0, transferCapabilities: 0, processRouteSteps: 0, processRoutes: 0 };
   return {
-    blockedBy: layout.components.some((component) => component.parentId === componentId) ? 'children' : layout.components.length === 1 ? 'last' : null,
+    blockedBy: layout.components.some((component) => component.parentId === componentId) ? 'children' : layout.components.length === 1 ? 'last' : layout.kind === 'template' ? 'template' : null,
     physicalInterfaces: layout.physicalInterfaces.filter((edge) => touches(edge, componentId)).length,
     transferCapabilities: layout.transferCapabilities.filter((edge) => touches(edge, componentId) || edge.handlerComponentId === componentId).length,
     processRouteSteps: layout.processRoutes.reduce((sum, route) => sum + route.steps.filter((id) => id === componentId).length, 0),
@@ -246,14 +233,19 @@ export function setLabel(state: LayoutEditState, componentId: string, label: str
 
 const assumed = () => ({ certainty: 'assumed' as const, sourceEvidence: [] });
 
-/** Numeric ids are local to the current collection; history does not reserve removed ids. */
-function nextLocalId(items: { id: string }[], prefix: string): string {
+/** Reserve numeric suffixes across all documents still reachable in this edit session. */
+function nextNumericSuffix(state: LayoutEditState, prefix: string, ids: (doc: LayoutDocument) => Iterable<string>): bigint {
   let highest = 0n;
-  for (const { id } of items) {
-    const suffix = id.startsWith(prefix) ? id.slice(prefix.length) : '';
-    if (/^\d+$/.test(suffix) && BigInt(suffix) > highest) highest = BigInt(suffix);
+  for (const doc of [state.present, state.baseline, ...state.past, ...state.future]) {
+    for (const id of ids(doc)) {
+      const suffix = id.startsWith(prefix) ? id.slice(prefix.length) : '';
+      if (/^\d+$/.test(suffix)) {
+        const value = BigInt(suffix);
+        if (value > highest) highest = value;
+      }
+    }
   }
-  return `${prefix}${highest + 1n}`;
+  return highest + 1n;
 }
 
 export interface AddPhysicalInterfaceSpec {
@@ -264,6 +256,13 @@ export interface AddPhysicalInterfaceSpec {
 const samePort = (a: PhysicalInterfaceEdge['a'], b: PhysicalInterfaceEdge['a']) => a.componentId === b.componentId && a.portId === b.portId;
 const sameSite = (a: TransferCapabilityEdge['a'], b: TransferCapabilityEdge['a']) => a.componentId === b.componentId && a.holdingSiteId === b.holdingSiteId;
 
+/** A Port must exist and have no Physical Interface endpoint to be available for an edit. */
+export function isPortFree(layout: LayoutDocument, componentId: string, portId: string): boolean {
+  const endpoint = { componentId, portId };
+  return layout.components.some((component) => component.id === componentId && component.ports.some((port) => port.id === portId))
+    && !layout.physicalInterfaces.some((edge) => samePort(edge.a, endpoint) || samePort(edge.b, endpoint));
+}
+
 export function addPhysicalInterface(state: LayoutEditState, spec: AddPhysicalInterfaceSpec): { state: LayoutEditState; interfaceId: string | null } {
   const layout = state.present;
   const refused = { state, interfaceId: null };
@@ -271,17 +270,15 @@ export function addPhysicalInterface(state: LayoutEditState, spec: AddPhysicalIn
   const a = layout.components.find((component) => component.id === spec.a.componentId);
   const b = layout.components.find((component) => component.id === spec.b.componentId);
   if (!a || !b) return refused;
-  const available = (component: Component, portId: string | null) => portId === null || (
-    component.ports.some((port) => port.id === portId) && !layout.physicalInterfaces.some((edge) =>
-      samePort(edge.a, { componentId: component.id, portId }) || samePort(edge.b, { componentId: component.id, portId })));
-  if (!available(a, spec.a.portId) || !available(b, spec.b.portId)) return refused;
-  const portA = spec.a.portId ?? nextLocalId(a.ports, 'p-');
-  const portB = spec.b.portId ?? nextLocalId(b.ports, 'p-');
+  if ((spec.a.portId !== null && !isPortFree(layout, a.id, spec.a.portId))
+    || (spec.b.portId !== null && !isPortFree(layout, b.id, spec.b.portId))) return refused;
+  const portA = spec.a.portId ?? `p-${nextNumericSuffix(state, 'p-', (doc) => doc.components.find((component) => component.id === a.id)?.ports.map((port) => port.id) ?? [])}`;
+  const portB = spec.b.portId ?? `p-${nextNumericSuffix(state, 'p-', (doc) => doc.components.find((component) => component.id === b.id)?.ports.map((port) => port.id) ?? [])}`;
   const endpointA = { componentId: a.id, portId: portA };
   const endpointB = { componentId: b.id, portId: portB };
   if (layout.physicalInterfaces.some((edge) => (samePort(edge.a, endpointA) && samePort(edge.b, endpointB))
     || (samePort(edge.a, endpointB) && samePort(edge.b, endpointA)))) return refused;
-  const interfaceId = nextLocalId(layout.physicalInterfaces, 'edge-');
+  const interfaceId = `edge-${nextNumericSuffix(state, 'edge-', (doc) => doc.physicalInterfaces.map((edge) => edge.id))}`;
   const components = layout.components.map((component) => {
     const other = component.id === a.id ? b : component.id === b.id ? a : null;
     const requestedPort = component.id === a.id ? spec.a.portId : spec.b.portId;
@@ -311,9 +308,9 @@ export function removePort(state: LayoutEditState, componentId: string, portId: 
 
 export function addHoldingSite(state: LayoutEditState, componentId: string, materialKinds: MaterialKind[]): { state: LayoutEditState; holdingSiteId: string | null } {
   const component = state.present.components.find((candidate) => candidate.id === componentId);
-  const kinds = (['wafer', 'carrier', 'batch', 'boat', 'reticle'] as const).filter((kind) => materialKinds.includes(kind));
+  const kinds = MATERIAL_KINDS.filter((kind) => materialKinds.includes(kind));
   if (state.drag || !component || kinds.length === 0) return { state, holdingSiteId: null };
-  const holdingSiteId = nextLocalId(component.holdingSites, 'slot-');
+  const holdingSiteId = `slot-${nextNumericSuffix(state, 'slot-', (doc) => doc.components.find((candidate) => candidate.id === componentId)?.holdingSites.map((site) => site.id) ?? [])}`;
   return { state: commit(state, { ...state.present, components: state.present.components.map((candidate) => candidate.id === componentId
     ? { ...candidate, holdingSites: [...candidate.holdingSites, { id: holdingSiteId, materialKinds: kinds, provenance: assumed() }] } : candidate) }), holdingSiteId };
 }
@@ -339,9 +336,8 @@ export function addTransferCapability(state: LayoutEditState, spec: AddTransferC
     || layout.transferCapabilities.some((edge) => edge.handlerComponentId === spec.handlerComponentId && (
       (sameSite(edge.a, spec.a) && sameSite(edge.b, spec.b)) || (sameSite(edge.a, spec.b) && sameSite(edge.b, spec.a))))) return { state, capabilityId: null };
   const base = `${spec.a.componentId}-${spec.a.holdingSiteId}-${spec.b.componentId}-${spec.b.holdingSiteId}`;
-  const taken = new Set(layout.transferCapabilities.map((edge) => edge.id));
-  let capabilityId = base;
-  for (let suffix = 2n; taken.has(capabilityId); suffix++) capabilityId = `${base}-${suffix}`;
+  const suffix = nextNumericSuffix(state, `${base}-`, (doc) => doc.transferCapabilities.map((edge) => edge.id === base ? `${base}-1` : edge.id));
+  const capabilityId = suffix === 1n ? base : `${base}-${suffix}`;
   return { state: commit(state, { ...layout, transferCapabilities: [...layout.transferCapabilities, { ...spec, id: capabilityId, provenance: assumed() }] }), capabilityId };
 }
 

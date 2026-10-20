@@ -1,12 +1,10 @@
 import { useId, useState, type ReactNode } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
-import type { Component, LayoutDocument, MaterialKind, PhysicalInterfaceEdge } from '@eqv/core';
-import type { AddPhysicalInterfaceSpec, AddTransferCapabilitySpec } from '@eqv/editor';
+import { MATERIAL_KINDS, PHYSICAL_INTERFACE_KINDS, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge } from '@eqv/core';
+import { isPortFree, type AddPhysicalInterfaceSpec, type AddTransferCapabilitySpec } from '@eqv/editor';
 import { FormField } from '@eqv/ui';
 import { Button, Checkbox, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@fops/ui';
 
-const MATERIAL_KINDS: MaterialKind[] = ['wafer', 'carrier', 'batch', 'boat', 'reticle'];
-const INTERFACE_KINDS: PhysicalInterfaceEdge['kind'][] = ['gate', 'slit', 'docking', 'optical', 'pass-through', 'stage-landing', 'service'];
 const NEW_PORT = '__new__';
 
 interface ConnectionsPanelProps {
@@ -54,12 +52,11 @@ export function ConnectionsPanel({ layout, component, busy, onAddPhysicalInterfa
   // All options come from the current document, including after undo or a cascade.
   const partners = layout.components.filter((candidate) => candidate.id !== component.id);
   const partner = partners.find((candidate) => candidate.id === partnerId);
-  const freePorts = (candidate: Component) => candidate.ports.filter((port) => !layout.physicalInterfaces.some((edge) =>
-    (edge.a.componentId === candidate.id && edge.a.portId === port.id) || (edge.b.componentId === candidate.id && edge.b.portId === port.id)));
+  const freePorts = (candidate: Component) => candidate.ports.filter((port) => isPortFree(layout, candidate.id, port.id));
   const ownPorts = freePorts(component);
   const partnerPorts = partner ? freePorts(partner) : [];
   const interfaces = layout.physicalInterfaces.filter((edge) => edge.a.componentId === component.id || edge.b.componentId === component.id);
-  const canAddInterface = !!partner && INTERFACE_KINDS.some((candidate) => candidate === kind)
+  const canAddInterface = !!partner && PHYSICAL_INTERFACE_KINDS.some((candidate) => candidate === kind)
     && (portId === NEW_PORT || ownPorts.some((port) => port.id === portId))
     && (partnerPortId === NEW_PORT || partnerPorts.some((port) => port.id === partnerPortId));
   const robots = layout.components.filter((candidate) => candidate.role === 'robot');
@@ -83,12 +80,12 @@ export function ConnectionsPanel({ layout, component, busy, onAddPhysicalInterfa
           <DeleteItem id={edge.id} busy={busy} onDelete={onRemovePhysicalInterface} />
         </div>;
       })}
-      <div className="grid gap-3 sm:grid-cols-2">
+      <div className="grid gap-3 lg:grid-cols-2">
         <Choice label="상대 Component" value={partnerId} disabled={busy} onChange={(value) => { setPartnerId(value); setPartnerPortId(NEW_PORT); }}>
           {partners.map((candidate) => <SelectItem key={candidate.id} value={candidate.id}>{candidate.id} · {candidate.label}</SelectItem>)}
         </Choice>
         <Choice label="종류" value={kind} disabled={busy} onChange={setKind}>
-          {INTERFACE_KINDS.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
+          {PHYSICAL_INTERFACE_KINDS.map((value) => <SelectItem key={value} value={value}>{value}</SelectItem>)}
         </Choice>
         <Choice label="포트" value={portId} disabled={busy} onChange={setPortId}>
           <SelectItem value={NEW_PORT}>새 포트</SelectItem>
@@ -140,7 +137,7 @@ export function ConnectionsPanel({ layout, component, busy, onAddPhysicalInterfa
         <span className="text-sm">{edge.a.componentId}/{edge.a.holdingSiteId} ↔ {edge.b.componentId}/{edge.b.holdingSiteId} · Handler {edge.handlerComponentId}</span>
         <DeleteItem id={edge.id} busy={busy} onDelete={onRemoveTransferCapability} />
       </div>)}
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 lg:grid-cols-3">
         <Choice label="Holding Site" value={siteId} disabled={busy || component.holdingSites.length === 0} onChange={setSiteId}>
           {component.holdingSites.map((site) => <SelectItem key={site.id} value={site.id}>{site.id}</SelectItem>)}
         </Choice>

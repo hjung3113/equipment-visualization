@@ -316,19 +316,9 @@ async function openAssembly(options: { parent?: boolean; baseline?: boolean } = 
   return { ...view, raw };
 }
 
-async function choosePrimitive(name: string) {
-  // Radix scrolls the focused option; jsdom has no layout scrolling API.
-  const originalScroll = Element.prototype.scrollIntoView;
-  Element.prototype.scrollIntoView ??= function scrollIntoViewStub() {};
-  try {
-    fireEvent.keyDown(screen.getByRole('combobox', { name: '추가할 Component 종류' }), { key: 'ArrowDown' });
-    fireEvent.click(await screen.findByRole('option', { name }));
-  } finally { Element.prototype.scrollIntoView = originalScroll; }
-}
-
 it('adds and selects a median-sized primitive, saving assumed provenance without connectivity', async () => {
   const { container, raw } = await openAssembly();
-  await choosePrimitive('pm');
+  await chooseEditOption('추가할 Component 종류', 'pm');
   fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
   expect(componentEl(container, 'pm-1').getAttribute('aria-pressed')).toBe('true');
   expect(field('이름').value).toBe('PM 1');
@@ -428,7 +418,7 @@ it('commits a trimmed label on Enter and rejects an empty label', async () => {
 
 it('previews an added Component in the publish dialog', async () => {
   await openAssembly({ baseline: true });
-  await choosePrimitive('pm');
+  await chooseEditOption('추가할 Component 종류', 'pm');
   fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
   fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
   const dialog = await screen.findByRole('alertdialog');
@@ -449,7 +439,7 @@ async function chooseEditOption(label: string, name: string, group?: string) {
 
 it('keeps overlapping Components independent until an explicit interface add, then undoes both new Ports with it', async () => {
   const { container, raw } = await openAssembly();
-  await choosePrimitive('pm');
+  await chooseEditOption('추가할 Component 종류', 'pm');
   fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
   for (const label of ['X', 'Y']) {
     fireEvent.change(field(label), { target: { value: String(raw.components.find((c) => c.id === PM)!.transform[label.toLowerCase()]) } });
@@ -521,7 +511,7 @@ it('disables all graph controls while the Component delete dialog is open', asyn
 
 it('disables interface creation when undo removes the chosen partner', async () => {
   const { container } = await openAssembly();
-  await choosePrimitive('pm');
+  await chooseEditOption('추가할 Component 종류', 'pm');
   fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
   select(container, PM);
   await chooseEditOption('상대 Component', 'pm-1 · PM 1');
