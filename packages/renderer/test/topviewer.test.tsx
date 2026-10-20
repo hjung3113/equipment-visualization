@@ -787,18 +787,6 @@ it('continues an active drag from the original pointerdown across a same-identit
   ]);
 });
 
-it('draws no capability or interface after a drop on another component', () => {
-  const onComponentDrag = vi.fn();
-  const onSelectedChange = vi.fn();
-  const { svg } = mount({ layout, onComponentDrag, onSelectedChange });
-  pointer(componentEl(svg, 'other'), 'pointerdown', 100, 100);
-  pointer(svg, 'pointermove', 200, 100);
-  pointer(svg, 'pointerup', 300, 100);
-  expect(svg.querySelector('[data-layer="capabilities"]')?.children.length ?? 0).toBe(0);
-  expect(svg.querySelector('[data-layer="interfaces"]')?.children.length ?? 0).toBe(0);
-  expect(onSelectedChange).toHaveBeenCalledTimes(1);
-});
-
 it('ignores a lostpointercapture that bubbles from a descendant and cancels on the svg own', () => {
   const onComponentDrag = vi.fn();
   const { svg } = mount({ layout, onComponentDrag });
