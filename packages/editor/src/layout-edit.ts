@@ -157,3 +157,85 @@ export function endDrag(state: LayoutEditState): LayoutEditState {
 export function cancelDrag(state: LayoutEditState): LayoutEditState {
   return state.drag ? { ...state, present: state.drag.origin, drag: null } : state;
 }
+
+export function roleForPrimitive(name: string): string {
+  if (name === 'loadlock') return 'll';
+  return ['robot-single', 'robot-dual', 'robot-multi', 'handler'].includes(name) ? 'robot' : name;
+}
+
+export interface AddComponentSpec {
+  asset: string;
+  size: { width: number; height: number };
+  levelId: string;
+  x: number;
+  y: number;
+}
+
+/** Adds geometry only; no Port, Holding Site or graph is inferred. */
+export function addComponent(state: LayoutEditState, spec: AddComponentSpec, snap: SnapOptions | null): { state: LayoutEditState; componentId: string | null } {
+  if (state.drag || !state.present.levels.some((level) => level.id === spec.levelId)) return { state, componentId: null };
+  const role = roleForPrimitive(spec.asset);
+  const prefix = `${role}-`;
+  let highest = 0;
+  for (const doc of [state.present, state.baseline, ...state.past, ...state.future]) {
+    for (const component of doc.components) {
+      if (!component.id.startsWith(prefix)) continue;
+      const suffix = component.id.slice(prefix.length);
+      if (/^\d+$/.test(suffix)) highest = Math.max(highest, Number(suffix));
+    }
+  }
+  const n = highest + 1;
+  const componentId = `${role}-${n}`;
+  const assumed = () => ({ certainty: 'assumed' as const, sourceEvidence: [] });
+  const component: Component = {
+    id: componentId, role, assetRef: `primitive:${spec.asset}`, label: `${role.toUpperCase()} ${n}`, levelId: spec.levelId,
+    transform: { x: round3(snap ? snapTo(spec.x, snap.grid) : spec.x), y: round3(snap ? snapTo(spec.y, snap.grid) : spec.y), rotation: 0, scale: 1 },
+    size: { ...spec.size }, ports: [], holdingSites: [],
+    provenance: { role: assumed(), assetRef: assumed(), label: assumed(), levelId: assumed(), transform: assumed() },
+  };
+  return { state: commit(state, { ...state.present, components: [...state.present.components, component] }), componentId };
+}
+
+export interface RemovalImpact {
+  blockedBy: 'children' | 'last' | null;
+  physicalInterfaces: number;
+  transferCapabilities: number;
+  processRouteSteps: number;
+  processRoutes: number;
+}
+const touches = (edge: { a: { componentId: string }; b: { componentId: string } }, id: string) => edge.a.componentId === id || edge.b.componentId === id;
+
+export function removalImpact(layout: LayoutDocument, componentId: string): RemovalImpact {
+  if (!layout.components.some((component) => component.id === componentId)) return { blockedBy: null, physicalInterfaces: 0, transferCapabilities: 0, processRouteSteps: 0, processRoutes: 0 };
+  return {
+    blockedBy: layout.components.some((component) => component.parentId === componentId) ? 'children' : layout.components.length === 1 ? 'last' : null,
+    physicalInterfaces: layout.physicalInterfaces.filter((edge) => touches(edge, componentId)).length,
+    transferCapabilities: layout.transferCapabilities.filter((edge) => touches(edge, componentId) || edge.handlerComponentId === componentId).length,
+    processRouteSteps: layout.processRoutes.reduce((sum, route) => sum + route.steps.filter((id) => id === componentId).length, 0),
+    processRoutes: layout.processRoutes.filter((route) => route.steps.filter((id) => id !== componentId).length < 2).length,
+  };
+}
+
+export function removeComponent(state: LayoutEditState, componentId: string): LayoutEditState {
+  const layout = state.present;
+  if (state.drag || !layout.components.some((component) => component.id === componentId) || removalImpact(layout, componentId).blockedBy !== null) return state;
+  return commit(state, {
+    ...layout,
+    components: layout.components.filter((component) => component.id !== componentId),
+    physicalInterfaces: layout.physicalInterfaces.filter((edge) => !touches(edge, componentId)),
+    transferCapabilities: layout.transferCapabilities.filter((edge) => !touches(edge, componentId) && edge.handlerComponentId !== componentId),
+    processRoutes: layout.processRoutes.map((route) => route.steps.includes(componentId) ? { ...route, steps: route.steps.filter((id) => id !== componentId) } : route).filter((route) => route.steps.length >= 2),
+  });
+}
+
+export function setLabel(state: LayoutEditState, componentId: string, label: string): LayoutEditState {
+  const trimmed = label.trim();
+  if (state.drag || !trimmed) return state;
+  const components = state.present.components.map((component) => {
+    if (component.id !== componentId || component.label === trimmed) return component;
+    const provenance = component.provenance.label?.certainty === 'verified'
+      ? { ...component.provenance, label: { ...component.provenance.label, certainty: 'assumed' as const } } : component.provenance;
+    return { ...component, label: trimmed, provenance };
+  });
+  return commit(state, { ...state.present, components });
+}

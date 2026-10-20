@@ -99,6 +99,11 @@ const CLASS: Record<string, 'process' | 'holding' | 'robot' | 'structure'> = {
   efem: 'structure', tm: 'structure', rail: 'structure', housing: 'structure',
 };
 
+/** Primitive class order and natural footprints from the bundled source tables. */
+export const PRIMITIVE_CATALOG: readonly Readonly<{ name: string; cls: SceneComponent['cls']; clsLabel: string; width: number; height: number }>[] = Object.entries(CLASS).map(([name, cls]) => ({
+  name, cls, clsLabel: CLASS_KO[cls], width: primitives[name]!.viewBox.width, height: primitives[name]!.viewBox.height,
+}));
+
 const BODY_ATTRS = ['fill', 'stroke', 'stroke-width', 'vector-effect', 'stroke-linecap', 'stroke-linejoin'] as const;
 
 interface LabelPlan {
