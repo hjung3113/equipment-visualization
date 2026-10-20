@@ -94,7 +94,7 @@ export function JourneyPage({ equipmentId, sampleWindow, anchor }: { equipmentId
         <StateMessage icon={SearchX} title="이 anchor로 Journey를 열 수 없습니다" body={invalid}
           action={<Button asChild variant="secondary" size="sm"><Link href={focusHref(anchor)}>Focus 열기</Link></Button>} />
       ) : computed && 'error' in computed ? (
-        <StateMessage tone="danger" icon={ServerCrash} title={`Replay 오류: ${computed.error}`} />
+        <StateMessage tone="danger" icon={ServerCrash} title={`Journey 계산 오류: ${computed.error}`} />
       ) : journey && (
         <>
           {result.notices.map((notice) => (

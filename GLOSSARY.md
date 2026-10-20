@@ -102,7 +102,7 @@ wafer journey 하나의 경유지를 레이아웃 위 이산 hop으로 보는 �
 _Avoid_: path animation, trace
 
 **Hop**:
-Journey에서 물질 한 장이 머문 하나의 Location. 번호는 도착 Record Sequence 순서이고, 같은 alias·Location이 이어지면 한 hop이다. Handler 위 구간도 hop이다(`derived`).
+Journey에서 물질 한 장이 머문 하나의 Location. 번호는 도착 Record Sequence 순서이고, 같은 alias·Location·Layout 정체(`layoutId`와 있으면 `layoutRevision`)가 이어지면 한 hop이고, Layout Revision이 바뀌면 id가 같아도 새 hop이다(ADR-0011). Handler 위 구간도 hop이다(`derived`).
 _Avoid_: path, trace, waypoint
 
 **Component Metric**:
