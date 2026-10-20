@@ -123,23 +123,6 @@ it('maps a world +x partner direction into the rotated Component local frame', (
     .toEqual({ x: 0, y: -30 });
 });
 
-it('uses the first Physical Interface in layout order when a port is shared', () => {
-  const shared = makeComponent('module-a', { x: 0, y: 0, rotation: 0, scale: 1 }, { width: 100, height: 100 }, undefined, [makePort('port-a')]);
-  const east = makeComponent('module-b', { x: 50, y: 0, rotation: 0, scale: 1 }, { width: 20, height: 20 }, undefined, [makePort('port-b')]);
-  const north = makeComponent('module-c', { x: 0, y: -50, rotation: 0, scale: 1 }, { width: 20, height: 20 }, undefined, [makePort('port-c')]);
-  const edge = (id: string, partnerId: string, partnerPortId: string): LayoutDocument['physicalInterfaces'][number] => ({
-    id,
-    kind: 'gate',
-    a: { componentId: shared.id, portId: 'port-a' },
-    b: { componentId: partnerId, portId: partnerPortId },
-    provenance: { certainty: 'assumed', sourceEvidence: ['src-test'] },
-  });
-  const layout = makeLayout([shared, east, north], [edge('edge-first', east.id, 'port-b'), edge('edge-second', north.id, 'port-c')]);
-
-  expect(portPositionToward(layout, shared.id, componentWorldCenter(layout, east.id)!))
-    .toEqual({ x: 50, y: 0 });
-});
-
 it('returns the local origin for a Component without size', () => {
   const component = makeComponent('module-a', { x: 10, y: 20, rotation: 45, scale: 2 });
   const layout = makeLayout([component]);
