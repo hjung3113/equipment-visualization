@@ -262,3 +262,38 @@ it('adds no connectivity when a Component is dropped onto another', async () => 
   expect(saved.unit).toBe(before.unit);
   expect(saved.viewBox).toEqual(before.viewBox);
 });
+
+it('keeps history, selection and the saved baseline when a template edit is saved to its draft', async () => {
+  const { container } = await openTemplate();
+  select(container, PM);
+  drag(container, PM, 30);
+  await waitFor(() => expect(field('X').value).toBe('376.4'));
+  const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+  try {
+    await saveDraft();
+    expect(componentEl(container, PM).getAttribute('aria-pressed')).toBe('true');
+    expect(field('X').value).toBe('376.4');
+    const undo = screen.getByRole('button', { name: '실행 취소' }) as HTMLButtonElement;
+    expect(undo.disabled).toBe(false);
+    fireEvent.click(undo);
+    expect(field('X').value).toBe('331.4');
+    expect(confirm).not.toHaveBeenCalled();
+  } finally {
+    confirm.mockRestore();
+  }
+});
+
+it('settles a drag that is still held when the publish dialog opens', async () => {
+  const { container } = await openTemplate();
+  select(container, PM);
+  pointer(componentEl(container, PM), 'pointerdown', 100, 100);
+  pointer(viewerSvg(container), 'pointermove', 130, 100);
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  const dialog = await screen.findByRole('alertdialog');
+  pointer(viewerSvg(container), 'pointerup', 130, 100);
+  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(field('X').value).toBe('331.4');
+  fireEvent.keyDown(viewerSvg(container), { key: 'ArrowRight', altKey: true });
+  expect(field('X').value).toBe('332.4');
+});

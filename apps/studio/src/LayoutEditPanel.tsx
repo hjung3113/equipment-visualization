@@ -33,8 +33,10 @@ export function EditToolbar({ busy, canUndo, canRedo, hasSelection, snap, onUndo
       <Button type="button" variant="secondary" size="toolbar" disabled={busy || !hasSelection} aria-keyshortcuts="]" onClick={() => onRotate(15)}>
         <RotateCw className={TOOL_ICON} aria-hidden />오른쪽으로 15° 회전
       </Button>
-      <Checkbox id="layout-edit-snap" checked={snap} disabled={busy} onCheckedChange={(value) => onSnapChange(value === true)} />
-      <Label htmlFor="layout-edit-snap">격자 맞춤</Label>
+      <span className="flex items-center gap-2">
+        <Checkbox id="layout-edit-snap" checked={snap} disabled={busy} onCheckedChange={(value) => onSnapChange(value === true)} />
+        <Label htmlFor="layout-edit-snap">격자 맞춤</Label>
+      </span>
       <span className="text-xs text-text-muted">Alt+화살표 이동 · Shift와 함께 10배 · [ ] 15° 회전</span>
     </div>
   );

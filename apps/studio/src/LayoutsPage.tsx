@@ -161,7 +161,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
 
   const base: Doc | null = imported ?? (loaded?.state === 'ready' ? loaded : null);
   // A new document, or a differing read of the open file, starts a new edit session; a save keeps it (its `source` follows).
-  if ((session?.source ?? null) !== (base?.raw ?? null)) {
+  // Not while a file switch is pending: `base` still holds the previous file, and a save's seeded navigation keeps its session.
+  if (prevFile === file && (session?.source ?? null) !== (base?.raw ?? null)) {
     setSession(base === null ? null : { source: base.raw, state: createLayoutEdit(base.raw as LayoutDocument) });
     setSelectedId(null);
   }
@@ -292,6 +293,10 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const snapOptions = snap ? DEFAULT_SNAP : null;
   const selected = selectedId === null ? undefined : present?.components.find((component) => component.id === selectedId);
   const editable = !busy && publishing === null;
+  // A drag held while the page freezes is settled here; the drag events that follow are ignored.
+  useEffect(() => {
+    if (!editable) editing(cancelDrag);
+  }, [editable]);
 
   function onComponentDrag({ componentId, phase, dx, dy }: ComponentDrag) {
     if (!editable) return;
