@@ -6,7 +6,7 @@ import {
   type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
-import { ApiError, listDir, readFile, type DirEntry } from './api.js';
+import { ApiError, dirOrEmpty, listDir, readFile, type DirEntry } from './api.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
 export type SampleWindowEntry = { name: string; path: string; from: SiteWallClock; to: SiteWallClock; hash: string };
@@ -232,13 +232,7 @@ export async function loadEquipment(equipmentId: string, options: { window?: str
 }
 
 export async function listEquipmentIds(): Promise<string[]> {
-  let entries: DirEntry[];
-  try {
-    entries = await listDir('equipment');
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return [];
-    throw error;
-  }
+  const entries = await dirOrEmpty('equipment');
   return entries.filter(({ kind, name }) => kind === 'file' && name.endsWith('.json')).map(({ name }) => name.slice(0, -'.json'.length));
 }
 

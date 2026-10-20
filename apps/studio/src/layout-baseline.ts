@@ -1,19 +1,10 @@
 import { layoutRevision, validateBindings, validateLayout, type LayoutDocument } from '@eqv/core';
-import { ApiError, listDir, readFile } from './api.js';
+import { dirOrEmpty, readFile } from './api.js';
 import { layoutChanges, type LayoutChanges } from './layout-changes.js';
 
 export const REVISION_FILE = /^([0-9a-f]{64})\.layout\.json$/;
 const BINDINGS_FILE = /\.bindings\.json$/;
 const HASH_PREFIX = 'sha256:';
-
-export async function dirOrEmpty(dir: string) {
-  try {
-    return await listDir(dir);
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return [];
-    throw error;
-  }
-}
 
 export type PublishBaseline =
   | { kind: 'identical'; hex: string }
