@@ -3,7 +3,7 @@ export { TopViewer, type ComponentDrag, type TopViewerControls, type TopViewerPr
 export type { Highlight, IllustrativeGhost, ReplayOverlay } from './overlay.js';
 export type { JourneyHopMark, JourneyOverlay } from './journey.js';
 export {
-  buildScene, type Scene, type SceneCapability, type SceneComponent, type SceneLayers, type SceneOptions,
+  PRIMITIVE_CATALOG, buildScene, type Scene, type SceneCapability, type SceneComponent, type SceneLayers, type SceneOptions,
 } from './scene.js';
 export { sanitizePrimitive } from './sanitize.js';
 export type { SvgNode } from './svg.js';

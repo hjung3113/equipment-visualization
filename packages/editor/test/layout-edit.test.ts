@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { validateLayout, type Component, type LayoutDocument, type Provenance } from '@eqv/core';
 import {
   canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rootDeltaToLocal, rotateBy,
-  setTransform, undo, DEFAULT_SNAP,
+  setTransform, undo, DEFAULT_SNAP, addComponent, removeComponent, removalImpact, setLabel, roleForPrimitive,
 } from '../src/layout-edit.js';
 
 const assumed: Provenance = { certainty: 'assumed', sourceEvidence: [] };
@@ -296,5 +296,67 @@ describe('history and dirty', () => {
     expect(isDirty(s)).toBe(false);
     expect(canUndo(s)).toBe(true);
     expect(isDirty(undo(s))).toBe(true);
+  });
+});
+
+describe('Component assembly', () => {
+  const spec = { asset: 'pm', size: { width: 80, height: 60 }, levelId: 'l1', x: 14.12345, y: 26.98765 };
+  it.each(['loadlock', 'robot-single', 'robot-dual', 'robot-multi', 'handler', 'pm'])('maps primitive %s to its Role', (name) => {
+    expect(roleForPrimitive(name)).toBe(name === 'loadlock' ? 'll' : name.startsWith('robot-') || name === 'handler' ? 'robot' : name);
+  });
+  it('adds an assumed Component with explicit natural size and no connectivity', () => {
+    const { state, componentId } = addComponent(fresh(), spec, DEFAULT_SNAP);
+    expect(componentId).toBe('pm-1');
+    expect(byId(state.present, componentId!)).toEqual({ id: 'pm-1', role: 'pm', assetRef: 'primitive:pm', label: 'PM 1', levelId: 'l1',
+      transform: { x: 10, y: 30, rotation: 0, scale: 1 }, size: spec.size, ports: [], holdingSites: [],
+      provenance: { role: assumed, assetRef: assumed, label: assumed, levelId: assumed, transform: assumed } });
+    for (const key of ['physicalInterfaces', 'transferCapabilities', 'processRoutes'] as const) expect(state.present[key]).toBe(layout[key]);
+    expect(state.past).toEqual([layout]);
+    expect(byId(addComponent(fresh(), spec, null).state.present, 'pm-1').transform.x).toBe(14.123);
+  });
+  it('reserves ids in saved, past and future documents, including a deleted id', () => {
+    const first = addComponent(fresh(), spec, null).state;
+    const second = addComponent(first, spec, null).state;
+    expect(addComponent(undo(second), spec, null).componentId).toBe('pm-3');
+    expect(addComponent(removeComponent(markSaved(second), 'pm-2'), spec, null).componentId).toBe('pm-3');
+  });
+  it('allocates a fresh id above the safe integer limit', () => {
+    const state = createLayoutEdit(fixture([{ ...robot, id: 'pm-9007199254740993', role: 'pm' }]));
+    const added = addComponent(state, spec, null);
+    expect(added.componentId).toBe('pm-9007199254740994');
+    expect(new Set(added.state.present.components.map((component) => component.id)).size).toBe(2);
+  });
+  it.each(['level', 'drag'])('does not add for invalid %s', (reason) => {
+    const state = reason === 'drag' ? dragTo(fresh(), 'robot', 1, 1, null) : fresh();
+    expect(addComponent(state, { ...spec, levelId: reason === 'level' ? 'missing' : 'l1' }, null)).toEqual({ state, componentId: null });
+  });
+  it('counts and removes all graph references in one undoable edit, preserving unrelated keys', () => {
+    const doc = { ...layout, processRoutes: [{ id: 'drop', label: 'Drop', steps: ['child', 'robot'] }, { id: 'keep', label: 'Keep', steps: ['parent', 'child', 'robot'] }] };
+    expect(removalImpact(doc, 'child')).toEqual({ blockedBy: null, physicalInterfaces: 1, transferCapabilities: 1, processRouteSteps: 2, processRoutes: 1 });
+    const removed = removeComponent(createLayoutEdit(doc), 'child');
+    expect(removed.present.components).toEqual([parent, robot]);
+    expect(removed.present.physicalInterfaces).toEqual([]);
+    expect(removed.present.transferCapabilities).toEqual([]);
+    expect(removed.present.processRoutes).toEqual([{ id: 'keep', label: 'Keep', steps: ['parent', 'robot'] }]);
+    expect(Object.keys(removed.present)).toEqual(Object.keys(doc));
+    expect(undo(removed).present).toBe(doc);
+  });
+  it.each(['children', 'last', 'unknown', 'drag'])('blocks removal for %s', (reason) => {
+    const state = reason === 'last' ? createLayoutEdit(fixture([robot])) : reason === 'drag' ? dragTo(fresh(), 'robot', 1, 1, null) : fresh();
+    const id = reason === 'children' ? 'parent' : reason === 'unknown' ? 'missing' : 'robot';
+    expect(removeComponent(state, id)).toBe(state);
+    if (reason === 'children' || reason === 'last') expect(removalImpact(state.present, id).blockedBy).toBe(reason);
+    if (reason === 'unknown') expect(removalImpact(state.present, id)).toEqual({ blockedBy: null, physicalInterfaces: 0, transferCapabilities: 0, processRouteSteps: 0, processRoutes: 0 });
+  });
+  it('trims labels and downgrades only verified label provenance', () => {
+    const doc = fixture([{ ...robot, provenance: { label: verified } }, child]);
+    const state = createLayoutEdit(doc);
+    const changed = setLabel(state, 'robot', '  New name  ');
+    expect(byId(changed.present, 'robot').label).toBe('New name');
+    expect(byId(changed.present, 'robot').provenance.label).toEqual({ ...verified, certainty: 'assumed' });
+    expect(setLabel(state, 'robot', ' ')).toBe(state);
+    expect(setLabel(state, 'robot', 'Robot')).toBe(state);
+    const dragging = dragTo(state, 'robot', 1, 1, null);
+    expect(setLabel(dragging, 'robot', 'Name')).toBe(dragging);
   });
 });

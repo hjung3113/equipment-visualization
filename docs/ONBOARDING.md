@@ -2,7 +2,7 @@
 
 **상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면, Mapping Board, 샘플 기간 dry-run, Publish(Layout Revision·Mapping Version·Baseline Inventory·Binding, [ADR-0007](adr/0007-publish-writes-revision-mapping-baseline-binding.md))는 Studio에 구현됨; 설비 등록, Model Type Dictionary, alias metadata, Sample Window 가져오기는 [ADR-0010](adr/0010-studio-data-import.md)에 따라 #97–#103에서 구현됨. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
-Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다. 구현: /layouts에서 Component 이동(drag·Alt+화살표)·15° 회전·격자 맞춤·실행 취소 (#158). 크기 변경·포트 맞춤·다중 선택은 아직 없다.
+Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집은 템플릿 인스턴스와 Generic Layout을 다듬거나 primitive로 레이아웃을 직접 조립하는 기능이다(T06c, 2026-10-20 owner 요청). 구현: /layouts에서 Component 이동(drag·Alt+화살표)·15° 회전·격자 맞춤·실행 취소 (#158). Component 추가(25개 primitive)·삭제·이름 변경 (#166). 크기 변경·포트 맞춤·다중 선택은 아직 없다.
 
 ## 1. 흐름
 

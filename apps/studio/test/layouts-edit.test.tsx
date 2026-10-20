@@ -296,3 +296,142 @@ it('settles a drag that is still held when the publish dialog opens', async () =
   fireEvent.keyDown(viewerSvg(container), { key: 'ArrowRight', altKey: true });
   expect(field('X').value).toBe('332.4');
 });
+
+/** Assembly tests use an equipment layout; template cardinality must remain protected. */
+async function openAssembly(options: { parent?: boolean; baseline?: boolean } = {}) {
+  const raw = await original() as Awaited<ReturnType<typeof original>> & { components: (Raw['components'][number] & { levelId: string; label: string; parentId?: string })[] };
+  delete raw.roleCardinality;
+  raw.kind = 'equipment-layout';
+  raw.templateId = 'cluster-single';
+  if (options.parent) (raw.components.find((c) => c.id === PM)! as Raw['components'][number] & { parentId: string }).parentId = 'tm-1';
+  await mkdir(join(root, 'layouts/cluster-single'), { recursive: true });
+  await writeFile(join(root, DRAFT), JSON.stringify(raw));
+  if (options.baseline) {
+    const hex = (await layoutRevision(layoutDocumentSchema.parse(raw))).slice('sha256:'.length);
+    await writeFile(join(root, `layouts/cluster-single/${hex}.layout.json`), JSON.stringify(raw));
+  }
+  window.history.replaceState(null, '', `/layouts?${new URLSearchParams({ file: DRAFT })}`);
+  const view = render(<App />);
+  await waitFor(() => expect(view.container.querySelector('[data-component-id]')).toBeTruthy());
+  return { ...view, raw };
+}
+
+async function choosePrimitive(name: string) {
+  // Radix scrolls the focused option; jsdom has no layout scrolling API.
+  const originalScroll = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView ??= function scrollIntoViewStub() {};
+  try {
+    fireEvent.keyDown(screen.getByRole('combobox', { name: '추가할 Component 종류' }), { key: 'ArrowDown' });
+    fireEvent.click(await screen.findByRole('option', { name }));
+  } finally { Element.prototype.scrollIntoView = originalScroll; }
+}
+
+it('adds and selects a median-sized primitive, saving assumed provenance without connectivity', async () => {
+  const { container, raw } = await openAssembly();
+  await choosePrimitive('pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  expect(componentEl(container, 'pm-1').getAttribute('aria-pressed')).toBe('true');
+  expect(field('이름').value).toBe('PM 1');
+  const viewBox = raw.viewBox as { x: number; y: number; width: number; height: number };
+  expect(Number(field('X').value)).toBe(viewBox.x + viewBox.width / 2);
+  expect(Number(field('Y').value)).toBe(viewBox.y + viewBox.height / 2);
+  // Put it over an existing Component before saving: adjacency still creates no graph.
+  for (const label of ['X', 'Y']) {
+    fireEvent.change(field(label), { target: { value: String(raw.components.find((c) => c.id === PM)!.transform[label.toLowerCase()]) } });
+    fireEvent.keyDown(field(label), { key: 'Enter' });
+  }
+  await saveDraft();
+  const saved = await readDraft();
+  const added = saved.components.find((c) => c.id === 'pm-1')!;
+  expect(added).toMatchObject({ role: 'pm', assetRef: 'primitive:pm', label: 'PM 1', levelId: raw.components[0]!.levelId, ports: [], holdingSites: [] });
+  // The fixture's 14 longer sides have 84 at both middle positions.
+  const size = (added as typeof added & { size: { width: number; height: number } }).size;
+  expect(Math.max(size.width, size.height)).toBe(84);
+  expect(added.provenance).toEqual(Object.fromEntries(['role', 'assetRef', 'label', 'levelId', 'transform'].map((key) => [key, { certainty: 'assumed', sourceEvidence: [] }])));
+  for (const graph of ['physicalInterfaces', 'transferCapabilities', 'processRoutes']) expect(saved[graph]).toEqual(raw[graph]);
+});
+
+it('protects template cardinality from add, delete and Delete keys', async () => {
+  const { container } = await openTemplate();
+  select(container, PM);
+  expect((screen.getByRole('button', { name: 'Component 추가' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: '삭제' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText('템플릿에는 Component를 추가하거나 삭제할 수 없습니다. 이 템플릿으로 시작한 레이아웃에서 편집하세요.')).toBeTruthy();
+  fireEvent.keyDown(viewerSvg(container), { key: 'Delete' });
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+});
+
+it('confirms counted graph removal by Delete, saves it, and restores both by undo without selection', async () => {
+  const { container, raw } = await openAssembly();
+  select(container, 'lp-1');
+  fireEvent.keyDown(componentEl(container, 'lp-1'), { key: 'Delete' });
+  const dialog = await screen.findByRole('alertdialog');
+  expect(within(dialog).getByText(/Physical Interface 1개/)).toBeTruthy();
+  expect((screen.getByRole('button', { name: '초안 저장', hidden: true }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(document.activeElement).toBe(viewerSvg(container).closest('div[tabindex="-1"]')!.querySelector('button:not([disabled]), [tabindex="0"]'));
+  await saveDraft();
+  const saved = await readDraft();
+  expect(saved.components.some((c) => c.id === 'lp-1')).toBe(false);
+  expect((saved.physicalInterfaces as unknown[]).length).toBe((raw.physicalInterfaces as unknown[]).length - 1);
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect(componentEl(container, 'lp-1')).toBeTruthy();
+  expect(screen.getByText('Top View에서 Component를 선택하세요.')).toBeTruthy();
+  await saveDraft();
+  expect((await readDraft()).physicalInterfaces).toEqual(raw.physicalInterfaces);
+});
+
+it('cancels a held drag for deletion, freezes undo, and discards a stale dialog on file switch', async () => {
+  const { container } = await openAssembly();
+  select(container, PM);
+  fireEvent.keyDown(viewerSvg(container), { key: 'ArrowRight', altKey: true });
+  const x = field('X').value;
+  pointer(componentEl(container, PM), 'pointerdown', 100, 100);
+  pointer(viewerSvg(container), 'pointermove', 130, 100);
+  fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+  const dialog = await screen.findByRole('alertdialog');
+  expect(field('X').value).toBe(x);
+  fireEvent.keyDown(dialog, { key: 'z', metaKey: true });
+  expect(field('X').value).toBe(x);
+  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: '삭제' }));
+  fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+  await screen.findByRole('alertdialog');
+  const discard = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  try {
+    fireEvent.click(await screen.findByRole('link', { name: 'cluster-single', hidden: true }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect((await readDraft()).components.some((c) => c.id === PM)).toBe(true);
+  } finally { discard.mockRestore(); }
+});
+
+it('blocks deleting a parent and explains that its children must go first', async () => {
+  const { container } = await openAssembly({ parent: true });
+  select(container, 'tm-1');
+  expect((screen.getByRole('button', { name: '삭제' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText('하위 Component를 먼저 삭제하세요.')).toBeTruthy();
+});
+
+it('commits a trimmed label on Enter and rejects an empty label', async () => {
+  const { container } = await openAssembly();
+  select(container, PM);
+  fireEvent.change(field('이름'), { target: { value: '  New chamber  ' } });
+  fireEvent.keyDown(field('이름'), { key: 'Enter' });
+  await saveDraft();
+  expect((await readDraft()).components.find((c) => c.id === PM)).toMatchObject({ label: 'New chamber' });
+  fireEvent.change(field('이름'), { target: { value: '' } });
+  fireEvent.blur(field('이름'));
+  expect(screen.getByText('이름을 입력하세요')).toBeTruthy();
+});
+
+it('previews an added Component in the publish dialog', async () => {
+  await openAssembly({ baseline: true });
+  await choosePrimitive('pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  const dialog = await screen.findByRole('alertdialog');
+  expect(await within(dialog).findByText('추가 1 · 삭제 0 · 변경 0')).toBeTruthy();
+  expect(within(within(dialog).getByRole('table', { name: 'Layout 변경 목록' })).getByText('pm-1')).toBeTruthy();
+});
