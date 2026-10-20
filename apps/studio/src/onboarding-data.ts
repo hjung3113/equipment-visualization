@@ -237,13 +237,7 @@ export async function listEquipmentIds(): Promise<string[]> {
 }
 
 async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped: string[] }> {
-  let entries: DirEntry[];
-  try {
-    entries = await listDir('templates');
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) return { templates: [], skipped: [] };
-    throw error;
-  }
+  const entries = await dirOrEmpty('templates');
   const names = entries.filter(({ kind, name }) => kind === 'file' && name.endsWith('.template.json')).map(({ name }) => name);
   const templates: TemplateDocument[] = [];
   const skipped: string[] = [];

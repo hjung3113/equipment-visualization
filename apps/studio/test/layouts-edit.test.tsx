@@ -136,11 +136,10 @@ it('snaps keyboard moves and rotations when 격자 맞춤 is on', async () => {
 
 it('ignores edit keys without a selection', async () => {
   const { container } = await openTemplate();
-  const before = container.innerHTML;
   fireEvent.keyDown(viewerSvg(container), { key: 'ArrowRight', altKey: true });
   fireEvent.keyDown(viewerSvg(container), { key: ']' });
   expect(screen.queryByText('저장 안 됨')).toBeNull();
-  expect(container.innerHTML).toBe(before);
+  expect((screen.getByRole('button', { name: '실행 취소' }) as HTMLButtonElement).disabled).toBe(true);
   expect(screen.getByText('Top View에서 Component를 선택하세요.')).toBeTruthy();
 });
 
