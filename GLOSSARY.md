@@ -23,6 +23,10 @@ _Avoid_: arm(Handler의 일부 Component일 뿐)
 수직으로 겹친 Component를 나누는 층 식별자. Top View는 Level 필터로 다층 구조를 보여주며 높이 형상은 저장하지 않는다.
 _Avoid_: z-order(그리기 순서), floor
 
+**Port**:
+Port 위치는 Component 중심을 원점으로 하는 로컬 좌표이며 Component 자신의 회전·scale 적용 전 값이다. Physical Interface에 쓰이면 상대 Component의 월드 중심을 향하는 ray가 footprint 경계에 닿는 곳에 두고, 여러 접점에서는 목록의 첫 접점이 기준이며, 접점이 없으면 기존 방향을 투영하고 `size`가 없는 Component에서는 원점에 둔다.
+_Avoid_: anchor, connector
+
 **Physical Interface**:
 두 Component의 포트 간 물리 접점(gate, slit, docking, optical 등 `kind`로 구분).
 _Avoid_: connection(모호), adjacency

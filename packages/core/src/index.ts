@@ -10,6 +10,7 @@ export type {
 export { layoutRevision } from './layout/revision.js';
 export { validateLayout } from './layout/validate.js';
 export type { LayoutIssue, LayoutIssueCode, LayoutValidationResult } from './layout/validate.js';
+export { componentWorldCenter, portPositionToward, projectToFootprint } from './layout/ports.js';
 
 export { occurrenceBatchSchema } from './occurrence/schema.js';
 export type { EvidenceLevel, Boundary, Occurrence, DataQualityIssue, OccurrenceBatch } from './occurrence/schema.js';
