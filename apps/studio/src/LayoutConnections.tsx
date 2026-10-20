@@ -147,7 +147,7 @@ export function ConnectionsPanel({ layout, component, busy, onAddPhysicalInterfa
         <Choice label="상대 Holding Site" value={otherSite} disabled={busy} onChange={setOtherSite}>
           {siteOptions.map((group) => <SelectGroup key={group.component.id}>
             <SelectLabel>{group.component.id}</SelectLabel>
-            {group.sites.map((site) => <SelectItem key={site.id} value={siteKey(group.component.id, site.id)}>{site.id}</SelectItem>)}
+            {group.sites.map((site) => <SelectItem key={site.id} value={siteKey(group.component.id, site.id)}>{group.component.id}/{site.id}</SelectItem>)}
           </SelectGroup>)}
         </Choice>
         <Choice label="Handler" value={handlerId} disabled={busy} onChange={setHandlerId}>

@@ -483,7 +483,7 @@ it('edits assumed Sites and capabilities on a Template and cascades Site deletio
   await saveDraft();
   expect(layoutDocumentSchema.parse(await readDraft()).components.find((c) => c.id === PM)!.holdingSites.at(-1)).toEqual({ id: 'slot-1', materialKinds: ['wafer', 'carrier'], provenance: { certainty: 'assumed', sourceEvidence: [] } });
   await chooseEditOption('Holding Site', 'slot-1');
-  await chooseEditOption('상대 Holding Site', 'station-1', 'pm-b');
+  await chooseEditOption('상대 Holding Site', 'pm-b/station-1', 'pm-b');
   await chooseEditOption('Handler', 'robot-1 · ATM Robot');
   fireEvent.click(screen.getByRole('button', { name: 'Transfer Capability 추가' }));
   await saveDraft();
