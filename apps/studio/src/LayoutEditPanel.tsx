@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { Redo2, RotateCcw, RotateCw, Undo2 } from 'lucide-react';
 import type { Component } from '@eqv/core';
+import type { TransformPatch } from '@eqv/editor';
 import { DetailFields, FormField } from '@eqv/ui';
 import { Button, Checkbox, EmptyState, Input, Label, PanelSectionTitle } from '@fops/ui';
 
 const TOOL_ICON = 'size-3.5';
+/** Degrees per rotate button press and per `[` / `]`. */
+export const ROTATE_STEP = 15;
 
 export interface EditToolbarProps {
   busy: boolean;
@@ -27,10 +30,10 @@ export function EditToolbar({ busy, canUndo, canRedo, hasSelection, snap, onUndo
       <Button type="button" variant="secondary" size="toolbar" disabled={busy || !canRedo} aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z Control+Y" onClick={onRedo}>
         <Redo2 className={TOOL_ICON} aria-hidden />다시 실행
       </Button>
-      <Button type="button" variant="secondary" size="toolbar" disabled={busy || !hasSelection} aria-keyshortcuts="[" onClick={() => onRotate(-15)}>
+      <Button type="button" variant="secondary" size="toolbar" disabled={busy || !hasSelection} aria-keyshortcuts="[" onClick={() => onRotate(-ROTATE_STEP)}>
         <RotateCcw className={TOOL_ICON} aria-hidden />왼쪽으로 15° 회전
       </Button>
-      <Button type="button" variant="secondary" size="toolbar" disabled={busy || !hasSelection} aria-keyshortcuts="]" onClick={() => onRotate(15)}>
+      <Button type="button" variant="secondary" size="toolbar" disabled={busy || !hasSelection} aria-keyshortcuts="]" onClick={() => onRotate(ROTATE_STEP)}>
         <RotateCw className={TOOL_ICON} aria-hidden />오른쪽으로 15° 회전
       </Button>
       <span className="flex items-center gap-2">
@@ -86,7 +89,7 @@ function NumberField({ label, value, hint, disabled, onCommit }: NumberFieldProp
 export interface SelectionPanelProps {
   component: Component | undefined;
   busy: boolean;
-  onTransform(patch: { x?: number; y?: number; rotation?: number }): void;
+  onTransform(patch: TransformPatch): void;
 }
 
 export function SelectionPanel({ component, busy, onTransform }: SelectionPanelProps) {

@@ -7,7 +7,7 @@ import {
   type LayoutEditState,
 } from '@eqv/editor';
 import { dirOrEmpty, publishRevision, readFile, saveDraft } from './api.js';
-import { EditToolbar, SelectionPanel } from './LayoutEditPanel.js';
+import { EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
 import { REVISION_FILE } from './layout-baseline.js';
 import { PublishDialog } from './PublishDialog.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
@@ -38,6 +38,8 @@ interface Listing {
   templates: { path: string; label: string }[];
   layouts: LayoutEntry[];
 }
+
+const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
 const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 
@@ -308,7 +310,6 @@ export function LayoutsPage({ file }: { file: string | null }) {
     if (selected) editing((state) => rotateBy(state, selected.id, degrees, snapOptions));
   }
 
-  const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
   function onViewerKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (!selected || !editable || event.defaultPrevented) return;
     const arrow = ARROWS[event.key];
@@ -316,7 +317,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
       const step = (snap ? DEFAULT_SNAP.grid : 1) * (event.shiftKey ? 10 : 1);
       editing((state) => moveBy(state, selected.id, arrow[0] * step, arrow[1] * step, snapOptions));
     } else if ((event.key === '[' || event.key === ']') && !event.altKey && !event.ctrlKey && !event.metaKey) {
-      rotateSelected(event.key === '[' ? -DEFAULT_SNAP.rotationStep : DEFAULT_SNAP.rotationStep);
+      rotateSelected(event.key === '[' ? -ROTATE_STEP : ROTATE_STEP);
     } else return;
     event.preventDefault();
   }
