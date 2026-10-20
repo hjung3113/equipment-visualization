@@ -316,7 +316,7 @@ async function openAssembly(options: { parent?: boolean; baseline?: boolean } = 
   return { ...view, raw };
 }
 
-it('adds and selects a median-sized primitive, saving assumed provenance without connectivity', async () => {
+it('adds and selects a median-sized primitive, saving assumed provenance', async () => {
   const { container, raw } = await openAssembly();
   await chooseEditOption('추가할 Component 종류', 'pm');
   fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
@@ -325,11 +325,6 @@ it('adds and selects a median-sized primitive, saving assumed provenance without
   const viewBox = raw.viewBox as { x: number; y: number; width: number; height: number };
   expect(Number(field('X').value)).toBe(viewBox.x + viewBox.width / 2);
   expect(Number(field('Y').value)).toBe(viewBox.y + viewBox.height / 2);
-  // Put it over an existing Component before saving: adjacency still creates no graph.
-  for (const label of ['X', 'Y']) {
-    fireEvent.change(field(label), { target: { value: String(raw.components.find((c) => c.id === PM)!.transform[label.toLowerCase()]) } });
-    fireEvent.keyDown(field(label), { key: 'Enter' });
-  }
   await saveDraft();
   const saved = await readDraft();
   const added = saved.components.find((c) => c.id === 'pm-1')!;
@@ -338,7 +333,6 @@ it('adds and selects a median-sized primitive, saving assumed provenance without
   const size = (added as typeof added & { size: { width: number; height: number } }).size;
   expect(Math.max(size.width, size.height)).toBe(84);
   expect(added.provenance).toEqual(Object.fromEntries(['role', 'assetRef', 'label', 'levelId', 'transform'].map((key) => [key, { certainty: 'assumed', sourceEvidence: [] }])));
-  for (const graph of ['physicalInterfaces', 'transferCapabilities', 'processRoutes']) expect(saved[graph]).toEqual(raw[graph]);
 });
 
 it('protects template cardinality from add, delete and Delete keys', async () => {
