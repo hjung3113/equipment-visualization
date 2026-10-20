@@ -473,7 +473,7 @@ it('keeps overlapping Components independent until an explicit interface add, th
   expect(restored.physicalInterfaces).toEqual(raw.physicalInterfaces);
   expect(restored.components.find((c) => c.id === 'pm-1')!.ports).toEqual([]);
   expect(restored.components.find((c) => c.id === PM)!.ports).toEqual(layoutDocumentSchema.parse(raw).components.find((c) => c.id === PM)!.ports);
-});
+}, 15_000); // Several Radix Select interactions: ~1.5 s locally, over the 5 s default on a loaded CI runner (#173)
 
 it('edits assumed Sites and capabilities on a Template and cascades Site deletion', async () => {
   const { container } = await openTemplate();
@@ -494,7 +494,7 @@ it('edits assumed Sites and capabilities on a Template and cascades Site deletio
   expect(layoutDocumentSchema.parse(await readDraft()).transferCapabilities.some((edge) => edge.id === capabilityId)).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
   expect(screen.getByRole('button', { name: `${capabilityId} 삭제` })).toBeTruthy();
-});
+}, 15_000); // Several Radix Select interactions: ~1.5 s locally, over the 5 s default on a loaded CI runner (#173)
 
 it('shows the no-robot hint and disables capability creation', async () => {
   const raw = layoutDocumentSchema.parse(await original());
