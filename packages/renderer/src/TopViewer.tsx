@@ -196,7 +196,10 @@ export function TopViewer({
         setInternalSelection(null);
       }
       viewCamera = clampCenter(camera, layout.viewBox);
-      scenePx = fitScale({ width, height }, layout.viewBox) * viewCamera.zoom;
+      const sameViewport = sceneEpoch.width === width && sceneEpoch.height === height && sceneEpoch.layers === layers
+        && sceneEpoch.labels === labels && sceneEpoch.visibleLevelIds === visibleLevelIds;
+      // A host edit alone keeps the committed px, so a pending zoom settlement still lands on its own.
+      if (!(layoutObjectChanged && sameViewport)) scenePx = fitScale({ width, height }, layout.viewBox) * viewCamera.zoom;
     }
     setSceneEpoch({ layout, width, height, labels, layers, visibleLevelIds });
     if (viewCamera !== camera) setCamera(viewCamera);
@@ -282,6 +285,8 @@ export function TopViewer({
   });
 
   useLayoutEffect(() => {
+    // A retained replacement keeps the committed px while a zoom is still settling; settle it again.
+    if (fitScale(viewRef.current, viewRef.current.frame) * cameraRef.current.zoom !== scenePx) queueRelayoutRef.current();
     return () => {
       if (relayoutTimer.current != null) {
         clearTimeout(relayoutTimer.current);
@@ -315,7 +320,7 @@ export function TopViewer({
       return next.cx === prev.cx && next.cy === prev.cy && next.zoom === prev.zoom ? prev : next;
     });
     // Only when keyboard focus lands. A later resize or settled relayout must not pull the centre back.
-  }, [focused, mode, layout]);
+  }, [focused, mode]);
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -546,7 +551,7 @@ export function TopViewer({
         onPointerMove={onPointerMove}
         onPointerUp={(event) => endDrag(event, false)}
         onPointerCancel={(event) => endDrag(event, true)}
-        onLostPointerCapture={(event) => { if (dragRef.current?.component) endDrag(event, true); }}
+        onLostPointerCapture={(event) => { if (event.target === event.currentTarget && dragRef.current?.component) endDrag(event, true); }}
         onClick={onClick}
         onPointerOver={onPointerOver}
         onPointerOut={onPointerOut}

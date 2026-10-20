@@ -798,3 +798,48 @@ it('draws no capability or interface after a drop on another component', () => {
   expect(svg.querySelector('[data-layer="interfaces"]')?.children.length ?? 0).toBe(0);
   expect(onSelectedChange).toHaveBeenCalledTimes(1);
 });
+
+it('ignores a lostpointercapture that bubbles from a descendant and cancels on the svg own', () => {
+  const onComponentDrag = vi.fn();
+  const { svg } = mount({ layout, onComponentDrag });
+  const other = componentEl(svg, 'other');
+  pointer(other, 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 130, 100);
+  fireEvent.lostPointerCapture(other, { pointerId: 1 });
+  pointer(svg, 'pointerup', 140, 100);
+  expect(dragged(onComponentDrag).map((d) => d.phase)).toEqual(['move', 'end']);
+
+  onComponentDrag.mockClear();
+  pointer(other, 'pointerdown', 100, 100);
+  pointer(svg, 'pointermove', 130, 100);
+  fireEvent.lostPointerCapture(svg, { pointerId: 1 });
+  expect(dragged(onComponentDrag).map((d) => d.phase)).toEqual(['move', 'cancel']);
+});
+
+const copyOf = (source: typeof layout) => ({ ...source, components: source.components.map((c) => ({ ...c })) });
+
+it('keeps the committed label size and settles it on time across a same-identity replacement mid-zoom', () => {
+  vi.useFakeTimers();
+  const viewed = mount({ layout, onComponentDrag: vi.fn() });
+  const original = labelFont(viewed.svg);
+  fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  const svg = viewed.update({ layout: copyOf(layout) });
+  expect(labelFont(svg)).toBe(original);
+  act(() => {
+    vi.advanceTimersByTime(150);
+  });
+  expect(labelFont(svg)).not.toBe(original);
+});
+
+it('does not pull the camera back to a keyboard-focused component on a same-identity replacement', () => {
+  const viewed = mount({ layout, onComponentDrag: vi.fn() });
+  const mod = componentEl(viewed.svg, 'mod') as SVGElement;
+  for (let i = 0; i < 6; i += 1) fireEvent.click(screen.getByRole('button', { name: '확대' }));
+  key(viewed.svg, 'Tab');
+  act(() => mod.focus());
+  for (let i = 0; i < 12; i += 1) key(mod, 'ArrowRight');
+  const view = viewed.svg.getAttribute('viewBox');
+  const svg = viewed.update({ layout: copyOf(layout) });
+  expect(svg.getAttribute('viewBox')).toBe(view);
+  expect(document.activeElement).toBe(mod);
+});
