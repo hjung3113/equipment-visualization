@@ -80,6 +80,8 @@ const normalizeRotation = (degrees: number) => {
   const r = ((degrees % 360) + 360) % 360;
   return r > 180 ? r - 360 : r;
 };
+/** Rounds first so a value rounding onto -180 (or 360) lands back in (-180, 180]. */
+const cleanRotation = (degrees: number) => round3(normalizeRotation(round3(degrees)));
 const snapTo = (v: number, step: number) => step > 0 ? Math.round(v / step) * step : v;
 
 /** Returns the same layout object when the Component is unknown or the transform does not change. */
@@ -88,15 +90,17 @@ function withTransform(layout: LayoutDocument, componentId: string, next: (t: Co
   if (index < 0) return layout;
   const component = layout.components[index]!;
   const patch = next(component.transform);
-  const x = round3(patch.x ?? component.transform.x);
-  const y = round3(patch.y ?? component.transform.y);
-  const rotation = round3(normalizeRotation(patch.rotation ?? component.transform.rotation));
   const t = component.transform;
-  if (![x, y, rotation].every(Number.isFinite) || (x === t.x && y === t.y && rotation === t.rotation)) return layout;
+  const written: TransformPatch = {};
+  if (patch.x !== undefined) written.x = round3(patch.x);
+  if (patch.y !== undefined) written.y = round3(patch.y);
+  if (patch.rotation !== undefined) written.rotation = cleanRotation(patch.rotation);
+  const fields = Object.entries(written) as [keyof TransformPatch, number][];
+  if (!fields.every(([, v]) => Number.isFinite(v)) || fields.every(([k, v]) => v === t[k])) return layout;
   const provenanceTransform = component.provenance.transform;
   const updated: Component = {
     ...component,
-    transform: { ...t, x, y, rotation },
+    transform: { ...t, ...written },
     ...(provenanceTransform?.certainty === 'verified'
       ? { provenance: { ...component.provenance, transform: { ...provenanceTransform, certainty: 'assumed' as const } } } : {}),
   };
@@ -105,9 +109,11 @@ function withTransform(layout: LayoutDocument, componentId: string, next: (t: Co
 
 const moveLayout = (layout: LayoutDocument, componentId: string, dx: number, dy: number, snap: SnapOptions | null) => {
   const local = rootDeltaToLocal(layout, componentId, dx, dy);
+  const axis = (value: number, delta: number) => snap ? snapTo(value + delta, snap.grid) : value + delta;
+  // An axis with no delta is not written, so its stored value stays byte-for-byte.
   return withTransform(layout, componentId, (t) => ({
-    x: snap ? snapTo(t.x + local.dx, snap.grid) : t.x + local.dx,
-    y: snap ? snapTo(t.y + local.dy, snap.grid) : t.y + local.dy,
+    ...(local.dx !== 0 ? { x: axis(t.x, local.dx) } : {}),
+    ...(local.dy !== 0 ? { y: axis(t.y, local.dy) } : {}),
   }));
 };
 

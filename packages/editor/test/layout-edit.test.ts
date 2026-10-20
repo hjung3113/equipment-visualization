@@ -65,7 +65,11 @@ describe('D8 invariant', () => {
       ...s.present,
       components: s.present.components.map((c) => {
         const original = byId(layout, c.id);
-        return { ...c, transform: original.transform, provenance: original.provenance } as Component;
+        const { transform: editedEvidence, ...otherProvenance } = c.provenance;
+        const provenance = original.provenance.transform
+          ? { ...c.provenance, transform: original.provenance.transform } : otherProvenance;
+        expect(editedEvidence === undefined).toBe(original.provenance.transform === undefined);
+        return { ...c, transform: original.transform, provenance } as Component;
       }),
     };
     expect(JSON.stringify(restored)).toBe(JSON.stringify(layout));
@@ -87,6 +91,21 @@ describe('moveBy', () => {
     expect([moved.rotation, moved.scale]).toEqual([30, 1]);
     const rotated = tf(rotateBy(fresh(), 'parent', 5, null), 'parent');
     expect([rotated.x, rotated.y, rotated.scale]).toEqual([100, 50, 1]);
+  });
+
+  const odd = (transform: Partial<Component['transform']>) =>
+    createLayoutEdit(fixture([{ ...robot, transform: { ...robot.transform, ...transform } }]));
+  it('a move keeps an unnormalised rotation and an untouched 4-decimal axis byte-for-byte', () => {
+    const s = moveBy(odd({ x: 1.2345, rotation: 270 }), 'robot', 0, 5, null);
+    expect(tf(s, 'robot')).toMatchObject({ x: 1.2345, y: 25, rotation: 270 });
+  });
+  it('a rotate keeps stored x/y with more than 3 decimals', () => {
+    const s = rotateBy(odd({ x: 1.2345, y: 2.3456 }), 'robot', 10, null);
+    expect(tf(s, 'robot')).toMatchObject({ x: 1.2345, y: 2.3456, rotation: -80 });
+  });
+  it('setTransform writes only the patched fields', () => {
+    const s = setTransform(odd({ x: 1.2345, rotation: 270 }), 'robot', { y: 7 });
+    expect(tf(s, 'robot')).toMatchObject({ x: 1.2345, y: 7, rotation: 270 });
   });
 });
 
@@ -141,7 +160,7 @@ describe('rotation and number normalisation', () => {
     const s = createLayoutEdit(fixture([{ ...robot, transform: { ...robot.transform, rotation: start } }]));
     return tf(rotateBy(s, 'robot', by, null), 'robot').rotation;
   };
-  it.each([[170, 20, -170], [-170, -20, 170], [90, 90, 180], [0, -180, 180], [10, 360 + 20, 30]])('%s + %s → %s', (start, by, expected) => {
+  it.each([[170, 20, -170], [-170, -20, 170], [90, 90, 180], [0, -180, 180], [10, 360 + 20, 30], [0, -179.9996, 180], [0, 359.9996, 0]])('%s + %s → %s', (start, by, expected) => {
     expect(rotated(start, by)).toBe(expected);
   });
   it('rounds to 3 decimals and turns -0 into 0', () => {
@@ -164,6 +183,13 @@ describe('setTransform', () => {
   it('a same-value set returns the same state', () => {
     const s = fresh();
     expect(setTransform(s, 'robot', { x: -40, y: 20 })).toBe(s);
+  });
+  it('a no-op on a verified, unnormalised transform adds no history and keeps provenance', () => {
+    const odd = { ...parent, transform: { x: 1.2345, y: 20, rotation: 270, scale: 1 } } as Component;
+    const s = createLayoutEdit(fixture([odd]));
+    expect(setTransform(s, 'parent', { y: 20 })).toBe(s);
+    expect(moveBy(s, 'parent', 0, 0, null)).toBe(s);
+    expect(endDrag(dragTo(s, 'parent', 0, 0, null)).past).toHaveLength(0);
   });
 });
 
@@ -225,11 +251,20 @@ describe('drag', () => {
   });
   it('undo, redo and edits are ignored during a drag', () => {
     const edited = moveBy(fresh(), 'robot', 10, 0, null);
-    const dragging = dragTo(undo(edited), 'robot', 5, 0, null);
+    const dragging = dragTo(edited, 'robot', 5, 0, null);
     const redoable = dragTo(undo(edited), 'robot', 5, 0, null);
+    expect(dragging.past).toHaveLength(1);
+    expect(redoable.future).toHaveLength(1);
     expect(undo(dragging)).toBe(dragging);
     expect(redo(redoable)).toBe(redoable);
-    expect(moveBy(dragging, 'robot', 1, 1, null)).toBe(dragging);
+  });
+  it.each([
+    ['moveBy', (s: ReturnType<typeof fresh>) => moveBy(s, 'robot', 1, 1, null)],
+    ['rotateBy', (s: ReturnType<typeof fresh>) => rotateBy(s, 'robot', 10, null)],
+    ['setTransform', (s: ReturnType<typeof fresh>) => setTransform(s, 'robot', { x: 1 })],
+  ])('%s is ignored during a drag', (_name, run) => {
+    const dragging = dragTo(fresh(), 'robot', 5, 0, null);
+    expect(run(dragging)).toBe(dragging);
   });
   it('a drag of another component starts from the current present', () => {
     const s = dragTo(dragTo(fresh(), 'robot', 5, 0, null), 'parent', 10, 0, null);
