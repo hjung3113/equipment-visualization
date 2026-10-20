@@ -1,4 +1,4 @@
-import { canonicalJson, type Component, type LayoutDocument } from '@eqv/core';
+import { canonicalJson, componentWorldCenter, portPositionToward, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge, type TransferCapabilityEdge } from '@eqv/core';
 
 export type SnapOptions = { grid: number; rotationStep: number };
 /** Layout units (`abstract` or `mm` alike); the document unit is never changed. */
@@ -241,4 +241,110 @@ export function setLabel(state: LayoutEditState, componentId: string, label: str
     return { ...component, label: trimmed, provenance };
   });
   return commit(state, { ...state.present, components });
+}
+
+
+const assumed = () => ({ certainty: 'assumed' as const, sourceEvidence: [] });
+
+/** Numeric ids are local to the current collection; history does not reserve removed ids. */
+function nextLocalId(items: { id: string }[], prefix: string): string {
+  let highest = 0n;
+  for (const { id } of items) {
+    const suffix = id.startsWith(prefix) ? id.slice(prefix.length) : '';
+    if (/^\d+$/.test(suffix) && BigInt(suffix) > highest) highest = BigInt(suffix);
+  }
+  return `${prefix}${highest + 1n}`;
+}
+
+export interface AddPhysicalInterfaceSpec {
+  a: { componentId: string; portId: string | null };
+  b: { componentId: string; portId: string | null };
+  kind: PhysicalInterfaceEdge['kind'];
+}
+const samePort = (a: PhysicalInterfaceEdge['a'], b: PhysicalInterfaceEdge['a']) => a.componentId === b.componentId && a.portId === b.portId;
+const sameSite = (a: TransferCapabilityEdge['a'], b: TransferCapabilityEdge['a']) => a.componentId === b.componentId && a.holdingSiteId === b.holdingSiteId;
+
+export function addPhysicalInterface(state: LayoutEditState, spec: AddPhysicalInterfaceSpec): { state: LayoutEditState; interfaceId: string | null } {
+  const layout = state.present;
+  const refused = { state, interfaceId: null };
+  if (state.drag || spec.a.componentId === spec.b.componentId) return refused;
+  const a = layout.components.find((component) => component.id === spec.a.componentId);
+  const b = layout.components.find((component) => component.id === spec.b.componentId);
+  if (!a || !b) return refused;
+  const available = (component: Component, portId: string | null) => portId === null || (
+    component.ports.some((port) => port.id === portId) && !layout.physicalInterfaces.some((edge) =>
+      samePort(edge.a, { componentId: component.id, portId }) || samePort(edge.b, { componentId: component.id, portId })));
+  if (!available(a, spec.a.portId) || !available(b, spec.b.portId)) return refused;
+  const portA = spec.a.portId ?? nextLocalId(a.ports, 'p-');
+  const portB = spec.b.portId ?? nextLocalId(b.ports, 'p-');
+  const endpointA = { componentId: a.id, portId: portA };
+  const endpointB = { componentId: b.id, portId: portB };
+  if (layout.physicalInterfaces.some((edge) => (samePort(edge.a, endpointA) && samePort(edge.b, endpointB))
+    || (samePort(edge.a, endpointB) && samePort(edge.b, endpointA)))) return refused;
+  const interfaceId = nextLocalId(layout.physicalInterfaces, 'edge-');
+  const components = layout.components.map((component) => {
+    const other = component.id === a.id ? b : component.id === b.id ? a : null;
+    const requestedPort = component.id === a.id ? spec.a.portId : spec.b.portId;
+    if (!other || requestedPort !== null) return component;
+    return { ...component, ports: [...component.ports, {
+      id: component.id === a.id ? portA : portB,
+      position: portPositionToward(layout, component.id, componentWorldCenter(layout, other.id)!), provenance: assumed(),
+    }] };
+  });
+  return { state: commit(state, { ...layout, components, physicalInterfaces: [...layout.physicalInterfaces,
+    { id: interfaceId, kind: spec.kind, a: endpointA, b: endpointB, provenance: assumed() }] }), interfaceId };
+}
+
+export function removePhysicalInterface(state: LayoutEditState, interfaceId: string): LayoutEditState {
+  return state.drag ? state : commit(state, { ...state.present, physicalInterfaces: state.present.physicalInterfaces.filter((edge) => edge.id !== interfaceId) });
+}
+
+export function removePort(state: LayoutEditState, componentId: string, portId: string): LayoutEditState {
+  const layout = state.present;
+  if (state.drag || !layout.components.some((component) => component.id === componentId && component.ports.some((port) => port.id === portId))) return state;
+  const endpoint = { componentId, portId };
+  return commit(state, { ...layout,
+    components: layout.components.map((component) => component.id === componentId ? { ...component, ports: component.ports.filter((port) => port.id !== portId) } : component),
+    physicalInterfaces: layout.physicalInterfaces.filter((edge) => !samePort(edge.a, endpoint) && !samePort(edge.b, endpoint)),
+  });
+}
+
+export function addHoldingSite(state: LayoutEditState, componentId: string, materialKinds: MaterialKind[]): { state: LayoutEditState; holdingSiteId: string | null } {
+  const component = state.present.components.find((candidate) => candidate.id === componentId);
+  const kinds = (['wafer', 'carrier', 'batch', 'boat', 'reticle'] as const).filter((kind) => materialKinds.includes(kind));
+  if (state.drag || !component || kinds.length === 0) return { state, holdingSiteId: null };
+  const holdingSiteId = nextLocalId(component.holdingSites, 'slot-');
+  return { state: commit(state, { ...state.present, components: state.present.components.map((candidate) => candidate.id === componentId
+    ? { ...candidate, holdingSites: [...candidate.holdingSites, { id: holdingSiteId, materialKinds: kinds, provenance: assumed() }] } : candidate) }), holdingSiteId };
+}
+
+export function removeHoldingSite(state: LayoutEditState, componentId: string, holdingSiteId: string): LayoutEditState {
+  const layout = state.present;
+  if (state.drag || !layout.components.some((component) => component.id === componentId && component.holdingSites.some((site) => site.id === holdingSiteId))) return state;
+  const endpoint = { componentId, holdingSiteId };
+  return commit(state, { ...layout,
+    components: layout.components.map((component) => component.id === componentId ? { ...component, holdingSites: component.holdingSites.filter((site) => site.id !== holdingSiteId) } : component),
+    transferCapabilities: layout.transferCapabilities.filter((edge) => !sameSite(edge.a, endpoint) && !sameSite(edge.b, endpoint)),
+  });
+}
+
+export type AddTransferCapabilitySpec = Pick<TransferCapabilityEdge, 'a' | 'b' | 'handlerComponentId'>;
+
+export function addTransferCapability(state: LayoutEditState, spec: AddTransferCapabilitySpec): { state: LayoutEditState; capabilityId: string | null } {
+  const layout = state.present;
+  const hasSite = (endpoint: TransferCapabilityEdge['a']) => layout.components.some((component) => component.id === endpoint.componentId
+    && component.holdingSites.some((site) => site.id === endpoint.holdingSiteId));
+  if (state.drag || !hasSite(spec.a) || !hasSite(spec.b) || sameSite(spec.a, spec.b)
+    || !layout.components.some((component) => component.id === spec.handlerComponentId && component.role === 'robot')
+    || layout.transferCapabilities.some((edge) => edge.handlerComponentId === spec.handlerComponentId && (
+      (sameSite(edge.a, spec.a) && sameSite(edge.b, spec.b)) || (sameSite(edge.a, spec.b) && sameSite(edge.b, spec.a))))) return { state, capabilityId: null };
+  const base = `${spec.a.componentId}-${spec.a.holdingSiteId}-${spec.b.componentId}-${spec.b.holdingSiteId}`;
+  const taken = new Set(layout.transferCapabilities.map((edge) => edge.id));
+  let capabilityId = base;
+  for (let suffix = 2n; taken.has(capabilityId); suffix++) capabilityId = `${base}-${suffix}`;
+  return { state: commit(state, { ...layout, transferCapabilities: [...layout.transferCapabilities, { ...spec, id: capabilityId, provenance: assumed() }] }), capabilityId };
+}
+
+export function removeTransferCapability(state: LayoutEditState, capabilityId: string): LayoutEditState {
+  return state.drag ? state : commit(state, { ...state.present, transferCapabilities: state.present.transferCapabilities.filter((edge) => edge.id !== capabilityId) });
 }

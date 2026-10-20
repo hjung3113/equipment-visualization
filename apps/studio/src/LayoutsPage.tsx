@@ -3,11 +3,13 @@ import { CircleCheck, Download, FileJson, Save, Send, ServerCrash } from 'lucide
 import { validateLayout, type LayoutDocument } from '@eqv/core';
 import { PRIMITIVE_CATALOG, TopViewer, type ComponentDrag } from '@eqv/renderer';
 import {
+  addPhysicalInterface, removePhysicalInterface, removePort, addHoldingSite, removeHoldingSite, addTransferCapability, removeTransferCapability,
   addComponent, removalImpact, removeComponent, setLabel, DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rotateBy, setTransform, undo,
   type LayoutEditState,
 } from '@eqv/editor';
 import { dirOrEmpty, publishRevision, readFile, saveDraft } from './api.js';
 import { AddComponentRow, EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
+import { ConnectionsPanel } from './LayoutConnections.js';
 import { REVISION_FILE } from './layout-baseline.js';
 import { newComponentSize } from './new-component-size.js';
 import { PublishDialog } from './PublishDialog.js';
@@ -470,6 +472,15 @@ export function LayoutsPage({ file }: { file: string | null }) {
                 <SelectionPanel component={selected} busy={!editable} deleteDisabled={template || impact?.blockedBy !== null} deleteHint={deleteHint}
                   onDelete={openDeletion} onLabel={(label) => { if (selected && editable) editing((state) => setLabel(state, selected.id, label)); }}
                   onTransform={(patch) => { if (selected) editing((state) => setTransform(state, selected.id, patch)); }} />
+                {selected && present && <ConnectionsPanel key={`${documentEpoch}-${selected.id}`} layout={present} component={selected} busy={!editable}
+                  onAddPhysicalInterface={(spec) => { if (editable) editing((state) => addPhysicalInterface(state, spec).state); }}
+                  onRemovePhysicalInterface={(id) => { if (editable) editing((state) => removePhysicalInterface(state, id)); }}
+                  onRemovePort={(id) => { if (editable) editing((state) => removePort(state, selected.id, id)); }}
+                  onAddHoldingSite={(kinds) => { if (editable) editing((state) => addHoldingSite(state, selected.id, kinds).state); }}
+                  onRemoveHoldingSite={(id) => { if (editable) editing((state) => removeHoldingSite(state, selected.id, id)); }}
+                  onAddTransferCapability={(spec) => { if (editable) editing((state) => addTransferCapability(state, spec).state); }}
+                  onRemoveTransferCapability={(id) => { if (editable) editing((state) => removeTransferCapability(state, id)); }} />}
+
               </>
             )}
           </div>
