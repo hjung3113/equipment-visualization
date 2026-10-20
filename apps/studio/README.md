@@ -28,6 +28,17 @@ page through Studio navigation or browser back/forward asks before discarding it
 the browser's own leave-page prompt. Draft save proceeds without a discard prompt; choosing another import replaces
 the current import without asking.
 
+Editing (#158): on `/layouts` any opened document (template, draft, revision or import) can be refined in place. Drag a Component on
+the Top View, or select it and use `Alt`+arrow keys (1 layout unit, `Shift` 10×) and `[` / `]` (15° left / right); the `선택 항목`
+panel shows its ID, name, Role and parent and edits `X`, `Y` and `회전 (°)` as exact values (Enter or blur commits, Escape restores,
+a non-number is refused). X and Y of a child are in its parent's frame. `격자 맞춤` (off by default) snaps drags and key moves to a
+grid of 10 and rotations to 15°; typed values are never snapped. `실행 취소` / `다시 실행` (⌘/Ctrl+Z, ⇧⌘/Ctrl+Z or Ctrl+Y) step
+through the edit history, and a drag is one step. Edits change only `transform` (and mark a verified transform provenance `assumed`),
+never ports, connectivity, `unit` or `viewBox`. Unsaved edits are guarded like an unsaved import (navigation confirm, browser
+leave-page prompt, `저장 안 됨` badge). `초안 저장` writes the edited document to `layouts/<id>/draft.layout.json`; export and the
+publish change preview use the edited document too, so the preview lists only the changed Components. Resize, port snapping and
+multi-select are not implemented.
+
 The equipment data page imports Sample Windows, alias metadata and the Model Type Dictionary through `/api/import/*`. Each file is checked in the browser first for size and JSON syntax, then with the same `@eqv/core` validators (including `validateSampleWindow`); the server makes the final decision. Rejections list their code and path, and imported values are never fixed. Replacing alias metadata requires confirmation and shows added, removed and changed aliases. The Model Type Dictionary is create-only, and results appear as toasts.
 
 ## Demo equipment
