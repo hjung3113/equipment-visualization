@@ -10,6 +10,7 @@ import { FocusPage } from '../src/FocusPage.js';
 import { loadFocus } from '../src/focus-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { addEquipment, addSynth03, seedOnboardingRoot, windowHex, writeDraft, writeJson } from './seed.js';
 
 declare global {
@@ -24,11 +25,7 @@ let root: string;
 beforeEach(async () => {
   ({ base, root } = await seedOnboardingRoot());
   const api = createFileApi({ root });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
 });
 afterEach(async () => {
   cleanup();

@@ -8,6 +8,7 @@ import { loadEquipmentData, type EquipmentDataLoad, type FileState, type WindowR
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { ImportPreview, type ImportKind, type ImportOutcome } from './ImportPreview.js';
 import { problems, windowHex } from './onboarding-data.js';
+import { errorMessage } from './error-message.js';
 import { Link, hrefFor, navigate } from './router.js';
 
 const FIELDS = [
@@ -47,7 +48,7 @@ const serverIssues = (body: unknown): Issue[] | null => {
 type Failure = { fields: FieldErrors; form: { message: string; detail: string | null } | null };
 
 function classify(error: unknown, values: Values): Failure {
-  const text = error instanceof Error ? error.message : '알 수 없는 오류';
+  const text = errorMessage(error);
   if (!(error instanceof ApiError)) return { fields: {}, form: { message: text, detail: null } };
   const body = error.body as { field?: unknown; existing?: unknown } | null;
   if (error.status === 400) {

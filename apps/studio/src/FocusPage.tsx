@@ -11,6 +11,7 @@ import {
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
 import { GANTT_SPAN_LIMIT, TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focus-data.js';
+import { errorMessage } from './error-message.js';
 import { Button, Callout, Checkbox, EmptyState, Input, Label } from '@fops/ui';
 import { EvidenceBadge, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { Link, hrefFor, navigate } from './router.js';
@@ -44,7 +45,6 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'detail', label: '근거 상세' },
 ];
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const PICKER_HINT = '재생·Gantt·목록이 이 window 하나를 씁니다. 기본은 진입 Occurrence를 담은 가장 늦은 window, 없으면 가장 늦은 window이며, 고른 window는 주소(?window=)에 남습니다.';
 const count = (value: number) => value.toLocaleString('en-US');
 
@@ -55,7 +55,7 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
   try {
     if (!(wallClockToMillis(a.data) < wallClockToMillis(b.data))) return { error: '시작은 끝보다 앞서야 합니다' };
   } catch (error) {
-    return { error: message(error) };
+    return { error: errorMessage(error) };
   }
   return { range: { from: a.data, to: b.data } };
 }
@@ -107,7 +107,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     try {
       return { frame: replayTimelineFrame(input, range) };
     } catch (error) {
-      return { error: message(error) };
+      return { error: errorMessage(error) };
     }
   }, [input, range]);
   const frame = framed && 'frame' in framed ? framed.frame : null;
@@ -119,7 +119,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     try {
       return { timeline: replayTimeline(input, range) };
     } catch (error) {
-      return { error: message(error) };
+      return { error: errorMessage(error) };
     }
   }, [input, range, cost, tooLarge]);
   const computedTimeline = computed && 'timeline' in computed ? computed.timeline : null;
@@ -134,7 +134,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     try {
       return sequenceSeq !== null ? stepSceneState(input, sequenceSeq) : seekSceneState(input, cursor);
     } catch (error) {
-      return { error: message(error) };
+      return { error: errorMessage(error) };
     }
   }, [input, frame, cursor, sequenceSeq]);
   const state = sceneState && !('error' in sceneState) ? sceneState : null;

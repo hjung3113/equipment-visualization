@@ -4,6 +4,7 @@ import {
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
 import { DataError, listSampleWindows, loadEquipment, problems, readOptional, readSampleWindow, windowHex, type SampleWindowEntry } from './onboarding-data.js';
+import { errorMessage } from './error-message.js';
 
 export type FocusData = {
   record: FleetData['record'];
@@ -86,7 +87,6 @@ export function timelineCost(input: ReplayInput, frame: ReplayTimelineFrame): {
   return { breakpoints, records, open, inversions, context, resolve, cost: records + breakpoints * (context + (open + inversions) * resolve) };
 }
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const NO_BINDING = '게시된 Binding 없음';
 
 /** A rejected read (not a 404) names the path it failed on. */
@@ -94,7 +94,7 @@ async function read(path: string): Promise<unknown | undefined> {
   try {
     return await readOptional(path);
   } catch (error) {
-    throw new DataError(`${path}: ${message(error)}`);
+    throw new DataError(`${path}: ${errorMessage(error)}`);
   }
 }
 
@@ -155,7 +155,7 @@ export async function loadFocus(equipmentId: string, options: { window?: string;
       try {
         ({ hex: window, notice: anchorNotice } = await windowForAnchor(equipmentId, options.anchor));
       } catch (error) {
-        scanError = message(error);
+        scanError = errorMessage(error);
       }
     }
     const loaded = await loadEquipment(equipmentId, { window });
@@ -187,9 +187,9 @@ export async function loadFocus(equipmentId: string, options: { window?: string;
       }
       return { kind: 'ok', record, batch, selectedWindow: loaded.data.selectedWindow, bindings, mappings: [...mappings.values()], layouts, layoutRevisions, notices };
     } catch (error) {
-      return { kind: 'error', record, error: message(error) };
+      return { kind: 'error', record, error: errorMessage(error) };
     }
   } catch (error) {
-    return { kind: 'error', record: null, error: message(error) };
+    return { kind: 'error', record: null, error: errorMessage(error) };
   }
 }

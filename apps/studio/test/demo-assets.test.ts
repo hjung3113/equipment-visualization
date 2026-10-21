@@ -8,6 +8,7 @@ import {
 } from '@eqv/core';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { GANTT_SPAN_LIMIT, loadFocus, TIMELINE_BUDGET, timelineCost, type FocusData } from '../src/focus-data.js';
 import { generateDemo } from '../scripts/demo/generate.ts';
 
@@ -35,10 +36,7 @@ beforeAll(async () => {
   generated = await generateDemo();
   // The real file API over the committed data root, read-only here: Focus reads it as it does in the dev server.
   const api = createFileApi({ root: assets });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers: {}, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
   const hexes = [...generated.keys()].filter((path) => path.endsWith('.batch.json'))
     .map((path) => path.slice(-'.batch.json'.length - 64, -'.batch.json'.length)).sort();
   focus = [];

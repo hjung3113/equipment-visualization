@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { loadFocus } from '../src/focus-data.js';
 import { loadEquipment, loadOnboarding } from '../src/onboarding-data.js';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { addEquipment, addWindow, record, seedRoot, writeDraft, writeJson } from './seed.js';
 
 const repo = resolve(process.cwd(), '../..');
@@ -22,10 +23,7 @@ const place = async (batch: OccurrenceBatch) => {
 beforeEach(async () => {
   ({ base, root } = await seedRoot());
   const api = createFileApi({ root });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers: {}, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
   await writeJson(root, 'equipment/eq-synth-03.json', await fixture('fixtures/import/eq-synth-03.equipment.json'));
   await writeJson(root, 'observations/eq-synth-03/alias-metadata.json', await fixture('fixtures/import/eq-synth-03.alias-metadata.json'));
   w1 = await place((await fixture('fixtures/import/eq-synth-03.w1.batch.json')) as OccurrenceBatch);

@@ -9,6 +9,7 @@ import { Evidence, JourneyExecutionList, JourneyHopList } from '@eqv/replay';
 import { Button, Callout, EmptyState } from '@fops/ui';
 import { LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { loadFocus, type FocusLoad } from './focus-data.js';
+import { errorMessage } from './error-message.js';
 import { windowHex } from './onboarding-data.js';
 import { Link, hrefFor } from './router.js';
 
@@ -19,7 +20,6 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 type Loaded = { loadKey: string; result: FocusLoad | null; selectedHop: number | null; selectedOccurrenceId: string | null };
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const none = (anchor: string | null, found: Occurrence | undefined): string | null =>
   anchor === null ? 'anchor가 없습니다'
     : found === undefined ? 'Occurrence를 찾을 수 없습니다'
@@ -54,7 +54,7 @@ export function JourneyPage({ equipmentId, sampleWindow, anchor }: { equipmentId
     try {
       return { journey: materialJourney(input, `m:wafer:${waferId}`), binding: stepSceneState(input, anchorOccurrence.start.seq).binding };
     } catch (error) {
-      return { error: message(error) };
+      return { error: errorMessage(error) };
     }
   }, [input, anchorOccurrence, invalid, waferId]);
   const journey = computed && 'journey' in computed ? computed.journey : null;

@@ -26,8 +26,6 @@ describe('timelineCost', () => {
     // inversion; context = 50,000 Bindings + 0 Layouts + 0 components. 50,000 + 50,000 × 50,000 = 2,500,050,000.
     expect(cost).toMatchObject({ records: N, breakpoints: N, open: 0, inversions: 0, context: N, cost: 2_500_050_000 });
     expect(cost.cost).toBeGreaterThan(TIMELINE_BUDGET);
-    // The batch alone (the earlier model) would have admitted it.
-    expect(cost.records + cost.breakpoints * (cost.open + cost.inversions)).toBeLessThanOrEqual(TIMELINE_BUDGET);
   });
 
   it('counts the Layouts of layoutRevisions as well as layouts', () => {

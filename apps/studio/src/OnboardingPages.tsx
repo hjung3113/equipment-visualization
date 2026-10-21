@@ -7,13 +7,12 @@ import {
 import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
+import { errorMessage } from './error-message.js';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
 import { Button, Callout } from '@fops/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 import { WindowPicker } from './WindowPicker.js';
-
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 
 type FleetState = { rows: FleetRow[] } | { error: string } | null;
 
@@ -36,7 +35,7 @@ export function FleetPage() {
       }));
     })().then(
       (rows) => { if (!cancelled) setState({ rows }); },
-      (error: unknown) => { if (!cancelled) setState({ error: message(error) }); },
+      (error: unknown) => { if (!cancelled) setState({ error: errorMessage(error) }); },
     );
     return () => { cancelled = true; };
   }, []);
@@ -130,7 +129,7 @@ function StartActions({ equipmentId, sampleWindow, result, draft }: {
       if (active.current !== equipmentId) return;
       const exists = error instanceof ApiError && error.status === 412;
       setCreate({ pending: false, exists,
-        error: exists ? '이미 레이아웃 draft가 있습니다' : message(error) });
+        error: exists ? '이미 레이아웃 draft가 있습니다' : errorMessage(error) });
     }
   };
   const blocked = draft.kind === 'no-id';
@@ -245,7 +244,7 @@ async function writePublication(plan: PublishPlan, layout: EquipmentLayoutDocume
     try {
       await write();
     } catch (error) {
-      return { ok: false, error: `${name} 단계 실패: ${message(error)}` };
+      return { ok: false, error: `${name} 단계 실패: ${errorMessage(error)}` };
     }
   }
   return { ok: true, mappingHash: mapping.hash };
@@ -272,7 +271,7 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
         savedScopes.push(scope);
         setSaved((previous) => ({ ...previous, [scope]: file.file }));
       } catch (error) {
-        return { savedScopes, error: message(error) };
+        return { savedScopes, error: errorMessage(error) };
       }
     }
     return { savedScopes };
