@@ -41,7 +41,7 @@ export function FleetTable({ rows, renderLink, renderActions }: FleetTableProps)
                 <DataTable.Cell numeric>{percent(row.coverage?.references.ratio ?? null)}</DataTable.Cell>
                 <DataTable.Cell numeric>{percent(row.assumedRatio)}</DataTable.Cell>
                 <DataTable.Cell numeric>{row.unmappedReferences ?? '—'}</DataTable.Cell>
-                {renderActions !== undefined && <DataTable.Cell>{renderActions(row)}</DataTable.Cell>}
+                {renderActions !== undefined && <DataTable.Cell action>{renderActions(row)}</DataTable.Cell>}
               </>
             )}
           </DataTable.Row>

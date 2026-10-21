@@ -83,6 +83,8 @@ export interface DataTableCellProps extends TdHTMLAttributes<HTMLTableCellElemen
   /** Right-aligned tabular figures. */
   numeric?: boolean;
   mono?: boolean;
+  /** Removes vertical padding for 32px toolbar controls. */
+  action?: boolean;
 }
 
 /**
@@ -280,17 +282,18 @@ function Row({ onActivate, selected, onKeyDown, className, children, ...rest }: 
   );
 }
 
-function Cell({ rowHeader = false, numeric, mono, className, children, ...rest }: DataTableCellProps) {
+function Cell({ rowHeader = false, numeric, mono, action = false, className, children, ...rest }: DataTableCellProps) {
   const cellClassName = cn(
-    'min-h-8 border-b border-border-subtle px-3 py-1 text-left align-middle font-normal group-last/row:border-b-0 first:border-l-2 first:border-l-transparent group-aria-selected/row:first:border-l-accent-primary',
+    'min-h-8 border-b border-border-subtle px-3 text-left align-middle font-normal group-last/row:border-b-0 first:border-l-2 first:border-l-transparent group-aria-selected/row:first:border-l-accent-primary',
+    action ? 'py-0' : 'py-1',
     numeric && 'text-right tabular-nums whitespace-nowrap',
     mono && 'font-mono text-xs',
     className,
   );
   return rowHeader ? (
-    <th scope="row" className={cellClassName} {...(rest as ThHTMLAttributes<HTMLTableCellElement>)}>{children}</th>
+    <th scope="row" data-action={action || undefined} className={cellClassName} {...(rest as ThHTMLAttributes<HTMLTableCellElement>)}>{children}</th>
   ) : (
-    <td className={cellClassName} {...rest}>{children}</td>
+    <td data-action={action || undefined} className={cellClassName} {...rest}>{children}</td>
   );
 }
 

@@ -240,6 +240,7 @@ function WindowsTable({ equipmentId, windows, actions }: {
 }
 
 export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
+  const disabledId = useId();
   // The loaded state belongs to the route's equipmentId, as in OnboardingPage.
   const [reloads, setReloads] = useState(0);
   const [loaded, setLoaded] = useState<{ equipmentId: string; reloads: number; result: EquipmentDataLoad | null }>({ equipmentId, reloads, result: null });
@@ -322,7 +323,7 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
     <Page title="설비 데이터" linkComponent={Link}
       breadcrumb={{ label: '경로', items: [{ key: 'fleet', label: 'Fleet', href: '/fleet' }, { key: 'equipment', label: equipmentId }] }}>
       <div className="grid max-w-5xl gap-4">
-        <ImportStatusNotices state={status} git catalog />
+        <ImportStatusNotices state={status} git catalog disabledId={disabledId} />
         {pending && result?.kind === 'ok' && status.kind === 'ok' && (
           <ImportPreview key={pending.id} kind={pending.kind} file={pending.file} record={result.record}
             windows={result.windows} typeDictionary={result.typeDictionary} maxBytes={status.status.maxWindowBytes} blocked={blocked}
@@ -335,11 +336,11 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
         ) : (
           <>
             <Panel title="설비" actions={<>
-              <FileButton label="Alias metadata" accept="application/json,.json" disabled={blocked || busy} onFile={(file) => openPreview('alias-metadata', file)} />
-              <FileButton label="Type Dictionary(Model 범위)" accept="application/json,.json" disabled={blocked || busy} onFile={(file) => openPreview('type-dictionary', file)} />
+              <FileButton label="Alias metadata" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('alias-metadata', file)} />
+              <FileButton label="Type Dictionary(Model 범위)" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('type-dictionary', file)} />
             </>}><DetailFields items={items(result)} /></Panel>
             <WindowsTable equipmentId={equipmentId} windows={result.windows}
-              actions={<FileButton label="Sample Window 가져오기" accept="application/json,.json" disabled={blocked || busy} onFile={(file) => openPreview('window', file)} />} />
+              actions={<FileButton label="Sample Window 가져오기" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('window', file)} />} />
           </>
         )}
         <ToastRegion toasts={toasts} onDismiss={dismiss} labels={{ dismiss: '알림 닫기' }} />

@@ -45,3 +45,13 @@ it('disabled disables the button and the input', () => {
   expect((screen.getByRole('button', { name: 'Open file' }) as HTMLButtonElement).disabled).toBe(true);
   expect((screen.getByLabelText('Open file') as HTMLInputElement).disabled).toBe(true);
 });
+
+it('describes the visible button rather than the hidden file input', () => {
+  render(<>
+    <p id="file-hint">Choose a JSON file</p>
+    <FileButton label="Open file" aria-describedby="file-hint" onFile={() => {}} />
+  </>);
+  const button = screen.getByRole('button', { name: 'Open file' });
+  expect(document.getElementById(button.getAttribute('aria-describedby')!)?.textContent).toBe('Choose a JSON file');
+  expect(screen.getByLabelText('Open file').getAttribute('aria-describedby')).toBeNull();
+});
