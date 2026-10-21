@@ -1,4 +1,4 @@
-import type { LayoutDocument } from '@eqv/core';
+import { round3, type LayoutDocument } from '@eqv/core';
 import { PRIMITIVE_CATALOG } from '@eqv/renderer';
 
 /** Layouts contain at least one Component; asset is a catalog primitive name. */
@@ -14,6 +14,5 @@ export function newComponentSize(layout: LayoutDocument, asset: string): { width
     : (longerSides[middle - 1]! + longerSides[middle]!) / 2;
   const primitive = PRIMITIVE_CATALOG.find((entry) => entry.name === asset)!;
   const scale = median / Math.max(primitive.width, primitive.height);
-  const round3 = (value: number) => Math.round(value * 1000) / 1000;
   return { width: round3(primitive.width * scale), height: round3(primitive.height * scale) };
 }
