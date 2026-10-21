@@ -1,3 +1,4 @@
+import { materialKey, occurrenceKey } from './keys.js';
 import type { EvidenceLevel, Occurrence } from '../occurrence/schema.js';
 import type { SceneMaterial } from '../scene/schema.js';
 import { assertReplayInput, prepare, sceneStateAt, type ReplayInput } from './reduce.js';
@@ -35,7 +36,7 @@ const lowest = (a: JourneyEvidence, b: JourneyEvidence) => RANK[a] <= RANK[b] ? 
 const evidence = (value: EvidenceLevel): JourneyEvidence => value === 'illustrative' ? 'unknown' : value;
 const boundary = (b: Occurrence['start']): JourneyBoundary => ({ at: b.at, seq: b.seq, evidence: evidence(b.evidence) });
 const keyOf = (o: Occurrence) => o.material === undefined ? null
-  : o.material.id === null ? `o:${o.id}` : `m:${o.material.kind}:${o.material.id}`;
+  : o.material.id === null ? occurrenceKey(o.id) : materialKey(o.material.kind, o.material.id);
 const ACTIVITY = new Set<Occurrence['kind']>(['PROCESS', 'POST_PROCESS', 'FUNCTION']);
 
 /**

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Inbox, Info, MapPinOff, ServerCrash, SearchX } from 'lucide-react';
 import {
-  bindingLayout, materialJourney, stepSceneState, type MaterialJourney, type Occurrence, type ReplayInput,
+  bindingLayout, materialJourney, materialKey, stepSceneState, type MaterialJourney, type Occurrence, type ReplayInput,
 } from '@eqv/core';
 import { TopViewer, type JourneyHopMark } from '@eqv/renderer';
 import { Evidence, JourneyExecutionList, JourneyHopList } from '@eqv/replay';
@@ -50,9 +50,9 @@ export function JourneyPage({ equipmentId, sampleWindow, anchor }: { equipmentId
   const waferId = anchorOccurrence?.material?.id ?? null;
   const input = useMemo((): ReplayInput | null => ok ? { batch: ok.batch, layouts: ok.layouts, layoutRevisions: ok.layoutRevisions, bindings: ok.bindings, mappings: ok.mappings } : null, [ok]);
   const computed = useMemo((): { journey: MaterialJourney; binding: ReturnType<typeof stepSceneState>['binding'] } | { error: string } | null => {
-    if (!input || !anchorOccurrence || invalid !== null) return null;
+    if (!input || !anchorOccurrence || invalid !== null || waferId === null) return null;
     try {
-      return { journey: materialJourney(input, `m:wafer:${waferId}`), binding: stepSceneState(input, anchorOccurrence.start.seq).binding };
+      return { journey: materialJourney(input, materialKey('wafer', waferId)), binding: stepSceneState(input, anchorOccurrence.start.seq).binding };
     } catch (error) {
       return { error: errorMessage(error) };
     }

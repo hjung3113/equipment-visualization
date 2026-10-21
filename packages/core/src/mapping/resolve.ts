@@ -1,11 +1,11 @@
+import { activeBinding } from './binding.js';
 import type { SiteWallClock } from '../site-wall-clock.js';
 import type { BindingsFile, MappingVersion, Resolution } from './schema.js';
 
 export function resolveLocation(input: {
   bindings: BindingsFile; mappings: MappingVersion[]; alias: string; slot?: string; at: SiteWallClock;
 }): Resolution {
-  const binding = input.bindings.bindings.find((binding) => binding.effectiveFrom <= input.at &&
-    (binding.effectiveTo === undefined || input.at < binding.effectiveTo));
+  const binding = activeBinding(input.bindings.bindings, input.at);
   if (!binding) return { kind: 'unknown', reason: 'no-binding' };
   const mapping = input.mappings.find((mapping) => mapping.hash === binding.mappingHash &&
     mapping.equipmentId === input.bindings.equipmentId && mapping.layoutId === binding.layoutId);

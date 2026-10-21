@@ -98,22 +98,6 @@ it.each([
   expect(materialJourney(input(specs), W).hops[hop - 1]!.locationEvidence).toBe('unknown');
 });
 
-it('agrees with stepSceneState for every single-sample hop, with untimed starts and another wafer on the equipment', () => {
-  const data = input([
-    { id: 'a', alias: 'LP1', slot: '1', wafer: 'W1', start: [1, null], end: [4, '10:04:00'] },
-    { id: 'o', alias: 'LP1', slot: '2', wafer: 'W2', start: [2, '10:02:00'], end: [6, '10:06:00'] },
-    { id: 'b', kind: 'TRANSFER', alias: 'ROBOT', wafer: 'W1', start: [5, '10:01:00'], end: [7, '10:07:00'] },
-    { id: 'c', alias: 'PM1', wafer: 'W1', start: [8, '10:08:00'], end: null },
-  ]);
-  const { hops } = materialJourney(data, W);
-  expect(hops).toHaveLength(3);
-  for (const hop of hops) {
-    expect(hop.occurrenceIds).toHaveLength(1);
-    const material = stepSceneState(data, hop.arrival.seq).materials.find((m) => m.key === W);
-    expect({ location: hop.location, evidence: hop.locationEvidence }).toEqual({ location: material?.location ?? null, evidence: material?.locationEvidence });
-  }
-});
-
 it('lists only PROCESS, POST_PROCESS and FUNCTION in Record Sequence order, including location-less and ignored rows', () => {
   const journey = materialJourney(input([
     { id: 'f', kind: 'FUNCTION', wafer: 'W1', identity: 'illustrative', start: [7, '10:07:00', 'derived'], end: [8, '10:08:00'] },
@@ -153,7 +137,7 @@ it('is a pure function of its input', () => {
 
 it('agrees with stepSceneState at every sample with other materials opening and closing between samples', () => {
   const data = input([
-    { id: 'a', alias: 'LP1', slot: '1', wafer: 'W1', start: [1, '10:00:00'], end: [9, '10:05:00'] },
+    { id: 'a', alias: 'LP1', slot: '1', wafer: 'W1', start: [1, null], end: [9, '10:05:00'] },
     { id: 'o1', alias: 'LP1', slot: '2', wafer: 'W2', start: [2, '10:01:00'], end: [4, '10:02:00'] },
     { id: 'o2', alias: 'PM1', wafer: 'W2', start: [3, null], end: [8, '10:04:00'] },
     { id: 'o3', alias: 'ROBOT', wafer: 'W3', start: [5, '10:03:00'], end: null },
@@ -162,8 +146,10 @@ it('agrees with stepSceneState at every sample with other materials opening and 
     { id: 'c', alias: 'PM1', wafer: 'W1', start: [15, '10:03:30'], end: null },
   ], { issues: [{ id: 'dqi-1', equipmentId: 'eq-j', issueType: 'synthetic', seq: 12, at: time('10:07:30') }] });
   const { hops } = materialJourney(data, W);
-  expect(hops.length).toBeGreaterThanOrEqual(3);
+  expect(hops).toHaveLength(3);
+  expect(hops[0]).toMatchObject({ location: null, locationEvidence: 'unknown', arrival: { seq: 1, at: null } });
   for (const hop of hops) {
+    expect(hop.occurrenceIds).toHaveLength(1);
     const material = stepSceneState(data, hop.arrival.seq).materials.find((m) => m.key === W);
     expect({ location: hop.location, evidence: hop.locationEvidence, identity: hop.identityEvidence })
       .toEqual({ location: material?.location ?? null, evidence: material?.locationEvidence, identity: material?.identityEvidence });

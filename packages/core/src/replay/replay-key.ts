@@ -1,3 +1,4 @@
+import { activeBinding } from '../mapping/binding.js';
 import { canonicalJson, sha256Hex } from '../canonical.js';
 import { layoutRevision } from '../layout/revision.js';
 import type { Binding } from '../mapping/schema.js';
@@ -21,7 +22,7 @@ export function observationHash(batch: OccurrenceBatch): Promise<string> {
 }
 export async function replayKey(input: ReplayInput, t: SiteWallClock): Promise<ReplayKey> {
   assertReplayInput(input);
-  const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
+  const binding = activeBinding(input.bindings.bindings, t);
   const layout = bindingLayout(input, binding);
   const layoutHash = layout ? await layoutRevision(layout) : null;
   if (binding?.layoutRevision !== undefined && layoutHash !== null && layoutHash !== binding.layoutRevision) {

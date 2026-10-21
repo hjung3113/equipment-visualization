@@ -38,7 +38,8 @@ export const aliasRulesFileSchema = z.strictObject({
 const mappingTargetSchema = z.union([
   ignoreSchema, z.strictObject({ componentId: idSchema, slots: slotMapSchema.optional() }),
 ]);
-const hashSchema = z.string().regex(/^sha256:[0-9a-f]{64}$/);
+export const HASH_PATTERN = /^sha256:[0-9a-f]{64}$/;
+export const hashSchema = z.string().regex(HASH_PATTERN);
 const mappingEntrySchema = z.strictObject({
   alias: z.string(), target: mappingTargetSchema, certainty: certaintySchema,
   rule: z.strictObject({ scope: mappingScopeSchema, ruleId: idSchema }),

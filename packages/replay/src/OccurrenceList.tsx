@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import type { BindingsFile, Occurrence, OccurrenceBatch, ReplayTimeline } from '@eqv/core';
+import { activeBinding, type BindingsFile, type Occurrence, type OccurrenceBatch, type ReplayTimeline } from '@eqv/core';
 import { Inbox, Circle } from 'lucide-react';
 import { DataTable, StatusBadge } from '@eqv/ui';
 import { EmptyState } from '@fops/ui';
@@ -62,7 +62,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
   const mappingOf = (o: Occurrence) => {
     const at = o.start.at;
     if (at === null || !bindings) return '—';
-    const binding = bindings.bindings.find((b) => b.effectiveFrom <= at && (b.effectiveTo === undefined || at < b.effectiveTo));
+    const binding = activeBinding(bindings.bindings, at);
     return binding ? binding.mappingHash.slice(0, MAPPING_PREFIX) : '—';
   };
   const onKey = (event: KeyboardEvent<HTMLTableRowElement>) => {
