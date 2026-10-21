@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { layoutDocumentSchema, layoutRevision } from '@eqv/core';
 import { App } from '../src/App.js';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { seedRoot } from './seed.js';
 
 declare global {
@@ -23,11 +24,7 @@ let root: string;
 beforeEach(async () => {
   ({ base, root } = await seedRoot());
   const api = createFileApi({ root });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
 });
 afterEach(async () => {
   cleanup();

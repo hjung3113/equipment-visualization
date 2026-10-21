@@ -7,6 +7,7 @@ import {
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
 import { ApiError, dirOrEmpty, listDir, readFile, type DirEntry } from './api.js';
+import { errorMessage } from './error-message.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
 export type SampleWindowEntry = { name: string; path: string; from: SiteWallClock; to: SiteWallClock; hash: string };
@@ -80,7 +81,7 @@ export async function readAliasMetadata(equipmentId: string): Promise<AliasMetad
   try {
     raw = await readOptional(path);
   } catch (error) {
-    throw new DataError(error instanceof Error ? error.message : '알 수 없는 오류');
+    throw new DataError(errorMessage(error));
   }
   if (raw === undefined) return undefined;
   const parsed = aliasMetadataFileSchema.safeParse(raw);
@@ -124,7 +125,7 @@ export async function readSampleWindow(equipmentId: string, entry: SampleWindowE
   try {
     raw = await readOptional(entry.path);
   } catch (error) {
-    throw new DataError(`${entry.path}: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    throw new DataError(`${entry.path}: ${errorMessage(error)}`);
   }
   if (raw === undefined) throw new DataError(`${entry.path}: 파일을 찾을 수 없습니다`);
   const result = await validateSampleWindow(raw, { equipmentId, existing: [] });
@@ -218,7 +219,7 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     }
     return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
   } catch (error) {
-    return { kind: 'error', record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', record, error: errorMessage(error) };
   }
 }
 
@@ -227,7 +228,7 @@ export async function loadEquipment(equipmentId: string, options: { window?: str
   try {
     return await loadData(equipmentId, options);
   } catch (error) {
-    return { kind: 'error', record: null, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', record: null, error: errorMessage(error) };
   }
 }
 
@@ -279,7 +280,7 @@ async function lookupDraft(equipmentId: string, bindings: BindingsFile | null): 
     if (layout.id !== layoutId) return { kind: 'error', layoutId, error: `${path}: id(${layout.id})가 ${layoutId}와 다릅니다` };
     return { kind: 'found', layoutId, layout };
   } catch (error) {
-    return { kind: 'error', layoutId, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', layoutId, error: errorMessage(error) };
   }
 }
 
@@ -291,6 +292,6 @@ export async function loadOnboarding(equipmentId: string, options: { window?: st
     const { templates, skipped } = await loadTemplates();
     return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
   } catch (error) {
-    return { kind: 'error', record: loaded.data.record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', record: loaded.data.record, error: errorMessage(error) };
   }
 }

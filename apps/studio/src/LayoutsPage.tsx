@@ -13,6 +13,7 @@ import { ConnectionsPanel } from './LayoutConnections.js';
 import { REVISION_FILE } from './layout-baseline.js';
 import { newComponentSize } from './new-component-size.js';
 import { PublishDialog } from './PublishDialog.js';
+import { errorMessage } from './error-message.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
 import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter, Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
@@ -44,13 +45,11 @@ interface Listing {
 
 const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
-
 class ViewerBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null as string | null };
 
   static getDerivedStateFromError(error: unknown) {
-    return { error: message(error) };
+    return { error: errorMessage(error) };
   }
 
   render() {
@@ -207,7 +206,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     let cancelled = false;
     loadListing().then(
       (next) => { if (!cancelled) { setListing(next); setListingError(null); } },
-      (error: unknown) => { if (!cancelled) setListingError(message(error)); },
+      (error: unknown) => { if (!cancelled) setListingError(errorMessage(error)); },
     );
     return () => { cancelled = true; };
   }, [listingReload]);
@@ -224,7 +223,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
           return 'doc' in parsed ? { state: 'ready', ...parsed.doc } : { state: 'error', message: parsed.issues };
         });
       },
-      (error: unknown) => { if (!cancelled) setLoaded({ state: 'error', message: message(error) }); },
+      (error: unknown) => { if (!cancelled) setLoaded({ state: 'error', message: errorMessage(error) }); },
     );
     return () => { cancelled = true; };
   }, [file, fileReload]);
@@ -275,7 +274,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     try {
       await action(isActive);
     } catch (error) {
-      if (isActive()) setActionError(message(error));
+      if (isActive()) setActionError(errorMessage(error));
     } finally {
       if (isActive()) setBusy(false);
     }
@@ -312,6 +311,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const snapOptions = snap ? DEFAULT_SNAP : null;
   const selected = selectedId === null ? undefined : present?.components.find((component) => component.id === selectedId);
   const editable = !busy && publishing === null && deletion === null;
+  const ifEditable = <A extends unknown[]>(fn: (...a: A) => void) => (...a: A) => { if (editable) fn(...a); };
   const template = present?.kind === 'template';
   const impact = selected && present ? removalImpact(present, selected.id) : null;
   const deleteHint = impact?.blockedBy === 'children' ? '하위 Component를 먼저 삭제하세요.' : impact?.blockedBy === 'last' ? '마지막 Component는 삭제할 수 없습니다.' : null;
@@ -473,13 +473,13 @@ export function LayoutsPage({ file }: { file: string | null }) {
                   onDelete={openDeletion} onLabel={(label) => { if (selected && editable) editing((state) => setLabel(state, selected.id, label)); }}
                   onTransform={(patch) => { if (selected) editing((state) => setTransform(state, selected.id, patch)); }} />
                 {selected && present && <ConnectionsPanel key={`${documentEpoch}-${selected.id}`} layout={present} component={selected} busy={!editable}
-                  onAddPhysicalInterface={(spec) => { if (editable) editing((state) => addPhysicalInterface(state, spec).state); }}
-                  onRemovePhysicalInterface={(id) => { if (editable) editing((state) => removePhysicalInterface(state, id)); }}
-                  onRemovePort={(id) => { if (editable) editing((state) => removePort(state, selected.id, id)); }}
-                  onAddHoldingSite={(kinds) => { if (editable) editing((state) => addHoldingSite(state, selected.id, kinds).state); }}
-                  onRemoveHoldingSite={(id) => { if (editable) editing((state) => removeHoldingSite(state, selected.id, id)); }}
-                  onAddTransferCapability={(spec) => { if (editable) editing((state) => addTransferCapability(state, spec).state); }}
-                  onRemoveTransferCapability={(id) => { if (editable) editing((state) => removeTransferCapability(state, id)); }} />}
+                  onAddPhysicalInterface={ifEditable((spec) => editing((state) => addPhysicalInterface(state, spec).state))}
+                  onRemovePhysicalInterface={ifEditable((id) => editing((state) => removePhysicalInterface(state, id)))}
+                  onRemovePort={ifEditable((id) => editing((state) => removePort(state, selected.id, id)))}
+                  onAddHoldingSite={ifEditable((kinds) => editing((state) => addHoldingSite(state, selected.id, kinds).state))}
+                  onRemoveHoldingSite={ifEditable((id) => editing((state) => removeHoldingSite(state, selected.id, id)))}
+                  onAddTransferCapability={ifEditable((spec) => editing((state) => addTransferCapability(state, spec).state))}
+                  onRemoveTransferCapability={ifEditable((id) => editing((state) => removeTransferCapability(state, id)))} />}
 
               </>
             )}

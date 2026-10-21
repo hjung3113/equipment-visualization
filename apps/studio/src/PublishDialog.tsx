@@ -8,6 +8,7 @@ import {
 import { DataTable, DetailFields, LoadingBlock, StateMessage, type DetailField } from '@eqv/ui';
 import { publishBaseline, type PublishBaseline } from './layout-baseline.js';
 import { COLLECTIONS, isUnchanged, type LayoutChanges } from './layout-changes.js';
+import { errorMessage } from './error-message.js';
 
 type Preview = { state: 'loading' } | { state: 'error'; message: string } | { state: 'ready'; baseline: PublishBaseline };
 
@@ -93,7 +94,7 @@ export function PublishDialog({ layout, onPublish, onCancel }: {
     let live = true;
     publishBaseline(layout).then(
       (baseline) => { if (live) setPreview({ state: 'ready', baseline }); },
-      (error: unknown) => { if (live) setPreview({ state: 'error', message: error instanceof Error ? error.message : '알 수 없는 오류' }); },
+      (error: unknown) => { if (live) setPreview({ state: 'error', message: errorMessage(error) }); },
     );
     return () => { live = false; };
   }, [layout]);

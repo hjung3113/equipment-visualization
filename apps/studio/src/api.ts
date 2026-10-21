@@ -39,6 +39,13 @@ const json = (method: string, body: unknown): RequestInit => ({
   method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
 });
 
+async function putFile(path: string, body: unknown, headers?: Record<string, string>): Promise<void> {
+  const init = json('PUT', body);
+  await request(`/api/files?${new URLSearchParams({ path })}`, headers === undefined
+    ? init
+    : { ...init, headers: { ...init.headers as Record<string, string>, ...headers } });
+}
+
 export const readFile = (path: string) => request(`/api/files?${new URLSearchParams({ path })}`);
 
 export async function listDir(dir: string): Promise<DirEntry[]> {
@@ -58,7 +65,7 @@ export async function dirOrEmpty(dir: string): Promise<DirEntry[]> {
 
 export async function saveDraft(id: string, layout: unknown): Promise<string> {
   const path = `layouts/${id}/draft.layout.json`;
-  await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', layout));
+  await putFile(path, layout);
   return path;
 }
 
@@ -69,22 +76,21 @@ export async function publishRevision(layout: unknown): Promise<{ path: string; 
 /** Creates the layout draft only if none exists: a 412 ApiError means someone else created it first. */
 export async function createDraft(id: string, layout: unknown): Promise<string> {
   const path = `layouts/${id}/draft.layout.json`;
-  const init = json('PUT', layout);
-  await request(`/api/files?${new URLSearchParams({ path })}`, { ...init, headers: { ...init.headers as Record<string, string>, 'If-None-Match': '*' } });
+  await putFile(path, layout, { 'If-None-Match': '*' });
   return path;
 }
 
 export async function saveAliasRules(path: string, file: unknown): Promise<void> {
-  await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', file));
+  await putFile(path, file);
 }
 
 /** Writes an immutable file; an existing file with different content is an ApiError with status 409. */
 export async function putImmutable(path: string, value: unknown): Promise<void> {
-  await request(`/api/files?${new URLSearchParams({ path })}`, json('PUT', value));
+  await putFile(path, value);
 }
 
 export async function saveBindings(equipmentId: string, file: unknown): Promise<void> {
-  await request(`/api/files?${new URLSearchParams({ path: `onboarding/bindings/${equipmentId}.bindings.json` })}`, json('PUT', file));
+  await putFile(`onboarding/bindings/${equipmentId}.bindings.json`, file);
 }
 
 export const importStatus = async (): Promise<ImportStatus> => (await request('/api/import/status')) as ImportStatus;

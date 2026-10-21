@@ -8,6 +8,7 @@ import { App } from '../src/App.js';
 import { FocusPage } from '../src/FocusPage.js';
 import { timelineCost } from '../src/focus-data.js';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { addSynth03, addWindow, importFixture, record, seedOnboardingRoot, windowHex as hexOf, writeDraft, writeJson } from './seed.js';
 
 declare global {
@@ -31,11 +32,7 @@ beforeEach(async () => {
   ({ base, root } = await seedOnboardingRoot());
   ({ w1, w2 } = await addSynth03(root, { metadata: true, dictionary: true }));
   const api = createFileApi({ root });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
 });
 afterEach(async () => {
   cleanup();
