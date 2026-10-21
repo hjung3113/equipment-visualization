@@ -14,7 +14,7 @@
 
 ## 단계별 실제 파일 계획(제안)
 
-[ADR-0001](adr/0001-standalone-packages-thin-platform-consumer.md): `core`/`renderer`/`editor`/`replay`는 이 저장소의 독립 패키지가 정본이고, 플랫폼은 **얇은 소비자**다. 모델·reducer·renderer 코드를 플랫폼 안에 다시 만들지 않는다.
+[ADR-0012](adr/0012-platform-first-sdk-host.md)(ADR-0001 일부 대체): `core`/`renderer`/`editor`/`replay`는 이 저장소의 독립 패키지가 정본이고 플랫폼을 모른다. 기본 호스트는 플랫폼 셸이고, 호스트 → 앱 계약은 플랫폼 SDK가 소유한다. `packages/platform-adapter`가 그 계약을 구현해 화면을 조립하고, 플랫폼 `menus/analytics/equipment`는 연결만 한다. 모델·reducer·renderer 코드를 플랫폼 안에 다시 만들지 않는다. 아래 소비자 구조는 ADR-0012 이전의 제안이며, 조립 위치는 SDK 전환(#177)에서 다시 정한다.
 
 ### 플랫폼 쪽 소비자 구조
 

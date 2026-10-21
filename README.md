@@ -10,7 +10,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 - **Reusable assets**: versioned primitives, assemblies, semantic IDs, attachment ports, and layout definitions.
 - **Equipment Viewer**: render top/side/layer views with consistent semi-flat technical styling.
 - **Log Replay**: visualize observed module, wafer, robot, carrier and stage events; never pretend inferred/interpolated motion is observed fact.
-- **Platform integration**: optional adapter package for [analytics-platform](https://github.com/hjung3113/analytics-platform), preserving its URL/Scope/Permission/menuQuery contracts.
+- **Platform integration**: analytics-platform is the default host ([ADR-0012](docs/adr/0012-platform-first-sdk-host.md)); `packages/platform-adapter` implements the platform SDK contract, preserving its URL/Scope/Permission/menuQuery contracts. The standalone Studio is a second host.
 
 ## Boundaries
 
@@ -29,7 +29,7 @@ packages/renderer/            # Present — static `TopView`/`buildScene` plus i
 packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, Component assembly/name/delete and explicit connection editing, #157/#166–168). TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
 packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use `DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame` and `Page`, the rest arrive with the screen pass
 packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
-packages/platform-adapter/    # Optional analytics-platform integration (planned)
+packages/platform-adapter/    # analytics-platform host: implements the platform SDK contract (planned, ADR-0012)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
 fixtures/  # Synthetic source-shaped replay fixtures (present)

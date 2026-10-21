@@ -43,7 +43,7 @@
 
 ### v0.4 (설계 grilling 확정)
 
-1. **통합 형태:** 독립 패키지가 정본, 플랫폼은 얇은 소비자. renderer는 자체 `--eqv-*` 토큰을 소유하고 `platform-adapter`가 플랫폼 토큰을 주입 (ADR-0001). 화면(Studio 포함)은 AP와 같은 FeedbackOps `@fops/ui` 디자인 시스템을 쓴다 (ADR-0008).
+1. **통합 형태:** 독립 패키지가 정본이고 기본 호스트는 플랫폼 셸, 계약은 플랫폼 SDK 소유(ADR-0012, ADR-0001 일부 대체). renderer는 자체 `--eqv-*` 토큰을 소유하고 `platform-adapter`가 플랫폼 토큰을 주입 (ADR-0001). 화면(Studio 포함)은 AP와 같은 FeedbackOps `@fops/ui` 디자인 시스템을 쓴다 (ADR-0008).
 2. **Replay 입력:** 원천이 짝지은 Occurrence + Data Quality Issue. Core는 Start/End를 짝짓지 않고, 순서는 Record Sequence (ADR-0002, `REPLAY-CONTRACT.md`).
 3. **근거 등급:** `observed | derived | illustrative | unknown`, facet별. `reconstructed`/`confidence` 폐기 (ADR-0003).
 4. **Station 폐지:** station은 하위 Component. 특수 leaf는 Holding Site 하나. Location = Component + 선택적 Holding Site.
