@@ -255,3 +255,10 @@ perf role is added only once the Studio has a measured interaction budget.
 - `launch-worker.py` copies only the brief and the rules into the worktree's `.review/`. Copy every other `.review/`
   file the brief names (an inventory, an audit) before launching, or the worker works without it (#73 f2c, 2026-10-19;
   hjung3113/conductor-engine#28).
+- No EV package sets up `@testing-library/jest-dom` (it is only in the `external/feedbackops` importer), so a brief must
+  not prescribe its matchers (`toHaveAccessibleDescription`, `toBeInTheDocument`, …). Use the repo pattern instead:
+  `document.getElementById(el.getAttribute('aria-describedby')!)?.textContent` (`packages/editor/test/views.test.tsx`,
+  `packages/editor/test/mapping-board.test.tsx`). Caught by the #146 brief check, 2026-10-21.
+- A Studio test with several Radix Select interactions runs ~1.5 s locally and has timed out at the 5 s default on a
+  loaded CI runner: give it a per-test `15_000` timeout with a reason comment, as `apps/studio/test/layouts-edit.test.tsx`
+  does (#173, 2026-10-20).
