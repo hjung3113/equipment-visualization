@@ -27,7 +27,7 @@
 - [x] 이송 source/target: XFR의 From/To Module·Slot으로 식별 가능. 이송 중 위치는 Handler(`derived`). 남은 것: 열린 Occurrence read view 요청.
 - [ ] default UI는 관찰된 상태(실측 가속도/경로 아님)만 표시. illustrative animation은 옵션.
 - [ ] 사용자 역할: Viewer, Layout Editor, Publisher, Debug/RawSource viewer의 분리.
-- [x] 독립 패키지 정본 + 플랫폼 얇은 소비자 (ADR-0001).
+- [x] 독립 패키지 정본 + 플랫폼 얇은 소비자 (ADR-0001). 기본 호스트는 2026-10-21 ADR-0012로 플랫폼 셸이 되었다.
 
 ## Log Fidelity 지원 계층 — 입력 가용성에 따라 기능을 다르게
 

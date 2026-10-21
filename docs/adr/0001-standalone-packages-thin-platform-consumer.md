@@ -1,6 +1,8 @@
 ---
-status: accepted
+status: superseded in part by ADR-0012
 ---
+
+> 2026-10-21: 기본 호스트와 계약 소유는 [ADR-0012](0012-platform-first-sdk-host.md)가 바꾼다(플랫폼 셸이 기본 호스트, 계약은 플랫폼 SDK 소유, 조립은 `platform-adapter`). 도메인·렌더러 패키지의 플랫폼 무의존과 `--eqv-*` 토큰 소유는 그대로다.
 
 # 독립 패키지가 정본, analytics-platform은 얇은 소비자
 
