@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { expect, it } from 'vitest';
 import {
-  componentWorldCenter, layoutDocumentSchema, portPositionToward, projectToFootprint,
+  componentWorldCenter, componentWorldMatrix, invertMatrix, layoutDocumentSchema, multiplyMatrix, portPositionToward, projectToFootprint,
   type Component, type LayoutDocument, type TemplateDocument,
 } from '../src/index.js';
 
@@ -105,6 +105,31 @@ it('composes the world centre through a rotated and scaled parent', () => {
   const layout = makeLayout([parent, child]);
 
   expect(componentWorldCenter(layout, child.id)).toEqual({ x: 94, y: 210 });
+});
+
+it('composes the world matrix through a rotated and scaled parent including the child transform', () => {
+  const parent = makeComponent('parent-a', { x: 100, y: 200, rotation: 90, scale: 2 }, { width: 80, height: 60 });
+  const child = makeComponent('child-a', { x: 5, y: 3, rotation: -30, scale: 0.5 }, { width: 20, height: 10 }, parent.id);
+  const matrix = componentWorldMatrix(makeLayout([parent, child]), child.id)!;
+
+  expect(matrix.a).toBeCloseTo(0.5, 10);
+  expect(matrix.b).toBeCloseTo(Math.sqrt(3) / 2, 10);
+  expect(matrix.c).toBeCloseTo(-Math.sqrt(3) / 2, 10);
+  expect(matrix.d).toBeCloseTo(0.5, 10);
+  expect({ x: matrix.x, y: matrix.y }).toEqual({ x: 94, y: 210 });
+});
+
+it('round-trips an affine matrix through its inverse', () => {
+  const matrix = { a: 2, b: 1, c: -3, d: 4, x: 17, y: -23 };
+  const identity = multiplyMatrix(matrix, invertMatrix(matrix)!);
+
+  for (const [key, expected] of Object.entries({ a: 1, b: 0, c: 0, d: 1, x: 0, y: 0 })) {
+    expect(identity[key as keyof typeof identity]).toBeCloseTo(expected, 10);
+  }
+});
+
+it.each([0, Infinity, NaN])('returns no inverse when the determinant is %s', (d) => {
+  expect(invertMatrix({ a: 1, b: 0, c: 0, d, x: 5, y: 6 })).toBeUndefined();
 });
 
 it('maps a world +x partner direction into the rotated Component local frame', () => {

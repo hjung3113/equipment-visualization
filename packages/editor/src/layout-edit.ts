@@ -1,4 +1,4 @@
-import { MATERIAL_KINDS, canonicalJson, componentWorldCenter, portPositionToward, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge, type TransferCapabilityEdge } from '@eqv/core';
+import { MATERIAL_KINDS, canonicalJson, componentWorldCenter, componentWorldMatrix, invertMatrix, portPositionToward, round3, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge, type TransferCapabilityEdge } from '@eqv/core';
 
 export type SnapOptions = { grid: number; rotationStep: number };
 /** Layout units (`abstract` or `mm` alike); the document unit is never changed. */
@@ -37,45 +37,17 @@ export function redo(state: LayoutEditState): LayoutEditState {
     ? { ...state, present: next, past: [...state.past, state.present], future: state.future.slice(1) } : state;
 }
 
-type Matrix = { a: number; b: number; c: number; d: number };
-const IDENTITY: Matrix = { a: 1, b: 0, c: 0, d: 1 };
-const linear = (t: Component['transform']): Matrix => {
-  const rad = (t.rotation * Math.PI) / 180;
-  const cos = Math.cos(rad) * t.scale;
-  const sin = Math.sin(rad) * t.scale;
-  return { a: cos, b: sin, c: -sin, d: cos };
-};
-const multiply = (m: Matrix, n: Matrix): Matrix => ({
-  a: m.a * n.a + m.c * n.b, b: m.b * n.a + m.d * n.b,
-  c: m.a * n.c + m.c * n.d, d: m.b * n.c + m.d * n.d,
-});
-
-/** Linear part (rotation·scale, no translation) of the world transform of the ancestors of a Component, root first. */
-function parentLinear(layout: LayoutDocument, component: Component): Matrix {
-  const byId = new Map(layout.components.map((c) => [c.id, c]));
-  const chain: Component[] = [];
-  const seen = new Set<string>([component.id]);
-  for (let id = component.parentId; id !== undefined && !seen.has(id);) {
-    const parent = byId.get(id);
-    if (!parent) break;
-    seen.add(id);
-    chain.unshift(parent);
-    id = parent.parentId;
-  }
-  return chain.reduce((acc, c) => multiply(acc, linear(c.transform)), IDENTITY);
-}
-
 /** Converts a delta in layout root coordinates to the Component's parent-local frame. */
 export function rootDeltaToLocal(layout: LayoutDocument, componentId: string, dx: number, dy: number): { dx: number; dy: number } {
   const component = layout.components.find((c) => c.id === componentId);
-  if (!component) return { dx, dy };
-  const { a, b, c, d } = parentLinear(layout, component);
-  const det = a * d - b * c;
-  if (!Number.isFinite(det) || det === 0) return { dx, dy };
-  return { dx: (d * dx - c * dy) / det, dy: (-b * dx + a * dy) / det };
+  if (!component || component.parentId === undefined) return { dx, dy };
+  const parent = componentWorldMatrix(layout, component.parentId);
+  if (!parent) return { dx, dy };
+  const inverse = invertMatrix({ ...parent, x: 0, y: 0 });
+  if (!inverse) return { dx, dy };
+  return { dx: inverse.a * dx + inverse.c * dy, dy: inverse.b * dx + inverse.d * dy };
 }
 
-const round3 = (v: number) => Math.round(v * 1000) / 1000 || 0;
 const normalizeRotation = (degrees: number) => {
   const r = ((degrees % 360) + 360) % 360;
   return r > 180 ? r - 360 : r;
