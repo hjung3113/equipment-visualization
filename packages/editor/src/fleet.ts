@@ -1,4 +1,5 @@
 import {
+  latestBinding,
   computeCoverage, type BindingsFile, type Coverage, type EquipmentRecord, type MappingVersion, type ObservedInventory,
 } from '@eqv/core';
 
@@ -60,7 +61,7 @@ function summarize(input: FleetData | FleetFailure | FleetNoObservations): Fleet
     return { ...identity, status: hasAliasRules ? 'draft' : 'unstarted', coverage: null, assumedRatio: null,
       unmappedReferences: inventory.aliases.reduce((sum, { references }) => sum + references, 0), error: null };
   }
-  const latest = bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a);
+  const latest = latestBinding(bindings.bindings)!;
   const mapping = Object.hasOwn(mappings, latest.mappingHash) ? mappings[latest.mappingHash] : undefined;
   if (!mapping) return failed(`Mapping Version ${latest.mappingHash} 없음`);
   try {

@@ -1,4 +1,5 @@
 import {
+  latestBinding,
   aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, parseSampleWindowName,
   validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary, verifyMappingHash,
   validateLayout,
@@ -203,7 +204,7 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
 
     const mappings: Record<string, MappingVersion> = {};
     if (bindings && bindings.bindings.length > 0) {
-      const latest = bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a);
+      const latest = latestBinding(bindings.bindings)!;
       const hex = latest.mappingHash.slice('sha256:'.length);
       const mappingPath = `onboarding/mappings/${equipmentId}/${hex}.mapping.json`;
       const rawMapping = await readOptional(mappingPath);
@@ -259,7 +260,7 @@ async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped
 /** The layout the Board edits: the latest binding's layout once published, otherwise `<equipmentId>-layout`. */
 function draftLayoutId(equipmentId: string, bindings: BindingsFile | null): string | null {
   if (bindings && bindings.bindings.length > 0) {
-    return bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a).layoutId;
+    return latestBinding(bindings.bindings)!.layoutId;
   }
   const id = `${equipmentId}-layout`;
   return idSchema.safeParse(id).success ? id : null;

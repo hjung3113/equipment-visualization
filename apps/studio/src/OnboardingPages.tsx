@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
-import { buildGenericLayout, instantiateLayout, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
+import { buildGenericLayout, instantiateLayout, latestBinding, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
   FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
@@ -279,7 +279,7 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
   const [dirty, setDirty] = useState(false);
   const input = useMemo(() => ({ equipment, inventory, dictionaries, layout, ruleFiles: saved }),
     [equipment, inventory, dictionaries, layout, saved]);
-  const latest = bindings?.bindings.length ? bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a) : null;
+  const latest = bindings ? latestBinding(bindings.bindings) ?? null : null;
   const previous = latest ? mappings[latest.mappingHash] ?? null : null;
 
   const onModelDryRun = async () => {

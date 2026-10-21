@@ -71,6 +71,12 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 - **Material 묶음:** Batch/FOUP/Boat는 Wafer와 별도 Material. 식별된 Wafer 목록이 없으면 집합 객체로만 표시(wafer n개 임의 생성 금지).
 - **Late data:** 원천 MVP는 insert-only이므로 늦은 데이터는 새 segment로 Watermark가 늘어나는 것이다. 원천 logic version 변경·재처리 시에만 Data Generation이 올라가며, 이때 캐시된 SceneState를 폐기.
 
+### 공통 core helper (#140)
+
+`@eqv/core`의 `activeBinding(bindings, t)`는 `effectiveFrom <= t < effectiveTo`(종료가 없으면 열린 구간)를 만족하는 첫 Binding을 반환한다. `latestBinding(bindings)`는 `effectiveFrom`이 가장 큰 Binding을 반환하고, 둘 다 대상이 없으면 `undefined`다. 같은 시작 시각이면 배열의 첫 항목을 유지하지만 이 입력은 `validateBindings`가 겹침으로 거부한다.
+
+`materialKey(kind, id)`는 식별된 물질의 `m:<kind>:<id>`, `occurrenceKey(occurrenceId)`는 익명 점유의 `o:<occurrenceId>`를 만든다. 원천 id를 그대로 보존한다. `HASH_PATTERN`과 `hashSchema`는 `sha256:` 다음 소문자 16진수 64자리 형식을 공유한다.
+
 ### Scene State 계약 (#9b)
 
 `packages/core/src/scene/schema.ts`의 strict `sceneStateSchema`와

@@ -1,12 +1,14 @@
 import { z } from 'zod';
-import { idSchema } from '../layout/schema.js';
+import { MATERIAL_KINDS, idSchema } from '../layout/schema.js';
+import { hashSchema } from '../mapping/schema.js';
+import { materialKey, occurrenceKey } from '../replay/keys.js';
 import { occurrenceSchema } from '../occurrence/schema.js';
 import { siteWallClockSchema } from '../site-wall-clock.js';
 
 const text = z.string().min(1);
 const stateEvidenceSchema = z.enum(['observed', 'derived', 'unknown']);
 const sceneMaterialSchema = z.strictObject({
-  key: text.regex(/^(m:(wafer|carrier|batch|boat|reticle):.+|o:.+)$/)
+  key: text.regex(new RegExp(`^(m:(${MATERIAL_KINDS.join('|')}):.+|o:.+)$`))
     .describe('m:<kind>:<id> for identified material; o:<occurrenceId> when id is null. Source id is preserved.'),
   kind: occurrenceSchema.shape.material.unwrap().shape.kind,
   id: text.nullable(),
@@ -18,7 +20,7 @@ const sceneMaterialSchema = z.strictObject({
   occurrenceId: text,
   lastObservedAt: siteWallClockSchema.nullable(),
 }).refine((material) => material.key === (material.id === null
-  ? `o:${material.occurrenceId}` : `m:${material.kind}:${material.id}`),
+  ? occurrenceKey(material.occurrenceId) : materialKey(material.kind, material.id)),
 { path: ['key'], message: 'Material key must match kind/id or anonymous occurrenceId.' });
 const sceneComponentSchema = z.strictObject({
   componentId: idSchema,
@@ -36,8 +38,8 @@ export const sceneStateSchema = z.strictObject({
   equipmentId: text,
   at: siteWallClockSchema,
   appliedSeq: z.int().nonnegative().nullable(),
-  binding: z.strictObject({ layoutId: idSchema, mappingHash: z.string().regex(/^sha256:[0-9a-f]{64}$/),
-    layoutRevision: z.string().regex(/^sha256:[0-9a-f]{64}$/).optional() }).nullable(),
+  binding: z.strictObject({ layoutId: idSchema, mappingHash: hashSchema,
+    layoutRevision: hashSchema.optional() }).nullable(),
   materials: z.array(sceneMaterialSchema).describe('Sorted by key in code-unit order.'),
   components: z.array(sceneComponentSchema).describe('Every bound layout Component, sorted by componentId; empty without a Binding.'),
   markers: z.array(sceneMarkerSchema).describe('Sorted by kind then id fields in code-unit order; DQIs belong only to the timeline.'),
