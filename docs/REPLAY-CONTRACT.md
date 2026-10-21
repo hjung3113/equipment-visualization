@@ -75,7 +75,7 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 
 `@eqv/core`의 `activeBinding(bindings, t)`는 `effectiveFrom <= t < effectiveTo`(종료가 없으면 열린 구간)를 만족하는 첫 Binding을 반환한다. `latestBinding(bindings)`는 `effectiveFrom`이 가장 큰 Binding을 반환하고, 둘 다 대상이 없으면 `undefined`다. 같은 시작 시각이면 배열의 첫 항목을 유지하지만 이 입력은 `validateBindings`가 겹침으로 거부한다.
 
-`materialKey(kind, id)`는 식별된 물질의 `m:<kind>:<id>`, `occurrenceKey(occurrenceId)`는 익명 점유의 `o:<occurrenceId>`를 만든다. 원천 id를 그대로 보존한다. `HASH_PATTERN`과 `hashSchema`는 `sha256:` 다음 소문자 16진수 64자리 형식을 공유한다.
+`materialKey(kind, id)`는 식별된 물질의 `m:<kind>:<id>`를 만든다(익명 점유는 core 안에서 `o:<occurrenceId>`). 원천 id를 그대로 보존한다. `sha256:` 다음 소문자 16진수 64자리 형식은 core 안의 한 정의(`mapping/schema.ts`)를 Mapping·Scene State·reducer가 함께 쓴다.
 
 ### Scene State 계약 (#9b)
 
