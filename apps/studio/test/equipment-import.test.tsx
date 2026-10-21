@@ -324,3 +324,18 @@ it.each([
   expect((screen.getByRole('button', { name: '가져오기' }) as HTMLButtonElement).disabled).toBe(true);
   await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('button', { name: '닫기' })));
 });
+
+it.each([true, false])('describes all file buttons only when import is blocked (blocked=%s)', async (blocked) => {
+  if (blocked) api = createFileApi({ root });
+  await openPage();
+  if (blocked) await screen.findByText('가져오기를 쓸 수 없습니다');
+  else await waitFor(() => expect((screen.getByRole('button', { name: 'Sample Window 가져오기' }) as HTMLButtonElement).disabled).toBe(false));
+  for (const name of ['Sample Window 가져오기', 'Alias metadata', 'Type Dictionary(Model 범위)']) {
+    const button = screen.getByRole('button', { name });
+    if (blocked) {
+      expect(document.getElementById(button.getAttribute('aria-describedby')!)?.textContent).toContain('가져오기를 쓸 수 없습니다');
+    } else {
+      expect(button.getAttribute('aria-describedby')).toBeNull();
+    }
+  }
+});
