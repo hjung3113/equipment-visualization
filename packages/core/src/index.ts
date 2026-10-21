@@ -18,7 +18,7 @@ export type { EvidenceLevel, Boundary, Occurrence, DataQualityIssue, OccurrenceB
 export { validateSampleWindow, sampleWindowName, parseSampleWindowName } from './occurrence/window.js';
 export type { SampleWindowRef, SampleWindowSummary, SampleWindowResult, ImportIssue, ImportRejectCode, ImportWarningCode } from './occurrence/window.js';
 
-export { typeDictionaryFileSchema, aliasRulesFileSchema, mappingVersionSchema, bindingsFileSchema, hashSchema, HASH_PATTERN } from './mapping/schema.js';
+export { typeDictionaryFileSchema, aliasRulesFileSchema, mappingVersionSchema, bindingsFileSchema } from './mapping/schema.js';
 export type {
   MappingScope, TypeDictionaryFile, AliasRulesFile, AliasRule, SlotMap, MappingVersion,
   MappingEntry, BindingsFile, Binding, Resolution, MappingIssue,
@@ -35,7 +35,7 @@ export { sceneStateSchema } from './scene/schema.js';
 export type { SceneState, SceneMaterial, SceneComponent, SceneMarker } from './scene/schema.js';
 export { RULESET_VERSION, assertReplayInput, bindingLayout, seekSceneState, stepSceneState } from './replay/reduce.js';
 export type { ReplayInput } from './replay/reduce.js';
-export { materialKey, occurrenceKey } from './replay/keys.js';
+export { materialKey } from './replay/keys.js';
 export { materialJourney } from './replay/journey.js';
 export type { JourneyBoundary, JourneyEvidence, JourneyLocation, JourneyHop, JourneyExecution, MaterialJourney } from './replay/journey.js';
 export { replayTimeline, replayTimelineFrame } from './replay/timeline.js';
