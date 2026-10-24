@@ -1,6 +1,6 @@
 import { useState, type ElementType, type ReactNode } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn } from '@fops/ui';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger, cn } from '@ap/ui';
 
 export interface AppFrameItem {
   key: string;

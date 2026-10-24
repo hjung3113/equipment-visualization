@@ -12,7 +12,7 @@ import {
 } from '@eqv/replay';
 import { GANTT_SPAN_LIMIT, TIMELINE_BUDGET, loadFocus, timelineCost, type FocusLoad } from './focus-data.js';
 import { errorMessage } from './error-message.js';
-import { Button, Callout, Checkbox, EmptyState, Input, Label } from '@fops/ui';
+import { Button, Callout, Checkbox, EmptyState, Input, Label } from '@ap/ui';
 import { EvidenceBadge, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { Link, hrefFor, navigate } from './router.js';
 import { windowHex } from './onboarding-data.js';

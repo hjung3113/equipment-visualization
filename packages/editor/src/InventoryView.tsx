@@ -1,5 +1,5 @@
-import { EmptyState, OutlineBadge, PanelSectionTitle } from '@fops/ui';
-import { DataTable, Panel, StatusBadge } from '@eqv/ui';
+import { EmptyState, PanelSectionTitle } from '@ap/ui';
+import { DataTable, OutlineBadge, Panel, StatusBadge } from '@eqv/ui';
 import { TriangleAlert } from 'lucide-react';
 import { compareNatural, resolveRole, type InventoryAlias, type ObservedInventory, type TypeDictionaryFile } from '@eqv/core';
 

@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { ReplayTimeline } from '@eqv/core';
 import { Inbox } from 'lucide-react';
-import { Button, EmptyState } from '@fops/ui';
+import { Button, EmptyState } from '@ap/ui';
 import { DataTable } from '@eqv/ui';
 import { NO_TIME } from './words.js';
 

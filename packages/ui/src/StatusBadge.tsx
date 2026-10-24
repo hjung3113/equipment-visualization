@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { cn } from '@fops/ui';
+import { cn } from '@ap/ui';
 
 export type StatusBadgeTone = 'success' | 'warning' | 'danger' | 'neutral' | 'info';
 

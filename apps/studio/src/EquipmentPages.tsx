@@ -2,7 +2,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode, typ
 import { equipmentRecordSchema } from '@eqv/core';
 import { Inbox, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
 import { DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ToastRegion, useToastQueue, type DetailField } from '@eqv/ui';
-import { Button, Input } from '@fops/ui';
+import { Button, Input } from '@ap/ui';
 import { ApiError, registerEquipment } from './api.js';
 import { loadEquipmentData, type EquipmentDataLoad, type FileState, type WindowRow } from './equipment-data.js';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';

@@ -1,7 +1,7 @@
 import type { SceneState } from '@eqv/core';
 import { MapPinOff, OctagonAlert, TriangleAlert, MoveRight, Inbox } from 'lucide-react';
 import { DataTable, Panel, StatusBadge } from '@eqv/ui';
-import { Callout, EmptyState, FieldRow, PanelSectionTitle } from '@fops/ui';
+import { Callout, EmptyState, FieldRow, PanelSectionTitle } from '@ap/ui';
 import type { IllustrativeGhost } from './ghosts.js';
 import { Evidence } from './Evidence.js';
 import { ACTIVITY_KO, UNKNOWN_LANE } from './words.js';

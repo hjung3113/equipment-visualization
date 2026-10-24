@@ -7,7 +7,7 @@ import {
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   Button,
-} from '@fops/ui';
+} from '@ap/ui';
 import {
   CircleCheck, CircleX, FileJson, Info, Replace, TriangleAlert, Upload, X,
 } from 'lucide-react';

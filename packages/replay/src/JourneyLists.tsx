@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import type { JourneyBoundary, JourneyExecution, JourneyHop, JourneyLocation } from '@eqv/core';
 import { Inbox } from 'lucide-react';
 import { DataTable } from '@eqv/ui';
-import { EmptyState } from '@fops/ui';
+import { EmptyState } from '@ap/ui';
 import { Evidence } from './Evidence.js';
 import { NO_TIME, UNKNOWN_LANE, clock } from './words.js';
 

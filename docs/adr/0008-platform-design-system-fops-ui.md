@@ -2,6 +2,8 @@
 status: accepted
 ---
 
+> 개정: 디자인 시스템 원본은 [ADR-0013](0013-platform-sdk-release-tarballs.md)(2026-10-24)으로 `@fops/ui` 서브모듈에서 `@ap/ui` Release tarball로 바뀌었다. 규칙은 그대로이고, 아래 `@fops/ui`·서브모듈 서술은 결정 당시의 기록이다.
+
 # EV 화면은 Studio를 포함해 analytics-platform과 같은 디자인 시스템(FeedbackOps `@fops/ui`)을 쓴다
 
 결정자: 사용자 — "독립 실행이어도 디자인 시스템은 맞춘다"(2026-10-17, #73). 가져오는 방식과 패키지별 범위는 에이전트 추천이다.

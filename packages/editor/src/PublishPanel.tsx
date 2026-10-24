@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { layoutRevision, type BindingsFile, type MappingConflict, type MappingVersion } from '@eqv/core';
 import { DataTable, DetailFields, LoadingBlock, Panel, StateMessage } from '@eqv/ui';
-import { Button, Callout, EmptyState, Input, Label, PanelSectionTitle } from '@fops/ui';
+import { Button, Callout, EmptyState, Input, Label, PanelSectionTitle } from '@ap/ui';
 import { Play, Send, TriangleAlert } from 'lucide-react';
 import type { TopViewerProps } from '@eqv/renderer';
 import { describeConflict } from './conflict-text.js';

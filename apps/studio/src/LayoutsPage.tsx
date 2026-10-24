@@ -15,7 +15,7 @@ import { newComponentSize } from './new-component-size.js';
 import { PublishDialog } from './PublishDialog.js';
 import { errorMessage } from './error-message.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
-import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter, Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter, Button, EmptyState, PanelSectionTitle, cn } from '@ap/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const VIEW_WIDTH = 960;

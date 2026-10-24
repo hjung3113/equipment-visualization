@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'r
 import { activeBinding, type BindingsFile, type Occurrence, type OccurrenceBatch, type ReplayTimeline } from '@eqv/core';
 import { Inbox, Circle } from 'lucide-react';
 import { DataTable, StatusBadge } from '@eqv/ui';
-import { EmptyState } from '@fops/ui';
+import { EmptyState } from '@ap/ui';
 import { LEVEL_KO, NO_TIME } from './words.js';
 
 export interface OccurrenceListProps {

@@ -9,7 +9,7 @@ import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, s
 import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { errorMessage } from './error-message.js';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
-import { Button, Callout } from '@fops/ui';
+import { Button, Callout } from '@ap/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 import { WindowPicker } from './WindowPicker.js';

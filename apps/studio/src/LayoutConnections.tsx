@@ -3,7 +3,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { MATERIAL_KINDS, PHYSICAL_INTERFACE_KINDS, type Component, type LayoutDocument, type MaterialKind, type PhysicalInterfaceEdge } from '@eqv/core';
 import { isPortFree, type AddPhysicalInterfaceSpec, type AddTransferCapabilitySpec } from '@eqv/editor';
 import { FormField } from '@eqv/ui';
-import { Button, Checkbox, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@fops/ui';
+import { Button, Checkbox, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
 
 const NEW_PORT = '__new__';
 

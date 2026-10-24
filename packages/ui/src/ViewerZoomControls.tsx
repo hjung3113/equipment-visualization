@@ -1,5 +1,5 @@
 import { Maximize2, ZoomIn, ZoomOut } from 'lucide-react';
-import { Button } from '@fops/ui';
+import { Button } from '@ap/ui';
 
 /** Same shape as the renderer's `TopViewerControls`; declared here so this package never imports `@eqv/renderer`. */
 export interface ViewerZoomControlsState {

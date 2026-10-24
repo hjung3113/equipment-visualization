@@ -1,7 +1,7 @@
 import { useId } from 'react';
 import type { ReactNode } from 'react';
 import { CircleAlert } from 'lucide-react';
-import { FieldLabel } from '@fops/ui';
+import { FieldLabel } from '@ap/ui';
 
 export interface FormFieldControlProps {
   id: string;

@@ -2,7 +2,7 @@ import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { Upload } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Button } from '@fops/ui';
+import { Button } from '@ap/ui';
 
 export interface FileButtonProps {
   /** Names the button and the file input. */

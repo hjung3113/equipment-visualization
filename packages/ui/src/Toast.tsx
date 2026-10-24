@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CircleX, Info, TriangleAlert, X } from 'lucide-react';
-import { Button, cn } from '@fops/ui';
+import { Button, cn } from '@ap/ui';
 
 export type ToastTone = 'info' | 'warning' | 'danger';
 

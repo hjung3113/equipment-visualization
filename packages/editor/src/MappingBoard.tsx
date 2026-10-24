@@ -2,11 +2,11 @@ import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type Keybo
 import type { AliasRulesFile } from '@eqv/core';
 import {
   Button, Callout, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Input, KeyboardShortcut, Label,
-  OutlineBadge, PanelSectionTitle, RadioGroup, RadioGroupItem,
-} from '@fops/ui';
+  PanelSectionTitle, RadioGroup, RadioGroupItem,
+} from '@ap/ui';
 import { Check, CheckCheck, ChevronRight, Diamond, Redo2, Save, Search, TriangleAlert, Undo2 } from 'lucide-react';
 import { TopViewer, type TopViewerProps } from '@eqv/renderer';
-import { DetailFields, Panel, StatusBadge, ViewerZoomControls, type StatusBadgeTone } from '@eqv/ui';
+import { DetailFields, OutlineBadge, Panel, StatusBadge, ViewerZoomControls, type StatusBadgeTone } from '@eqv/ui';
 import {
   addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
   paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,

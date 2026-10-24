@@ -4,7 +4,7 @@ import type { LayoutDocument } from '@eqv/core';
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
   Button,
-} from '@fops/ui';
+} from '@ap/ui';
 import { DataTable, DetailFields, LoadingBlock, StateMessage, type DetailField } from '@eqv/ui';
 import { publishBaseline, type PublishBaseline } from './layout-baseline.js';
 import { COLLECTIONS, isUnchanged, type LayoutChanges } from './layout-changes.js';
