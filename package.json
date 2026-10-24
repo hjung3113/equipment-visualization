@@ -11,7 +11,9 @@
     "lint": "eslint .",
     "typecheck": "turbo run build --filter=@eqv/studio^... && turbo run typecheck --only",
     "test": "turbo run build --filter=@eqv/studio^... && turbo run test --only --concurrency=2",
-    "build": "turbo run build --filter=@eqv/studio^... && turbo run build --filter=@eqv/studio --only"
+    "build": "turbo run build --filter=@eqv/studio^... && turbo run build --filter=@eqv/studio --only",
+    "eqv:pack": "node tooling/scripts/eqv-pack.mjs",
+    "eqv:consumer-check": "node tooling/scripts/eqv-consumer-check.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

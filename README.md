@@ -97,7 +97,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); Onboarding ⑤ dry-run and ⑥ Publish are in (#14); Drift ⑦ is still pending (tracked as M1/M2); the Focus screen with playback is in (#15c–d). This repository is **public** (since 2026-10-15), like the parent analytics-platform; the platform SDK comes from its release tarballs (ADR-0013), and `packages/platform-adapter` declares the host module that analytics-platform will mount (AP #333/#334).
+**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); Onboarding ⑤ dry-run and ⑥ Publish are in (#14); Drift ⑦ is still pending (tracked as M1/M2); the Focus screen with playback is in (#15c–d). This repository is **public** (since 2026-10-15), like the parent analytics-platform; the platform SDK comes from its release tarballs (ADR-0013), `@eqv/*` ships as dist tarballs (ADR-0014; `pnpm eqv:pack`), and `packages/platform-adapter` declares the host module that analytics-platform will mount (AP #333/#334).
 
 ## Roadmap
 
@@ -105,6 +105,6 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 2. Build standalone `apps/studio` with synthetic data and zero platform runtime imports.
 3. Validate semantic ports/kinematic constraints (where known) and SVG round-trip.
 4. ~~Implement a deterministic observation reducer~~ (done in `@eqv/core`: `seekSceneState`, `stepSceneState`, `replayKey`); build the playback timeline.
-5. Integrate through a **separate** analytics-platform PR that mounts `@eqv/platform-adapter` and serves its endpoints (AP #333/#334); the install path for `@eqv/*` is decided there (#187).
+5. Integrate through a **separate** analytics-platform PR that mounts `@eqv/platform-adapter` and serves its endpoints (AP #333/#334); `@eqv/*` is installed from `eqv-vX.Y.Z` Release tarballs pinned by URL (ADR-0014).
 
 Related: [analytics-platform](https://github.com/hjung3113/analytics-platform) and platform issue [#291](https://github.com/hjung3113/analytics-platform/issues/291) (broader visualization capability work; avoid overlap).
