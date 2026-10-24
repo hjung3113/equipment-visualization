@@ -56,7 +56,7 @@ function parseRange(from: string, to: string): { range: Range } | { error: strin
   return { range: { from: a.data, to: b.data } };
 }
 
-export type FocusViewProps = {
+type FocusViewBaseProps = {
   input: ReplayInput;
   /** Shown above the range form, one status line each (anchor choice, missing Binding, draft Layout). */
   notices: readonly string[];
@@ -66,9 +66,6 @@ export type FocusViewProps = {
   resetKey: string;
   /** When given, selecting an Occurrence hands its `EvidenceDetail` to the host (null clears the slot: reset, no valid state, no selection, removal, unmount) and the inline "근거 상세" tab is omitted. The callback must be stable (memoised or a state setter): a new identity re-publishes. */
   renderDetail?: (detail: { node: ReactNode; label: string } | null) => void;
-  /** The selected detail tab; give it with `onTabChange` to keep the tab across the host's own remounts (a Studio load). */
-  tab?: FocusTab;
-  onTabChange?: (tab: FocusTab) => void;
   links?: {
     /** The "Journey 열기" control for the selected wafer Occurrence; absent = no control. */
     journey?: (occurrenceId: string) => ReactNode;
@@ -85,6 +82,12 @@ export type FocusViewProps = {
   scheduler?: PlaybackScheduler;
 };
 
+/** The selected detail tab; `tab` needs `onTabChange` (a controlled tab with no way to change is a dead tab strip). Used to keep the tab across the host's own remounts (a Studio load). */
+export type FocusViewProps = FocusViewBaseProps & (
+  | { tab: FocusTab; onTabChange: (tab: FocusTab) => void }
+  | { tab?: undefined; onTabChange?: undefined }
+);
+
 /** Top View, Gantt and Occurrence list on one cursor, from props only (no page chrome, router or loader). */
 export function FocusView({ input, notices, entityType, anchor, resetKey, renderDetail, tab: controlledTab, onTabChange, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
   const entryKey = JSON.stringify([entityType, anchor]);
@@ -92,7 +95,6 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [ownTab, setOwnTab] = useState<FocusTab>('list');
-  const tab = controlledTab ?? ownTab;
   // The zoom controls render into the Top View panel header (not over the fixed-width viewer, where a narrow page clips them).
   const [zoomHost, setZoomHost] = useState<HTMLElement | null>(null);
   const rangeId = useId();
@@ -200,6 +202,8 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
     const move = moveCursor && start !== null && range !== null && start >= range.from && start < range.to;
     patch({ selectedOccurrenceId: id, ...(move ? { cursor: start, mode: { kind: 'time' } } : {}) });
   };
+  // With the host's detail slot there is no inline "detail" tab: a tab value of 'detail' shows the list.
+  const tab = renderDetail && (controlledTab ?? ownTab) === 'detail' ? 'list' : controlledTab ?? ownTab;
   const tabs = renderDetail ? TABS.filter((item) => item.id !== 'detail') : TABS;
 
   return (

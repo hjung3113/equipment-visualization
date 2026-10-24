@@ -87,6 +87,12 @@ it('clears the host detail through the callback on unmount and through the old c
   expect(second.mock.lastCall![0]).toBeNull();
 });
 
+it('shows the Occurrence list when a controlled tab is "detail" but the host owns the detail slot', () => {
+  render(<FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey="a" renderDetail={vi.fn()} tab="detail" onTabChange={vi.fn()} />);
+  expect(screen.getByRole('tab', { name: 'Occurrence 목록' }).getAttribute('aria-selected')).toBe('true');
+  expect(row()).toBeTruthy();
+});
+
 it('renders links.actions in the Top View action area', () => {
   render(<DetailHost actions={<button type="button">호스트 동작</button>} />);
   const panel = screen.getByRole('heading', { name: 'Top View' }).closest('section, div')!.parentElement!;
