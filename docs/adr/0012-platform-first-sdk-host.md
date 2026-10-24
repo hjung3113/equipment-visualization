@@ -10,14 +10,14 @@ status: accepted
 
 **결정.**
 
-- 도메인·렌더러 패키지(`core`·`renderer`·`editor`·`replay`)가 정본이고 계속 플랫폼을 모른다. 이 패키지들은 `@ap/*`도, 플랫폼 SDK도 import하지 않는다.
+- 도메인·렌더러 패키지(`core`·`renderer`·`editor`·`replay`)가 정본이고 계속 플랫폼을 모른다. `core`·`renderer`는 `@ap/*`를 import하지 않고, `editor`·`replay`는 디자인 시스템 `@ap/ui`만 import한다([ADR-0013](0013-platform-sdk-release-tarballs.md)). 그 밖의 플랫폼 SDK는 import하지 않는다.
 - 기본 호스트는 analytics-platform 셸이다. 호스트 → 앱 계약(화면 manifest, 호스트 포트, `menuQuery` 선언, 계약 버전)은 플랫폼 SDK가 소유한다. 이 저장소가 자기 입력 타입을 내고 플랫폼이 맞추는 방식은 쓰지 않는다.
-- 플랫폼 SDK를 import하는 곳은 `packages/platform-adapter` 하나다. 어댑터는 SDK 계약을 구현해 플랫폼 탑재 화면(manifest + 화면 컴포넌트 + `menuQuery` 선언 + `--eqv-*` 테마 매핑)을 낸다. 조립은 어댑터가 하고 플랫폼 `menus/analytics/equipment`는 연결만 한다.
+- 디자인 시스템 `@ap/ui`를 뺀 플랫폼 SDK(호스트 계약 `@ap/contracts` 등)를 import하는 곳은 `packages/platform-adapter` 하나다([ADR-0013](0013-platform-sdk-release-tarballs.md)). 어댑터는 SDK 계약을 구현해 플랫폼 탑재 화면(manifest + 화면 컴포넌트 + `menuQuery` 선언 + `--eqv-*` 테마 매핑)을 낸다. 조립은 어댑터가 하고 플랫폼 `menus/analytics/equipment`는 연결만 한다.
 - Studio는 호스트 포트를 구현하지 않는다. 두 호스트의 동등성은 패키지 수준에서 검사한다(같은 입력 → 같은 렌더·검증).
 
 **그대로인 것.** `--eqv-*` 토큰 소유와 어댑터의 토큰 주입(ADR-0001 Consequences), [ADR-0002](0002-occurrence-input-contract.md) Occurrence 입력 계약, 플랫폼 안 1차 범위가 읽기(뷰어·재생)라는 점, 쓰기(초안·Publish)의 별도 설계, 저장소가 플랫폼 없이 빌드·테스트된다는 점.
 
-**정하지 않은 것(Proposed, SDK 전환에서 정함).** SDK 패키지 이름과 위치(ADR-0043은 Candidate, 지금 계약 초안은 `@ap/contracts`), 계약 버전 규칙, 이 저장소 CI가 SDK 없이 `platform-adapter`를 어떻게 다루는지(권고: SDK 배포 전까지 그 패키지는 플랫폼 CI가 검사), 디자인 시스템 원본이 `@fops/ui`에서 SDK로 옮겨 갈 때의 [ADR-0008](0008-platform-design-system-fops-ui.md) 개정. `eslint.config.js`의 `platform-adapter` 예외를 SDK 패키지 하나로 좁히는 일도 패키지 이름이 정해진 뒤에 한다.
+**정한 것과 남은 것.** SDK 패키지 이름(게시된 `@ap/*`), 계약 버전 `1`, 이 저장소 CI의 SDK 설치(공개 Release tarball), 디자인 시스템 원본의 ADR-0008 개정(`@ap/ui`)은 [ADR-0013](0013-platform-sdk-release-tarballs.md)이 정했다. `eslint.config.js`의 `platform-adapter` 예외를 `@ap/contracts`·`@ap/ui` 둘로 좁히는 일은 어댑터를 만들 때 한다.
 
 ## Considered Options
 

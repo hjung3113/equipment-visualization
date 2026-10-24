@@ -2,7 +2,7 @@ import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'reac
 import type { HTMLAttributes, Key, KeyboardEvent, ReactElement, ReactNode, Ref, TdHTMLAttributes, ThHTMLAttributes } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
-import { cn } from '@fops/ui';
+import { cn } from '@ap/ui';
 
 export interface DataTableColumn {
   id: string;

@@ -1,15 +1,15 @@
 @import "tailwindcss";
-@import "@fops/ui/styles/tokens.css" layer(base);
-@import "@fops/ui/styles/semantic.css" layer(base);
-@import "@fops/ui/styles/theme.css";
-@import "@fops/ui/styles/compat.css";
+@import "@ap/ui/styles/tokens.css" layer(base);
+@import "@ap/ui/styles/semantic.css" layer(base);
+@import "@ap/ui/styles/theme.css";
+@import "@ap/ui/styles/compat.css";
+@import "@ap/ui/styles/sources.css";
 @import "@eqv/ui/styles.css";
 @import "@eqv/editor/styles.css";
 @import "@eqv/replay/styles.css";
-@source "../../../external/feedbackops/packages/ui/src";
 @source ".";
 
-/* ADR-0008: --eqv-* rows whose platform token @fops/ui defines; undeclared rows fall back to the asset hex. */
+/* ADR-0008: --eqv-* rows whose platform token @ap/ui defines; undeclared rows fall back to the asset hex. */
 :root {
   --eqv-canvas: rgb(var(--surface-canvas));
   --eqv-board: rgb(var(--surface-card));
@@ -22,8 +22,8 @@
   --eqv-assumed-fg: rgb(var(--text-warning-label));
 }
 
-/* Studio base: body typography, mono `code` and inline text links, the only bare elements left: @fops/ui has no link component.
-   Headings, lists, sections and alerts come from @eqv/ui / @fops/ui components. @fops/ui tokens only; layered, so utilities still win. */
+/* Studio base: body typography, mono `code` and inline text links, the only bare elements left: @ap/ui has no link component.
+   Headings, lists, sections and alerts come from @eqv/ui / @ap/ui components. @ap/ui tokens only; layered, so utilities still win. */
 @layer base {
   body {
     margin: 0;

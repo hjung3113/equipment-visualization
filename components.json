@@ -1,4 +1,4 @@
 {
   "tailwind": { "css": "apps/studio/src/studio.css" },
-  "aliases": { "ui": "./external/feedbackops/packages/ui/src/components" }
+  "aliases": { "ui": "./packages/ui/src" }
 }

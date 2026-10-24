@@ -20,7 +20,7 @@ Additional items for this repo:
 
 E1. **Invariants are stated where they bite.** If the work touches geometry, ports, robots or replay, the brief
     repeats the relevant AGENTS.md constraint (no connectivity from adjacency; arm ≠ blade; unknown stays unknown;
-    interpolation is never `observed`; no `@ap/*` outside the adapter) and names a test that would catch a breach.
+    interpolation is never `observed`; no `@ap/*` in core/renderer and none but `@ap/ui` elsewhere outside the adapter) and names a test that would catch a breach.
 E2. **Replay cases are enumerated.** A reducer change lists which of ties, open occurrence, Data Quality Issue, Time
     Anomaly, Watermark/Binding boundary, invalid mapping and duplicate occupancy it covers, and says the others are
     out of scope.

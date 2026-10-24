@@ -6,7 +6,7 @@ import {
 } from '@eqv/core';
 import { TopViewer, type JourneyHopMark } from '@eqv/renderer';
 import { Evidence, JourneyExecutionList, JourneyHopList } from '@eqv/replay';
-import { Button, Callout, EmptyState } from '@fops/ui';
+import { Button, Callout, EmptyState } from '@ap/ui';
 import { LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { loadFocus, type FocusLoad } from './focus-data.js';
 import { errorMessage } from './error-message.js';

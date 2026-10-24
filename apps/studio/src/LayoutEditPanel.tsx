@@ -4,7 +4,7 @@ import type { Component } from '@eqv/core';
 import { PRIMITIVE_CATALOG } from '@eqv/renderer';
 import type { TransformPatch } from '@eqv/editor';
 import { DetailFields, FormField } from '@eqv/ui';
-import { Button, Checkbox, EmptyState, Input, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@fops/ui';
+import { Button, Checkbox, EmptyState, Input, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
 
 const TOOL_ICON = 'size-3.5';
 /** Degrees per rotate button press and per `[` / `]`. */

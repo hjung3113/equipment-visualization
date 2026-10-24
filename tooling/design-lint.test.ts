@@ -15,7 +15,7 @@ async function shadcnRules(filePath: string, code: string): Promise<string[]> {
   return (result?.messages ?? []).flatMap((m) => (m.ruleId?.startsWith('shadcn/') ? [m.ruleId] : []));
 }
 
-// ADR-0008: DOM UI packages follow the @fops/ui design-system rules; core and renderer are out of scope.
+// ADR-0008: DOM UI packages follow the @ap/ui design-system rules; core and renderer are out of scope.
 it.each([
   ['packages/replay/src/x.tsx', 'export const X = () => <div style={{ color: "red" }} />;', ['shadcn/no-inline-styles']],
   ['packages/editor/src/x.tsx', 'export const X = () => <div className="bg-red-500" />;', ['shadcn/no-raw-colors']],
@@ -23,7 +23,7 @@ it.each([
   ['apps/studio/src/x.tsx', 'export const X = () => <div className="flex gap-2 text-text-secondary" />;', []],
   [
     'packages/replay/src/x.tsx',
-    'import { Button } from "@fops/ui"; export const X = () => <Button className="bg-surface-card">x</Button>;',
+    'import { Button } from "@ap/ui"; export const X = () => <Button className="bg-surface-card">x</Button>;',
     ['shadcn/no-restyle'],
   ],
   [
@@ -34,7 +34,7 @@ it.each([
   ['packages/editor/src/x.tsx', 'export const X = () => <div className="p-[13px]" />;', ['shadcn/no-arbitrary-values']],
   [
     'apps/studio/src/x.tsx',
-    'import { Button } from "@fops/ui"; export const X = ({ c }: { c: string }) => <Button className={`mt-${c}`}>x</Button>;',
+    'import { Button } from "@ap/ui"; export const X = ({ c }: { c: string }) => <Button className={`mt-${c}`}>x</Button>;',
     ['shadcn/require-static-classes'],
   ],
   ['packages/renderer/src/x.tsx', 'export const X = () => <div style={{ color: "red" }} />;', []],

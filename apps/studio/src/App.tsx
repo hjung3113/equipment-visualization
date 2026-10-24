@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Factory, FileQuestion, LayoutTemplate } from 'lucide-react';
 import { APP_FRAME_MAIN_ID, AppFrame, Page, StateMessage } from '@eqv/ui';
-import { Button } from '@fops/ui';
+import { Button } from '@ap/ui';
 import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
 import { FocusPage } from './FocusPage.js';
 import { JourneyPage } from './JourneyPage.js';

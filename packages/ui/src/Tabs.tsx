@@ -1,11 +1,11 @@
-// AP underline tabs (#73 slice f1): only the list and trigger look is defined here; roles, selection and keyboard stay @fops/ui's.
+// AP underline tabs (#73 slice f1): only the list and trigger look is defined here, on the @ap/ui base tabs (TabsListBase/TabsTriggerBase); roles, selection and keyboard stay @ap/ui's.
 import * as React from 'react';
-import { TabsList as FopsTabsList, TabsTrigger as FopsTabsTrigger, cn } from '@fops/ui';
+import { TabsListBase as FopsTabsList, TabsTriggerBase as FopsTabsTrigger, cn } from '@ap/ui';
 
-export { Tabs, TabsContent } from '@fops/ui';
+export { Tabs, TabsContent } from '@ap/ui';
 
-export const TabsList = React.forwardRef<
-  React.ElementRef<typeof FopsTabsList>,
+export const TabsList: typeof FopsTabsList = React.forwardRef<
+  HTMLDivElement,
   React.ComponentPropsWithoutRef<typeof FopsTabsList>
 >(({ className, ...props }, ref) => (
   <FopsTabsList
@@ -19,8 +19,8 @@ export const TabsList = React.forwardRef<
 ));
 TabsList.displayName = FopsTabsList.displayName;
 
-export const TabsTrigger = React.forwardRef<
-  React.ElementRef<typeof FopsTabsTrigger>,
+export const TabsTrigger: typeof FopsTabsTrigger = React.forwardRef<
+  HTMLButtonElement,
   React.ComponentPropsWithoutRef<typeof FopsTabsTrigger>
 >(({ className, children, ...props }, ref) => (
   <FopsTabsTrigger

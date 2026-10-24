@@ -48,7 +48,7 @@ The equipment data page imports Sample Windows, alias metadata and the Model Typ
 
 ## Styling
 
-Studio uses Tailwind v4 (`@tailwindcss/vite`) and the `@fops/ui` theme from the `external/feedbackops` submodule (ADR-0008). The `@import` order at the top of `src/studio.css` (tailwindcss, tokens and semantic in `layer(base)`, theme, compat) is an invariant; `test/theme-tokens.test.ts` pins it. The `--eqv-*` rows in `:root` are declared only where `@fops/ui` defines the platform token, wrapped as `rgb(var(--token))`; every other `--eqv-*` row stays undeclared so the asset fallback hex applies.
+Studio uses Tailwind v4 (`@tailwindcss/vite`) and the `@ap/ui` theme from the platform SDK tarball (ADR-0008, ADR-0013). The `@import` order at the top of `src/studio.css` (tailwindcss, tokens and semantic in `layer(base)`, theme, compat, then `sources.css` so Tailwind scans `@ap/ui`'s classes) is an invariant; `test/theme-tokens.test.ts` pins it. The `--eqv-*` rows in `:root` are declared only where `@ap/ui` defines the platform token, wrapped as `rgb(var(--token))`; every other `--eqv-*` row stays undeclared so the asset fallback hex applies.
 
 ## Run
 

@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { buildGenericLayout, proposeTemplates, type ObservedInventory, type TemplateDocument, type TypeDictionaryFile } from '@eqv/core';
-import { Callout, Card, EmptyState } from '@fops/ui';
+import { Callout, Card, EmptyState } from '@ap/ui';
 import { Panel, StatusBadge } from '@eqv/ui';
 import { Check, TriangleAlert, X } from 'lucide-react';
 import { TopView } from '@eqv/renderer';

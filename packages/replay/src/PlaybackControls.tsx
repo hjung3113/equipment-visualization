@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import { ChevronLeft, ChevronRight, Pause, Play, SkipBack, SkipForward } from 'lucide-react';
-import { Button, ToggleGroup, ToggleGroupItem, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@fops/ui';
+import { Button, ToggleGroup, ToggleGroupItem, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@ap/ui';
 import { SPEEDS, type PlaybackSpeed } from './use-playback.js';
 
 export interface PlaybackControlsProps {

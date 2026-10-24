@@ -18,7 +18,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 2. Preserve structured `Layout + Component Catalog + Topology + Mapping Version + Observations` as authoritative data; SVG is a derived artifact.
 3. Evidence must be explicit: observed vs derived vs illustrative animation vs unknown (see [ADR-0003](docs/adr/0003-facet-evidence-levels.md)).
 4. No confidential factory images/logs may be added here. Test with synthetic fixtures and public references only.
-5. Every screen, the standalone Studio included, uses the analytics-platform design system: FeedbackOps `@fops/ui` from a git submodule, never copied, with the platform shell structure ([ADR-0008](docs/adr/0008-platform-design-system-fops-ui.md)). `core` and the renderer stay design-system-free and read only `--eqv-*`; inside the platform, the adapter injects platform token values.
+5. Every screen, the standalone Studio included, uses the analytics-platform design system: `@ap/ui` from the platform SDK Release tarball ([ADR-0013](docs/adr/0013-platform-sdk-release-tarballs.md)), never copied, with the platform shell structure ([ADR-0008](docs/adr/0008-platform-design-system-fops-ui.md)). `core` and the renderer stay design-system-free and read only `--eqv-*`; inside the platform, the adapter injects platform token values.
 
 ## Packages
 
@@ -26,9 +26,9 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, geometry editing — drag, nudge, 15° rotate, grid snap, undo/redo (#158) — Component assembly/name/delete and explicit Physical Interface, Port, Holding Site and Transfer Capability editing (#166–168), import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–⑥ incl. the Mapping Board, ⑤ dry-run and ⑥ Publish (present, #14); Focus screen with playback (#15c–d) and Journey (#152) present; Drift ⑦ pending
 packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer, Component transform helpers (`componentLocalMatrix`, `componentWorldMatrix`, `multiplyMatrix`, `invertMatrix`, `Matrix2D`), shared `round3`, and Port placement helpers (`componentWorldCenter`, `portPositionToward`, `projectToFootprint`) (present)
 packages/renderer/            # Present — static `TopView`/`buildScene` plus interactive `TopViewer` (selection, keyboard, pan/zoom, #12b), Scene State replay overlay and highlight (#15b), Journey hop badges (#152), host `renderControls` zoom-controls slot (#73), and an `onComponentDrag` callback for host-side editing (#156), plus `PRIMITIVE_CATALOG` for assembly (#166)
-packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, Component assembly/name/delete and explicit connection editing, #157/#166–168). TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
-packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use all of them
-packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
+packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, Component assembly/name/delete and explicit connection editing, #157/#166–168). TS source (no build step); screens on `@ap/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
+packages/ui/                  # `@eqv/ui`: EV components for patterns `@ap/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use all of them
+packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@ap/ui` / `@eqv/ui` (present)
 packages/platform-adapter/    # analytics-platform host: implements the platform SDK contract (planned, ADR-0012)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
@@ -45,9 +45,8 @@ Prerequisites:
 - pnpm 11.1.1, the version pinned by the `packageManager` field in `package.json` (e.g. `npm install -g pnpm`; `corepack enable pnpm` also works on Node versions that ship corepack).
 
 ```sh
-git clone --recurse-submodules https://github.com/hjung3113/equipment-visualization.git
+git clone https://github.com/hjung3113/equipment-visualization.git
 cd equipment-visualization
-# in an existing clone instead: git submodule update --init
 pnpm install
 pnpm lint        # ESLint flat config across all packages (incl. the @ap/* boundary rule)
 pnpm typecheck   # turbo run typecheck
@@ -57,7 +56,7 @@ pnpm dev         # builds core/renderer, then starts the Studio dev server (see 
 git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
 ```
 
-`external/feedbackops` is the FeedbackOps submodule that provides `@fops/ui` (ADR-0008); it must be checked out before `pnpm install`. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) because `--filter='!@fops/*'` alone still schedules `@fops/*#build` through `dependsOn: ["^build"]`, and `@fops/*` is not this repo's to build.
+`@ap/ui` (ADR-0008, ADR-0013) is installed from the platform SDK GitHub Release tarball named in `package.json` and `pnpm-workspace.yaml`; `pnpm install` needs access to GitHub Releases. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) so a task never runs before the packages it imports are built.
 
 Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 

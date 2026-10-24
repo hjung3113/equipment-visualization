@@ -1,4 +1,4 @@
-/* Tailwind scans this package's components (they live outside the host app). Import after the @fops/ui theme.
+/* Tailwind scans this package's components (they live outside the host app). Import after the @ap/ui theme.
    The SVG drawing classes keep --eqv-* colours (ADR-0008) and are declared as @utility so the design lint knows them. */
 @source "./";
 

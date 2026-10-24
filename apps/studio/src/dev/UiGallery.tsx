@@ -6,7 +6,7 @@ import {
   DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger,
   ToastRegion, ViewerZoomControls, useToastQueue, type DataTableSort, type StatusBadgeProps,
 } from '@eqv/ui';
-import { Button, Input } from '@fops/ui';
+import { Button, Input } from '@ap/ui';
 
 // Dev-only gallery of every @eqv/ui component in its states, for design review against AP screens. Synthetic data, no I/O.
 

@@ -1,6 +1,6 @@
 import { useId } from 'react';
 import type { ReactNode } from 'react';
-import { cn } from '@fops/ui';
+import { cn } from '@ap/ui';
 
 export interface PanelProps {
   title?: ReactNode;

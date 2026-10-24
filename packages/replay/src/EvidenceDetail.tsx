@@ -1,5 +1,5 @@
 import { MousePointerClick, SearchX } from 'lucide-react';
-import { EmptyState, FieldRow, PanelSectionTitle } from '@fops/ui';
+import { EmptyState, FieldRow, PanelSectionTitle } from '@ap/ui';
 import { RULESET_VERSION, type Boundary, type OccurrenceBatch, type SceneState } from '@eqv/core';
 import { Evidence } from './Evidence.js';
 import { ACTIVITY_KO, NO_TIME, UNKNOWN_LANE } from './words.js';

@@ -45,12 +45,38 @@ export default defineConfig([
         {
           selector: 'ImportExpression[source.value=/^(@ap|analytics-platform)(\\/|$)/]',
           message:
-            "ADR-0001: only packages/platform-adapter may import analytics-platform code ('@ap/*', 'analytics-platform/*').",
+            "ADR-0001, ADR-0008, ADR-0013: only packages/platform-adapter may import analytics-platform code ('@ap/*', which includes the design system '@ap/ui', and 'analytics-platform/*').",
         },
         {
           selector: 'TSImportType[source.value=/^(@ap|analytics-platform)(\\/|$)/]',
           message:
-            "ADR-0001: only packages/platform-adapter may import analytics-platform code ('@ap/*', 'analytics-platform/*').",
+            "ADR-0001, ADR-0008, ADR-0013: only packages/platform-adapter may import analytics-platform code ('@ap/*', which includes the design system '@ap/ui', and 'analytics-platform/*').",
+        },
+      ],
+    },
+  },
+  {
+    // ADR-0013: the DOM UI packages and Studio consume the design system '@ap/ui' and nothing else from the platform SDK.
+    // A flat-config block replaces the rule options above, so the patterns and selectors are repeated with the '@ap/ui' exception.
+    files: ['packages/ui/**', 'packages/replay/**', 'packages/editor/**', 'apps/studio/**'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{ regex: '^(@ap(/(?!ui(/|$))|$)|analytics-platform(/|$))' }],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression[source.value=/^(@ap(\\/(?!ui(\\/|$))|$)|analytics-platform(\\/|$))/]',
+          message:
+            "ADR-0001, ADR-0013: only '@ap/ui' (the design system) may be imported from the platform SDK outside packages/platform-adapter.",
+        },
+        {
+          selector: 'TSImportType[source.value=/^(@ap(\\/(?!ui(\\/|$))|$)|analytics-platform(\\/|$))/]',
+          message:
+            "ADR-0001, ADR-0013: only '@ap/ui' (the design system) may be imported from the platform SDK outside packages/platform-adapter.",
         },
       ],
     },
@@ -63,7 +89,7 @@ export default defineConfig([
       'no-restricted-imports': [
         'error',
         {
-          patterns: ['@ap', '@ap/*', 'analytics-platform', 'analytics-platform/*', '@fops', '@fops/*', '@eqv/ui', '@eqv/ui/*'],
+          patterns: ['@ap', '@ap/*', 'analytics-platform', 'analytics-platform/*', '@eqv/ui', '@eqv/ui/*'],
         },
       ],
       'no-restricted-syntax': [
@@ -71,20 +97,12 @@ export default defineConfig([
         {
           selector: 'ImportExpression[source.value=/^(@ap|analytics-platform)(\\/|$)/]',
           message:
-            "ADR-0001: only packages/platform-adapter may import analytics-platform code ('@ap/*', 'analytics-platform/*').",
+            "ADR-0001, ADR-0008, ADR-0013: only packages/platform-adapter may import analytics-platform code ('@ap/*', which includes the design system '@ap/ui', and 'analytics-platform/*').",
         },
         {
           selector: 'TSImportType[source.value=/^(@ap|analytics-platform)(\\/|$)/]',
           message:
-            "ADR-0001: only packages/platform-adapter may import analytics-platform code ('@ap/*', 'analytics-platform/*').",
-        },
-        {
-          selector: 'ImportExpression[source.value=/^@fops(\\/|$)/]',
-          message: "ADR-0008: core and renderer do not import the design system ('@fops/*').",
-        },
-        {
-          selector: 'TSImportType[source.value=/^@fops(\\/|$)/]',
-          message: "ADR-0008: core and renderer do not import the design system ('@fops/*').",
+            "ADR-0001, ADR-0008, ADR-0013: only packages/platform-adapter may import analytics-platform code ('@ap/*', which includes the design system '@ap/ui', and 'analytics-platform/*').",
         },
         {
           selector: 'ImportExpression[source.value=/^@eqv\\/ui(\\/|$)/]',
@@ -109,8 +127,8 @@ export default defineConfig([
     plugins: { shadcn },
     settings: {
       shadcn: {
-        componentImports: ['^@fops/ui(/|$)', '^@eqv/ui(/|$)'],
-        note: 'ADR-0008: use @fops/ui primitives and FeedbackOps tokens; a pattern @fops/ui lacks gets an EV component first.',
+        componentImports: ['^@ap/ui(/|$)', '^@eqv/ui(/|$)'],
+        note: 'ADR-0008, ADR-0013: use @ap/ui primitives and platform tokens; a pattern @ap/ui lacks gets an EV component first.',
       },
     },
     rules: {
@@ -123,7 +141,7 @@ export default defineConfig([
     },
   },
   {
-    // #73 slice f1: AP wraps the @fops/ui TabsList/TabsTrigger the same way (underline tabs); roles, selection and keyboard stay @fops/ui's.
+    // #73 slice f1: AP wraps the @ap/ui TabsList/TabsTrigger the same way (underline tabs); roles, selection and keyboard stay @ap/ui's.
     files: ['packages/ui/src/Tabs.tsx'],
     rules: { 'shadcn/no-restyle': 'off' },
   },

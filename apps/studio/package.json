@@ -11,6 +11,7 @@
     "demo:generate": "node scripts/demo/write.ts ../../assets"
   },
   "dependencies": {
+    "@ap/ui": "https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz",
     "@eqv/core": "workspace:*",
     "@eqv/editor": "workspace:*",
     "@eqv/renderer": "workspace:*",
@@ -18,7 +19,6 @@
     "@eqv/ui": "workspace:*",
     "@fontsource-variable/inter": "5.3.0",
     "@fontsource-variable/jetbrains-mono": "5.3.0",
-    "@fops/ui": "workspace:*",
     "lucide-react": "0.469.0",
     "pretendard": "1.3.9",
     "react": "19.3.1",

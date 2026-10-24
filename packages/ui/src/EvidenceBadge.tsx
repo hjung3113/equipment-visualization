@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { OutlineBadge } from '@fops/ui';
+import { OutlineBadge } from './OutlineBadge.js';
 import type { EvidenceLevel } from '@eqv/core';
 
 export interface EvidenceBadgeProps {

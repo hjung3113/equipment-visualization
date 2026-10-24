@@ -57,7 +57,7 @@ Studio는 다음 네 가지를 **가져오기 endpoint**(`/api/import/*`, dev �
 - **`GLOSSARY.md`에 Sample Window를 추가한다:** "한 설비에 대해 가져온 완전한 OccurrenceBatch 하나와 그 조회 구간 `[from, to)`. 불변이며 Inventory와 Replay의 단위다. Studio는 window를 합치지 않는다. _Avoid_: Observation(입력 단위로서), snapshot." ONBOARDING §2의 "샘플 기간"은 Sample Window의 구간이다.
 - **core:** `validateSampleWindow`, window 이름 계산·해석, 관측 집합 해시 함수(`replayKey`와 공유), ADR-0009 시각 진단, `assertBatchRecords`의 id 유일성 검사가 추가된다. 기존 batch와 fixture는 id가 유일하므로 계속 유효하다.
 - **Studio 서버:** `/api/import/status`, `POST /api/import/equipment`, `POST /api/import/windows?equipmentId=`, `PUT /api/import/alias-metadata?equipmentId=`, `PUT /api/import/type-dictionary?maker=&model=`이 추가된다. 저장소 루트 거부, 템플릿 카탈로그 대체 읽기, 경로별 본문 상한도 들어간다.
-- **Studio 화면:** Fleet의 "설비 등록"과 "관측 없음" 상태, 설비 데이터 페이지(window 목록, 가져오기 미리보기, 거부 사유 표, 결과 알림), Onboarding의 window 선택, Focus의 `window` 지정이 추가된다. 모두 `@eqv/ui`·`@fops/ui` 컴포넌트를 쓴다(ADR-0008).
+- **Studio 화면:** Fleet의 "설비 등록"과 "관측 없음" 상태, 설비 데이터 페이지(window 목록, 가져오기 미리보기, 거부 사유 표, 결과 알림), Onboarding의 window 선택, Focus의 `window` 지정이 추가된다. 모두 `@eqv/ui`·`@ap/ui` 컴포넌트를 쓴다(ADR-0008).
 - **알려진 한계(기록, 미구현):**
   - window 대체·폐기, 설비 기록 수정, 이름 규칙(`[A-Za-z0-9][A-Za-z0-9._-]*`) 밖의 실제 equipmentId는 지원하지 않는다. 이름은 바꾸지 않고 거부하며, 경로 인코딩은 별도 ADR이다.
   - 동시 가져오기의 겹침 검사는 원자적이지 않다. 단일 사용자 로컬 도구이므로 #60 last-write-wins 행과 같은 판단이다.
