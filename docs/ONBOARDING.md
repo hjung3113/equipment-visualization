@@ -2,7 +2,7 @@
 
 **상태:** 전체 Studio 흐름은 Proposed (설계 grilling 확정, 2026-10-14). §3의 Template 제안·Generic Layout 생성 함수는 core에 구현됨(#11b); 읽기 전용 Fleet·Inventory·Template 제안 화면, Mapping Board, 샘플 기간 dry-run, Publish(Layout Revision·Mapping Version·Baseline Inventory·Binding, [ADR-0007](adr/0007-publish-writes-revision-mapping-baseline-binding.md))는 Studio에 구현됨; 설비 등록, Model Type Dictionary, alias metadata, Sample Window 가져오기는 [ADR-0010](adr/0010-studio-data-import.md)에 따라 #97–#103에서 구현됨. 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 범위·평탄화 결정은 [ADR-0005](adr/0005-scoped-alias-rules-flattened-mapping.md).
 
-Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집(이동/회전/snap)은 템플릿 인스턴스와 Generic Layout 형상을 다듬는 보조 기능이다. 구현: /layouts에서 Component 이동(drag·Alt+화살표)·15° 회전·격자 맞춤·실행 취소 (#158). 크기 변경·포트 맞춤·다중 선택은 아직 없다.
+Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사람이 레이아웃을 하나씩 그리는 방식은 확장되지 않으므로, 로그에 관측된 구성(Observed Inventory)에서 템플릿을 제안하고 매핑 초안을 만든 뒤 사람은 예외만 고친다. 자유 편집은 템플릿 인스턴스와 Generic Layout을 다듬거나 primitive로 레이아웃을 직접 조립하는 기능이다(T06c, 2026-10-20 owner 요청). 구현: /layouts에서 Component 이동(drag·Alt+화살표)·15° 회전·격자 맞춤·실행 취소 (#158). Component 추가(25개 primitive)·삭제·이름 변경 (#166). Port·Physical Interface, Holding Site·Transfer Capability 추가·삭제 (#167, #168). 크기 변경·포트 맞춤·다중 선택은 아직 없다.
 
 ## 1. 흐름
 
@@ -81,7 +81,7 @@ LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 
 - `unknown`을 포함해 alias마다 Component 하나를 만든다. Role 해석은 위와 같고, 각 Role 안의 alias 자연 정렬 순번 `n`으로 ID는 `role-n`, label은 `ROLE n`, asset은 `generic-box`다. alias 이름을 label로 복사하지 않는다. 좌표 단위는 `abstract`다.
 - `isPort === true`인 모든 alias가 0열이다. 열은 **무방향 관측 이송 그래프의 Port 기점 최단 거리**다. 도달하지 못한 alias는 최대 도달 열 + 1인 마지막 열에 두며 Port가 하나도 없으면 모두 0열이다. 같은 열 안은 alias 자연 정렬 순으로 0부터 행을 매긴다. 좌표는 `(10 + 20·열, 10 + 20·행)`, 회전 0, scale 1이며 viewBox는 `(0, 0, 20·열 수, 20·최대 행 수)`다. 같은 Inventory는 입력 배열 순서와 무관하게 같은 결과다.
 - 관측 slot 중 정수 문자열(`/^[+-]?[0-9]+$/`)만 §2의 정렬 순으로 Holding Site를 만든다. 정확한 `BigInt` 값 `v`가 0 이상이면 `slot-v`, 음수면 `slot-neg-절댓값`이다. 같은 값의 문자열(`01`, `1`)은 첫 문자열이 만든 site 하나를 공유하고 둘 다 `assignments.sites`에 남긴다. 정수가 아닌 slot은 site·배정 항목을 만들지 않는다. `materialKinds`는 다섯 종류 전체(`wafer`, `carrier`, `batch`, `boat`, `reticle`)를 나열해 특정 종류를 단정하지 않는다.
-- 모든 생성 속성·Holding Site와 alias 배정의 Certainty는 `assumed`다. provenance는 `src-observed-inventory`를 참조한다. `ports`·Physical Interface·Transfer Capability·Process Route는 비어 있으며 관측 이송으로 연결 가능성을 만들지 않는다. 이송 경로는 사람이 추가한다. **자동 게시 없음.**
+- 모든 생성 속성·Holding Site와 alias 배정의 Certainty는 `assumed`다. provenance는 `src-observed-inventory`를 참조한다. `ports`·Physical Interface·Transfer Capability·Process Route는 비어 있으며 관측 이송으로 연결 가능성을 만들지 않는다. 이송 경로는 사람이 추가한다(/layouts의 Transfer Capability 편집, #168). **자동 게시 없음.**
 
 형상을 다듬고 "Template으로 승격"하는 UI 흐름은 제안 단계다.
 

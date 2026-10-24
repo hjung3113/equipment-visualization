@@ -1,6 +1,5 @@
-import { EmptyState, OutlineBadge, PanelSectionTitle } from '@fops/ui';
-import { DataTable, Panel, StatusBadge } from '@eqv/ui';
-import { TriangleAlert } from 'lucide-react';
+import { EmptyState, PanelSectionTitle, StatusBadge } from '@ap/ui';
+import { DataTable, OutlineBadge, Panel } from '@eqv/ui';
 import { compareNatural, resolveRole, type InventoryAlias, type ObservedInventory, type TypeDictionaryFile } from '@eqv/core';
 
 export interface InventoryViewProps {
@@ -24,7 +23,7 @@ export function InventoryView({ inventory, dictionaries }: InventoryViewProps) {
           <DataTable.Row key={row.alias}>
             <DataTable.Cell rowHeader>{row.alias}</DataTable.Cell>
             <DataTable.Cell>{row.moduleType ?? '—'}</DataTable.Cell>
-            <DataTable.Cell>{role === 'unknown' ? <StatusBadge tone="warning" icon={TriangleAlert}>{role}</StatusBadge> : role}</DataTable.Cell>
+            <DataTable.Cell>{role === 'unknown' ? <StatusBadge tone="warning" dot>{role}</StatusBadge> : role}</DataTable.Cell>
             <DataTable.Cell className="whitespace-nowrap">Port {flag(row.isPort)} · Robot {flag(row.isRobot)}</DataTable.Cell>
             <DataTable.Cell>{row.slots.length ? row.slots.join(', ') : '—'}</DataTable.Cell>
             <DataTable.Cell>

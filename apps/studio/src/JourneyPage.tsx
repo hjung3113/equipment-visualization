@@ -2,13 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Inbox, Info, MapPinOff, ServerCrash, SearchX } from 'lucide-react';
 import {
-  bindingLayout, materialJourney, stepSceneState, type MaterialJourney, type Occurrence, type ReplayInput,
+  bindingLayout, materialJourney, materialKey, stepSceneState, type MaterialJourney, type Occurrence, type ReplayInput,
 } from '@eqv/core';
 import { TopViewer, type JourneyHopMark } from '@eqv/renderer';
 import { Evidence, JourneyExecutionList, JourneyHopList } from '@eqv/replay';
-import { Button, Callout, EmptyState } from '@fops/ui';
+import { Button, Callout, EmptyState } from '@ap/ui';
 import { LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
 import { loadFocus, type FocusLoad } from './focus-data.js';
+import { errorMessage } from './error-message.js';
 import { windowHex } from './onboarding-data.js';
 import { Link, hrefFor } from './router.js';
 
@@ -19,7 +20,6 @@ const TABS: { id: Tab; label: string }[] = [
 ];
 type Loaded = { loadKey: string; result: FocusLoad | null; selectedHop: number | null; selectedOccurrenceId: string | null };
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const none = (anchor: string | null, found: Occurrence | undefined): string | null =>
   anchor === null ? 'anchor가 없습니다'
     : found === undefined ? 'Occurrence를 찾을 수 없습니다'
@@ -50,11 +50,11 @@ export function JourneyPage({ equipmentId, sampleWindow, anchor }: { equipmentId
   const waferId = anchorOccurrence?.material?.id ?? null;
   const input = useMemo((): ReplayInput | null => ok ? { batch: ok.batch, layouts: ok.layouts, layoutRevisions: ok.layoutRevisions, bindings: ok.bindings, mappings: ok.mappings } : null, [ok]);
   const computed = useMemo((): { journey: MaterialJourney; binding: ReturnType<typeof stepSceneState>['binding'] } | { error: string } | null => {
-    if (!input || !anchorOccurrence || invalid !== null) return null;
+    if (!input || !anchorOccurrence || invalid !== null || waferId === null) return null;
     try {
-      return { journey: materialJourney(input, `m:wafer:${waferId}`), binding: stepSceneState(input, anchorOccurrence.start.seq).binding };
+      return { journey: materialJourney(input, materialKey('wafer', waferId)), binding: stepSceneState(input, anchorOccurrence.start.seq).binding };
     } catch (error) {
-      return { error: message(error) };
+      return { error: errorMessage(error) };
     }
   }, [input, anchorOccurrence, invalid, waferId]);
   const journey = computed && 'journey' in computed ? computed.journey : null;

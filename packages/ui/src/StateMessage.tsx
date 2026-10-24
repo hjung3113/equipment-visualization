@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { Skeleton, cn } from '@fops/ui';
+import { Skeleton, cn } from '@ap/ui';
 
 export interface StateMessageProps {
   tone?: 'neutral' | 'warning' | 'danger';

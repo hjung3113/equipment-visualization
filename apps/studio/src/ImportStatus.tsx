@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { FolderGit2, Library, TriangleAlert } from 'lucide-react';
 import { StateMessage } from '@eqv/ui';
 import { importStatus, type ImportStatus } from './api.js';
+import { errorMessage } from './error-message.js';
 
 export type ImportStatusState = { kind: 'loading' } | { kind: 'ok'; status: ImportStatus } | { kind: 'error'; message: string };
 
@@ -12,7 +13,7 @@ export function useImportStatus(): ImportStatusState {
     let cancelled = false;
     importStatus().then(
       (status) => { if (!cancelled) setState({ kind: 'ok', status }); },
-      (error: unknown) => { if (!cancelled) setState({ kind: 'error', message: error instanceof Error ? error.message : '알 수 없는 오류' }); },
+      (error: unknown) => { if (!cancelled) setState({ kind: 'error', message: errorMessage(error) }); },
     );
     return () => { cancelled = true; };
   }, []);

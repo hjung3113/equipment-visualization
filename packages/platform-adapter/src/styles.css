@@ -1,0 +1,5 @@
+/* Host stylesheet for the eqv module, imported after the platform's @ap/ui theme. One CSS owner for the --eqv-* mapping is @eqv/ui (theme.css). */
+@import "@eqv/ui/theme.css";
+@import "@eqv/ui/styles.css";
+@import "@eqv/replay/styles.css";
+@import "@eqv/views/styles.css";

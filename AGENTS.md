@@ -1,7 +1,7 @@
 # Development rules — equipment-visualization
 
 ## Purpose
-Build a reusable semantic equipment Top View and explainable log replay framework. The repository must remain **standalone**; analytics-platform is an optional consumer, not a dependency.
+Build a reusable semantic equipment Top View and explainable log replay framework. The repository stays **buildable and testable without the platform**; analytics-platform is the default host, and only `packages/platform-adapter` consumes the platform SDK host contract; the DOM packages and the Studio use only its design system `@ap/ui`, and `core`/renderer use none of it (ADR-0012, ADR-0013). The standalone Studio is a second host.
 
 ## Operating rules
 - State assumptions when the request can be read in more than one way.
@@ -27,7 +27,7 @@ Build a reusable semantic equipment Top View and explainable log replay framewor
 - No company-confidential reference images, logs, secrets or private network addresses.
 
 ## Architecture constraints
-- `core`/renderer/editor/replay cannot depend on analytics-platform `@ap/*` or its Kernel/Shell.
+- `core`/renderer cannot depend on analytics-platform `@ap/*`; editor/replay/ui/views/Studio may import only the design system `@ap/ui` (ADR-0013); none depend on its Kernel/Shell.
 - Make source of truth `Catalog + Layout + Topology + MappingVersion + Observations`, not flattened SVG.
 - Geometry and connectivity are different data. Never infer a physical port or robot trajectory from visual adjacency.
 - Robot arm and blade counts are independent; uncertain kinematics must be represented as unknown.
@@ -40,9 +40,9 @@ Build a reusable semantic equipment Top View and explainable log replay framewor
 - Every change: lint, typecheck, tests, build (when the package exists).
 - Asset/schema changes: validate XML/JSON, unique IDs, source/target ports, valid levels, no cycles in hierarchy, viewBox, no executable SVG content, snapshots.
 - Replay changes: deterministic reducer, ties, open occurrences (`end=null`), Data Quality Issues, Time Anomalies, Watermark and Binding boundaries, invalid mappings, duplicate wafer occupancy, evidence fidelity.
-- UI changes: browser interaction, keyboard/a11y, variants review, and the analytics-platform design system (ADR-0008): `@fops/ui` controls and tokens, the platform shell structure, compared side by side with a platform screen of the same kind; default browser controls fail it.
-  - Design lint (`@shadcn/lint` in `eslint.config.js`, options mirrored from FeedbackOps `.oxlintrc.json`) covers `packages/ui`, `packages/replay`, `packages/editor` and `apps/studio` `.tsx`. `eslint-suppressions.json` holds only findings that predate it; it may shrink, never grow (no new suppressions, no `eslint --suppress-*` runs). The config exceptions are `shadcn/no-restyle: off` for `packages/ui/src/Tabs.tsx` (#73 slice f1: AP-underline tabs wrap the `@fops/ui` tab parts, as AP does) and `shadcn/no-inline-styles: off` for `packages/ui/src/DataTable.tsx` (#113: virtualizer runtime geometry only, as AP's `PlatformDataTable` does); add no other.
-  - A UI pattern `@fops/ui` does not provide (dense table, app shell, evidence badge, time slider, …) gets an EV component or layout first (components in `@eqv/ui`), built on `@fops/ui` primitives and tokens; screens then use it. No screen-local restyling in its place.
+- UI changes: browser interaction, keyboard/a11y, variants review, and the analytics-platform design system (ADR-0008): `@ap/ui` controls and tokens, the platform shell structure, compared side by side with a platform screen of the same kind; default browser controls fail it.
+  - Design lint (`@shadcn/lint` in `eslint.config.js`, options mirrored from the platform design-lint settings (FeedbackOps `.oxlintrc.json`)) covers `packages/ui`, `packages/replay`, `packages/editor`, `packages/views`, `packages/platform-adapter` and `apps/studio` `.tsx`. `eslint-suppressions.json` holds only findings that predate it; it may shrink, never grow (no new suppressions, no `eslint --suppress-*` runs). The config exceptions are `shadcn/no-restyle: off` for `packages/ui/src/Tabs.tsx` (#73 slice f1: AP-underline tabs wrap the `@ap/ui` tab parts, as AP does) and `shadcn/no-inline-styles: off` for `packages/ui/src/DataTable.tsx` (#113: virtualizer runtime geometry only, as AP's `PlatformDataTable` does); add no other.
+  - A UI pattern `@ap/ui` does not provide (dense table, app shell, evidence badge, time slider, …) gets an EV component or layout first (components in `@eqv/ui`), built on `@ap/ui` primitives and tokens; screens then use it. No screen-local restyling in its place.
 - Report unrun checks honestly; run reviewer pass for major design, auth, data trust or package boundary changes.
 - For behaviour changes and bug fixes, write or update the failing test first, then make the smallest change that passes it. If TDD is not practical, say why and still verify the touched behaviour.
 - Docs-only changes (Markdown under `docs/`, `AGENTS.md`/`CLAUDE.md`, `GLOSSARY.md`, `.claude/**/*.md`) need no gate run; confirm that every path, script and symbol they name exists. Scripts and settings under `.claude/` are code: run their tests or say why not.
@@ -68,6 +68,6 @@ Test code is a liability. Fewer, sharper tests beat more tests.
 
 ## Integration rules
 - Platform handles auth/Scope/time/route/context/permissions/audit; visualization accepts data through explicit props/adapters.
-- Platform menus consume through declared `menuQuery` endpoints; no domain-specific methods on `PlatformAdapter`.
+- The adapter reads through declared `defineEndpoint` endpoints with `host.query`; no domain-specific methods on the host contract.
 - Do not modify analytics-platform from this repository; coordinate separate PRs/issues.
-- Parent git submodule pins a commit; new revision requires explicit parent change and lockfile/CI validation.
+- The platform SDK is pinned by its release tarball version (ADR-0013); an SDK upgrade is an explicit PR that bumps every `@ap/*` URL together and passes the lockfile and CI gate. How analytics-platform installs `@eqv/platform-adapter` is decided with its mount PR (#187).

@@ -2,6 +2,7 @@ import { equipmentRecordSchema, validateTypeDictionary, type EquipmentRecord } f
 import {
   checkScope, DataError, listSampleWindows, NAME, problems, readAliasMetadata, readOptional, readSampleWindow, type SampleWindowEntry,
 } from './onboarding-data.js';
+import { errorMessage } from './error-message.js';
 
 export type WindowRow =
   | { kind: 'ok'; entry: SampleWindowEntry; timeDomain: string; dataGeneration: string; occurrences: number; dataQualityIssues: number }
@@ -13,15 +14,13 @@ export type EquipmentDataLoad =
   | { kind: 'error'; error: string }
   | { kind: 'ok'; record: EquipmentRecord; windows: Windows; aliasMetadata: FileState; typeDictionary: FileState };
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
-
 async function windowRow(equipmentId: string, entry: SampleWindowEntry): Promise<WindowRow> {
   try {
     const batch = await readSampleWindow(equipmentId, entry);
     return { kind: 'ok', entry, timeDomain: batch.timeDomain, dataGeneration: batch.dataGeneration,
       occurrences: batch.occurrences.length, dataQualityIssues: batch.issues.length };
   } catch (error) {
-    return { kind: 'error', entry, error: message(error) };
+    return { kind: 'error', entry, error: errorMessage(error) };
   }
 }
 
@@ -30,7 +29,7 @@ async function fileState(path: string, count: (raw: unknown) => number): Promise
     const raw = await readOptional(path);
     return raw === undefined ? { kind: 'absent' } : { kind: 'ok', count: count(raw) };
   } catch (error) {
-    return { kind: 'error', error: message(error) };
+    return { kind: 'error', error: errorMessage(error) };
   }
 }
 
@@ -39,7 +38,7 @@ async function aliasMetadataState(equipmentId: string): Promise<FileState> {
     const metadata = await readAliasMetadata(equipmentId);
     return metadata === undefined ? { kind: 'absent' } : { kind: 'ok', count: metadata.aliases.length };
   } catch (error) {
-    return { kind: 'error', error: message(error) };
+    return { kind: 'error', error: errorMessage(error) };
   }
 }
 
@@ -65,7 +64,7 @@ export async function loadEquipmentData(equipmentId: string): Promise<EquipmentD
           const entries = await listSampleWindows(equipmentId);
           return { kind: 'ok', rows: await Promise.all(entries.map((entry) => windowRow(equipmentId, entry))) };
         } catch (error) {
-          return { kind: 'error', error: message(error) };
+          return { kind: 'error', error: errorMessage(error) };
         }
       })(),
       aliasMetadataState(equipmentId),
@@ -79,6 +78,6 @@ export async function loadEquipmentData(equipmentId: string): Promise<EquipmentD
     ]);
     return { kind: 'ok', record, windows, aliasMetadata, typeDictionary };
   } catch (error) {
-    return { kind: 'error', error: message(error) };
+    return { kind: 'error', error: errorMessage(error) };
   }
 }

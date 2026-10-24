@@ -1,5 +1,5 @@
 import {
-  compareNatural, computeCoverage, findMappingConflicts, layoutRevision, publishMapping, siteWallClockSchema, validateBindings,
+  compareNatural, computeCoverage, findMappingConflicts, latestBinding as coreLatestBinding, layoutRevision, publishMapping, siteWallClockSchema, validateBindings,
   type BindingsFile, type Coverage, type EquipmentLayoutDocument, type MappingConflict, type MappingEntry, type MappingIssue,
   type MappingVersion, type ObservedInventory, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -67,7 +67,7 @@ export async function dryRun(input: DryRunInput): Promise<DryRun> {
 }
 
 export function latestBinding(bindings: BindingsFile | null) {
-  return [...(bindings?.bindings ?? [])].sort((a, b) => compare(a.effectiveFrom, b.effectiveFrom)).at(-1) ?? null;
+  return (bindings ? coreLatestBinding(bindings.bindings) : undefined) ?? null;
 }
 
 /** D7: use the Inventory boundary only when it is later than the latest binding. */

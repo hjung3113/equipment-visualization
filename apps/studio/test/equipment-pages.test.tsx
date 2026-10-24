@@ -83,7 +83,7 @@ it('registers an equipment by keyboard path: Fleet entry, form, data page, then 
   const row = screen.getByRole('link', { name: 'eq-synth-03' }).closest('tr')!;
   expect(within(row).getByText('관측 없음')).toBeTruthy();
   expect(screen.getByRole('link', { name: 'eq-synth-03' }).getAttribute('href')).toBe('/equipment/eq-synth-03');
-  expect(row.querySelector('[data-tone="danger"]')).toBeNull();
+  expect(row.querySelector('.text-text-danger-label')).toBeNull();
 });
 
 it.each<[string, { equipmentId: string; maker: string; model: string }, string, RegExp, boolean]>([

@@ -1,17 +1,21 @@
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { CircleCheck, Download, FileJson, Save, Send, ServerCrash } from 'lucide-react';
 import { validateLayout, type LayoutDocument } from '@eqv/core';
-import { TopViewer, type ComponentDrag } from '@eqv/renderer';
+import { PRIMITIVE_CATALOG, TopViewer, type ComponentDrag } from '@eqv/renderer';
 import {
-  DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rotateBy, setTransform, undo,
+  addPhysicalInterface, removePhysicalInterface, removePort, addHoldingSite, removeHoldingSite, addTransferCapability, removeTransferCapability,
+  addComponent, removalImpact, removeComponent, setLabel, DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rotateBy, setTransform, undo,
   type LayoutEditState,
 } from '@eqv/editor';
 import { dirOrEmpty, publishRevision, readFile, saveDraft } from './api.js';
-import { EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
+import { AddComponentRow, EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
+import { ConnectionsPanel } from './LayoutConnections.js';
 import { REVISION_FILE } from './layout-baseline.js';
+import { newComponentSize } from './new-component-size.js';
 import { PublishDialog } from './PublishDialog.js';
-import { FileButton, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ViewerZoomControls } from '@eqv/ui';
-import { Button, EmptyState, PanelSectionTitle, cn } from '@fops/ui';
+import { errorMessage } from './error-message.js';
+import { FileButton, LoadingBlock, Page, Panel, StateMessage, ViewerZoomControls } from '@eqv/ui';
+import { AlertDialog, AlertDialogContent, AlertDialogTitle, AlertDialogDescription, AlertDialogHeader, AlertDialogFooter, Button, EmptyState, PanelSectionTitle, StatusBadge, cn } from '@ap/ui';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 
 const VIEW_WIDTH = 960;
@@ -41,13 +45,11 @@ interface Listing {
 
 const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
-
 class ViewerBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   state = { error: null as string | null };
 
   static getDerivedStateFromError(error: unknown) {
-    return { error: message(error) };
+    return { error: errorMessage(error) };
   }
 
   render() {
@@ -115,6 +117,11 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [prevFile, setPrevFile] = useState(file);
   const [session, setSession] = useState<EditSession | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [deletion, setDeletion] = useState<{ id: string; epoch: number; source: unknown } | null>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const deleteOpener = useRef<HTMLElement | null>(null);
+  const deleteFocus = useRef<{ id: string; epoch: number; source: unknown } | null>(null);
+  const deleteCancel = useRef<HTMLButtonElement>(null);
   const [snap, setSnap] = useState(false);
   const [documentEpoch, setDocumentEpoch] = useState(0);
   const activeDocumentEpoch = useRef<number | null>(documentEpoch);
@@ -170,6 +177,15 @@ export function LayoutsPage({ file }: { file: string | null }) {
   }
   const edit = session !== null && base !== null && session.source === base.raw ? session.state : null;
   const present = edit?.present ?? null;
+  if (deletion && (deletion.epoch !== documentEpoch || deletion.source !== session?.source || prevFile !== file)) setDeletion(null);
+  useEffect(() => {
+    const pending = deleteFocus.current;
+    if (!pending || deletion || busy) return;
+    deleteFocus.current = null;
+    if (pending.epoch !== documentEpoch || pending.source !== session?.source) return;
+    if (present?.components.some((component) => component.id === pending.id)) deleteOpener.current?.focus();
+    else (viewerRef.current?.querySelector<HTMLElement>('button:not([disabled]), [tabindex="0"]') ?? viewerRef.current)?.focus();
+  }, [deletion, busy, documentEpoch, session?.source, present]);
   const unsavedEdits = edit !== null && isDirty(edit);
   const importPending = imported !== null;
 
@@ -190,7 +206,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     let cancelled = false;
     loadListing().then(
       (next) => { if (!cancelled) { setListing(next); setListingError(null); } },
-      (error: unknown) => { if (!cancelled) setListingError(message(error)); },
+      (error: unknown) => { if (!cancelled) setListingError(errorMessage(error)); },
     );
     return () => { cancelled = true; };
   }, [listingReload]);
@@ -207,7 +223,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
           return 'doc' in parsed ? { state: 'ready', ...parsed.doc } : { state: 'error', message: parsed.issues };
         });
       },
-      (error: unknown) => { if (!cancelled) setLoaded({ state: 'error', message: message(error) }); },
+      (error: unknown) => { if (!cancelled) setLoaded({ state: 'error', message: errorMessage(error) }); },
     );
     return () => { cancelled = true; };
   }, [file, fileReload]);
@@ -258,7 +274,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
     try {
       await action(isActive);
     } catch (error) {
-      if (isActive()) setActionError(message(error));
+      if (isActive()) setActionError(errorMessage(error));
     } finally {
       if (isActive()) setBusy(false);
     }
@@ -294,7 +310,43 @@ export function LayoutsPage({ file }: { file: string | null }) {
   });
   const snapOptions = snap ? DEFAULT_SNAP : null;
   const selected = selectedId === null ? undefined : present?.components.find((component) => component.id === selectedId);
-  const editable = !busy && publishing === null;
+  const editable = !busy && publishing === null && deletion === null;
+  const ifEditable = <A extends unknown[]>(fn: (...a: A) => void) => (...a: A) => { if (editable) fn(...a); };
+  const template = present?.kind === 'template';
+  const impact = selected && present ? removalImpact(present, selected.id) : null;
+  const deleteHint = impact?.blockedBy === 'children' ? '하위 Component를 먼저 삭제하세요.' : impact?.blockedBy === 'last' ? '마지막 Component는 삭제할 수 없습니다.' : null;
+  const deletionImpact = deletion && present ? removalImpact(present, deletion.id) : null;
+  const deletionCounts = deletionImpact ? [
+    deletionImpact.physicalInterfaces && `Physical Interface ${deletionImpact.physicalInterfaces}개`,
+    deletionImpact.transferCapabilities && `Transfer Capability ${deletionImpact.transferCapabilities}개`,
+    deletionImpact.processRouteSteps && `Process Route 단계 ${deletionImpact.processRouteSteps}개`,
+    deletionImpact.processRoutes && `Process Route ${deletionImpact.processRoutes}개`,
+  ].filter(Boolean).join(', ') : '';
+
+  function openDeletion(opener: HTMLElement) {
+    if (!editable || !selected || impact?.blockedBy !== null) return;
+    editing(cancelDrag);
+    deleteOpener.current = opener;
+    setDeletion({ id: selected.id, epoch: documentEpoch, source: session?.source });
+  }
+  function closeDeletion(confirm: boolean) {
+    if (!deletion) return;
+    if (deletion.epoch === documentEpoch && deletion.source === session?.source) {
+      if (confirm) { editing((state) => removeComponent(state, deletion.id)); setSelectedId(null); }
+      deleteFocus.current = deletion;
+    }
+    setDeletion(null);
+  }
+  function addSelectedPrimitive(name: string) {
+    if (!editable || template || !edit || !present || !session) return;
+    const entry = PRIMITIVE_CATALOG.find((candidate) => candidate.name === name);
+    const levelId = selected?.levelId ?? [...present.levels].sort((a, b) => a.order - b.order)[0]?.id;
+    if (!entry || !levelId) return;
+    const { state, componentId } = addComponent(edit, { asset: name, size: newComponentSize(present, name), levelId,
+      x: present.viewBox.x + present.viewBox.width / 2, y: present.viewBox.y + present.viewBox.height / 2 }, snapOptions);
+    setSession({ ...session, state });
+    if (componentId) setSelectedId(componentId);
+  }
   // A drag held while the page freezes is settled here; the drag events that follow are ignored.
   useEffect(() => {
     if (!editable) editing(cancelDrag);
@@ -312,6 +364,10 @@ export function LayoutsPage({ file }: { file: string | null }) {
 
   function onViewerKeyDown(event: KeyboardEvent<HTMLElement>) {
     if (!selected || !editable || event.defaultPrevented) return;
+    if ((event.key === 'Delete' || event.key === 'Backspace') && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+      if (impact?.blockedBy === null) { event.preventDefault(); openDeletion(event.target as HTMLElement); }
+      return;
+    }
     const arrow = ARROWS[event.key];
     if (arrow && event.altKey && !event.ctrlKey && !event.metaKey) {
       const step = (snap ? DEFAULT_SNAP.grid : 1) * (event.shiftKey ? 10 : 1);
@@ -377,10 +433,10 @@ export function LayoutsPage({ file }: { file: string | null }) {
             <Button type="button" variant="secondary" size="toolbar" onClick={onExport} disabled={!current}>
               <Download className="size-3.5" aria-hidden />내보내기
             </Button>
-            <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || busy}>
+            <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || !editable}>
               <Save className="size-3.5" aria-hidden />초안 저장
             </Button>
-            <Button ref={publishOpener} type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || busy}>
+            <Button ref={publishOpener} type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || !editable}>
               <Send className="size-3.5" aria-hidden />Revision 게시
             </Button>
           </>}
@@ -402,23 +458,48 @@ export function LayoutsPage({ file }: { file: string | null }) {
                   {(importPending || unsavedEdits) && <StatusBadge tone="warning">저장 안 됨</StatusBadge>}
                 </div>
                 {edit && (
-                  <EditToolbar busy={busy} canUndo={canUndo(edit)} canRedo={canRedo(edit)} hasSelection={selected !== undefined} snap={snap}
+                  <EditToolbar busy={!editable} canUndo={canUndo(edit)} canRedo={canRedo(edit)} hasSelection={selected !== undefined} snap={snap}
                     onUndo={() => editing(undo)} onRedo={() => editing(redo)} onRotate={rotateSelected} onSnapChange={setSnap} />
                 )}
-                <div onKeyDown={onViewerKeyDown}>
+                <AddComponentRow busy={!editable} template={template} onAdd={addSelectedPrimitive} />
+                <div ref={viewerRef} tabIndex={-1} onKeyDown={onViewerKeyDown}>
                   <ViewerBoundary key={documentEpoch}>
                     <TopViewer layout={current.layout} width={viewWidth} height={Math.round(viewWidth * VIEW_HEIGHT / VIEW_WIDTH)}
                       selectedId={selectedId} onSelectedChange={setSelectedId} onComponentDrag={onComponentDrag}
                       renderControls={(controls) => <ViewerZoomControls controls={controls} labels={{ zoomIn: '확대', zoomOut: '축소', fit: '맞춤' }} />} />
                   </ViewerBoundary>
                 </div>
-                <SelectionPanel component={selected} busy={busy}
+                <SelectionPanel component={selected} busy={!editable} deleteDisabled={impact?.blockedBy !== null} deleteHint={deleteHint}
+                  onDelete={openDeletion} onLabel={(label) => { if (selected && editable) editing((state) => setLabel(state, selected.id, label)); }}
                   onTransform={(patch) => { if (selected) editing((state) => setTransform(state, selected.id, patch)); }} />
+                {selected && present && <ConnectionsPanel key={`${documentEpoch}-${selected.id}`} layout={present} component={selected} busy={!editable}
+                  onAddPhysicalInterface={ifEditable((spec) => editing((state) => addPhysicalInterface(state, spec).state))}
+                  onRemovePhysicalInterface={ifEditable((id) => editing((state) => removePhysicalInterface(state, id)))}
+                  onRemovePort={ifEditable((id) => editing((state) => removePort(state, selected.id, id)))}
+                  onAddHoldingSite={ifEditable((kinds) => editing((state) => addHoldingSite(state, selected.id, kinds).state))}
+                  onRemoveHoldingSite={ifEditable((id) => editing((state) => removeHoldingSite(state, selected.id, id)))}
+                  onAddTransferCapability={ifEditable((spec) => editing((state) => addTransferCapability(state, spec).state))}
+                  onRemoveTransferCapability={ifEditable((id) => editing((state) => removeTransferCapability(state, id)))} />}
+
               </>
             )}
           </div>
         </Panel>
       </div>
+      {deletion && (
+        <AlertDialog open onOpenChange={(open) => { if (!open) closeDeletion(false); }}>
+          <AlertDialogContent role="alertdialog" onOpenAutoFocus={(event) => { event.preventDefault(); deleteCancel.current?.focus(); }} onCloseAutoFocus={(event) => event.preventDefault()}>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Component 삭제</AlertDialogTitle>
+              <AlertDialogDescription>{deletion.id}을(를) 삭제합니다.{deletionCounts && ` ${deletionCounts}도 함께 삭제됩니다.`}</AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <Button ref={deleteCancel} type="button" variant="secondary" size="sm" onClick={() => closeDeletion(false)}>취소</Button>
+              <Button type="button" variant="primary" size="sm" onClick={() => closeDeletion(true)}>삭제</Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      )}
       {publishing && (
         <PublishDialog
           layout={publishing.layout}

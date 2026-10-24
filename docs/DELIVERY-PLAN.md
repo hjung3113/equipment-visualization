@@ -11,6 +11,7 @@
 | T05 | P1 | SVG Viewer + interactive selection + level toggles | T01/T02 | JSON→SVG 일치, theme, keyboard/zoom/port selection |
 | T06 | P1 | Onboarding (Inventory → Template 제안 → Mapping Board → dry-run → Publish, `ONBOARDING.md`) | T05 | 커버리지·Mapping Conflict 계산, Publish 결정론, 키보드만으로 매핑 가능 |
 | T06b | P2 | 형상 다듬기 편집(move/rotate/snap) + Generic Layout → Template 승격 | T06 | undo/redo, key transform 불변 |
+| T06c | P2 | 레이아웃 조립: primitive Component 추가·삭제, Port·Physical Interface, Holding Site·Transfer Capability 편집 (#166–#168) | T06b | 연결은 명시 선택으로만, undo/redo, 삭제 cascade |
 | T07 | P1 | Focus 모드 (Top View · Gantt · 목록 커서 공유 + 재생; cluster + wet + dual-stage) | T04/T05 | 실제 경로와 illustrative 경로가 명확히 구분됨, Evidence를 색 외 패턴으로 구분 |
 | T07b | P1 | Aggregate 모드 (Component Metric → Component·Transfer Capability 인코딩) | T05/T06 | 미매핑 지표 패널, 저품질 값 빗금 |
 | T07c | P2 | Journey 모드 (이산 hop, 물리 경유/실행 이력 분리) | T07 | 궤적·애니메이션 없음 |
@@ -26,7 +27,7 @@
 - [x] 이송 source/target: XFR의 From/To Module·Slot으로 식별 가능. 이송 중 위치는 Handler(`derived`). 남은 것: 열린 Occurrence read view 요청.
 - [ ] default UI는 관찰된 상태(실측 가속도/경로 아님)만 표시. illustrative animation은 옵션.
 - [ ] 사용자 역할: Viewer, Layout Editor, Publisher, Debug/RawSource viewer의 분리.
-- [x] 독립 패키지 정본 + 플랫폼 얇은 소비자 (ADR-0001).
+- [x] 독립 패키지 정본 + 플랫폼 얇은 소비자 (ADR-0001). 기본 호스트는 2026-10-21 ADR-0012로 플랫폼 셸이 되었다.
 
 ## Log Fidelity 지원 계층 — 입력 가용성에 따라 기능을 다르게
 

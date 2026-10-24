@@ -10,7 +10,7 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 - **Reusable assets**: versioned primitives, assemblies, semantic IDs, attachment ports, and layout definitions.
 - **Equipment Viewer**: render top/side/layer views with consistent semi-flat technical styling.
 - **Log Replay**: visualize observed module, wafer, robot, carrier and stage events; never pretend inferred/interpolated motion is observed fact.
-- **Platform integration**: optional adapter package for [analytics-platform](https://github.com/hjung3113/analytics-platform), preserving its URL/Scope/Permission/menuQuery contracts.
+- **Platform integration**: analytics-platform is the default host ([ADR-0012](docs/adr/0012-platform-first-sdk-host.md)); `packages/platform-adapter` implements the platform SDK contract, preserving its URL/Scope/Permission/menuQuery contracts. The standalone Studio is a second host.
 
 ## Boundaries
 
@@ -18,18 +18,19 @@ Reusable, standalone equipment Top View editor and explainable log replay toolki
 2. Preserve structured `Layout + Component Catalog + Topology + Mapping Version + Observations` as authoritative data; SVG is a derived artifact.
 3. Evidence must be explicit: observed vs derived vs illustrative animation vs unknown (see [ADR-0003](docs/adr/0003-facet-evidence-levels.md)).
 4. No confidential factory images/logs may be added here. Test with synthetic fixtures and public references only.
-5. Every screen, the standalone Studio included, uses the analytics-platform design system: FeedbackOps `@fops/ui` from a git submodule, never copied, with the platform shell structure ([ADR-0008](docs/adr/0008-platform-design-system-fops-ui.md)). `core` and the renderer stay design-system-free and read only `--eqv-*`; inside the platform, the adapter injects platform token values.
+5. Every screen, the standalone Studio included, uses the analytics-platform design system: `@ap/ui` from the platform SDK Release tarball ([ADR-0013](docs/adr/0013-platform-sdk-release-tarballs.md)), never copied, with the platform shell structure ([ADR-0008](docs/adr/0008-platform-design-system-fops-ui.md)). `core` and the renderer stay design-system-free and read only `--eqv-*`; inside the platform, the adapter's `styles.css` imports the `@eqv/ui` theme mapping (`@eqv/ui/theme.css`) of `--eqv-*` to platform tokens.
 
 ## Packages
 
 ```
-apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, geometry editing — drag, nudge, 15° rotate, grid snap, undo/redo (#158) — import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–⑥ incl. the Mapping Board, ⑤ dry-run and ⑥ Publish (present, #14); Focus screen with playback (#15c–d) and Journey (#152) present; Drift ⑦ pending
-packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer (present)
-packages/renderer/            # Present — static `TopView`/`buildScene` plus interactive `TopViewer` (selection, keyboard, pan/zoom, #12b), Scene State replay overlay and highlight (#15b), Journey hop badges (#152), host `renderControls` zoom-controls slot (#73), and an `onComponentDrag` callback for host-side editing (#156)
-packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, #157). TS source (no build step); screens on `@fops/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
-packages/ui/                  # `@eqv/ui`: EV components for patterns `@fops/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use `DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame` and `Page`, the rest arrive with the screen pass
-packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@fops/ui` / `@eqv/ui` (present)
-packages/platform-adapter/    # Optional analytics-platform integration (planned)
+apps/studio/                   # Standalone web app: shell, `/layouts` page (viewer, geometry editing — drag, nudge, 15° rotate, grid snap, undo/redo (#158) — Component assembly/name/delete and explicit Physical Interface, Port, Holding Site and Transfer Capability editing (#166–168), import/export, draft, Layout Revision publish), dev-only file API (present); Fleet, Onboarding ①–⑥ incl. the Mapping Board, ⑤ dry-run and ⑥ Publish (present, #14); Focus screen with playback (#15c–d) and Journey (#152) present; Drift ⑦ pending
+packages/core/                # Layout schema/validator, Occurrence & Scene State contracts, Mapping, Onboarding core, deterministic replay reducer, Component transform helpers (`componentLocalMatrix`, `componentWorldMatrix`, `multiplyMatrix`, `invertMatrix`, `Matrix2D`), shared `round3`, and Port placement helpers (`componentWorldCenter`, `portPositionToward`, `projectToFootprint`) (present)
+packages/renderer/            # Present — static `TopView`/`buildScene` plus interactive `TopViewer` (selection, keyboard, pan/zoom, #12b), Scene State replay overlay and highlight (#15b), Journey hop badges (#152), host `renderControls` zoom-controls slot (#73), and an `onComponentDrag` callback for host-side editing (#156), plus `PRIMITIVE_CATALOG` for assembly (#166)
+packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, Component assembly/name/delete and explicit connection editing, #157/#166–168). TS source (no build step); screens on `@ap/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
+packages/ui/                  # `@eqv/ui`: EV components for patterns `@ap/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `FileButton`, `DetailFields`, `FormField`, `Tabs`, `OutlineBadge`); the status badge and toasts are `@ap/ui` `StatusBadge` and `Toaster`/`toast`
+packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@ap/ui` / `@eqv/ui` (present)
+packages/views/               # `@eqv/views`: host-neutral screen compositions; `FocusView` (Top View · Gantt · Occurrence list on one cursor, from props only), `NoticeList` and the Gantt budgets, over core, renderer, replay and `@ap/ui` / `@eqv/ui` (present, #177)
+packages/platform-adapter/    # analytics-platform host module (ADR-0012): manifest + endpoint declarations + theme styles + `eqv:topview`/`eqv:focus` screens present; AP mount pending (AP #333/#334)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
 fixtures/  # Synthetic source-shaped replay fixtures (present)
@@ -45,9 +46,8 @@ Prerequisites:
 - pnpm 11.1.1, the version pinned by the `packageManager` field in `package.json` (e.g. `npm install -g pnpm`; `corepack enable pnpm` also works on Node versions that ship corepack).
 
 ```sh
-git clone --recurse-submodules https://github.com/hjung3113/equipment-visualization.git
+git clone https://github.com/hjung3113/equipment-visualization.git
 cd equipment-visualization
-# in an existing clone instead: git submodule update --init
 pnpm install
 pnpm lint        # ESLint flat config across all packages (incl. the @ap/* boundary rule)
 pnpm typecheck   # turbo run typecheck
@@ -57,7 +57,7 @@ pnpm dev         # builds core/renderer, then starts the Studio dev server (see 
 git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
 ```
 
-`external/feedbackops` is the FeedbackOps submodule that provides `@fops/ui` (ADR-0008); it must be checked out before `pnpm install`. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) because `--filter='!@fops/*'` alone still schedules `@fops/*#build` through `dependsOn: ["^build"]`, and `@fops/*` is not this repo's to build.
+`@ap/ui` (ADR-0008, ADR-0013) is installed from the platform SDK GitHub Release tarball named in `package.json` and `pnpm-workspace.yaml`; `pnpm install` needs access to GitHub Releases. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) so a task never runs before the packages it imports are built.
 
 Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 
@@ -97,7 +97,7 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 - Issues: [M0 asset import](../../issues/1), [M1 standalone Studio](../../issues/2), [M2 replay](../../issues/3)
 - Platform integration tracking: [Submodule/CI #332](https://github.com/hjung3113/analytics-platform/issues/332), [UX #333](https://github.com/hjung3113/analytics-platform/issues/333), [data #334](https://github.com/hjung3113/analytics-platform/issues/334), [E2E #335](https://github.com/hjung3113/analytics-platform/issues/335).
 
-**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); Onboarding ⑤ dry-run and ⑥ Publish are in (#14); Drift ⑦ is still pending (tracked as M1/M2); the Focus screen with playback is in (#15c–d). This repository is **public** (since 2026-10-15), like the parent analytics-platform; adding it as a submodule of the parent still waits for the submodule/CI gate (#332).
+**Repo status:** the v0.3 design documents are committed. Six converted v0.4 templates and 25 themed primitives from the v0.3 pack are in `assets/` (see `assets/NOTICE.md`); template SVG/PNG and the original generators remain outside the repository; `apps/studio` runs (`pnpm dev`: app shell, layouts page, dev file API); Onboarding ⑤ dry-run and ⑥ Publish are in (#14); Drift ⑦ is still pending (tracked as M1/M2); the Focus screen with playback is in (#15c–d). This repository is **public** (since 2026-10-15), like the parent analytics-platform; the platform SDK comes from its release tarballs (ADR-0013), and `packages/platform-adapter` declares the host module that analytics-platform will mount (AP #333/#334).
 
 ## Roadmap
 
@@ -105,6 +105,6 @@ Single-hub cluster, multi-hub cluster, linear wet clean, stacked photo track, du
 2. Build standalone `apps/studio` with synthetic data and zero platform runtime imports.
 3. Validate semantic ports/kinematic constraints (where known) and SVG round-trip.
 4. ~~Implement a deterministic observation reducer~~ (done in `@eqv/core`: `seekSceneState`, `stepSceneState`, `replayKey`); build the playback timeline.
-5. Integrate through a **separate** analytics-platform PR after its integration issues and submodule/CI gate (#332) are resolved.
+5. Integrate through a **separate** analytics-platform PR that mounts `@eqv/platform-adapter` and serves its endpoints (AP #333/#334); the install path for `@eqv/*` is decided there (#187).
 
 Related: [analytics-platform](https://github.com/hjung3113/analytics-platform) and platform issue [#291](https://github.com/hjung3113/analytics-platform/issues/291) (broader visualization capability work; avoid overlap).

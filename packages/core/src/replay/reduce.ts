@@ -1,6 +1,8 @@
+import { materialKey, occurrenceKey } from './keys.js';
+import { activeBinding } from '../mapping/binding.js';
 import type { EquipmentLayoutDocument } from '../layout/schema.js';
 import { resolveLocation } from '../mapping/resolve.js';
-import type { Binding, BindingsFile, MappingVersion } from '../mapping/schema.js';
+import { HASH_PATTERN, type Binding, type BindingsFile, type MappingVersion } from '../mapping/schema.js';
 import type { EvidenceLevel, Occurrence, OccurrenceBatch } from '../occurrence/schema.js';
 import { assertBatchRecords } from '../occurrence/validate.js';
 import type { SceneComponent, SceneMarker, SceneMaterial, SceneState } from '../scene/schema.js';
@@ -12,7 +14,6 @@ export type ReplayInput = {
   /** Published Layout Revisions by `sha256:<hex>`; the caller verified each key against its content (ADR-0011). */
   layoutRevisions?: Readonly<{ [revision: string]: EquipmentLayoutDocument }>;
 };
-const REVISION = /^sha256:[0-9a-f]{64}$/;
 /**
  * The one Layout lookup (ADR-0011). A Binding that pins `layoutRevision` resolves by that revision only; a revision the
  * input lacks is no Layout, never the `layoutId` Layout. An unpinned Binding resolves by `layoutId` in `layouts`.
@@ -28,7 +29,7 @@ export function assertReplayInput(input: ReplayInput): void {
     throw new RangeError(`bindings.equipmentId (${input.bindings.equipmentId}) must match batch.equipmentId (${equipmentId})`);
   }
   for (const revision of Object.keys(input.layoutRevisions ?? {})) {
-    if (!REVISION.test(revision)) throw new RangeError(`layoutRevisions key ${revision} must be sha256:<64 lowercase hex>`);
+    if (!HASH_PATTERN.test(revision)) throw new RangeError(`layoutRevisions key ${revision} must be sha256:<64 lowercase hex>`);
   }
   for (const binding of input.bindings.bindings) {
     const layout = binding.layoutRevision === undefined ? undefined : input.layoutRevisions?.[binding.layoutRevision];
@@ -90,7 +91,7 @@ export function stepSceneState(input: ReplayInput, seq: number): SceneState {
 // The one place the Scene State rules live. `open` is the Occurrences open after `appliedSeq`, in start order; the
 // caller owns how it got them (a filter for one instant, an incremental set for a timeline pass).
 export function sceneStateAt(input: ReplayInput, t: SiteWallClock, prepared: Prepared, appliedSeq: number | null, open: Occurrence[]): SceneState {
-  const binding = input.bindings.bindings.find((b) => b.effectiveFrom <= t && (b.effectiveTo === undefined || t < b.effectiveTo));
+  const binding = activeBinding(input.bindings.bindings, t);
   const layout = bindingLayout(input, binding);
   const resolve = (o: Occurrence) => resolveLocation({ bindings: input.bindings, mappings: input.mappings,
     alias: o.location!.moduleAlias, ...(o.location!.slotAlias === undefined ? {} : { slot: o.location!.slotAlias }), at: t });
@@ -119,7 +120,7 @@ export function sceneStateAt(input: ReplayInput, t: SiteWallClock, prepared: Pre
       activities.set(resolved.componentId, entries);
     }
     if (!o.material) continue;
-    const key = o.material.id === null ? `o:${o.id}` : `m:${o.material.kind}:${o.material.id}`;
+    const key = o.material.id === null ? occurrenceKey(o.id) : materialKey(o.material.kind, o.material.id);
     // Select the latest placement before deciding whether its alias is displayed.
     materials.delete(key);
     if (layout && !previousSegment && resolution.kind === 'ignored') continue;

@@ -1,5 +1,12 @@
+import type { Matrix2D } from '@eqv/core';
+
 export interface Mat {
   a: number; b: number; c: number; d: number; e: number; f: number;
+}
+
+/** Adapts core translation coordinates to the renderer's affine matrix shape. */
+export function fromCore(m: Matrix2D): Mat {
+  return { a: m.a, b: m.b, c: m.c, d: m.d, e: m.x, f: m.y };
 }
 
 export type Point = [number, number];

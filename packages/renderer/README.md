@@ -89,3 +89,5 @@ Interaction cost on `?stress=2000` (2006 Components, about 14,900 SVG elements),
 | arrow-key pan | 3 | none | pans only move the `viewBox` |
 | wheel zoom step | 3 | none | the `viewBox` moves; labels are briefly off-size |
 | settled relayout after a zoom | 3 | one task, 283–314 ms (median 304) | the one scene rebuild, 150 ms after the last zoom change |
+
+`PRIMITIVE_CATALOG` is a readonly array of `{ name, cls, clsLabel, width, height }` in primitive class order. Class labels come from the renderer’s Korean labels; width and height are the bundled primitive viewBox’s natural footprint. Hosts can use it for a primitive picker without duplicating geometry or classification.

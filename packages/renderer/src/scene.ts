@@ -1,8 +1,8 @@
-import type { Component, LayoutDocument } from '@eqv/core';
+import { componentLocalMatrix, type Component, type LayoutDocument } from '@eqv/core';
 import { capabilitySegment, type CapabilityEnd } from './capability.js';
 import {
-  apply, bboxOf, isArm, mul, polyContainsRect, polysOverlap, rayPoly, rectPoly, rectsOverlap,
-  robotR, rotation, scaling, shapeLocal, translation, type Box, type Mat, type Point,
+  apply, bboxOf, fromCore, isArm, mul, polyContainsRect, polysOverlap, rayPoly, rectPoly, rectsOverlap,
+  robotR, shapeLocal, type Box, type Mat, type Point,
 } from './geom.js';
 import { primitives, type PrimitiveParts } from './primitives.generated.js';
 import { estimateTextWidth } from './text.js';
@@ -98,6 +98,11 @@ const CLASS: Record<string, 'process' | 'holding' | 'robot' | 'structure'> = {
   'robot-single': 'robot', 'robot-dual': 'robot', 'robot-multi': 'robot', handler: 'robot',
   efem: 'structure', tm: 'structure', rail: 'structure', housing: 'structure',
 };
+
+/** Primitive class order and natural footprints from the bundled source tables. */
+export const PRIMITIVE_CATALOG: readonly Readonly<{ name: string; cls: SceneComponent['cls']; clsLabel: string; width: number; height: number }>[] = Object.entries(CLASS).map(([name, cls]) => ({
+  name, cls, clsLabel: CLASS_KO[cls], width: primitives[name]!.viewBox.width, height: primitives[name]!.viewBox.height,
+}));
 
 const BODY_ATTRS = ['fill', 'stroke', 'stroke-width', 'vector-effect', 'stroke-linecap', 'stroke-linejoin'] as const;
 
@@ -557,7 +562,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     const { name, cls, prim, unknownAsset } = assetOf(component.assetRef, component.role);
     const w = component.size?.width ?? (name === 'generic-box' ? 8 : prim.viewBox.width);
     const h = component.size?.height ?? (name === 'generic-box' ? 8 : prim.viewBox.height);
-    const local = mul(mul(translation(component.transform.x, component.transform.y), rotation(component.transform.rotation)), scaling(component.transform.scale));
+    const local = fromCore(componentLocalMatrix(component.transform));
     const matrix = parent ? mul(parent.matrix, local) : local;
     const S = (parent?.S ?? 1) * component.transform.scale;
     const worldRot = (parent?.worldRot ?? 0) + component.transform.rotation;

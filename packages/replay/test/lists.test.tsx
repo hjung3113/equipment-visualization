@@ -104,7 +104,7 @@ it('presents cursor activities and materials in named tables', () => {
   screen.getByRole('table', { name: 'Component 활동' });
   const materials = screen.getByRole('table', { name: '물질' });
   within(materials).getByRole('row', { name: /wafer W11/ });
-  expect(screen.getByText(/^Watermark 이후/).getAttribute('data-tone')).toBe('warning');
+  expect(screen.getByText(/^Watermark 이후/).className).toContain('text-text-warning-label');
 });
 
 it('reads an unlocated wafer as 위치 미확인 with unknown location evidence and observed identity (10:05:30)', () => {
@@ -115,8 +115,8 @@ it('reads an unlocated wafer as 위치 미확인 with unknown location evidence 
   expect(within(materialRow).getByRole('rowheader').textContent).toBe('wafer W01');
   expect(materialCells.map((cell) => cell.textContent)).toEqual(['위치 미확인', '미확인', '관측']);
   const detail = within(screen.getByRole('region', { name: '근거 상세 occ-tm-out' }));
-  const locationLabel = detail.getAllByText('위치', { exact: true }).at(-1)!;
-  const identityLabel = detail.getAllByText('식별', { exact: true }).at(-1)!;
+  const locationLabel = detail.getByText('위치', { exact: true });
+  const identityLabel = detail.getByText('식별', { exact: true });
   expect(locationLabel.parentElement?.lastElementChild?.textContent).toBe('위치 미확인 · 위치 근거 미확인');
   expect(identityLabel.parentElement?.lastElementChild?.textContent).toBe('wafer W01 · 식별 근거 관측');
   expect(detail.getByText(/^sha256:0abf3e9f/)).toBeTruthy();

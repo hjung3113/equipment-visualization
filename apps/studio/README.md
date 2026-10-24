@@ -10,7 +10,7 @@ sharing one page-local cursor. `anchor` is read as an Occurrence id (`entityType
 is that Occurrence widened by a margin, or the whole batch with a notice. Focus replays one Sample Window, chosen with a picker
 (`?window=`); without `?window=` it is the latest-`from` window containing the anchor Occurrence (a notice when several do), else the
 latest window, and an unknown `?window=` is an error, never a fallback. The Gantt is bounded twice. It is computed only up to `TIMELINE_BUDGET`
-(`src/focus-data.ts`, 4,800,000 of records + breakpoints × (Binding/Layout search and component build + (most Occurrences open at once + Time Anomaly inversions) × one location resolution), about 1 s at the worst measured rate), and drawn only up to `GANTT_SPAN_LIMIT` (5,000 spans: material and activity spans plus markers, about 100 ms to repaint; a whole 50k-Occurrence window has 100,000); above it a notice asks
+(`packages/views/src/timeline-cost.ts`, 4,800,000 of records + breakpoints × (Binding/Layout search and component build + (most Occurrences open at once + Time Anomaly inversions) × one location resolution), about 1 s at the worst measured rate), and drawn only up to `GANTT_SPAN_LIMIT` (5,000 spans: material and activity spans plus markers, about 100 ms to repaint; a whole 50k-Occurrence window has 100,000); above it a notice asks
 for a narrower range, and the Top View, state list, Occurrence list, Data Quality and evidence detail stay. `loadFocus` (`src/focus-data.ts`) reads and checks
 the batch, every Mapping Version a Binding names and each Binding's Layout (its published Layout Revision, else the draft with
 a notice); it never rejects. Playback (#15d) moves only the cursor: play/pause, speed x0.25–x4 (screen time), previous/next breakpoint, and a debug
@@ -28,16 +28,17 @@ page through Studio navigation or browser back/forward asks before discarding it
 the browser's own leave-page prompt. Draft save proceeds without a discard prompt; choosing another import replaces
 the current import without asking.
 
-Editing (#158): on `/layouts` any opened document (template, draft, revision or import) can be refined in place. Drag a Component on
+Editing (#158, #166): on `/layouts` any opened document (template, draft, revision or import) can be refined in place. Drag a Component on
 the Top View, or select it and use `Alt`+arrow keys (1 layout unit, `Shift` 10×) and `[` / `]` (15° left / right); the `선택 항목`
-panel shows its ID, name, Role and parent and edits `X`, `Y` and `회전 (°)` as exact values (Enter or blur commits, Escape restores,
+panel shows its ID, Role and parent and edits the name and `X`, `Y` and `회전 (°)` as exact values (Enter or blur commits, Escape restores,
 a non-number is refused). X and Y of a child are in its parent's frame. `격자 맞춤` (off by default) snaps drags and key moves to a
 grid of 10 and rotations to 15°; typed values are never snapped. `실행 취소` / `다시 실행` (⌘/Ctrl+Z, ⇧⌘/Ctrl+Z or Ctrl+Y) step
-through the edit history, and a drag is one step. Edits change only `transform` (and mark a verified transform provenance `assumed`),
-never ports, connectivity, `unit` or `viewBox`. Unsaved edits are guarded like an unsaved import (navigation confirm, browser
+through the edit history, and a drag is one step. Move and rotate change only `transform` (and mark verified transform provenance `assumed`), never ports, connectivity, `unit` or `viewBox`. Label edits trim whitespace and mark verified label provenance `assumed`.
+For equipment layouts, select one of 25 catalog primitives and use `Component 추가` to add it at the viewBox centre, on the selected Component’s level (otherwise the lowest-order level), with snap if enabled. A new Component is sized to the median footprint (longer side, including each Component’s own scale) of the existing ones, preserving the primitive’s aspect ratio. Adding never creates connectivity; new fields are assumed and size certainty stays unknown. `삭제` or Delete/Backspace opens a counted confirmation; it removes the Component and its graph references in one undoable step. Parents with children and the last Component cannot be deleted. Templates allow move, rotate and label edits but disable add/delete to preserve role cardinality. The delete dialog freezes edits, save and publish, and closes without deleting when the document changes. Unsaved edits are guarded like an unsaved import (navigation confirm, browser
 leave-page prompt, `저장 안 됨` badge). `초안 저장` writes the edited document to `layouts/<id>/draft.layout.json`; export and the
-publish change preview use the edited document too, so the preview lists only the changed Components. Resize, port snapping and
+publish change preview use the edited document too, so the preview lists added, removed and changed Components. Resize, port snapping and
 multi-select are not implemented.
+For a selected Component, four sections list Physical Interfaces, Ports, Holding Sites and Transfer Capabilities and allow explicit additions and deletions (#167, #168), including on Templates (Ports are added through a Physical Interface); new items are assumed with no source evidence, and partner Components and robot Handlers are chosen explicitly. Deleting a Port also removes its Physical Interfaces, and deleting a Holding Site removes its Transfer Capabilities; each add or delete is immediate, without confirmation, and is one undo step.
 
 The equipment data page imports Sample Windows, alias metadata and the Model Type Dictionary through `/api/import/*`. Each file is checked in the browser first for size and JSON syntax, then with the same `@eqv/core` validators (including `validateSampleWindow`); the server makes the final decision. Rejections list their code and path, and imported values are never fixed. Replacing alias metadata requires confirmation and shows added, removed and changed aliases. The Model Type Dictionary is create-only, and results appear as toasts.
 
@@ -47,7 +48,7 @@ The equipment data page imports Sample Windows, alias metadata and the Model Typ
 
 ## Styling
 
-Studio uses Tailwind v4 (`@tailwindcss/vite`) and the `@fops/ui` theme from the `external/feedbackops` submodule (ADR-0008). The `@import` order at the top of `src/studio.css` (tailwindcss, tokens and semantic in `layer(base)`, theme, compat) is an invariant; `test/theme-tokens.test.ts` pins it. The `--eqv-*` rows in `:root` are declared only where `@fops/ui` defines the platform token, wrapped as `rgb(var(--token))`; every other `--eqv-*` row stays undeclared so the asset fallback hex applies.
+Studio uses Tailwind v4 (`@tailwindcss/vite`) and the `@ap/ui` theme from the platform SDK tarball (ADR-0008, ADR-0013). The `@import` order at the top of `src/studio.css` (tailwindcss, tokens and semantic in `layer(base)`, theme, compat, then `sources.css` so Tailwind scans `@ap/ui`'s classes) is an invariant; `test/theme-tokens.test.ts` pins it. The `--eqv-*` rows in `:root` are declared only where `@ap/ui` defines the platform token, wrapped as `rgb(var(--token))`; every other `--eqv-*` row stays undeclared so the asset fallback hex applies.
 
 ## Run
 

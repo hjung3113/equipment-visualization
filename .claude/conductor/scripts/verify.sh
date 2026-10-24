@@ -3,8 +3,8 @@
 # verify.sh <worktree> — host gates from AGENTS.md "Change quality gates", run by the conductor after a worker reports:
 #   1. root package.json scripts `lint`, `typecheck`, `test`, `build`, each only when defined (`skip` otherwise; the
 #      repo is docs-only until M1 adds the workspace);
-#   2. package boundary: no `@ap/` or `analytics-platform` import under apps/ or packages/ outside
-#      packages/platform-adapter;
+#   2. package boundary (ADR-0013): no `@ap` or `analytics-platform` import specifier under apps/ or packages/ outside
+#      packages/platform-adapter, except the design system `@ap/ui` in packages/{ui,replay,editor,views} and apps/studio;
 #   3. asset-check.py over assets/ (JSON/SVG structure and safety);
 #   4. global worker-hygiene.py (no new suppressions; whitespace churn reported).
 # Logs go to $WAVE_STATE/verify-<basename>/; prints a summary table and exits with the first failing code.
@@ -29,9 +29,13 @@ has_script() {
 boundary() {
   [ -d apps ] || [ -d packages ] || { echo "no apps/ or packages/ yet"; return 0; }
   local hits
-  hits=$(grep -rnE "(from|import|require\()[[:space:]]*['\"](@ap/|analytics-platform)" apps packages \
+  # One hit per import specifier (static, side-effect, dynamic and require), so an allowed specifier never hides a
+  # forbidden one on the same line. ADR-0013: '@ap/ui' is allowed only in packages/{ui,replay,editor,views} and apps/studio
+  # (the ESLint allowlist); packages/platform-adapter is exempt; everything else is reported. ESLint stays the full check.
+  hits=$(grep -rnoE "(from|import|import[[:space:]]*\(|require[[:space:]]*\()[[:space:]]*['\"](@ap|analytics-platform)(/[^'\"]*)?['\"]" apps packages \
     --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.mjs' --include='*.vue' \
-    --include='*.svelte' --exclude-dir=node_modules --exclude-dir=dist 2>/dev/null | grep -v '^packages/platform-adapter/')
+    --include='*.svelte' --exclude-dir=node_modules --exclude-dir=dist 2>/dev/null | grep -v '^packages/platform-adapter/' \
+    | grep -vE "^(apps/studio|packages/(ui|replay|editor|views))/[^:]*:[0-9]+:.*['\"]@ap/ui(/[^'\"]*)?['\"]$")
   if [ -n "$hits" ]; then echo "platform import outside packages/platform-adapter:"; echo "$hits"; return 1; fi
   echo "boundary: no platform import outside the adapter"
 }

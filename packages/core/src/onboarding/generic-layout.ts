@@ -1,4 +1,5 @@
 import type { ObservedInventory } from '../inventory/schema.js';
+import { MATERIAL_KINDS } from '../layout/schema.js';
 import type { Component, EquipmentLayoutDocument, HoldingSite, Provenance } from '../layout/schema.js';
 import type { TypeDictionaryFile } from '../mapping/schema.js';
 import { resolveRole } from '../mapping/validate.js';
@@ -46,7 +47,7 @@ export function buildGenericLayout({ inventory, dictionaries }: {
       const holdingSiteId = v < 0n ? `slot-neg-${-v}` : `slot-${v}`;
       if (!siteIds.has(holdingSiteId)) {
         siteIds.add(holdingSiteId);
-        holdingSites.push({ id: holdingSiteId, materialKinds: ['wafer', 'carrier', 'batch', 'boat', 'reticle'], provenance });
+        holdingSites.push({ id: holdingSiteId, materialKinds: [...MATERIAL_KINDS], provenance });
       }
       return { slot, holdingSiteId };
     });

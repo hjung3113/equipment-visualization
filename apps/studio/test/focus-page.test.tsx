@@ -10,6 +10,7 @@ import { FocusPage } from '../src/FocusPage.js';
 import { loadFocus } from '../src/focus-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { addEquipment, addSynth03, seedOnboardingRoot, windowHex, writeDraft, writeJson } from './seed.js';
 
 declare global {
@@ -24,11 +25,7 @@ let root: string;
 beforeEach(async () => {
   ({ base, root } = await seedOnboardingRoot());
   const api = createFileApi({ root });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
 });
 afterEach(async () => {
   cleanup();
@@ -187,6 +184,19 @@ it('replays the Sample Window the route names and drops selection and range when
   await waitFor(() => expect(row('occ-w2-wc4-transfer')).not.toBeNull());
   expect(document.querySelector('tr[aria-selected="true"]')).toBeNull();
   expect(screen.getByDisplayValue('2026-01-01T10:30:00.000')).toBeTruthy();
+});
+
+it('keeps the selected detail tab when the Sample Window changes', async () => {
+  const { w1, w2 } = await addSynth03(root);
+  at(`/focus/eq-synth-03?window=${w1}`);
+  render(<App />);
+  await loaded();
+  fireEvent.mouseDown(screen.getByRole('tab', { name: 'Data Quality' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Data Quality' }));
+  expect(screen.getByRole('tab', { name: 'Data Quality' }).getAttribute('aria-selected')).toBe('true');
+  act(() => navigate(`/focus/eq-synth-03?window=${w2}`));
+  await waitFor(() => expect(screen.getByDisplayValue('2026-01-01T10:30:00.000')).toBeTruthy());
+  expect(screen.getByRole('tab', { name: 'Data Quality' }).getAttribute('aria-selected')).toBe('true');
 });
 
 it('links Focus from Onboarding only when the equipment has Bindings', async () => {

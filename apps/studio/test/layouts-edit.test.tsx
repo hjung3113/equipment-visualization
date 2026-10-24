@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it, vi } from 'vitest';
 import { layoutDocumentSchema, layoutRevision } from '@eqv/core';
 import { App } from '../src/App.js';
 import { createFileApi } from '../server/files.js';
+import { stubFileApi } from './file-api.js';
 import { seedRoot } from './seed.js';
 
 declare global {
@@ -23,11 +24,7 @@ let root: string;
 beforeEach(async () => {
   ({ base, root } = await seedRoot());
   const api = createFileApi({ root });
-  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
-    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
-    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
-    return new Response(JSON.stringify(result.body), { status: result.status });
-  });
+  stubFileApi(api);
 });
 afterEach(async () => {
   cleanup();
@@ -295,4 +292,222 @@ it('settles a drag that is still held when the publish dialog opens', async () =
   expect(field('X').value).toBe('331.4');
   fireEvent.keyDown(viewerSvg(container), { key: 'ArrowRight', altKey: true });
   expect(field('X').value).toBe('332.4');
+});
+
+/** Assembly tests use an equipment layout; template cardinality must remain protected. */
+async function openAssembly(options: { parent?: boolean; baseline?: boolean } = {}) {
+  const raw = await original() as Awaited<ReturnType<typeof original>> & { components: (Raw['components'][number] & { levelId: string; label: string; parentId?: string })[] };
+  delete raw.roleCardinality;
+  raw.kind = 'equipment-layout';
+  raw.templateId = 'cluster-single';
+  if (options.parent) (raw.components.find((c) => c.id === PM)! as Raw['components'][number] & { parentId: string }).parentId = 'tm-1';
+  await mkdir(join(root, 'layouts/cluster-single'), { recursive: true });
+  await writeFile(join(root, DRAFT), JSON.stringify(raw));
+  if (options.baseline) {
+    const hex = (await layoutRevision(layoutDocumentSchema.parse(raw))).slice('sha256:'.length);
+    await writeFile(join(root, `layouts/cluster-single/${hex}.layout.json`), JSON.stringify(raw));
+  }
+  window.history.replaceState(null, '', `/layouts?${new URLSearchParams({ file: DRAFT })}`);
+  const view = render(<App />);
+  await waitFor(() => expect(view.container.querySelector('[data-component-id]')).toBeTruthy());
+  return { ...view, raw };
+}
+
+it('adds and selects a median-sized primitive, saving assumed provenance', async () => {
+  const { container, raw } = await openAssembly();
+  await chooseEditOption('추가할 Component 종류', 'pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  expect(componentEl(container, 'pm-1').getAttribute('aria-pressed')).toBe('true');
+  expect(field('이름').value).toBe('PM 1');
+  const viewBox = raw.viewBox as { x: number; y: number; width: number; height: number };
+  expect(Number(field('X').value)).toBe(viewBox.x + viewBox.width / 2);
+  expect(Number(field('Y').value)).toBe(viewBox.y + viewBox.height / 2);
+  await saveDraft();
+  const saved = await readDraft();
+  const added = saved.components.find((c) => c.id === 'pm-1')!;
+  expect(added).toMatchObject({ role: 'pm', assetRef: 'primitive:pm', label: 'PM 1', levelId: raw.components[0]!.levelId, ports: [], holdingSites: [] });
+  // The fixture's 14 longer sides have 84 at both middle positions.
+  const size = (added as typeof added & { size: { width: number; height: number } }).size;
+  expect(Math.max(size.width, size.height)).toBe(84);
+  expect(added.provenance).toEqual(Object.fromEntries(['role', 'assetRef', 'label', 'levelId', 'transform'].map((key) => [key, { certainty: 'assumed', sourceEvidence: [] }])));
+});
+
+it('protects template cardinality from add, delete and Delete keys', async () => {
+  const { container } = await openTemplate();
+  select(container, PM);
+  expect((screen.getByRole('button', { name: 'Component 추가' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: '삭제' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText('템플릿에는 Component를 추가하거나 삭제할 수 없습니다. 이 템플릿으로 시작한 레이아웃에서 편집하세요.')).toBeTruthy();
+  fireEvent.keyDown(viewerSvg(container), { key: 'Delete' });
+  expect(screen.queryByRole('alertdialog')).toBeNull();
+});
+
+it('confirms counted graph removal by Delete, saves it, and restores both by undo without selection', async () => {
+  const { container, raw } = await openAssembly();
+  select(container, 'lp-1');
+  fireEvent.keyDown(componentEl(container, 'lp-1'), { key: 'Delete' });
+  const dialog = await screen.findByRole('alertdialog');
+  expect(within(dialog).getByText(/Physical Interface 1개/)).toBeTruthy();
+  expect((screen.getByRole('button', { name: '초안 저장', hidden: true }) as HTMLButtonElement).disabled).toBe(true);
+  fireEvent.click(within(dialog).getByRole('button', { name: '삭제' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(document.activeElement).toBe(viewerSvg(container).closest('div[tabindex="-1"]')!.querySelector('button:not([disabled]), [tabindex="0"]'));
+  await saveDraft();
+  const saved = await readDraft();
+  expect(saved.components.some((c) => c.id === 'lp-1')).toBe(false);
+  expect((saved.physicalInterfaces as unknown[]).length).toBe((raw.physicalInterfaces as unknown[]).length - 1);
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect(componentEl(container, 'lp-1')).toBeTruthy();
+  expect(screen.getByText('Top View에서 Component를 선택하세요.')).toBeTruthy();
+  await saveDraft();
+  expect((await readDraft()).physicalInterfaces).toEqual(raw.physicalInterfaces);
+});
+
+it('cancels a held drag for deletion, freezes undo, and discards a stale dialog on file switch', async () => {
+  const { container } = await openAssembly();
+  select(container, PM);
+  fireEvent.keyDown(viewerSvg(container), { key: 'ArrowRight', altKey: true });
+  const x = field('X').value;
+  pointer(componentEl(container, PM), 'pointerdown', 100, 100);
+  pointer(viewerSvg(container), 'pointermove', 130, 100);
+  fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+  const dialog = await screen.findByRole('alertdialog');
+  expect(field('X').value).toBe(x);
+  fireEvent.keyDown(dialog, { key: 'z', metaKey: true });
+  expect(field('X').value).toBe(x);
+  fireEvent.click(within(dialog).getByRole('button', { name: '취소' }));
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  expect(document.activeElement).toBe(screen.getByRole('button', { name: '삭제' }));
+  fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+  await screen.findByRole('alertdialog');
+  const discard = vi.spyOn(window, 'confirm').mockReturnValue(true);
+  try {
+    fireEvent.click(await screen.findByRole('link', { name: 'cluster-single', hidden: true }));
+    await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+    expect((await readDraft()).components.some((c) => c.id === PM)).toBe(true);
+  } finally { discard.mockRestore(); }
+});
+
+it('blocks deleting a parent and explains that its children must go first', async () => {
+  const { container } = await openAssembly({ parent: true });
+  select(container, 'tm-1');
+  expect((screen.getByRole('button', { name: '삭제' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByText('하위 Component를 먼저 삭제하세요.')).toBeTruthy();
+});
+
+it('commits a trimmed label on Enter and rejects an empty label', async () => {
+  const { container } = await openAssembly();
+  select(container, PM);
+  fireEvent.change(field('이름'), { target: { value: '  New chamber  ' } });
+  fireEvent.keyDown(field('이름'), { key: 'Enter' });
+  await saveDraft();
+  expect((await readDraft()).components.find((c) => c.id === PM)).toMatchObject({ label: 'New chamber' });
+  fireEvent.change(field('이름'), { target: { value: '' } });
+  fireEvent.blur(field('이름'));
+  expect(screen.getByText('이름을 입력하세요')).toBeTruthy();
+});
+
+it('previews an added Component in the publish dialog', async () => {
+  await openAssembly({ baseline: true });
+  await chooseEditOption('추가할 Component 종류', 'pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Revision 게시' }));
+  const dialog = await screen.findByRole('alertdialog');
+  expect(await within(dialog).findByText('추가 1 · 삭제 0 · 변경 0')).toBeTruthy();
+  expect(within(within(dialog).getByRole('table', { name: 'Layout 변경 목록' })).getByText('pm-1')).toBeTruthy();
+});
+
+async function chooseEditOption(label: string, name: string, group?: string) {
+  const originalScroll = Element.prototype.scrollIntoView;
+  Element.prototype.scrollIntoView ??= function scrollIntoViewStub() {};
+  try {
+    fireEvent.keyDown(screen.getByRole('combobox', { name: label }), { key: 'ArrowDown' });
+    await screen.findByRole('listbox');
+    const options = group ? within(screen.getByRole('group', { name: group })) : screen;
+    fireEvent.click(options.getByRole('option', { name }));
+  } finally { Element.prototype.scrollIntoView = originalScroll; }
+}
+
+it('keeps overlapping Components independent until an explicit interface add, then undoes both new Ports with it', async () => {
+  const { container, raw } = await openAssembly();
+  await chooseEditOption('추가할 Component 종류', 'pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  for (const label of ['X', 'Y']) {
+    fireEvent.change(field(label), { target: { value: String(raw.components.find((c) => c.id === PM)!.transform[label.toLowerCase()]) } });
+    fireEvent.keyDown(field(label), { key: 'Enter' });
+  }
+  await saveDraft();
+  expect((await readDraft()).physicalInterfaces).toEqual(raw.physicalInterfaces);
+  await chooseEditOption('상대 Component', 'pm-a · PM1');
+  await chooseEditOption('종류', 'gate');
+  fireEvent.click(screen.getByRole('button', { name: 'Physical Interface 추가' }));
+  await saveDraft();
+  const saved = layoutDocumentSchema.parse(await readDraft());
+  expect(saved.physicalInterfaces).toHaveLength((raw.physicalInterfaces as unknown[]).length + 1);
+  expect(saved.physicalInterfaces.at(-1)).toMatchObject({ kind: 'gate', a: { componentId: 'pm-1', portId: 'p-1' }, b: { componentId: PM, portId: 'p-1' }, provenance: { certainty: 'assumed', sourceEvidence: [] } });
+  expect(saved.components.find((c) => c.id === 'pm-1')!.ports).toHaveLength(1);
+  expect(saved.components.find((c) => c.id === PM)!.ports.at(-1)?.id).toBe('p-1');
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect(componentEl(container, 'pm-1')).toBeTruthy();
+  await saveDraft();
+  const restored = layoutDocumentSchema.parse(await readDraft());
+  expect(restored.physicalInterfaces).toEqual(raw.physicalInterfaces);
+  expect(restored.components.find((c) => c.id === 'pm-1')!.ports).toEqual([]);
+  expect(restored.components.find((c) => c.id === PM)!.ports).toEqual(layoutDocumentSchema.parse(raw).components.find((c) => c.id === PM)!.ports);
+}, 15_000); // Several Radix Select interactions: ~1.5 s locally, over the 5 s default on a loaded CI runner (#173)
+
+it('edits assumed Sites and capabilities on a Template and cascades Site deletion', async () => {
+  const { container } = await openTemplate();
+  select(container, PM);
+  fireEvent.click(screen.getByRole('checkbox', { name: 'carrier' }));
+  fireEvent.click(screen.getByRole('button', { name: 'Holding Site 추가' }));
+  await saveDraft();
+  expect(layoutDocumentSchema.parse(await readDraft()).components.find((c) => c.id === PM)!.holdingSites.at(-1)).toEqual({ id: 'slot-1', materialKinds: ['wafer', 'carrier'], provenance: { certainty: 'assumed', sourceEvidence: [] } });
+  await chooseEditOption('Holding Site', 'slot-1');
+  await chooseEditOption('상대 Holding Site', 'pm-b/station-1', 'pm-b');
+  await chooseEditOption('Handler', 'robot-1 · ATM Robot');
+  fireEvent.click(screen.getByRole('button', { name: 'Transfer Capability 추가' }));
+  await saveDraft();
+  const capabilityId = 'pm-a-slot-1-pm-b-station-1';
+  expect(layoutDocumentSchema.parse(await readDraft()).transferCapabilities.at(-1)).toMatchObject({ id: capabilityId, handlerComponentId: 'robot-1', provenance: { certainty: 'assumed', sourceEvidence: [] } });
+  fireEvent.click(screen.getByRole('button', { name: 'slot-1 삭제' }));
+  await saveDraft();
+  expect(layoutDocumentSchema.parse(await readDraft()).transferCapabilities.some((edge) => edge.id === capabilityId)).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect(screen.getByRole('button', { name: `${capabilityId} 삭제` })).toBeTruthy();
+}, 15_000); // Several Radix Select interactions: ~1.5 s locally, over the 5 s default on a loaded CI runner (#173)
+
+it('shows the no-robot hint and disables capability creation', async () => {
+  const raw = layoutDocumentSchema.parse(await original());
+  for (const component of raw.components) if (component.role === 'robot') component.role = 'handler';
+  raw.transferCapabilities = [];
+  if (raw.kind === 'template') delete raw.roleCardinality.robot;
+  await writeFile(join(root, TEMPLATE), JSON.stringify(raw));
+  const { container } = await openTemplate();
+  select(container, PM);
+  expect(screen.getByText('role이 robot인 Component가 없습니다.')).toBeTruthy();
+  expect((screen.getByRole('button', { name: 'Transfer Capability 추가' }) as HTMLButtonElement).disabled).toBe(true);
+});
+
+it('disables all graph controls while the Component delete dialog is open', async () => {
+  const { container } = await openAssembly();
+  select(container, PM);
+  fireEvent.click(screen.getByRole('button', { name: '삭제' }));
+  await screen.findByRole('alertdialog');
+  for (const title of ['Physical Interface', '포트', 'Holding Site', 'Transfer Capability']) {
+    const section = screen.getByRole('region', { name: title, hidden: true });
+    for (const control of section.querySelectorAll('button')) expect(control.disabled).toBe(true);
+  }
+});
+
+it('disables interface creation when undo removes the chosen partner', async () => {
+  const { container } = await openAssembly();
+  await chooseEditOption('추가할 Component 종류', 'pm');
+  fireEvent.click(screen.getByRole('button', { name: 'Component 추가' }));
+  select(container, PM);
+  await chooseEditOption('상대 Component', 'pm-1 · PM 1');
+  await chooseEditOption('종류', 'gate');
+  expect((screen.getByRole('button', { name: 'Physical Interface 추가' }) as HTMLButtonElement).disabled).toBe(false);
+  fireEvent.click(screen.getByRole('button', { name: '실행 취소' }));
+  expect((screen.getByRole('button', { name: 'Physical Interface 추가' }) as HTMLButtonElement).disabled).toBe(true);
 });

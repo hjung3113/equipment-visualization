@@ -36,7 +36,7 @@ Differences from the FeedbackOps original: no backend or database, and the repo 
   - creates an Orca worktree from `origin/develop` and renames its branch to `feature/<n>-<slug>`;
   - builds `.review/00-IMPL-RULES.md` and `.review/00-REVIEW-RULES.md` from the shared templates plus `addenda/` and writes `.review/W-<n>-TASK.md`
     (the rules pointer, then `$WAVE_BRIEFS/<n>-task.md`);
-  - initialises submodules (`external/feedbackops`, ADR-0008), closes setup shells, runs `pnpm install
+  - closes setup shells, runs `pnpm install
     --frozen-lockfile` when a lockfile exists, applies `PRE_ADD`;
   - delegates to shared `worker-launch.sh` (role `WORKER_ROLE`, default `impl`; overrides `WORKER_MODEL` /
     `WORKER_EFFORT`).
@@ -118,7 +118,7 @@ Read first by the global `review-ux` persona. Report in English.
   - visual style: semi-flat technical schematic, restrained outlines and fills, no fake 3D; theme tokens, not raw
     colours;
   - design system (ADR-0008): every screen, the standalone Studio included, must look like analytics-platform —
-    FeedbackOps `@fops/ui` controls and tokens, the platform shell (rail, sidebar, 50px page head, 32px table rows).
+    the platform SDK's `@ap/ui` controls and tokens (ADR-0013), the platform shell (rail, sidebar, 50px page head, 32px table rows).
     Compare side by side with the analytics-platform screen of the same kind; a default browser control or an
     unstyled table is a finding, not a nit;
   - generic lenses only where the project is silent: the globally installed `impeccable` skill's
@@ -150,7 +150,7 @@ Read first by the global `review-quality` persona. Report in English.
   `docs/DESIGN-v0.4.md` (domain model), `docs/REPLAY-CONTRACT.md`, `docs/INTEGRATION.md`, ADRs under `docs/adr/`,
   and nested `AGENTS.md` files on touched paths. A section marked **Proposed** is design, not a contract the code
   must already meet; flag code that contradicts it, not code that has not built it yet.
-- **Boundary leaks:** `@ap/*`, analytics-platform or parser imports outside `packages/platform-adapter`; platform
+- **Boundary leaks:** `@ap/*` other than `@ap/ui` (any `@ap/*` in core/renderer), analytics-platform or parser imports outside `packages/platform-adapter`; platform
   concerns (auth, scope, menus, permissions, routing) inside core, renderer, editor or replay; renderer or editor
   owning domain rules that belong in `packages/core`; replay depending on renderer or editor, or core depending on
   any of them.
@@ -227,8 +227,6 @@ perf role is added only once the Studio has a measured interaction budget.
   links (reinstall with `--config.confirmModulesPurge=false`). The `review-quality` persona lacks this rule
   (hjung3113/conductor-engine#22), so its task says it too.
 - Packages built with `tsc` need `.js` relative import specifiers, or `dist` fails under Node ESM.
-- A worktree created by hand (`orca worktree create`, `git worktree add`) has no submodules: run `git submodule update
-  --init` before `pnpm install`, or Studio cannot resolve `@fops/ui` (2026-10-18).
 - A lettered slice (73e, 73f2) launches with its suffixed id, `launch-worker.py 73f2 <slug>`: the launcher reads
   `$WAVE_BRIEFS/73f2-task.md`, names the report, sentinel and state `W-73f2`, and passes only the digits to `orca
   worktree create --issue` (which accepts only numbers). Launching with the plain number picked an older slice's
@@ -240,7 +238,7 @@ perf role is added only once the Studio has a measured interaction budget.
 - A merge of a change that loads ESLint/Tailwind inside the parallel test run pushed an unrelated 5 s editor test
   over its timeout in CI twice: read the CI timings of the slowest tests in other packages before merging such a
   change (2026-10-18; hjung3113/conductor-engine#20).
-- A worktree with the submodule initialised cannot be removed: `orca worktree rm` returns `ok` but leaves the directory,
+- (Obsolete since ADR-0013 removed the submodule, kept for other repos.) A worktree with a submodule initialised cannot be removed: `orca worktree rm` returns `ok` but leaves the directory,
   and `git worktree remove` refuses ("working trees containing submodules"). Archive `.review/`, confirm `git status
   --porcelain` is empty, then `trash <wt>`, `git worktree prune`, `git branch -D <branch>`; do not rely on `ship-pr.sh
   --worktree` cleanup (2026-10-19; hjung3113/conductor-engine#27).
@@ -255,3 +253,10 @@ perf role is added only once the Studio has a measured interaction budget.
 - `launch-worker.py` copies only the brief and the rules into the worktree's `.review/`. Copy every other `.review/`
   file the brief names (an inventory, an audit) before launching, or the worker works without it (#73 f2c, 2026-10-19;
   hjung3113/conductor-engine#28).
+- No EV package sets up `@testing-library/jest-dom` , so a brief must
+  not prescribe its matchers (`toHaveAccessibleDescription`, `toBeInTheDocument`, …). Use the repo pattern instead:
+  `document.getElementById(el.getAttribute('aria-describedby')!)?.textContent` (`packages/editor/test/views.test.tsx`,
+  `packages/editor/test/mapping-board.test.tsx`). Caught by the #146 brief check, 2026-10-21.
+- A Studio test with several Radix Select interactions runs ~1.5 s locally and has timed out at the 5 s default on a
+  loaded CI runner: give it a per-test `15_000` timeout with a reason comment, as `apps/studio/test/layouts-edit.test.tsx`
+  does (#173, 2026-10-20).

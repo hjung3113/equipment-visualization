@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cn } from '@fops/ui';
+import { cn } from '@ap/ui';
 
 export interface DetailField {
   key: string;

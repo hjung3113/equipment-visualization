@@ -91,30 +91,70 @@ it.each<Variant>([
   {
     code: "import x from '@ap/kernel';",
     filePath: 'packages/platform-adapter/src/x.ts',
-    rule: null,
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "import x from '@ap/components';",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: 'no-restricted-imports',
   },
   {
     code: "export const dep = await import('@ap/kernel');",
     filePath: 'packages/platform-adapter/src/x.ts',
-    rule: null,
+    rule: 'no-restricted-syntax',
   },
   {
-    code: "export type Dep = import('@ap/kernel').Dep;",
+    code: "export type Dep = import('@ap/components').Dep;",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "import x from 'analytics-platform/menus';",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "import { defineEndpoint } from '@ap/contracts';",
     filePath: 'packages/platform-adapter/src/x.ts',
     rule: null,
   },
   {
-    code: "import { Button } from '@fops/ui';",
+    code: "import type { Text } from '@ap/contracts/i18n';",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    code: "import { Button } from '@ap/ui';",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    code: "export const dep = await import('@ap/contracts');",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    code: "export type Dep = import('@ap/ui').ButtonProps;",
+    filePath: 'packages/platform-adapter/src/x.ts',
+    rule: null,
+  },
+  {
+    code: "import { defineEndpoint } from '@ap/contracts';",
+    filePath: 'packages/ui/src/x.ts',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "import { Button } from '@ap/ui';",
     filePath: 'packages/core/src/x.ts',
     rule: 'no-restricted-imports',
   },
   {
-    code: "export const dep = await import('@fops/ui');",
+    code: "export const dep = await import('@ap/ui');",
     filePath: 'packages/renderer/src/x.ts',
     rule: 'no-restricted-syntax',
   },
   {
-    code: "export type T = import('@fops/ui').ButtonProps;",
+    code: "export type T = import('@ap/ui').ButtonProps;",
     filePath: 'packages/renderer/src/x.ts',
     rule: 'no-restricted-syntax',
   },
@@ -125,12 +165,12 @@ it.each<Variant>([
     rule: 'no-restricted-imports',
   },
   {
-    code: "import { Button } from '@fops/ui';",
+    code: "import { Button } from '@ap/ui';",
     filePath: 'packages/replay/src/x.tsx',
     rule: null,
   },
   {
-    code: "import { Button } from '@fops/ui';",
+    code: "import { Button } from '@ap/ui';",
     filePath: 'apps/studio/src/x.tsx',
     rule: null,
   },
@@ -147,6 +187,31 @@ it.each<Variant>([
   {
     code: "import { DataTable } from '@eqv/ui';",
     filePath: 'packages/replay/src/x.tsx',
+    rule: null,
+  },
+  {
+    code: "import x from '@ap/kernel';",
+    filePath: 'packages/replay/src/x.tsx',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export const dep = await import('@ap/components');",
+    filePath: 'apps/studio/src/x.tsx',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "export type Dep = import('@ap/contracts').Dep;",
+    filePath: 'packages/editor/src/x.tsx',
+    rule: 'no-restricted-syntax',
+  },
+  {
+    code: "import { defineEndpoint } from '@ap/contracts';",
+    filePath: 'packages/views/src/x.tsx',
+    rule: 'no-restricted-imports',
+  },
+  {
+    code: "export const dep = await import('@ap/ui');",
+    filePath: 'packages/ui/src/x.tsx',
     rule: null,
   },
   {

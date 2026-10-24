@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
-import { Input } from '@fops/ui';
+import { Input } from '@ap/ui';
 import { FormField, type FormFieldProps } from '../src/index.js';
 
 afterEach(cleanup);

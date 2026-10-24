@@ -68,8 +68,8 @@
           "id": "p-out-00",
           "label": "wafer-access",
           "position": {
-            "x": -79.672,
-            "y": -18.556
+            "x": -86.6,
+            "y": -20.17
           },
           "provenance": {
             "certainty": "assumed",
@@ -82,8 +82,8 @@
           "id": "p-out-01",
           "label": "wafer-access",
           "position": {
-            "x": -79.672,
-            "y": -71.1
+            "x": -86.6,
+            "y": -77.283
           },
           "provenance": {
             "certainty": "assumed",
@@ -96,8 +96,8 @@
           "id": "p-out-02",
           "label": "wafer-access",
           "position": {
-            "x": 79.672,
-            "y": -61.256
+            "x": 86.6,
+            "y": -66.583
           },
           "provenance": {
             "certainty": "assumed",
@@ -110,8 +110,8 @@
           "id": "p-out-03",
           "label": "wafer-access",
           "position": {
-            "x": 79.672,
-            "y": -16.7
+            "x": 86.6,
+            "y": -18.152
           },
           "provenance": {
             "certainty": "assumed",
@@ -124,8 +124,8 @@
           "id": "p-out-04",
           "label": "wafer-access",
           "position": {
-            "x": -32.434,
-            "y": 92
+            "x": -35.254,
+            "y": 100
           },
           "provenance": {
             "certainty": "assumed",
@@ -138,8 +138,8 @@
           "id": "p-out-05",
           "label": "wafer-access",
           "position": {
-            "x": 38.049,
-            "y": 92
+            "x": 41.358,
+            "y": 100
           },
           "provenance": {
             "certainty": "assumed",
@@ -212,8 +212,8 @@
           "id": "p-in-00",
           "label": "wafer-access",
           "position": {
-            "x": 44.16,
-            "y": 10.654
+            "x": 48,
+            "y": 11.58
           },
           "provenance": {
             "certainty": "assumed",
@@ -299,8 +299,8 @@
           "id": "p-in-01",
           "label": "wafer-access",
           "position": {
-            "x": 44.16,
-            "y": 39.51
+            "x": 48,
+            "y": 42.946
           },
           "provenance": {
             "certainty": "assumed",
@@ -386,8 +386,8 @@
           "id": "p-in-02",
           "label": "wafer-access",
           "position": {
-            "x": -44.16,
-            "y": 34.038
+            "x": -48,
+            "y": 36.998
           },
           "provenance": {
             "certainty": "assumed",
@@ -473,8 +473,8 @@
           "id": "p-in-03",
           "label": "wafer-access",
           "position": {
-            "x": -44.16,
-            "y": 9.587
+            "x": -48,
+            "y": 10.421
           },
           "provenance": {
             "certainty": "assumed",
@@ -560,8 +560,8 @@
           "id": "p-in-04",
           "label": "wafer-access",
           "position": {
-            "x": 13.422,
-            "y": -33.12
+            "x": 14.589,
+            "y": -36
           },
           "provenance": {
             "certainty": "assumed",
@@ -574,8 +574,8 @@
           "id": "p-out-06",
           "label": "interface",
           "position": {
-            "x": 16.085,
-            "y": 33.12
+            "x": 42,
+            "y": 23.801
           },
           "provenance": {
             "certainty": "assumed",
@@ -673,8 +673,8 @@
           "id": "p-in-05",
           "label": "wafer-access",
           "position": {
-            "x": -15.746,
-            "y": -33.12
+            "x": -17.115,
+            "y": -36
           },
           "provenance": {
             "certainty": "assumed",
@@ -687,8 +687,8 @@
           "id": "p-out-07",
           "label": "interface",
           "position": {
-            "x": -18.864,
-            "y": 33.12
+            "x": -42,
+            "y": 23.801
           },
           "provenance": {
             "certainty": "assumed",
@@ -786,8 +786,8 @@
           "id": "p-in-06",
           "label": "interface",
           "position": {
-            "x": -23.346,
-            "y": -46
+            "x": -29.406,
+            "y": -50
           },
           "provenance": {
             "certainty": "assumed",
@@ -800,8 +800,8 @@
           "id": "p-in-07",
           "label": "interface",
           "position": {
-            "x": 27.386,
-            "y": -46
+            "x": 29.406,
+            "y": -50
           },
           "provenance": {
             "certainty": "assumed",
@@ -814,8 +814,8 @@
           "id": "p-out-08",
           "label": "interface",
           "position": {
-            "x": -69.718,
-            "y": 46
+            "x": -59.14,
+            "y": 50
           },
           "provenance": {
             "certainty": "assumed",
@@ -828,8 +828,8 @@
           "id": "p-out-09",
           "label": "interface",
           "position": {
-            "x": -1.136,
-            "y": 46
+            "x": 0,
+            "y": 50
           },
           "provenance": {
             "certainty": "assumed",
@@ -842,8 +842,8 @@
           "id": "p-out-10",
           "label": "interface",
           "position": {
-            "x": 67.446,
-            "y": 46
+            "x": 59.14,
+            "y": 50
           },
           "provenance": {
             "certainty": "assumed",
@@ -1165,8 +1165,8 @@
           "id": "p-in-08",
           "label": "interface",
           "position": {
-            "x": 37.72,
-            "y": -24.53
+            "x": 39.032,
+            "y": -33
           },
           "provenance": {
             "certainty": "assumed",
@@ -1552,8 +1552,8 @@
           "id": "p-in-09",
           "label": "interface",
           "position": {
-            "x": 0.76,
-            "y": -30.36
+            "x": 0,
+            "y": -33
           },
           "provenance": {
             "certainty": "assumed",
@@ -1939,8 +1939,8 @@
           "id": "p-in-10",
           "label": "interface",
           "position": {
-            "x": -37.72,
-            "y": -25.36
+            "x": -39.032,
+            "y": -33
           },
           "provenance": {
             "certainty": "assumed",

@@ -203,19 +203,6 @@
     "base": "origin/develop",
     "branch_prefix": "feature/",
     "orca_setup": "skip",
-    "install": [
-      {
-        "run": [
-          "git",
-          "submodule",
-          "update",
-          "--init",
-          "--quiet"
-        ],
-        "stdin_null": true,
-        "fail": "git submodule update failed"
-      }
-    ],
     "install_after_close": [
       {
         "run": [

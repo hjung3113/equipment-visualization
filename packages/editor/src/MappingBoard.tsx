@@ -2,11 +2,11 @@ import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type Keybo
 import type { AliasRulesFile } from '@eqv/core';
 import {
   Button, Callout, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Input, KeyboardShortcut, Label,
-  OutlineBadge, PanelSectionTitle, RadioGroup, RadioGroupItem,
-} from '@fops/ui';
+  PanelSectionTitle, RadioGroup, RadioGroupItem, StatusBadge, type Tone,
+} from '@ap/ui';
 import { Check, CheckCheck, ChevronRight, Diamond, Redo2, Save, Search, TriangleAlert, Undo2 } from 'lucide-react';
 import { TopViewer, type TopViewerProps } from '@eqv/renderer';
-import { DetailFields, Panel, StatusBadge, ViewerZoomControls, type StatusBadgeTone } from '@eqv/ui';
+import { DetailFields, OutlineBadge, Panel, ViewerZoomControls } from '@eqv/ui';
 import {
   addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
   paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,
@@ -27,7 +27,7 @@ export interface MappingBoardProps extends BoardInput {
 const VIEW = { width: 560, height: 420 };
 const LEVEL_TEXT: Record<string, string> = { global: '전역', maker: 'Maker', model: 'Model', equipment: '설비' };
 const MARKED_NAME = ', 선택한 component에 배정됨';
-const STATUS_TONE: Record<BoardStatus, StatusBadgeTone> = {
+const STATUS_TONE: Record<BoardStatus, Tone> = {
   conflict: 'danger', verified: 'info', assumed: 'warning', unmapped: 'neutral', ignored: 'neutral',
 };
 const SHORTCUTS: readonly (readonly [string, string?])[] = [

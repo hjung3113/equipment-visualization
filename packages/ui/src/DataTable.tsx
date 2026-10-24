@@ -2,7 +2,7 @@ import { cloneElement, useEffect, useLayoutEffect, useRef, useState } from 'reac
 import type { HTMLAttributes, Key, KeyboardEvent, ReactElement, ReactNode, Ref, TdHTMLAttributes, ThHTMLAttributes } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
-import { cn } from '@fops/ui';
+import { cn } from '@ap/ui';
 
 export interface DataTableColumn {
   id: string;
@@ -83,6 +83,8 @@ export interface DataTableCellProps extends TdHTMLAttributes<HTMLTableCellElemen
   /** Right-aligned tabular figures. */
   numeric?: boolean;
   mono?: boolean;
+  /** Removes vertical padding for 32px toolbar controls. */
+  action?: boolean;
 }
 
 /**
@@ -167,7 +169,7 @@ export function DataTable({
           // Keyboard focus on a clipped row action must bring it fully into the scroll viewport (default behavior is instant, never smooth).
           if (event.target !== event.currentTarget) event.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
         }}
-        className={cn('overflow-x-auto', (capped || rows !== undefined) && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
+        className={cn('overflow-x-auto focus-visible:-outline-offset-2', (capped || rows !== undefined) && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
       >
         <table aria-label={label} {...(virtualRows ? { 'aria-rowcount': virtualRows.count + 1 } : {})} className={cn('w-full border-separate border-spacing-0 text-sm text-text-primary', className)} {...rest}>
           <thead>
@@ -280,17 +282,18 @@ function Row({ onActivate, selected, onKeyDown, className, children, ...rest }: 
   );
 }
 
-function Cell({ rowHeader = false, numeric, mono, className, children, ...rest }: DataTableCellProps) {
+function Cell({ rowHeader = false, numeric, mono, action = false, className, children, ...rest }: DataTableCellProps) {
   const cellClassName = cn(
-    'min-h-8 border-b border-border-subtle px-3 py-1 text-left align-middle font-normal group-last/row:border-b-0 first:border-l-2 first:border-l-transparent group-aria-selected/row:first:border-l-accent-primary',
+    'min-h-8 border-b border-border-subtle px-3 text-left align-middle font-normal group-last/row:border-b-0 first:border-l-2 first:border-l-transparent group-aria-selected/row:first:border-l-accent-primary',
+    action ? 'py-0' : 'py-1',
     numeric && 'text-right tabular-nums whitespace-nowrap',
     mono && 'font-mono text-xs',
     className,
   );
   return rowHeader ? (
-    <th scope="row" className={cellClassName} {...(rest as ThHTMLAttributes<HTMLTableCellElement>)}>{children}</th>
+    <th scope="row" data-action={action || undefined} className={cellClassName} {...(rest as ThHTMLAttributes<HTMLTableCellElement>)}>{children}</th>
   ) : (
-    <td className={cellClassName} {...rest}>{children}</td>
+    <td data-action={action || undefined} className={cellClassName} {...rest}>{children}</td>
   );
 }
 

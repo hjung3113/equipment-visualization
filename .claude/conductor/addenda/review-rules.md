@@ -4,8 +4,8 @@
 - The conductor already ran `verify.sh` (root lint/typecheck/test/build when defined, the package-boundary check,
   `asset-check.py`, worker hygiene); results and the `review-plan.py` output are in `.review/W-<issue>-VERIFY.md`.
 - Look and behaviour in the running Studio belong to `review-ux`.
-- **Boundary first** when the plan flags `boundary`: no `@ap/*`, analytics-platform or parser import outside
-  `packages/platform-adapter`; no platform menus, auth or scope logic inside core/renderer/editor/replay; the
+- **Boundary first** when the plan flags `boundary`: no `@ap/*` other than `@ap/ui` (none at all in core/renderer), analytics-platform or parser import outside
+  `packages/platform-adapter` (ADR-0013); no platform menus, auth or scope logic inside core/renderer/editor/replay; the
   adapter receives data through explicit props/adapters (`docs/INTEGRATION.md`).
 - **Domain invariants** (root `AGENTS.md`, `GLOSSARY.md`, `docs/DESIGN-v0.4.md`):
   - structured data is the source of truth, SVG derived; nothing reads meaning back out of geometry;

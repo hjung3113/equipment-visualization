@@ -68,8 +68,8 @@
           "id": "p-out-00",
           "label": "interface",
           "position": {
-            "x": 44.16,
-            "y": 23.28
+            "x": 48,
+            "y": 24.526
           },
           "provenance": {
             "certainty": "assumed",
@@ -455,8 +455,8 @@
           "id": "p-out-01",
           "label": "interface",
           "position": {
-            "x": 44.16,
-            "y": -20.88
+            "x": 48,
+            "y": -24.526
           },
           "provenance": {
             "certainty": "assumed",
@@ -842,8 +842,8 @@
           "id": "p-in-00",
           "label": "interface",
           "position": {
-            "x": -70.84,
-            "y": -37.35
+            "x": -77,
+            "y": -39.343
           },
           "provenance": {
             "certainty": "assumed",
@@ -856,8 +856,8 @@
           "id": "p-in-01",
           "label": "interface",
           "position": {
-            "x": -70.84,
-            "y": 33.49
+            "x": -77,
+            "y": 39.343
           },
           "provenance": {
             "certainty": "assumed",
@@ -870,8 +870,8 @@
           "id": "p-out-02",
           "label": "wafer-access",
           "position": {
-            "x": 70.84,
-            "y": -33.86
+            "x": 77,
+            "y": -36.804
           },
           "provenance": {
             "certainty": "assumed",
@@ -884,8 +884,8 @@
           "id": "p-out-03",
           "label": "wafer-access",
           "position": {
-            "x": 70.84,
-            "y": 34.21
+            "x": 77,
+            "y": 37.185
           },
           "provenance": {
             "certainty": "assumed",
@@ -1011,8 +1011,8 @@
           "id": "p-in-02",
           "label": "wafer-access",
           "position": {
-            "x": -50.6,
-            "y": 24.19
+            "x": -55,
+            "y": 26.293
           },
           "provenance": {
             "certainty": "assumed",
@@ -1025,8 +1025,8 @@
           "id": "p-out-04",
           "label": "wafer-access",
           "position": {
-            "x": 50.6,
-            "y": 34.73
+            "x": 55,
+            "y": 37.75
           },
           "provenance": {
             "certainty": "assumed",
@@ -1113,8 +1113,8 @@
           "id": "p-in-03",
           "label": "wafer-access",
           "position": {
-            "x": -50.6,
-            "y": -24.44
+            "x": -55,
+            "y": -26.565
           },
           "provenance": {
             "certainty": "assumed",
@@ -1127,8 +1127,8 @@
           "id": "p-out-05",
           "label": "wafer-access",
           "position": {
-            "x": 50.6,
-            "y": -30.43
+            "x": 55,
+            "y": -33.076
           },
           "provenance": {
             "certainty": "assumed",
@@ -1215,8 +1215,8 @@
           "id": "p-in-04",
           "label": "wafer-access",
           "position": {
-            "x": -38.64,
-            "y": -28.636
+            "x": -42,
+            "y": -31.126
           },
           "provenance": {
             "certainty": "assumed",
@@ -1229,8 +1229,8 @@
           "id": "p-in-05",
           "label": "wafer-access",
           "position": {
-            "x": -38.64,
-            "y": 25.091
+            "x": -42,
+            "y": 27.273
           },
           "provenance": {
             "certainty": "assumed",
@@ -1243,8 +1243,8 @@
           "id": "p-out-06",
           "label": "wafer-access",
           "position": {
-            "x": 38.64,
-            "y": -25.553
+            "x": 42,
+            "y": -27.775
           },
           "provenance": {
             "certainty": "assumed",
@@ -1257,8 +1257,8 @@
           "id": "p-out-07",
           "label": "wafer-access",
           "position": {
-            "x": 38.64,
-            "y": 26.258
+            "x": 42,
+            "y": 28.541
           },
           "provenance": {
             "certainty": "assumed",
@@ -1344,8 +1344,8 @@
           "id": "p-in-06",
           "label": "wafer-access",
           "position": {
-            "x": -69,
-            "y": 43.38
+            "x": -75,
+            "y": 47.152
           },
           "provenance": {
             "certainty": "assumed",
@@ -1431,8 +1431,8 @@
           "id": "p-in-07",
           "label": "wafer-access",
           "position": {
-            "x": -69,
-            "y": -44.57
+            "x": -75,
+            "y": -48.446
           },
           "provenance": {
             "certainty": "assumed",

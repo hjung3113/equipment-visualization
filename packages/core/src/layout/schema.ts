@@ -5,6 +5,7 @@ export const LAYOUT_SCHEMA_VERSION = '0.4';
 export const idSchema = z.string().regex(/^[a-z][a-z0-9]*(?:-[a-z0-9]+)*$/);
 const certaintySchema = z.enum(['verified', 'assumed', 'unknown']);
 const materialKindSchema = z.enum(['wafer', 'carrier', 'batch', 'boat', 'reticle']);
+export const MATERIAL_KINDS: readonly z.infer<typeof materialKindSchema>[] = materialKindSchema.options;
 const provenanceSchema = z.strictObject({
   certainty: certaintySchema,
   sourceEvidence: z.array(idSchema),
@@ -57,9 +58,11 @@ const componentSchema = z.strictObject({
 });
 const portRefSchema = z.strictObject({ componentId: idSchema, portId: idSchema });
 const siteRefSchema = z.strictObject({ componentId: idSchema, holdingSiteId: idSchema });
+const physicalInterfaceKindSchema = z.enum(['gate', 'slit', 'docking', 'optical', 'pass-through', 'stage-landing', 'service']);
+export const PHYSICAL_INTERFACE_KINDS: readonly z.infer<typeof physicalInterfaceKindSchema>[] = physicalInterfaceKindSchema.options;
 const physicalInterfaceSchema = z.strictObject({
   id: idSchema,
-  kind: z.enum(['gate', 'slit', 'docking', 'optical', 'pass-through', 'stage-landing', 'service']),
+  kind: physicalInterfaceKindSchema,
   a: portRefSchema,
   b: portRefSchema,
   provenance: provenanceSchema,

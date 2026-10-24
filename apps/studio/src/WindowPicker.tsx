@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { DetailFields, FormField, Panel } from '@eqv/ui';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@fops/ui';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
 import { listSampleWindows, shortWindowHash, windowHex, type SampleWindowEntry } from './onboarding-data.js';
 
 export interface WindowPickerProps {

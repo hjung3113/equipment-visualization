@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
-import { buildGenericLayout, instantiateLayout, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
+import { buildGenericLayout, instantiateLayout, latestBinding, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
   FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
@@ -7,13 +7,12 @@ import {
 import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
+import { errorMessage } from './error-message.js';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
-import { Button, Callout } from '@fops/ui';
+import { Button, Callout } from '@ap/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 import { WindowPicker } from './WindowPicker.js';
-
-const message = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 
 type FleetState = { rows: FleetRow[] } | { error: string } | null;
 
@@ -36,7 +35,7 @@ export function FleetPage() {
       }));
     })().then(
       (rows) => { if (!cancelled) setState({ rows }); },
-      (error: unknown) => { if (!cancelled) setState({ error: message(error) }); },
+      (error: unknown) => { if (!cancelled) setState({ error: errorMessage(error) }); },
     );
     return () => { cancelled = true; };
   }, []);
@@ -60,7 +59,7 @@ export function FleetPage() {
               <Link href={hrefFor(row.status === 'no-observations' ? { name: 'equipment', equipmentId } : { name: 'onboarding', equipmentId, window: null })}>{children}</Link>
             )}
             renderActions={(row) => row.status === 'published' ? (
-              <Button asChild variant="secondary" size="sm">
+              <Button asChild variant="secondary" size="toolbar">
                 <Link href={hrefFor({ name: 'focus', equipmentId: row.equipmentId, entityType: null, anchor: null, window: null })}
                   aria-label={`${row.equipmentId} Focus 열기`}>
                   <Crosshair className="size-3.5" aria-hidden />Focus 열기
@@ -130,7 +129,7 @@ function StartActions({ equipmentId, sampleWindow, result, draft }: {
       if (active.current !== equipmentId) return;
       const exists = error instanceof ApiError && error.status === 412;
       setCreate({ pending: false, exists,
-        error: exists ? '이미 레이아웃 draft가 있습니다' : message(error) });
+        error: exists ? '이미 레이아웃 draft가 있습니다' : errorMessage(error) });
     }
   };
   const blocked = draft.kind === 'no-id';
@@ -245,7 +244,7 @@ async function writePublication(plan: PublishPlan, layout: EquipmentLayoutDocume
     try {
       await write();
     } catch (error) {
-      return { ok: false, error: `${name} 단계 실패: ${message(error)}` };
+      return { ok: false, error: `${name} 단계 실패: ${errorMessage(error)}` };
     }
   }
   return { ok: true, mappingHash: mapping.hash };
@@ -272,7 +271,7 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
         savedScopes.push(scope);
         setSaved((previous) => ({ ...previous, [scope]: file.file }));
       } catch (error) {
-        return { savedScopes, error: message(error) };
+        return { savedScopes, error: errorMessage(error) };
       }
     }
     return { savedScopes };
@@ -280,7 +279,7 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
   const [dirty, setDirty] = useState(false);
   const input = useMemo(() => ({ equipment, inventory, dictionaries, layout, ruleFiles: saved }),
     [equipment, inventory, dictionaries, layout, saved]);
-  const latest = bindings?.bindings.length ? bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a) : null;
+  const latest = bindings ? latestBinding(bindings.bindings) ?? null : null;
   const previous = latest ? mappings[latest.mappingHash] ?? null : null;
 
   const onModelDryRun = async () => {

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { validateLayout, type Component, type LayoutDocument, type Provenance } from '@eqv/core';
+import { validateLayout, portPositionToward, componentWorldCenter, type Component, type LayoutDocument, type Provenance } from '@eqv/core';
 import {
+  isPortFree, addPhysicalInterface, removePhysicalInterface, removePort, addHoldingSite, removeHoldingSite, addTransferCapability, removeTransferCapability,
   canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rootDeltaToLocal, rotateBy,
-  setTransform, undo, DEFAULT_SNAP,
+  setTransform, undo, DEFAULT_SNAP, addComponent, removeComponent, removalImpact, setLabel, roleForPrimitive,
 } from '../src/layout-edit.js';
 
 const assumed: Provenance = { certainty: 'assumed', sourceEvidence: [] };
@@ -297,4 +298,254 @@ describe('history and dirty', () => {
     expect(canUndo(s)).toBe(true);
     expect(isDirty(undo(s))).toBe(true);
   });
+});
+
+describe('Component assembly', () => {
+  const spec = { asset: 'pm', size: { width: 80, height: 60 }, levelId: 'l1', x: 14.12345, y: 26.98765 };
+  it.each([['loadlock', 'll'], ['robot-single', 'robot'], ['robot-dual', 'robot'], ['robot-multi', 'robot'], ['handler', 'robot'], ['pm', 'pm']])('maps primitive %s to Role %s', (name, role) => {
+    expect(roleForPrimitive(name)).toBe(role);
+  });
+  it('adds an assumed Component with explicit natural size and no connectivity', () => {
+    const { state, componentId } = addComponent(fresh(), spec, DEFAULT_SNAP);
+    expect(componentId).toBe('pm-1');
+    expect(byId(state.present, componentId!)).toEqual({ id: 'pm-1', role: 'pm', assetRef: 'primitive:pm', label: 'PM 1', levelId: 'l1',
+      transform: { x: 10, y: 30, rotation: 0, scale: 1 }, size: spec.size, ports: [], holdingSites: [],
+      provenance: { role: assumed, assetRef: assumed, label: assumed, levelId: assumed, transform: assumed } });
+    for (const key of ['physicalInterfaces', 'transferCapabilities', 'processRoutes'] as const) expect(state.present[key]).toBe(layout[key]);
+    expect(state.past).toEqual([layout]);
+    expect(byId(addComponent(fresh(), spec, null).state.present, 'pm-1').transform.x).toBe(14.123);
+  });
+  it('reserves ids in saved, past and future documents, including a deleted id', () => {
+    const first = addComponent(fresh(), spec, null).state;
+    const second = addComponent(first, spec, null).state;
+    expect(addComponent(undo(second), spec, null).componentId).toBe('pm-3');
+    expect(addComponent(removeComponent(markSaved(second), 'pm-2'), spec, null).componentId).toBe('pm-3');
+  });
+  it('refuses Component additions to a Template without changing state', () => {
+    const state = createLayoutEdit({ ...layout, kind: 'template', roleCardinality: {} });
+    const added = addComponent(state, spec, null);
+    expect(added.componentId).toBeNull();
+    expect(added.state).toBe(state);
+  });
+  it.each([['child', 'template'], ['parent', 'children'], ['robot', 'last']] as const)('blocks Template removal of %s with reason %s', (id, reason) => {
+    const state = createLayoutEdit({ ...fixture(reason === 'last' ? [robot] : undefined), kind: 'template', roleCardinality: {} });
+    expect(removalImpact(state.present, id).blockedBy).toBe(reason);
+    expect(removeComponent(state, id)).toBe(state);
+  });
+  it('allocates a fresh id above the safe integer limit', () => {
+    const state = createLayoutEdit(fixture([{ ...robot, id: 'pm-9007199254740993', role: 'pm' }]));
+    const added = addComponent(state, spec, null);
+    expect(added.componentId).toBe('pm-9007199254740994');
+    expect(new Set(added.state.present.components.map((component) => component.id)).size).toBe(2);
+  });
+  it.each(['level', 'drag'])('does not add for invalid %s', (reason) => {
+    const state = reason === 'drag' ? dragTo(fresh(), 'robot', 1, 1, null) : fresh();
+    expect(addComponent(state, { ...spec, levelId: reason === 'level' ? 'missing' : 'l1' }, null)).toEqual({ state, componentId: null });
+  });
+  it('counts and removes all graph references in one undoable edit, preserving unrelated keys', () => {
+    const doc = { ...layout, processRoutes: [{ id: 'drop', label: 'Drop', steps: ['child', 'robot'] }, { id: 'keep', label: 'Keep', steps: ['parent', 'child', 'robot'] }] };
+    expect(removalImpact(doc, 'child')).toEqual({ blockedBy: null, physicalInterfaces: 1, transferCapabilities: 1, processRouteSteps: 2, processRoutes: 1 });
+    const removed = removeComponent(createLayoutEdit(doc), 'child');
+    expect(removed.present.components).toEqual([parent, robot]);
+    expect(removed.present.physicalInterfaces).toEqual([]);
+    expect(removed.present.transferCapabilities).toEqual([]);
+    expect(removed.present.processRoutes).toEqual([{ id: 'keep', label: 'Keep', steps: ['parent', 'robot'] }]);
+    expect(Object.keys(removed.present)).toEqual(Object.keys(doc));
+    expect(undo(removed).present).toBe(doc);
+  });
+  it.each(['children', 'last', 'unknown', 'drag'])('blocks removal for %s', (reason) => {
+    const state = reason === 'last' ? createLayoutEdit(fixture([robot])) : reason === 'drag' ? dragTo(fresh(), 'robot', 1, 1, null) : fresh();
+    const id = reason === 'children' ? 'parent' : reason === 'unknown' ? 'missing' : 'robot';
+    expect(removeComponent(state, id)).toBe(state);
+    if (reason === 'children' || reason === 'last') expect(removalImpact(state.present, id).blockedBy).toBe(reason);
+    if (reason === 'unknown') expect(removalImpact(state.present, id)).toEqual({ blockedBy: null, physicalInterfaces: 0, transferCapabilities: 0, processRouteSteps: 0, processRoutes: 0 });
+  });
+  it('trims labels and downgrades only verified label provenance', () => {
+    const doc = fixture([{ ...robot, provenance: { label: verified } }, child]);
+    const state = createLayoutEdit(doc);
+    const changed = setLabel(state, 'robot', '  New name  ');
+    expect(byId(changed.present, 'robot').label).toBe('New name');
+    expect(byId(changed.present, 'robot').provenance.label).toEqual({ ...verified, certainty: 'assumed' });
+    expect(setLabel(state, 'robot', ' ')).toBe(state);
+    expect(setLabel(state, 'robot', 'Robot')).toBe(state);
+    const dragging = dragTo(state, 'robot', 1, 1, null);
+    expect(setLabel(dragging, 'robot', 'Name')).toBe(dragging);
+  });
+});
+
+describe('explicit Physical Interface editing', () => {
+  const spec = { a: { componentId: 'child', portId: null }, b: { componentId: 'robot', portId: null }, kind: 'gate' } as const;
+
+  it.each([
+    ['child', 'p1', false], ['robot', 'p2', false], ['child', 'absent', false], ['absent', 'p1', false],
+  ] as const)('checks whether %s/%s is an existing free Port', (componentId, portId, free) => {
+    expect(isPortFree(layout, componentId, portId)).toBe(free);
+  });
+  it('makes both Ports available after their interface is deleted', () => {
+    const { present } = removePhysicalInterface(fresh(), 'pi1');
+    expect(isPortFree(present, 'child', 'p1')).toBe(true);
+    expect(isPortFree(present, 'robot', 'p2')).toBe(true);
+  });
+
+  it('adds two assumed Ports toward partner centres and one interface in a single undo step', () => {
+    const initial = fresh();
+    const { state, interfaceId } = addPhysicalInterface(initial, spec);
+    expect(interfaceId).toBe('edge-1');
+    for (const [id, other] of [['child', 'robot'], ['robot', 'child']]) {
+      expect(byId(state.present, id!).ports.at(-1)).toEqual({ id: 'p-1', position: portPositionToward(layout, id!, componentWorldCenter(layout, other!)!), provenance: assumed });
+    }
+    expect(state.present.physicalInterfaces.at(-1)).toEqual({ ...spec, id: 'edge-1', a: { componentId: 'child', portId: 'p-1' }, b: { componentId: 'robot', portId: 'p-1' }, provenance: assumed });
+    expect(undo(state).present).toBe(initial.present);
+    expect(state.past).toHaveLength(1);
+    expect(validateLayout(state.present).ok).toBe(true);
+  });
+
+  it('reuses a free existing Port, and deleting the interface keeps and frees both Ports', () => {
+    const free = removePhysicalInterface(fresh(), 'pi1');
+    const added = addPhysicalInterface(free, { ...spec, a: { componentId: 'child', portId: 'p1' } });
+    expect(byId(added.state.present, 'child').ports).toEqual(child.ports);
+    const removed = removePhysicalInterface(added.state, added.interfaceId!);
+    expect(removed.present.components).toEqual(added.state.present.components);
+    expect(addPhysicalInterface(removed, { ...spec, a: { componentId: 'child', portId: 'p1' }, b: { componentId: 'robot', portId: 'p-1' } }).interfaceId).toBe('edge-2');
+  });
+
+  it.each([
+    { ...spec, b: { componentId: 'child', portId: null } },
+    { ...spec, a: { componentId: 'absent', portId: null } },
+    { ...spec, a: { componentId: 'child', portId: 'absent' } },
+    { ...spec, a: { componentId: 'child', portId: 'p1' } },
+    { ...spec, a: { componentId: 'robot', portId: 'p2' }, b: { componentId: 'child', portId: 'p1' } },
+  ])('refuses invalid or occupied endpoints atomically: %j', (input) => {
+    const initial = fresh();
+    expect(addPhysicalInterface(initial, input)).toEqual({ state: initial, interfaceId: null });
+    expect(addPhysicalInterface(initial, input).state).toBe(initial);
+  });
+
+  it('removes a Port and its interfaces as one undoable cascade', () => {
+    const initial = fresh();
+    const state = removePort(initial, 'child', 'p1');
+    expect(byId(state.present, 'child').ports).toEqual([]);
+    expect(state.present.physicalInterfaces).toEqual([]);
+    expect(undo(state).present).toBe(initial.present);
+    expect(state.past).toHaveLength(1);
+  });
+
+  it('allocates BigInt suffixes scoped to the Component or layout', () => {
+    const doc = structuredClone(layout);
+    byId(doc, 'child').ports = [...child.ports, { id: 'p-9007199254740993', position: { x: 0, y: 0 }, provenance: assumed }];
+    doc.physicalInterfaces = [{ ...doc.physicalInterfaces[0]!, id: 'edge-9007199254740993' }];
+    const added = addPhysicalInterface(createLayoutEdit(doc), spec);
+    expect(added.interfaceId).toBe('edge-9007199254740994');
+    expect(byId(added.state.present, 'child').ports.at(-1)?.id).toBe('p-9007199254740994');
+    expect(byId(added.state.present, 'robot').ports.at(-1)?.id).toBe('p-1');
+    expect(addPhysicalInterface(undo(added.state), spec).interfaceId).toBe('edge-9007199254740995');
+  });
+});
+
+describe('explicit Holding Site and Transfer Capability editing', () => {
+  const spec = { a: { componentId: 'child', holdingSiteId: 's1' }, b: { componentId: 'robot', holdingSiteId: 's2' }, handlerComponentId: 'robot' };
+
+  it('adds canonical deduplicated material kinds with an assumed local Site id in one undo step', () => {
+    const initial = fresh();
+    const added = addHoldingSite(initial, 'child', ['reticle', 'carrier', 'wafer', 'carrier']);
+    expect(added.holdingSiteId).toBe('slot-1');
+    expect(byId(added.state.present, 'child').holdingSites.at(-1)).toEqual({ id: 'slot-1', materialKinds: ['wafer', 'carrier', 'reticle'], provenance: assumed });
+    expect(undo(added.state).present).toBe(initial.present);
+    expect(addHoldingSite(added.state, 'child', ['wafer']).holdingSiteId).toBe('slot-2');
+    expect(addHoldingSite(added.state, 'robot', ['wafer']).holdingSiteId).toBe('slot-1');
+    expect(addHoldingSite(initial, 'child', []).state).toBe(initial);
+  });
+
+  it('removes a Holding Site and its capabilities in one undo step', () => {
+    const initial = fresh();
+    const state = removeHoldingSite(initial, 'child', 's1');
+    expect(byId(state.present, 'child').holdingSites).toEqual([]);
+    expect(state.present.transferCapabilities).toEqual([]);
+    expect(undo(state).present).toBe(initial.present);
+    expect(state.past).toHaveLength(1);
+  });
+
+  it('adds assumed capabilities with collision suffixes and removes only the capability', () => {
+    const doc = structuredClone(layout);
+    doc.components.push({ ...robot, id: 'robot-two' });
+    doc.transferCapabilities = [{ ...doc.transferCapabilities[0]!, id: 'child-s1-robot-s2', handlerComponentId: 'robot-two' }];
+    const initial = createLayoutEdit(doc);
+    const added = addTransferCapability(initial, spec);
+    expect(added.capabilityId).toBe('child-s1-robot-s2-2');
+    expect(added.state.present.transferCapabilities.at(-1)).toEqual({ ...spec, id: added.capabilityId, provenance: assumed });
+    expect(validateLayout(added.state.present).ok).toBe(true);
+    expect(undo(added.state).present).toBe(initial.present);
+    expect(removeTransferCapability(added.state, added.capabilityId!).present).toEqual(initial.present);
+  });
+
+  it.each([
+    { ...spec, a: { componentId: 'child', holdingSiteId: 'absent' } },
+    { ...spec, b: { componentId: 'absent', holdingSiteId: 's2' } },
+    { ...spec, handlerComponentId: 'absent' },
+    { ...spec, handlerComponentId: 'child' },
+    { ...spec, b: spec.a },
+    spec,
+    { ...spec, a: spec.b, b: spec.a },
+  ])('refuses invalid sites, handlers or duplicate unordered pairs: %j', (input) => {
+    const initial = fresh();
+    expect(addTransferCapability(initial, input).state).toBe(initial);
+    expect(addTransferCapability(initial, input).capabilityId).toBeNull();
+  });
+
+  it.each(['same-component', 'equal-local-ids', 'different-handler'])('accepts %s with schema-valid endpoints', (variant) => {
+    const doc = structuredClone(layout);
+    const target = variant === 'same-component' ? 'child' : 'robot';
+    byId(doc, target).holdingSites.push({ id: 's1', materialKinds: ['wafer'], provenance: assumed });
+    if (variant === 'same-component') byId(doc, target).holdingSites.at(-1)!.id = 'other';
+    if (variant === 'different-handler') doc.components.push({ ...robot, id: 'robot-two' });
+    const input = { ...spec, b: { componentId: target, holdingSiteId: variant === 'same-component' ? 'other' : variant === 'equal-local-ids' ? 's1' : 's2' }, handlerComponentId: variant === 'different-handler' ? 'robot-two' : 'robot' };
+    const added = addTransferCapability(createLayoutEdit(doc), input);
+    expect(added.capabilityId).not.toBeNull();
+    expect(validateLayout(added.state.present).ok).toBe(true);
+  });
+});
+
+describe('graph id reservations', () => {
+  const interfaceSpec = { a: { componentId: 'child', portId: null }, b: { componentId: 'robot', portId: null }, kind: 'gate' } as const;
+  const capabilitySpec = { a: { componentId: 'child', holdingSiteId: 's1' }, b: { componentId: 'robot', holdingSiteId: 's2' }, handlerComponentId: 'robot' };
+  const cases = [
+    { name: 'Holding Site', first: 'slot-1', next: 'slot-2',
+      add: (state: ReturnType<typeof fresh>) => { const result = addHoldingSite(state, 'child', ['wafer']); return { state: result.state, id: result.holdingSiteId }; },
+      remove: (state: ReturnType<typeof fresh>) => removeHoldingSite(state, 'child', 'slot-1') },
+    { name: 'Port', first: 'p-1', next: 'p-2',
+      add: (state: ReturnType<typeof fresh>) => { const result = addPhysicalInterface(state, interfaceSpec); return { state: result.state, id: byId(result.state.present, 'child').ports.at(-1)?.id }; },
+      remove: (state: ReturnType<typeof fresh>) => removePort(state, 'child', 'p-1') },
+    { name: 'edge', first: 'edge-1', next: 'edge-2',
+      add: (state: ReturnType<typeof fresh>) => { const result = addPhysicalInterface(state, interfaceSpec); return { state: result.state, id: result.interfaceId }; },
+      remove: (state: ReturnType<typeof fresh>) => removePhysicalInterface(state, 'edge-1') },
+    { name: 'Transfer Capability', first: 'child-s1-robot-s2', next: 'child-s1-robot-s2-2',
+      add: (state: ReturnType<typeof fresh>) => { const result = addTransferCapability(state, capabilitySpec); return { state: result.state, id: result.capabilityId }; },
+      remove: (state: ReturnType<typeof fresh>) => removeTransferCapability(state, 'child-s1-robot-s2') },
+  ];
+  it.each(cases)('does not reuse a deleted $name id', ({ add, remove, first, next }) => {
+    const added = add(removeTransferCapability(fresh(), 'tc1'));
+    expect(added.id).toBe(first);
+    expect(add(remove(added.state)).id).toBe(next);
+  });
+  it.each(cases)('does not reuse an undone $name id', ({ add, next }) => {
+    const added = add(removeTransferCapability(fresh(), 'tc1'));
+    expect(add(undo(added.state)).id).toBe(next);
+  });
+  it.each(cases)('reserves a $name id reachable only from the saved baseline', ({ add, next }) => {
+    const added = add(removeTransferCapability(fresh(), 'tc1'));
+    const branched = moveBy(undo(markSaved(added.state)), 'robot', 1, 0, null);
+    expect(add(branched).id).toBe(next);
+  });
+});
+
+it.each(['drag', 'unknown'] as const)('all graph operations leave state untouched for %s targets', (variant) => {
+  const state = variant === 'drag' ? dragTo(fresh(), 'child', 1, 0, null) : fresh();
+  const componentId = variant === 'drag' ? 'child' : 'absent';
+  expect(addHoldingSite(state, componentId, ['wafer']).state).toBe(state);
+  expect(removeHoldingSite(state, componentId, 's1')).toBe(state);
+  expect(removePort(state, componentId, 'p1')).toBe(state);
+  expect(removePhysicalInterface(state, variant === 'drag' ? 'pi1' : 'absent')).toBe(state);
+  expect(removeTransferCapability(state, variant === 'drag' ? 'tc1' : 'absent')).toBe(state);
+  expect(addPhysicalInterface(state, { a: { componentId, portId: null }, b: { componentId: 'robot', portId: null }, kind: 'gate' }).state).toBe(state);
+  expect(addTransferCapability(state, { a: { componentId, holdingSiteId: 's1' }, b: { componentId: 'robot', holdingSiteId: 's2' }, handlerComponentId: 'robot' }).state).toBe(state);
 });

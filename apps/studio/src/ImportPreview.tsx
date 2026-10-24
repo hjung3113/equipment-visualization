@@ -6,19 +6,20 @@ import {
 } from '@eqv/core';
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  Button,
-} from '@fops/ui';
+  Button, StatusBadge,
+} from '@ap/ui';
 import {
   CircleCheck, CircleX, FileJson, Info, Replace, TriangleAlert, Upload, X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
-  DataTable, DetailFields, EvidenceBadge, LoadingBlock, Panel, StateMessage, StatusBadge,
+  DataTable, DetailFields, EvidenceBadge, LoadingBlock, Panel, StateMessage,
   type DetailField,
 } from '@eqv/ui';
 import { ApiError, importWindow, putAliasMetadata, putTypeDictionary } from './api.js';
 import { checkScope, readAliasMetadata, shortWindowHash } from './onboarding-data.js';
+import { errorMessage } from './error-message.js';
 import type { EquipmentDataLoad, FileState } from './equipment-data.js';
 
 export type ImportKind = 'window' | 'alias-metadata' | 'type-dictionary';
@@ -65,10 +66,17 @@ const TITLES: Record<ImportKind, string> = {
 };
 const issueProblems = (issues: readonly { code: string; path: readonly PropertyKey[]; message: string }[]): Problem[] =>
   issues.map(({ code, path, message }) => ({ code, path: path.map(String), message }));
-const errorText = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
 const pathText = (path: readonly (string | number)[]) => path.map(String).join('.') || '(root)';
 const hasSchema = (problems: readonly Problem[]) => problems.some(({ code }) => code === 'schema');
 const withSchemaHelp = (message: string, problems: readonly Problem[]) => hasSchema(problems) ? <>{message}<br />{SCHEMA_HELP}</> : message;
+const rejectNotice = (rejects: readonly Problem[]): Notice | null => rejects.length > 0
+  ? { tone: 'danger', icon: CircleX, title: '가져올 수 없습니다', body: withSchemaHelp(`거부 ${rejects.length}건이 있습니다. 아래 표의 code와 위치를 확인하세요.`, rejects) }
+  : null;
+const isIssue = (item: unknown): item is { code: string; path: PropertyKey[]; message: string } =>
+  item !== null && typeof item === 'object'
+  && typeof (item as { code?: unknown }).code === 'string'
+  && Array.isArray((item as { path?: unknown }).path)
+  && typeof (item as { message?: unknown }).message === 'string';
 
 function aliasDiff(current: AliasMetadataFile, next: AliasMetadataFile): AliasDiff {
   const previous = new Map(current.aliases.map((entry) => [entry.alias, JSON.stringify([entry.moduleType, entry.isPort, entry.isRobot])]));
@@ -92,7 +100,7 @@ async function currentAlias(equipmentId: string): Promise<AliasCurrent> {
     const file = await readAliasMetadata(equipmentId);
     return file === undefined ? { kind: 'absent' } : { kind: 'ok', file };
   } catch (error) {
-    return { kind: 'unreadable', message: errorText(error) };
+    return { kind: 'unreadable', message: errorMessage(error) };
   }
 }
 
@@ -105,8 +113,8 @@ function clientNotice(file: File, maxBytes: number, error: unknown): Notice {
   }
   const kind = error instanceof SyntaxError ? 'json' : 'read';
   return kind === 'json'
-    ? { tone: 'danger', icon: FileJson, title: 'JSON으로 읽을 수 없습니다', body: errorText(error) }
-    : { tone: 'danger', icon: CircleX, title: '파일을 읽을 수 없습니다', body: errorText(error) };
+    ? { tone: 'danger', icon: FileJson, title: 'JSON으로 읽을 수 없습니다', body: errorMessage(error) }
+    : { tone: 'danger', icon: CircleX, title: '파일을 읽을 수 없습니다', body: errorMessage(error) };
 }
 
 async function inspect(props: ImportPreviewProps): Promise<Inspection> {
@@ -116,13 +124,13 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
   try {
     text = await file.text();
   } catch (error) {
-    throw new FileReadError(errorText(error), { cause: error });
+    throw new FileReadError(errorMessage(error), { cause: error });
   }
   let raw: unknown;
   try {
     raw = JSON.parse(text) as unknown;
   } catch (error) {
-    throw new SyntaxError(errorText(error), { cause: error });
+    throw new SyntaxError(errorMessage(error), { cause: error });
   }
 
   if (kind === 'window') {
@@ -133,9 +141,7 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
     const rejects = result.ok ? [] : issueProblems(result.issues);
     const warnings = issueProblems(result.warnings);
     const summary = result.summary;
-    const notice = rejects.length > 0
-      ? { tone: 'danger' as const, icon: CircleX, title: '가져올 수 없습니다', body: withSchemaHelp(`거부 ${rejects.length}건이 있습니다. 아래 표의 code와 위치를 확인하세요.`, rejects) }
-      : null;
+    const notice = rejectNotice(rejects);
     return { text, rejects, warnings, ...(summary === undefined ? {} : { summary }), notice, server: false, locked: false };
   }
 
@@ -148,9 +154,7 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
     const current = await currentAlias(record.equipmentId);
     const fileData = parsed.success ? parsed.data : undefined;
     const diff = fileData && current.kind === 'ok' ? aliasDiff(current.file, fileData) : undefined;
-    const notice = rejects.length > 0
-      ? { tone: 'danger' as const, icon: CircleX, title: '가져올 수 없습니다', body: withSchemaHelp(`거부 ${rejects.length}건이 있습니다. 아래 표의 code와 위치를 확인하세요.`, rejects) }
-      : null;
+    const notice = rejectNotice(rejects);
     return { text, rejects, warnings: [], alias: { ...(fileData ? { file: fileData } : {}), current, ...(diff ? { diff } : {}) }, notice, server: false, locked: false };
   }
 
@@ -162,15 +166,13 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
       checkScope(`onboarding/scopes/model/${record.maker}/${record.model}/type-dictionary.json`, fileData.scope,
         { level: 'model', maker: record.maker, model: record.model });
     } catch (error) {
-      rejects.push({ code: 'scope-mismatch', path: ['scope'], message: errorText(error) });
+      rejects.push({ code: 'scope-mismatch', path: ['scope'], message: errorMessage(error) });
     }
   }
   const exists = typeDictionary.kind === 'ok';
-  const notice = rejects.length > 0
-    ? { tone: 'danger' as const, icon: CircleX, title: '가져올 수 없습니다', body: withSchemaHelp(`거부 ${rejects.length}건이 있습니다. 아래 표의 code와 위치를 확인하세요.`, rejects) }
-    : exists
+  const notice: Notice | null = rejectNotice(rejects) ?? (exists
       ? { tone: 'warning' as const, icon: TriangleAlert, title: '이 Model의 Type Dictionary가 이미 있습니다', body: 'Studio는 Type Dictionary를 처음 한 번만 가져옵니다(create-only). 바꾸려면 데이터 루트의 파일을 직접 고치세요.' }
-      : null;
+      : null);
   return { text, rejects, warnings: [], dictionary: { ...(fileData ? { file: fileData } : {}) }, notice, server: false, locked: false };
 }
 
@@ -180,8 +182,8 @@ function alertNotice(notice: Notice) {
 
 function rowsFor(inspection: Inspection) {
   return [
-    ...inspection.rejects.map((problem) => ({ problem, tone: 'danger' as const, text: '거부', icon: CircleX })),
-    ...inspection.warnings.map((problem) => ({ problem, tone: 'warning' as const, text: '경고', icon: TriangleAlert })),
+    ...inspection.rejects.map((problem) => ({ problem, tone: 'danger' as const, text: '거부' })),
+    ...inspection.warnings.map((problem) => ({ problem, tone: 'warning' as const, text: '경고' })),
   ];
 }
 
@@ -249,10 +251,8 @@ function serverNotice(error: ApiError, kind: ImportKind): { notice: Notice; serv
   const body = error.body as { error?: unknown; issues?: unknown; warnings?: unknown } | null;
   const message = typeof body?.error === 'string' ? body.error : error.message;
   if (Array.isArray(body?.issues)) {
-    const rejects = issueProblems(body.issues.filter((item): item is { code: string; path: PropertyKey[]; message: string } =>
-      typeof (item as { code?: unknown })?.code === 'string' && Array.isArray((item as { path?: unknown })?.path) && typeof (item as { message?: unknown })?.message === 'string'));
-    const warnings = Array.isArray(body.warnings) ? issueProblems(body.warnings.filter((item): item is { code: string; path: PropertyKey[]; message: string } =>
-      typeof (item as { code?: unknown })?.code === 'string' && Array.isArray((item as { path?: unknown })?.path) && typeof (item as { message?: unknown })?.message === 'string')) : [];
+    const rejects = issueProblems(body.issues.filter(isIssue));
+    const warnings = Array.isArray(body.warnings) ? issueProblems(body.warnings.filter(isIssue)) : [];
     return {
       notice: { tone: 'danger', icon: CircleX, title: '서버가 가져오기를 거부했습니다', body: withSchemaHelp(message, rejects) },
       serverProblems: { rejects, warnings }, locked: error.status !== null && error.status < 500,
@@ -350,7 +350,7 @@ export function ImportPreview(props: ImportPreviewProps) {
         } });
         if (mounted.current && (error.status === 409 || error.status === 412)) onStale();
       } else if (mounted.current) {
-        setState({ kind: 'ready', inspection: { ...inspection, notice: { tone: 'danger', icon: CircleX, title: '가져오지 못했습니다', body: errorText(error) }, locked: false } });
+        setState({ kind: 'ready', inspection: { ...inspection, notice: { tone: 'danger', icon: CircleX, title: '가져오지 못했습니다', body: errorMessage(error) }, locked: false } });
       }
     } finally {
       if (mounted.current) setBusy(false);
@@ -418,9 +418,9 @@ export function ImportPreview(props: ImportPreviewProps) {
                   { id: 'path', header: '위치' },
                   { id: 'message', header: '내용' },
                 ]}>
-                {warningList.map(({ problem, tone, text, icon: Icon }, index) => (
+                {warningList.map(({ problem, tone, text }, index) => (
                   <DataTable.Row key={`${problem.code}-${pathText(problem.path)}-${index}`}>
-                    <DataTable.Cell><StatusBadge tone={tone} icon={Icon}>{text}</StatusBadge></DataTable.Cell>
+                    <DataTable.Cell><StatusBadge tone={tone} dot>{text}</StatusBadge></DataTable.Cell>
                     <DataTable.Cell mono>{problem.code}</DataTable.Cell>
                     <DataTable.Cell mono>{pathText(problem.path)}</DataTable.Cell>
                     <DataTable.Cell>{problem.message}</DataTable.Cell>

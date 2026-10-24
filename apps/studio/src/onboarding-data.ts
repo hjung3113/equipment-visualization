@@ -1,12 +1,13 @@
 import {
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, parseSampleWindowName,
-  validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary, verifyMappingHash,
-  validateLayout,
+  latestBinding, checkBindingLayout, checkBindingMapping,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, parseSampleWindowName,
+  validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary,
   type AliasMetadataFile, type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
   type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
 import { ApiError, dirOrEmpty, listDir, readFile, type DirEntry } from './api.js';
+import { errorMessage } from './error-message.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
 export type SampleWindowEntry = { name: string; path: string; from: SiteWallClock; to: SiteWallClock; hash: string };
@@ -80,7 +81,7 @@ export async function readAliasMetadata(equipmentId: string): Promise<AliasMetad
   try {
     raw = await readOptional(path);
   } catch (error) {
-    throw new DataError(error instanceof Error ? error.message : '알 수 없는 오류');
+    throw new DataError(errorMessage(error));
   }
   if (raw === undefined) return undefined;
   const parsed = aliasMetadataFileSchema.safeParse(raw);
@@ -124,7 +125,7 @@ export async function readSampleWindow(equipmentId: string, entry: SampleWindowE
   try {
     raw = await readOptional(entry.path);
   } catch (error) {
-    throw new DataError(`${entry.path}: ${error instanceof Error ? error.message : '알 수 없는 오류'}`);
+    throw new DataError(`${entry.path}: ${errorMessage(error)}`);
   }
   if (raw === undefined) throw new DataError(`${entry.path}: 파일을 찾을 수 없습니다`);
   const result = await validateSampleWindow(raw, { equipmentId, existing: [] });
@@ -202,23 +203,19 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
 
     const mappings: Record<string, MappingVersion> = {};
     if (bindings && bindings.bindings.length > 0) {
-      const latest = bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a);
+      const latest = latestBinding(bindings.bindings)!;
       const hex = latest.mappingHash.slice('sha256:'.length);
       const mappingPath = `onboarding/mappings/${equipmentId}/${hex}.mapping.json`;
       const rawMapping = await readOptional(mappingPath);
       if (rawMapping === undefined) throw new DataError(`${mappingPath}: Mapping Version 파일 없음`);
-      const parsed = mappingVersionSchema.safeParse(rawMapping);
-      if (!parsed.success) throw new DataError(`${mappingPath}: ${problems(parsed.error.issues)}`);
-      const mapping = parsed.data;
-      if (!await verifyMappingHash(mapping)) throw new DataError(`${mappingPath}: 내용 hash가 맞지 않습니다`);
-      if (mapping.hash !== latest.mappingHash) throw new DataError(`${mappingPath}: hash(${mapping.hash})가 binding의 mappingHash와 다릅니다`);
-      if (mapping.equipmentId !== equipmentId) throw new DataError(`${mappingPath}: equipmentId(${mapping.equipmentId})가 ${equipmentId}와 다릅니다`);
-      if (mapping.layoutId !== latest.layoutId) throw new DataError(`${mappingPath}: layoutId(${mapping.layoutId})가 binding의 layoutId와 다릅니다`);
+      const checked = await checkBindingMapping(rawMapping, latest, equipmentId);
+      if (!checked.ok) throw new DataError(`${mappingPath}: ${checked.problem}`);
+      const mapping = checked.value;
       mappings[mapping.hash] = mapping;
     }
     return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
   } catch (error) {
-    return { kind: 'error', record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', record, error: errorMessage(error) };
   }
 }
 
@@ -227,7 +224,7 @@ export async function loadEquipment(equipmentId: string, options: { window?: str
   try {
     return await loadData(equipmentId, options);
   } catch (error) {
-    return { kind: 'error', record: null, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', record: null, error: errorMessage(error) };
   }
 }
 
@@ -258,7 +255,7 @@ async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped
 /** The layout the Board edits: the latest binding's layout once published, otherwise `<equipmentId>-layout`. */
 function draftLayoutId(equipmentId: string, bindings: BindingsFile | null): string | null {
   if (bindings && bindings.bindings.length > 0) {
-    return bindings.bindings.reduce((a, b) => b.effectiveFrom > a.effectiveFrom ? b : a).layoutId;
+    return latestBinding(bindings.bindings)!.layoutId;
   }
   const id = `${equipmentId}-layout`;
   return idSchema.safeParse(id).success ? id : null;
@@ -272,14 +269,12 @@ async function lookupDraft(equipmentId: string, bindings: BindingsFile | null): 
   try {
     const raw = await readOptional(path);
     if (raw === undefined) return { kind: 'absent', layoutId };
-    const result = validateLayout(raw);
-    if (!result.ok) return { kind: 'error', layoutId, error: `${path}: ${problems(result.issues)}` };
-    const { layout } = result;
-    if (layout.kind !== 'equipment-layout') return { kind: 'error', layoutId, error: `${path}: equipment-layout이 아닙니다 (${layout.kind})` };
-    if (layout.id !== layoutId) return { kind: 'error', layoutId, error: `${path}: id(${layout.id})가 ${layoutId}와 다릅니다` };
+    const checked = await checkBindingLayout(raw, layoutId, undefined);
+    if (!checked.ok) return { kind: 'error', layoutId, error: `${path}: ${checked.problem}` };
+    const layout = checked.value;
     return { kind: 'found', layoutId, layout };
   } catch (error) {
-    return { kind: 'error', layoutId, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', layoutId, error: errorMessage(error) };
   }
 }
 
@@ -291,6 +286,6 @@ export async function loadOnboarding(equipmentId: string, options: { window?: st
     const { templates, skipped } = await loadTemplates();
     return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
   } catch (error) {
-    return { kind: 'error', record: loaded.data.record, error: error instanceof Error ? error.message : '알 수 없는 오류' };
+    return { kind: 'error', record: loaded.data.record, error: errorMessage(error) };
   }
 }

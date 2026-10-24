@@ -2,8 +2,37 @@ packages:
   - apps/*
   - packages/*
   - tooling
-  # ADR-0008: only FeedbackOps packages/ui and its dependency packages/shared join this workspace.
-  - external/feedbackops/packages/ui
-  - external/feedbackops/packages/shared
 allowBuilds:
   esbuild: true
+# ADR-0013: the platform SDK comes from its GitHub Release tarballs (analytics-platform
+# docs/integration/sdk-git-tag-consumption.md). The overrides pin each @ap/* package to the same
+# Release file and carry the consumer conditions the tarballs do not (tiptap 3.23.5, auto-animate patch).
+overrides:
+  "@ap/contracts": "https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz"
+  "@ap/ui": "https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz"
+  "@tiptap/core": 3.23.5
+  "@tiptap/pm": 3.23.5
+  "@tiptap/extension-blockquote": 3.23.5
+  "@tiptap/extension-bold": 3.23.5
+  "@tiptap/extension-bubble-menu": 3.23.5
+  "@tiptap/extension-bullet-list": 3.23.5
+  "@tiptap/extension-code": 3.23.5
+  "@tiptap/extension-code-block": 3.23.5
+  "@tiptap/extension-document": 3.23.5
+  "@tiptap/extension-dropcursor": 3.23.5
+  "@tiptap/extension-floating-menu": 3.23.5
+  "@tiptap/extension-gapcursor": 3.23.5
+  "@tiptap/extension-hard-break": 3.23.5
+  "@tiptap/extension-heading": 3.23.5
+  "@tiptap/extension-horizontal-rule": 3.23.5
+  "@tiptap/extension-italic": 3.23.5
+  "@tiptap/extension-list": 3.23.5
+  "@tiptap/extension-list-item": 3.23.5
+  "@tiptap/extension-list-keymap": 3.23.5
+  "@tiptap/extension-ordered-list": 3.23.5
+  "@tiptap/extension-paragraph": 3.23.5
+  "@tiptap/extension-strike": 3.23.5
+  "@tiptap/extension-text": 3.23.5
+  "@tiptap/extensions": 3.23.5
+patchedDependencies:
+  "@formkit/auto-animate@0.10.0": patches/@formkit__auto-animate@0.10.0.patch

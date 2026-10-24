@@ -13,5 +13,8 @@ export {
 export { DIRTY_REASON, PublishPanel, type PublishPanelProps } from './PublishPanel.js';
 export {
   DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rootDeltaToLocal, rotateBy, setTransform, undo,
-  type LayoutEditState, type SnapOptions, type TransformPatch,
+  isPortFree, addPhysicalInterface, removePhysicalInterface, removePort, addHoldingSite, removeHoldingSite, addTransferCapability, removeTransferCapability,
+  type AddPhysicalInterfaceSpec, type AddTransferCapabilitySpec,
+  addComponent, roleForPrimitive, removalImpact, removeComponent, setLabel,
+  type AddComponentSpec, type RemovalImpact, type LayoutEditState, type SnapOptions, type TransformPatch,
 } from './layout-edit.js';

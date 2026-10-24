@@ -2,20 +2,21 @@ import { useRef } from 'react';
 import type { ChangeEvent } from 'react';
 import { Upload } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Button } from '@fops/ui';
+import { Button } from '@ap/ui';
 
 export interface FileButtonProps {
   /** Names the button and the file input. */
   label: string;
   accept?: string;
   disabled?: boolean;
+  'aria-describedby'?: string;
   onFile: (file: File) => void;
   /** Defaults to `Upload`. */
   icon?: LucideIcon;
 }
 
 /** Toolbar button that opens the file picker; the native input stays hidden but reachable by its label. */
-export function FileButton({ label, accept, disabled, onFile, icon: Icon = Upload }: FileButtonProps) {
+export function FileButton({ label, accept, disabled, 'aria-describedby': describedBy, onFile, icon: Icon = Upload }: FileButtonProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.currentTarget.files?.[0];
@@ -24,7 +25,7 @@ export function FileButton({ label, accept, disabled, onFile, icon: Icon = Uploa
   };
   return (
     <>
-      <Button type="button" variant="secondary" size="toolbar" disabled={disabled} onClick={() => inputRef.current?.click()}>
+      <Button type="button" variant="secondary" size="toolbar" disabled={disabled} aria-describedby={describedBy} onClick={() => inputRef.current?.click()}>
         <Icon className="size-3.5" aria-hidden />
         {label}
       </Button>

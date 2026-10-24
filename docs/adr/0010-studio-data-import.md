@@ -57,11 +57,11 @@ Studio는 다음 네 가지를 **가져오기 endpoint**(`/api/import/*`, dev �
 - **`GLOSSARY.md`에 Sample Window를 추가한다:** "한 설비에 대해 가져온 완전한 OccurrenceBatch 하나와 그 조회 구간 `[from, to)`. 불변이며 Inventory와 Replay의 단위다. Studio는 window를 합치지 않는다. _Avoid_: Observation(입력 단위로서), snapshot." ONBOARDING §2의 "샘플 기간"은 Sample Window의 구간이다.
 - **core:** `validateSampleWindow`, window 이름 계산·해석, 관측 집합 해시 함수(`replayKey`와 공유), ADR-0009 시각 진단, `assertBatchRecords`의 id 유일성 검사가 추가된다. 기존 batch와 fixture는 id가 유일하므로 계속 유효하다.
 - **Studio 서버:** `/api/import/status`, `POST /api/import/equipment`, `POST /api/import/windows?equipmentId=`, `PUT /api/import/alias-metadata?equipmentId=`, `PUT /api/import/type-dictionary?maker=&model=`이 추가된다. 저장소 루트 거부, 템플릿 카탈로그 대체 읽기, 경로별 본문 상한도 들어간다.
-- **Studio 화면:** Fleet의 "설비 등록"과 "관측 없음" 상태, 설비 데이터 페이지(window 목록, 가져오기 미리보기, 거부 사유 표, 결과 알림), Onboarding의 window 선택, Focus의 `window` 지정이 추가된다. 모두 `@eqv/ui`·`@fops/ui` 컴포넌트를 쓴다(ADR-0008).
+- **Studio 화면:** Fleet의 "설비 등록"과 "관측 없음" 상태, 설비 데이터 페이지(window 목록, 가져오기 미리보기, 거부 사유 표, 결과 알림), Onboarding의 window 선택, Focus의 `window` 지정이 추가된다. 모두 `@eqv/ui`·`@ap/ui` 컴포넌트를 쓴다(ADR-0008).
 - **알려진 한계(기록, 미구현):**
   - window 대체·폐기, 설비 기록 수정, 이름 규칙(`[A-Za-z0-9][A-Za-z0-9._-]*`) 밖의 실제 equipmentId는 지원하지 않는다. 이름은 바꾸지 않고 거부하며, 경로 인코딩은 별도 ADR이다.
   - 동시 가져오기의 겹침 검사는 원자적이지 않다. 단일 사용자 로컬 도구이므로 #60 last-write-wins 행과 같은 판단이다.
-  - 큰 window의 Focus는 `replayTimeline`의 O(breakpoint × record) 비용(#60 행)에 걸린다. 이 슬라이스는 범위 안내로 막고, 알고리즘 개선은 별도 이슈다. (#106에서 `replayTimeline`을 한 번의 정렬된 pass로 바꿔 비용이 records + breakpoint × (동시 open Occurrence + 시간 역전)로 줄었고, Gantt 계산 한도는 그 모델에 읽기마다의 Binding·Layout 탐색과 위치 해석 비용을 더한 값 기준이고, 계산한 timeline의 Gantt 막대(span)가 `GANTT_SPAN_LIMIT`을 넘으면 그리지 않는다. 두 한도 모두 범위 안내를 보인다.)
+  - 큰 window의 Focus는 #106의 한 번의 정렬된 pass로 계산하고, Binding·Layout 탐색과 위치 해석을 포함한 timeline 계산 한도 또는 Gantt span 5,000개 한도를 넘으면 범위 안내를 보인다.
 - **#53과의 관계:** 실제 설비로 여러 번 Publish하면 같은 `layoutId`의 Layout Revision이 여럿 생긴다. 그러면 #53의 재개 조건(한 소비자가 두 revision을 읽음)에 가까워진다. 이 ADR은 #53을 풀지 않는다. (#53/ADR-0011에서 해결: 각 Binding이 자기 Layout Revision을 읽고, 최신 Binding의 revision을 쓴다는 Focus loader 알림은 없어졌다.)
 - **같은 PR에서 고칠 문서:**
   - `docs/ONBOARDING.md`: §7, :208 규칙, §2 샘플 기간 문장, 낡은 :3 상태 줄.
