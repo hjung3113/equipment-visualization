@@ -45,9 +45,8 @@ Prerequisites:
 - pnpm 11.1.1, the version pinned by the `packageManager` field in `package.json` (e.g. `npm install -g pnpm`; `corepack enable pnpm` also works on Node versions that ship corepack).
 
 ```sh
-git clone --recurse-submodules https://github.com/hjung3113/equipment-visualization.git
+git clone https://github.com/hjung3113/equipment-visualization.git
 cd equipment-visualization
-# in an existing clone instead: git submodule update --init
 pnpm install
 pnpm lint        # ESLint flat config across all packages (incl. the @ap/* boundary rule)
 pnpm typecheck   # turbo run typecheck

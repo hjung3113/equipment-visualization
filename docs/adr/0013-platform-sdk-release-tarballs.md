@@ -18,7 +18,7 @@ status: accepted
 - **CI.** EV CI는 공개 tarball을 설치한다. AP CI에 기대지 않는다.
 - **경계(ESLint).** `core`·`renderer`는 모든 `@ap/*`(`@ap/ui` 포함)와 디자인 시스템을 import하지 않는다. `editor`·`replay`·`ui`·Studio는 `@ap/*` 중 `@ap/ui`만 import할 수 있다. 그 밖의 `@ap/*`는 `packages/platform-adapter`만 쓰며 `@ap/contracts`와 `@ap/ui`로 한정하는 일은 어댑터를 만드는 작업(#177)이 한다. 동적 `import()`와 `import type`도 같은 규칙이다.
 
-**그대로인 것.** ADR-0012의 결정(기본 호스트는 플랫폼, SDK import는 어댑터 하나, Studio는 호스트 포트를 구현하지 않음), 저장소가 플랫폼 서버 없이 빌드·테스트된다는 점, 이 저장소에서 analytics-platform 코드를 고치지 않는다는 점.
+**그대로인 것.** ADR-0012의 결정(기본 호스트는 플랫폼, 디자인 시스템 `@ap/ui`를 뺀 SDK import는 어댑터 하나, Studio는 호스트 포트를 구현하지 않음), 저장소가 플랫폼 서버 없이 빌드·테스트된다는 점, 이 저장소에서 analytics-platform 코드를 고치지 않는다는 점.
 
 ## Considered Options
 

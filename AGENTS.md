@@ -1,7 +1,7 @@
 # Development rules — equipment-visualization
 
 ## Purpose
-Build a reusable semantic equipment Top View and explainable log replay framework. The repository stays **buildable and testable without the platform**; analytics-platform is the default host, and only `packages/platform-adapter` consumes the platform SDK (ADR-0012). The standalone Studio is a second host.
+Build a reusable semantic equipment Top View and explainable log replay framework. The repository stays **buildable and testable without the platform**; analytics-platform is the default host, and only `packages/platform-adapter` consumes the platform SDK host contract; the DOM packages and the Studio use only its design system `@ap/ui`, and `core`/renderer use none of it (ADR-0012, ADR-0013). The standalone Studio is a second host.
 
 ## Operating rules
 - State assumptions when the request can be read in more than one way.
