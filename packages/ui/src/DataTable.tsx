@@ -169,7 +169,7 @@ export function DataTable({
           // Keyboard focus on a clipped row action must bring it fully into the scroll viewport (default behavior is instant, never smooth).
           if (event.target !== event.currentTarget) event.target.scrollIntoView?.({ block: 'nearest', inline: 'nearest' });
         }}
-        className={cn('overflow-x-auto', (capped || rows !== undefined) && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
+        className={cn('overflow-x-auto focus-visible:-outline-offset-2', (capped || rows !== undefined) && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
       >
         <table aria-label={label} {...(virtualRows ? { 'aria-rowcount': virtualRows.count + 1 } : {})} className={cn('w-full border-separate border-spacing-0 text-sm text-text-primary', className)} {...rest}>
           <thead>

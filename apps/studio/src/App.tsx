@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
-import { CircleCheck, CircleX, Factory, FileQuestion, Info, LayoutTemplate, TriangleAlert } from 'lucide-react';
+import { CircleCheck, Factory, FileQuestion, Info, LayoutTemplate, OctagonAlert, TriangleAlert } from 'lucide-react';
 import { APP_FRAME_MAIN_ID, AppFrame, Page, StateMessage } from '@eqv/ui';
 import { Button, Toaster } from '@ap/ui';
 import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
@@ -85,7 +85,7 @@ export function App() {
           info: <Info className="h-4 w-4" aria-hidden />,
           success: <CircleCheck className="h-4 w-4" aria-hidden />,
           warning: <TriangleAlert className="h-4 w-4" aria-hidden />,
-          error: <CircleX className="h-4 w-4" aria-hidden />,
+          error: <OctagonAlert className="h-4 w-4" aria-hidden />,
         }}
       />
     </AppFrame>
