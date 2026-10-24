@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Inbox, MapPinOff, ServerCrash } from 'lucide-react';
 import type { ReplayInput } from '@eqv/core';
 import type { PlaybackScheduler } from '@eqv/replay';
-import { FocusView, type FocusTab, GANTT_SPAN_LIMIT, TIMELINE_BUDGET } from '@eqv/views';
+import { FocusView, type FocusTab } from '@eqv/views';
 import { loadFocus, type FocusLoad } from './focus-data.js';
 import { Button } from '@ap/ui';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
@@ -12,11 +12,11 @@ import { WindowPicker } from './WindowPicker.js';
 
 const PICKER_HINT = '재생·Gantt·목록이 이 window 하나를 씁니다. 기본은 진입 Occurrence를 담은 가장 늦은 window, 없으면 가장 늦은 window이며, 고른 window는 주소(?window=)에 남습니다.';
 
-export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT }: {
+export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, scheduler, timelineBudget, ganttSpanLimit }: {
   equipmentId: string; sampleWindow: string | null; entityType: string | null; anchor: string | null;
-  /** Largest `timelineCost` the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
+  /** Largest `timelineCost` the Gantt is computed for; tests only, `FocusView`'s default otherwise. */
   timelineBudget?: number;
-  /** Most Gantt spans (materials + activities + markers) drawn; tests only, `GANTT_SPAN_LIMIT` by default. */
+  /** Most Gantt spans (materials + activities + markers) drawn; tests only, `FocusView`'s default otherwise. */
   ganttSpanLimit?: number;
   /** Frame clock for playback; tests only, the browser's by default. */
   scheduler?: PlaybackScheduler;
@@ -73,7 +73,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
         <StateMessage tone="danger" icon={ServerCrash} title="데이터 오류" body={result.error} />
       ) : (
         <FocusView input={input!} notices={result.notices} entityType={entityType} anchor={anchor} resetKey={loadKey} tab={tab} onTabChange={setTab}
-          timelineBudget={timelineBudget} ganttSpanLimit={ganttSpanLimit} scheduler={scheduler}
+          {...(timelineBudget === undefined ? {} : { timelineBudget })} {...(ganttSpanLimit === undefined ? {} : { ganttSpanLimit })} scheduler={scheduler}
           links={{ journey: (occurrenceId) => (
             <Button asChild variant="secondary" size="toolbar">
               <Link href={hrefFor({ name: 'journey', equipmentId, anchor: occurrenceId, window: sampleWindow ?? windowHex(result.selectedWindow) })}>Journey 열기</Link>

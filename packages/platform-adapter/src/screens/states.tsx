@@ -1,13 +1,9 @@
 import type { ReactNode } from 'react';
 import { CalendarClock, CalendarX2, Cpu, Inbox, ServerCrash, ShieldAlert } from 'lucide-react';
-import { Callout } from '@ap/ui';
+import { NoticeList } from '@eqv/views';
 import { LoadingBlock, StateMessage } from '@eqv/ui';
 import type { HostProps } from '../host-props.js';
 import type { ReplayLoad } from '../use-replay-input.js';
-
-export function Notices({ notices }: { notices: readonly string[] }) {
-  return notices.map((notice) => <Callout key={notice} tone="blue" className="mb-2"><span role="status">{notice}</span></Callout>);
-}
 
 /** The state to show instead of the screen body, or null when the screen has verified data to draw. */
 export function stateFor(props: HostProps, load: ReplayLoad | null): ReactNode {
@@ -26,10 +22,10 @@ export function stateFor(props: HostProps, load: ReplayLoad | null): ReactNode {
   switch (load.kind) {
     case 'ready': return null;
     case 'empty':
-      return <><Notices notices={load.notices} /><StateMessage icon={Inbox} title="이 구간에 표시할 Occurrence가 없습니다" body="선택한 설비와 시간 구간에 서버가 돌려준 데이터가 없습니다." /></>;
+      return <><NoticeList notices={load.notices} /><StateMessage icon={Inbox} title="이 구간에 표시할 Occurrence가 없습니다" body="선택한 설비와 시간 구간에 서버가 돌려준 데이터가 없습니다." /></>;
     case 'forbidden':
       return <StateMessage tone="warning" icon={ShieldAlert} title="접근 권한이 필요합니다" body="호스트가 인증 상태를 안내합니다." />;
     case 'failed':
-      return <><Notices notices={load.notices} /><StateMessage tone={load.tone} icon={ServerCrash} title={load.title} body={<>{load.message} <span className="font-mono">오류 ID {load.errorId}</span></>} /></>;
+      return <><NoticeList notices={load.notices} /><StateMessage tone={load.tone} icon={ServerCrash} title={load.title} body={<>{load.message} <span className="font-mono">오류 ID {load.errorId}</span></>} /></>;
   }
 }

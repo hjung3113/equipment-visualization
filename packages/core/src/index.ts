@@ -42,8 +42,8 @@ export { replayTimeline, replayTimelineFrame } from './replay/timeline.js';
 export type { TimelineRange, MaterialSpan, ActivitySpan, MarkerSpan, ReplayTimeline, ReplayTimelineFrame } from './replay/timeline.js';
 export { replayKey, observationHash, sceneStateHash } from './replay/replay-key.js';
 export type { ReplayKey } from './replay/replay-key.js';
-export { checkBindingMapping, checkBindingLayout } from './replay/binding-checks.js';
-export type { BindingCheck } from './replay/binding-checks.js';
+export { checkBindingMapping, checkBindingLayout, verifyBindingContext } from './replay/binding-checks.js';
+export type { BindingCheck, BindingContext, BindingContextReaders, BindingContextRef } from './replay/binding-checks.js';
 export { canonicalJson } from './canonical.js';
 
 export { aliasMetadataFileSchema } from './inventory/schema.js';

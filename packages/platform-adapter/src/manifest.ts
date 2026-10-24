@@ -49,8 +49,8 @@ export const eqvManifest: ModuleManifest = {
       context: contextCapabilities({ time: 'apply' }),
       pageType: 'analysis',
       features: noFeatures,
-      // `equipment` selects the equipment; the Studio `?window=` key and the entityType/anchor pair survive navigation on this route.
-      pageKeys: ['equipment', 'window', 'entityType', 'anchor'],
+      // `equipment` selects the equipment; the entityType/anchor pair survives navigation on this route.
+      pageKeys: ['equipment', 'entityType', 'anchor'],
       parent: TOPVIEW_SCREEN,
     },
   ],
