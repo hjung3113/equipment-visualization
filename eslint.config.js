@@ -141,7 +141,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['packages/ui/src/**/*.tsx', 'packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'packages/views/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
+    files: ['packages/ui/src/**/*.tsx', 'packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'packages/views/src/**/*.tsx', 'packages/platform-adapter/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
     plugins: { shadcn },
     settings: {
       shadcn: {
