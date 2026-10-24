@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, ChartGantt, Info, MapPinOff, ServerCrash } from 'lucide-react';
 import {
@@ -35,8 +35,8 @@ type View = {
   /** Example-motion ghosts; page-local, off by default. */
   illustrative: boolean;
 };
-type Tab = 'list' | 'quality' | 'detail';
-const TABS: { id: Tab; label: string }[] = [
+export type FocusTab = 'list' | 'quality' | 'detail';
+const TABS: { id: FocusTab; label: string }[] = [
   { id: 'list', label: 'Occurrence 목록' },
   { id: 'quality', label: 'Data Quality' },
   { id: 'detail', label: '근거 상세' },
@@ -64,11 +64,16 @@ export type FocusViewProps = {
   anchor: string | null;
   /** The host's load identity: a change resets every piece of view state (range, cursor, selections, mode). */
   resetKey: string;
-  /** When given, selecting an Occurrence hands its `EvidenceDetail` to the host and the inline "근거 상세" tab is omitted. */
-  renderDetail?: (node: ReactNode, label: string) => void;
+  /** When given, selecting an Occurrence hands its `EvidenceDetail` to the host (null clears the slot: reset, no valid state, no selection, removal, unmount) and the inline "근거 상세" tab is omitted. The callback must be stable (memoised or a state setter): a new identity re-publishes. */
+  renderDetail?: (detail: { node: ReactNode; label: string } | null) => void;
+  /** The selected detail tab; give it with `onTabChange` to keep the tab across the host's own remounts (a Studio load). */
+  tab?: FocusTab;
+  onTabChange?: (tab: FocusTab) => void;
   links?: {
     /** The "Journey 열기" control for the selected wafer Occurrence; absent = no control. */
     journey?: (occurrenceId: string) => ReactNode;
+    /** Extra host controls, rendered after the Journey control in the Top View panel's action area. */
+    actions?: ReactNode;
   };
   /** Reserved host seam for notices; the view raises none today. */
   onNotify?: (text: string, tone: 'info' | 'warning' | 'danger') => void;
@@ -81,12 +86,13 @@ export type FocusViewProps = {
 };
 
 /** Top View, Gantt and Occurrence list on one cursor, from props only (no page chrome, router or loader). */
-export function FocusView({ input, notices, entityType, anchor, resetKey, renderDetail, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
+export function FocusView({ input, notices, entityType, anchor, resetKey, renderDetail, tab: controlledTab, onTabChange, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
   const entryKey = JSON.stringify([entityType, anchor]);
   const fresh = (): View => ({ resetKey, entryKey, applied: null, draft: null, rangeError: null, cursor: null,
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
-  const [tab, setTab] = useState<Tab>('list');
+  const [ownTab, setOwnTab] = useState<FocusTab>('list');
+  const tab = controlledTab ?? ownTab;
   // The zoom controls render into the Top View panel header (not over the fixed-width viewer, where a narrow page clips them).
   const [zoomHost, setZoomHost] = useState<HTMLElement | null>(null);
   const rangeId = useId();
@@ -155,13 +161,16 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
     [view.illustrative, input, state, layout]);
   const replay = useMemo(() => state ? { state, ...(ghosts ? { illustrative: ghosts } : {}) } : null, [state, ghosts]);
 
-  // The host's detail slot shows the evidence of the selected Occurrence at the shown state; the latest callback is read through a ref.
-  const detailHost = useRef(renderDetail);
-  useEffect(() => { detailHost.current = renderDetail; });
+  // The host's detail slot shows the evidence of the selected Occurrence at the shown state; it is cleared (null) through the
+  // same callback when that stops holding, the callback is replaced or removed, and on unmount.
+  const detail = useMemo(
+    () => selectedId === null || !state ? null : { node: <EvidenceDetail batch={input.batch} state={state} selectedOccurrenceId={selectedId} />, label: `근거 상세 · ${selectedId}` },
+    [input.batch, state, selectedId]);
   useEffect(() => {
-    if (selectedId === null || !state) return;
-    detailHost.current?.(<EvidenceDetail batch={input.batch} state={state} selectedOccurrenceId={selectedId} />, `근거 상세 · ${selectedId}`);
-  }, [input.batch, state, selectedId]);
+    if (!renderDetail) return;
+    renderDetail(detail);
+    return () => renderDetail(null);
+  }, [renderDetail, detail]);
 
   const patch = (changes: Partial<View>) => setView((previous) => ({ ...previous, ...changes }));
   const playback = usePlayback({ cursor, range, onCursorChange: (at) => patch({ cursor: at }), resetKey: JSON.stringify([resetKey, entryKey]), scheduler });
@@ -246,6 +255,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
                 <Label htmlFor={`${rangeId}-illustrative`}>예시 이동 표시</Label>
                 {view.illustrative && <EvidenceBadge level="illustrative">예시 이동</EvidenceBadge>}
                 {journeyAnchor !== null && links?.journey?.(journeyAnchor)}
+                {links?.actions}
               </>}>
               {layout ? (
                 <TopViewer layout={layout} width={720} height={420} replay={replay} highlight={highlight}
@@ -275,7 +285,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
                 body={`범위를 좁히세요. 지금 범위의 Gantt 막대는 ${count(spans)}개로 그리기 한도 ${count(ganttSpanLimit)}개를 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
             )}
           </Panel>
-          <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="mt-4">
+          <Tabs value={tab} onValueChange={(value) => { setOwnTab(value as FocusTab); onTabChange?.(value as FocusTab); }} className="mt-4">
             <TabsList aria-label="Focus 상세">
               {tabs.map((item) => <TabsTrigger key={item.id} value={item.id}>{item.label}</TabsTrigger>)}
             </TabsList>

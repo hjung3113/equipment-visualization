@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { useState, type ReactNode } from 'react';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it, vi } from 'vitest';
 import {
@@ -37,14 +38,59 @@ it('renders the Top View, the Gantt and the Occurrence list from props', () => {
   screen.getByRole('tab', { name: '근거 상세' });
 });
 
-it('hands the evidence detail to the host and drops the inline tab when renderDetail is given', () => {
-  const renderDetail = vi.fn();
-  render(<FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey="a" renderDetail={renderDetail} />);
+type Detail = { node: ReactNode; label: string } | null;
+/** A host that renders the detail slot it is handed; `attached` false removes the callback. */
+function DetailHost({ resetKey = 'a', attached = true, actions }: { resetKey?: string; attached?: boolean; actions?: ReactNode }) {
+  const [detail, setDetail] = useState<Detail>(null);
+  return (
+    <>
+      <section aria-label="host-detail">{detail && <><h2>{detail.label}</h2>{detail.node}</>}</section>
+      <FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey={resetKey}
+        {...(attached ? { renderDetail: setDetail } : {})} {...(actions ? { links: { actions } } : {})} />
+    </>
+  );
+}
+const slot = () => screen.getByRole('region', { name: 'host-detail' });
+
+it('renders the evidence detail in the host slot, drops the inline tab, and clears the slot on reset and unmount', () => {
+  const view = render(<DetailHost />);
   expect(screen.queryByRole('tab', { name: '근거 상세' })).toBeNull();
-  expect(renderDetail).not.toHaveBeenCalled();
+  expect(slot().textContent).toBe('');
   fireEvent.click(row());
-  expect(renderDetail).toHaveBeenCalled();
-  expect(renderDetail.mock.lastCall![1]).toContain(OCCURRENCE);
+  expect(within(slot()).getByRole('heading', { name: `근거 상세 · ${OCCURRENCE}` })).toBeTruthy();
+  expect(slot().textContent).toContain(OCCURRENCE);
+  expect(slot().textContent!.length).toBeGreaterThan(`근거 상세 · ${OCCURRENCE}`.length);
+  view.rerender(<DetailHost resetKey="b" />);
+  expect(slot().textContent).toBe('');
+});
+
+it('publishes the current detail when a callback attaches and clears the old slot when it is removed', () => {
+  const view = render(<DetailHost attached={false} />);
+  fireEvent.click(row());
+  view.rerender(<DetailHost />);
+  expect(slot().textContent).toContain(OCCURRENCE);
+  view.rerender(<DetailHost attached={false} />);
+  expect(slot().textContent).toBe('');
+});
+
+it('clears the host detail through the callback on unmount and through the old callback on replacement', () => {
+  const calls: Detail[] = [];
+  const first = (detail: Detail) => { calls.push(detail); };
+  const second = vi.fn();
+  const view = render(<FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey="a" renderDetail={first} />);
+  fireEvent.click(row());
+  expect(calls.at(-1)?.label).toContain(OCCURRENCE);
+  view.rerender(<FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey="a" renderDetail={second} />);
+  expect(calls.at(-1)).toBeNull();
+  expect(second.mock.lastCall![0].label).toContain(OCCURRENCE);
+  view.unmount();
+  expect(second.mock.lastCall![0]).toBeNull();
+});
+
+it('renders links.actions in the Top View action area', () => {
+  render(<DetailHost actions={<button type="button">호스트 동작</button>} />);
+  const panel = screen.getByRole('heading', { name: 'Top View' }).closest('section, div')!.parentElement!;
+  expect(within(panel).getByRole('button', { name: '호스트 동작' })).toBeTruthy();
 });
 
 it('resets the cursor and selection when resetKey changes', () => {
@@ -52,7 +98,8 @@ it('resets the cursor and selection when resetKey changes', () => {
   const initial = shownAt();
   fireEvent.click(row());
   expect(shownAt()).not.toBe(initial);
-  expect(row().getAttribute('aria-selected') ?? row().getAttribute('data-selected')).not.toBeNull();
+  expect(row().getAttribute('aria-selected')).toBe('true');
   view.rerender(<FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey="b" />);
   expect(shownAt()).toBe(initial);
+  expect(document.querySelector('tr[aria-selected="true"]')).toBeNull();
 });

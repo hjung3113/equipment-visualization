@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { ArrowRight, Inbox, MapPinOff, ServerCrash } from 'lucide-react';
 import type { ReplayInput } from '@eqv/core';
 import type { PlaybackScheduler } from '@eqv/replay';
-import { FocusView, GANTT_SPAN_LIMIT, TIMELINE_BUDGET } from '@eqv/views';
+import { FocusView, type FocusTab, GANTT_SPAN_LIMIT, TIMELINE_BUDGET } from '@eqv/views';
 import { loadFocus, type FocusLoad } from './focus-data.js';
 import { Button } from '@ap/ui';
 import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
@@ -35,6 +35,8 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
     return () => { cancelled = true; };
   }, [loadKey]);
 
+  // The detail tab belongs to the page, not to a load: FocusView unmounts while a load runs, and the tab must outlive it.
+  const [tab, setTab] = useState<FocusTab>('list');
   const { result } = loaded;
   const ok = result?.kind === 'ok' ? result : null;
   const input = useMemo((): ReplayInput | null => ok ? { batch: ok.batch, layouts: ok.layouts, layoutRevisions: ok.layoutRevisions, bindings: ok.bindings, mappings: ok.mappings } : null, [ok]);
@@ -70,7 +72,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
       ) : result.kind === 'error' ? (
         <StateMessage tone="danger" icon={ServerCrash} title="데이터 오류" body={result.error} />
       ) : (
-        <FocusView input={input!} notices={result.notices} entityType={entityType} anchor={anchor} resetKey={loadKey}
+        <FocusView input={input!} notices={result.notices} entityType={entityType} anchor={anchor} resetKey={loadKey} tab={tab} onTabChange={setTab}
           timelineBudget={timelineBudget} ganttSpanLimit={ganttSpanLimit} scheduler={scheduler}
           links={{ journey: (occurrenceId) => (
             <Button asChild variant="secondary" size="toolbar">
