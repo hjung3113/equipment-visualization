@@ -64,17 +64,14 @@ Equipment Management
 - 불완전 데이터면 Canvas에 속이는 state 동작 대신 `DataTrustIndicator`와 이벤트 패널 표시.
 - 설비 선택 후 다른 Site 데이터나 다른 EquipmentID 이벤트를 클라이언트에서 섞어 보여주지 않음.
 
-## API/DTO 제안 (후보 필드, 기존 실데이터 스키마를 주장하지 않음)
+## 선언된 엔드포인트 (`packages/platform-adapter/src/endpoints.ts`, 이름은 Candidate — AP #334 확정 전)
 
-`equipment.topview.definition`: `{ equipmentId, binding: { layoutRevision, mappingVersion, effectiveFrom, effectiveTo }, layout, mapping, updatedAt }` — `layout`은 Component/Level/PhysicalInterface/TransferCapability/ProcessRoute를 포함한 Layout Revision 원본(ADR-0004).
+플랫폼 host contract 1의 `defineEndpoint`로 선언한 read 엔드포인트 둘. 두 화면(`eqv:topview`, `eqv:focus`)이 함께 쓰고 `menuId`는 `eqv:focus`. 권한 `eqv:view`(화면 표시용; 서버가 요청마다 재검사), `context: { time: 'apply' }` — `from`/`to`는 호스트가 적용된 Context에서 투영하며 params에 넣지 않는다. 응답 타입은 `@eqv/core` 타입.
 
-`equipment.topview.metrics`: `VIEWS.md`의 `ComponentMetric[]` (원천 alias 기준; 지표 계산은 플랫폼 mart).
-
-`equipment.topview.inventory`: `ONBOARDING.md`의 `ObservedInventory` (긴 샘플 기간은 서버 집계).
-
-`equipment.topview.events`: `REPLAY-CONTRACT.md`의 `OccurrenceBatch` — `{ equipmentId, from, to, timeDomain, watermark, parserContractVersion, dataGeneration, occurrences, issues, continuationToken? }`. 조회는 구간과 **겹치는** Occurrence.
-
-`equipment.topview.saveDraft` / `publish`: **변경 API는 별도 설계 필요**. 현재 공개 `menuQuery`는 read contract에 최적화된 상태이므로 DB 쓰기를 조회 `menuQuery`로 위장하거나 generic kernel port에 슬쩍 섞지 않음. 쓰기/승인/감사는 후속 ADR 및 API 권한 경계 확정 후.
+- `eqv.topview-context` — params `{ equipmentId }` → `Omit<ReplayInput, 'batch'>` (`layouts`, `layoutRevisions?`, `bindings`, `mappings`): 적용 시간에 유효한 모든 Binding, Mapping Version, draft Layout, Layout Revision (ADR-0011).
+- `eqv.topview-events` — params `{ equipmentId, continuationToken? }` → `OccurrenceBatch` (`REPLAY-CONTRACT.md`): `{ equipmentId, from, to, timeDomain, watermark, parserContractVersion, dataGeneration, occurrences, issues, continuationToken? }`. 구간과 **겹치는** source-paired Occurrence를 그대로 반환하며 클라이언트는 Start/End를 짝짓거나 재정렬하지 않는다(ADR-0002). `limits.maxHours: 8`(한 교대; REPLAY-CONTRACT/INTEGRATION에 수치가 없어 정한 값, Focus Gantt 예산이 단일 window batch로 측정됨).
+- 두 엔드포인트 공통: `kinds` = `collection`, `processing_delay`, `coverage`, `time_domain`(`mergeTimeDomain: true`) — 창의 완전성(Watermark·늦은 데이터)과 Site 시간축을 알리는 assessment. `requiresScope: false`(설비는 page key `equipment`로 지정 — 모듈 prefix 뒤 `?equipment=<id>`; `eqv:topview`는 prefix 자체(그룹의 primary 화면), `eqv:focus`는 그 하위 `<prefix>/focus`이며 page key `equipment`·`window`·`entityType`·`anchor`. AP 레지스트리가 param이 필요한 부모 경로와 primary 없는 그룹을 거부하므로 경로 param을 쓰지 않는다. 화면이 page key를 엔드포인트 params `{ equipmentId }`로 복사하고, 키가 없으면 "설비를 고르세요" 상태를 보인다).
+- metrics·inventory 엔드포인트와 변경 API(`saveDraft`/`publish`)는 선언하지 않았다: 첫 범위는 read-only(ADR-0012). 변경 API는 `defineAction`·감사·권한 경계를 갖춘 별도 설계 후속.
 
 ### 서버 쿼리 유의사항
 

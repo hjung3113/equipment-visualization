@@ -1,0 +1,13 @@
+/* ADR-0008: --eqv-* rows whose platform token @ap/ui defines; undeclared rows fall back to the asset hex.
+   The one owner of this mapping: the Studio and the platform adapter import this file. */
+:root {
+  --eqv-canvas: rgb(var(--surface-canvas));
+  --eqv-board: rgb(var(--surface-card));
+  --eqv-border: rgb(var(--border-subtle));
+  --eqv-ink: rgb(var(--text-primary));
+  --eqv-secondary: rgb(var(--text-secondary));
+  --eqv-interface: rgb(var(--text-secondary));
+  --eqv-evidence: rgb(var(--text-secondary));
+  --eqv-detail-fill: rgb(var(--surface-field-filled));
+  --eqv-assumed-fg: rgb(var(--text-warning-label));
+}

@@ -116,10 +116,28 @@ export default defineConfig([
     },
   },
   {
+    // ADR-0012, ADR-0013: the host module imports only the SDK's '@ap/contracts' and the design system '@ap/ui' (AP's hostModule preset).
     files: ['packages/platform-adapter/**'],
     rules: {
-      'no-restricted-imports': 'off',
-      'no-restricted-syntax': 'off',
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [{ regex: '^(@ap(/(?!(contracts|ui)(/|$))|$)|analytics-platform(/|$))' }],
+        },
+      ],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportExpression[source.value=/^(@ap(\\/(?!(contracts|ui)(\\/|$))|$)|analytics-platform(\\/|$))/]',
+          message:
+            "ADR-0012, ADR-0013: packages/platform-adapter may import only '@ap/contracts' and '@ap/ui' from the platform SDK.",
+        },
+        {
+          selector: 'TSImportType[source.value=/^(@ap(\\/(?!(contracts|ui)(\\/|$))|$)|analytics-platform(\\/|$))/]',
+          message:
+            "ADR-0012, ADR-0013: packages/platform-adapter may import only '@ap/contracts' and '@ap/ui' from the platform SDK.",
+        },
+      ],
     },
   },
   {
