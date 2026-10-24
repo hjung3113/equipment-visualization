@@ -186,6 +186,19 @@ it('replays the Sample Window the route names and drops selection and range when
   expect(screen.getByDisplayValue('2026-01-01T10:30:00.000')).toBeTruthy();
 });
 
+it('keeps the selected detail tab when the Sample Window changes', async () => {
+  const { w1, w2 } = await addSynth03(root);
+  at(`/focus/eq-synth-03?window=${w1}`);
+  render(<App />);
+  await loaded();
+  fireEvent.mouseDown(screen.getByRole('tab', { name: 'Data Quality' }));
+  fireEvent.click(screen.getByRole('tab', { name: 'Data Quality' }));
+  expect(screen.getByRole('tab', { name: 'Data Quality' }).getAttribute('aria-selected')).toBe('true');
+  act(() => navigate(`/focus/eq-synth-03?window=${w2}`));
+  await waitFor(() => expect(screen.getByDisplayValue('2026-01-01T10:30:00.000')).toBeTruthy());
+  expect(screen.getByRole('tab', { name: 'Data Quality' }).getAttribute('aria-selected')).toBe('true');
+});
+
 it('links Focus from Onboarding only when the equipment has Bindings', async () => {
   at('/onboarding/eq-synth-01');
   render(<App />);

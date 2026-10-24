@@ -6,7 +6,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
 import { FocusPage } from '../src/FocusPage.js';
-import { timelineCost } from '../src/focus-data.js';
+import { timelineCost } from '@eqv/views';
 import { createFileApi } from '../server/files.js';
 import { stubFileApi } from './file-api.js';
 import { addSynth03, addWindow, importFixture, record, seedOnboardingRoot, windowHex as hexOf, writeDraft, writeJson } from './seed.js';

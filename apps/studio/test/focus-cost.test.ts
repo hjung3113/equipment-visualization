@@ -1,6 +1,6 @@
 import { millisToWallClock, replayTimelineFrame, wallClockToMillis, type EquipmentLayoutDocument, type OccurrenceBatch, type ReplayInput } from '@eqv/core';
 import { describe, expect, it } from 'vitest';
-import { TIMELINE_BUDGET, timelineCost } from '../src/focus-data.js';
+import { TIMELINE_BUDGET, timelineCost } from '@eqv/views';
 
 describe('timelineCost', () => {
   // A Data Quality Issue-only batch (no open Occurrence, no inversion) with one adjacent Binding per issue: every read
