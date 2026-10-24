@@ -1,6 +1,6 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowRight, ChartGantt, Info, MapPinOff, ServerCrash } from 'lucide-react';
+import { ArrowRight, ChartGantt, MapPinOff, ServerCrash } from 'lucide-react';
 import {
   bindingLayout, replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
   type ReplayInput, type ReplayTimeline, type ReplayTimelineFrame, type SceneState, type SiteWallClock,
@@ -10,8 +10,9 @@ import {
   CursorStateList, DataQualityList, EvidenceDetail, FocusGantt, focusRange, illustrativeGhosts, OccurrenceList, PlaybackControls, recordSteps,
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
-import { Button, Callout, Checkbox, EmptyState, Input, Label } from '@ap/ui';
+import { Button, Checkbox, EmptyState, Input, Label } from '@ap/ui';
 import { EvidenceBadge, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger, ViewerZoomControls } from '@eqv/ui';
+import { NoticeList } from './NoticeList.js';
 import { GANTT_SPAN_LIMIT, TIMELINE_BUDGET, timelineCost } from './timeline-cost.js';
 
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : '알 수 없는 오류';
@@ -72,8 +73,6 @@ type FocusViewBaseProps = {
     /** Extra host controls, rendered after the Journey control in the Top View panel's action area. */
     actions?: ReactNode;
   };
-  /** Reserved host seam for notices; the view raises none today. */
-  onNotify?: (text: string, tone: 'info' | 'warning' | 'danger') => void;
   /** Largest `timelineCost` (records + breakpoints × (context + (open + inversions) × resolve)) the Gantt is computed for; tests only, `TIMELINE_BUDGET` by default. */
   timelineBudget?: number;
   /** Most Gantt spans (materials + activities + markers) drawn; tests only, `GANTT_SPAN_LIMIT` by default. */
@@ -208,11 +207,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
 
   return (
     <>
-      {[...notices, ...(entry.notice ? [entry.notice] : [])].map((notice) => (
-        <Callout key={notice} tone="blue" icon={<Info className="size-3.5" aria-hidden />} className="mb-2">
-          <span role="status">{notice}</span>
-        </Callout>
-      ))}
+      <NoticeList notices={[...notices, ...(entry.notice ? [entry.notice] : [])]} />
       {range && (
         <Panel title="재생 구간" className="mb-4" actions={
           <Button type="submit" form={rangeFormId} variant="secondary" size="toolbar"><ArrowRight className="size-3.5" aria-hidden />적용</Button>

@@ -1,7 +1,7 @@
 import type { ApiResponse, Assessment, ModuleHost } from '@ap/contracts';
 import {
-  assertReplayInput, checkBindingLayout, checkBindingMapping,
-  type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch, type ReplayInput,
+  assertReplayInput, verifyBindingContext,
+  type OccurrenceBatch, type ReplayInput,
 } from '@eqv/core';
 import { topviewContext, topviewEvents } from './endpoints.js';
 
@@ -90,33 +90,21 @@ export function mergePages(pages: readonly OccurrenceBatch[]): OccurrenceBatch {
 
 /** Server data is not trusted to be self-consistent (ADR-0011): every Mapping Version and Layout is content-checked against its Binding. */
 export async function verifyContext(context: Omit<ReplayInput, 'batch'>, equipmentId: string): Promise<{ input: Omit<ReplayInput, 'batch'>; notices: string[] }> {
-  const mappings = new Map<string, MappingVersion>();
-  const relationships = new Set<string>();
-  const layouts = new Map<string, EquipmentLayoutDocument>();
-  const layoutRevisions: Record<string, EquipmentLayoutDocument> = {};
-  const notices = new Set<string>();
-  for (const binding of context.bindings.bindings) {
-    // Each distinct (hash, Layout) relationship is checked: a hash seen under another Layout proves nothing about this one.
-    const relationship = JSON.stringify([binding.mappingHash, binding.layoutId]);
-    if (!relationships.has(relationship)) {
-      const raw = context.mappings.find((m) => m.hash === binding.mappingHash);
-      if (raw === undefined) throw new RangeError(`Mapping Version ${binding.mappingHash}이(가) 응답에 없습니다`);
-      const checked = await checkBindingMapping(raw, binding, equipmentId);
-      if (!checked.ok) throw new RangeError(`Mapping Version ${binding.mappingHash}: ${checked.problem}`);
-      relationships.add(relationship);
-      mappings.set(binding.mappingHash, checked.value);
+  const verified = await verifyBindingContext(context.bindings.bindings, {
+    mapping: async (binding) => context.mappings.find((m) => m.hash === binding.mappingHash),
+    layout: async (layoutId, revision) => revision === undefined ? context.layouts.find((l) => l.id === layoutId) : context.layoutRevisions?.[revision],
+  }, equipmentId);
+  if (!verified.ok) {
+    const { at, problem } = verified;
+    if (at.kind === 'mapping') {
+      throw new RangeError(`Mapping Version ${at.binding.mappingHash}${problem === null ? '이(가) 응답에 없습니다' : `: ${problem}`}`);
     }
-    const revision = binding.layoutRevision;
-    if (revision === undefined ? layouts.has(binding.layoutId) : revision in layoutRevisions) continue;
-    const raw = revision === undefined ? context.layouts.find((l) => l.id === binding.layoutId) : context.layoutRevisions?.[revision];
-    if (raw === undefined) throw new RangeError(`Layout ${binding.layoutId}${revision === undefined ? ' (초안)' : ` ${revision}`}이(가) 응답에 없습니다`);
-    const checked = await checkBindingLayout(raw, binding.layoutId, revision);
-    if (!checked.ok) throw new RangeError(`Layout ${binding.layoutId}: ${checked.problem}`);
-    if (checked.notice !== undefined) notices.add(checked.notice);
-    if (revision === undefined) layouts.set(binding.layoutId, checked.value);
-    else layoutRevisions[revision] = checked.value;
+    throw new RangeError(problem === null
+      ? `Layout ${at.layoutId}${at.revision === undefined ? ' (초안)' : ` ${at.revision}`}이(가) 응답에 없습니다`
+      : `Layout ${at.layoutId}: ${problem}`);
   }
-  return { input: { bindings: context.bindings, mappings: [...mappings.values()], layouts: [...layouts.values()], layoutRevisions }, notices: [...notices] };
+  const { mappings, layouts, layoutRevisions, notices } = verified;
+  return { input: { bindings: context.bindings, mappings, layouts, layoutRevisions }, notices };
 }
 
 /**

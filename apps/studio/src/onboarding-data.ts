@@ -1,8 +1,7 @@
 import {
-  latestBinding,
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, mappingVersionSchema, parseSampleWindowName,
-  validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary, verifyMappingHash,
-  validateLayout,
+  latestBinding, checkBindingLayout, checkBindingMapping,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, parseSampleWindowName,
+  validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary,
   type AliasMetadataFile, type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
   type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -209,13 +208,9 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
       const mappingPath = `onboarding/mappings/${equipmentId}/${hex}.mapping.json`;
       const rawMapping = await readOptional(mappingPath);
       if (rawMapping === undefined) throw new DataError(`${mappingPath}: Mapping Version 파일 없음`);
-      const parsed = mappingVersionSchema.safeParse(rawMapping);
-      if (!parsed.success) throw new DataError(`${mappingPath}: ${problems(parsed.error.issues)}`);
-      const mapping = parsed.data;
-      if (!await verifyMappingHash(mapping)) throw new DataError(`${mappingPath}: 내용 hash가 맞지 않습니다`);
-      if (mapping.hash !== latest.mappingHash) throw new DataError(`${mappingPath}: hash(${mapping.hash})가 binding의 mappingHash와 다릅니다`);
-      if (mapping.equipmentId !== equipmentId) throw new DataError(`${mappingPath}: equipmentId(${mapping.equipmentId})가 ${equipmentId}와 다릅니다`);
-      if (mapping.layoutId !== latest.layoutId) throw new DataError(`${mappingPath}: layoutId(${mapping.layoutId})가 binding의 layoutId와 다릅니다`);
+      const checked = await checkBindingMapping(rawMapping, latest, equipmentId);
+      if (!checked.ok) throw new DataError(`${mappingPath}: ${checked.problem}`);
+      const mapping = checked.value;
       mappings[mapping.hash] = mapping;
     }
     return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
@@ -274,11 +269,9 @@ async function lookupDraft(equipmentId: string, bindings: BindingsFile | null): 
   try {
     const raw = await readOptional(path);
     if (raw === undefined) return { kind: 'absent', layoutId };
-    const result = validateLayout(raw);
-    if (!result.ok) return { kind: 'error', layoutId, error: `${path}: ${problems(result.issues)}` };
-    const { layout } = result;
-    if (layout.kind !== 'equipment-layout') return { kind: 'error', layoutId, error: `${path}: equipment-layout이 아닙니다 (${layout.kind})` };
-    if (layout.id !== layoutId) return { kind: 'error', layoutId, error: `${path}: id(${layout.id})가 ${layoutId}와 다릅니다` };
+    const checked = await checkBindingLayout(raw, layoutId, undefined);
+    if (!checked.ok) return { kind: 'error', layoutId, error: `${path}: ${checked.problem}` };
+    const layout = checked.value;
     return { kind: 'found', layoutId, layout };
   } catch (error) {
     return { kind: 'error', layoutId, error: errorMessage(error) };

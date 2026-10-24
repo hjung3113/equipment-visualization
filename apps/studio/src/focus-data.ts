@@ -1,5 +1,5 @@
 import {
-  checkBindingLayout, checkBindingMapping,
+  verifyBindingContext,
   type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
@@ -38,25 +38,10 @@ async function read(path: string): Promise<unknown | undefined> {
   }
 }
 
-async function loadMapping(equipmentId: string, binding: Binding): Promise<MappingVersion> {
-  const path = `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
-  const raw = await read(path);
-  if (raw === undefined) throw new DataError(`${path}: Mapping Version 파일 없음`);
-  const checked = await checkBindingMapping(raw, binding, equipmentId);
-  if (!checked.ok) throw new DataError(`${path}: ${checked.problem}`);
-  return checked.value;
-}
-
-async function loadLayout(layoutId: string, revision: string | undefined, notices: string[]): Promise<EquipmentLayoutDocument> {
-  const path = revision === undefined ? `layouts/${layoutId}/draft.layout.json`
-    : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
-  const raw = await read(path);
-  if (raw === undefined) throw new DataError(`${path}: Layout 파일 없음`);
-  const checked = await checkBindingLayout(raw, layoutId, revision);
-  if (!checked.ok) throw new DataError(`${path}: ${checked.problem}`);
-  if (checked.notice !== undefined) notices.push(checked.notice);
-  return checked.value;
-}
+const mappingPath = (equipmentId: string, binding: Binding) =>
+  `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
+const layoutPath = (layoutId: string, revision: string | undefined) => revision === undefined ? `layouts/${layoutId}/draft.layout.json`
+  : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
 
 /**
  * Without `window`, the latest-`from` window that contains `anchor`, else the latest window. Every window is read and
@@ -100,23 +85,19 @@ export async function loadFocus(equipmentId: string, options: { window?: string;
       if (anchorNotice) notices.push(anchorNotice);
       if (bindings.bindings.length === 0) notices.push(NO_BINDING);
 
-      const mappings = new Map<string, MappingVersion>();
-      for (const binding of bindings.bindings) {
-        const key = JSON.stringify([binding.mappingHash, binding.layoutId]);
-        if (!mappings.has(key)) mappings.set(key, await loadMapping(equipmentId, binding));
-      }
-
       // A pinned Binding replays its own Layout Revision; an unpinned one the draft of its layoutId (ADR-0011).
-      const drafts = [...new Set(bindings.bindings.filter((b) => b.layoutRevision === undefined).map((b) => b.layoutId))];
-      const layouts: EquipmentLayoutDocument[] = [];
-      for (const layoutId of drafts) layouts.push(await loadLayout(layoutId, undefined, notices));
-      const layoutRevisions: Record<string, EquipmentLayoutDocument> = {};
-      for (const binding of bindings.bindings) {
-        const revision = binding.layoutRevision;
-        if (revision === undefined || revision in layoutRevisions) continue;
-        layoutRevisions[revision] = await loadLayout(binding.layoutId, revision, notices);
+      const verified = await verifyBindingContext(bindings.bindings, {
+        mapping: (binding) => read(mappingPath(equipmentId, binding)),
+        layout: (layoutId, revision) => read(layoutPath(layoutId, revision)),
+      }, equipmentId);
+      if (!verified.ok) {
+        const { at, problem } = verified;
+        if (at.kind === 'mapping') throw new DataError(`${mappingPath(equipmentId, at.binding)}: ${problem ?? 'Mapping Version 파일 없음'}`);
+        throw new DataError(`${layoutPath(at.layoutId, at.revision)}: ${problem ?? 'Layout 파일 없음'}`);
       }
-      return { kind: 'ok', record, batch, selectedWindow: loaded.data.selectedWindow, bindings, mappings: [...mappings.values()], layouts, layoutRevisions, notices };
+      const { mappings, layouts, layoutRevisions } = verified;
+      notices.push(...verified.notices);
+      return { kind: 'ok', record, batch, selectedWindow: loaded.data.selectedWindow, bindings, mappings, layouts, layoutRevisions, notices };
     } catch (error) {
       return { kind: 'error', record, error: errorMessage(error) };
     }

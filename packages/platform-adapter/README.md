@@ -4,19 +4,17 @@ The analytics-platform host module (ADR-0012, ADR-0013). The only package that i
 
 ## Exports
 
-- `eqvManifest` — `ModuleManifest` (host contract 1): module `eqv`, `requires: ['query']`, `optional: ['detailSlot']`, group `eqv:equipment`, read-only screens `topview` (the module prefix itself, the group's primary screen; page key `equipment`, i.e. `?equipment=`) and `focus` (`<prefix>/focus`, child of `topview`; page keys `equipment`, `window`, `entityType`, `anchor`), permission `eqv:view`. The equipment id is a page key, not a route param, because AP's registry rejects a parent whose route needs params and requires one primary screen per group. The host registers the screens as `eqv:topview` / `eqv:focus`.
+- `eqvManifest` — `ModuleManifest` (host contract 1): module `eqv`, `requires: ['query']`, `optional: ['detailSlot']`, group `eqv:equipment`, read-only screens `topview` (the module prefix itself, the group's primary screen; page key `equipment`, i.e. `?equipment=`) and `focus` (`<prefix>/focus`, child of `topview`; page keys `equipment`, `entityType`, `anchor`), permission `eqv:view`. The equipment id is a page key, not a route param, because AP's registry rejects a parent whose route needs params and requires one primary screen per group. The host registers the screens as `eqv:topview` / `eqv:focus`.
 - `TOPVIEW_SCREEN`, `FOCUS_SCREEN` — the bare screen ids.
 - `topviewContext` (`eqv.topview-context`) and `topviewEvents` (`eqv.topview-events`) — `defineEndpoint` declarations; responses are `@eqv/core` types. Time is host-projected (`context.time: 'apply'`), never a param. See `docs/INTEGRATION.md`.
-- `@eqv/platform-adapter/styles.css` — imports `@eqv/ui/theme.css` (the single owner of the `--eqv-*` → platform-token mapping) and `@eqv/ui/styles.css`.
+- `eqvScreens` — `Record<'topview' | 'focus', ComponentType<ModuleScreenProps>>`, keyed by the manifest screen ids (also `TopViewScreen`, `FocusScreen`).
+- `@eqv/platform-adapter/styles.css` — imports `@eqv/ui/theme.css` (the single owner of the `--eqv-*` → platform-token mapping), `@eqv/ui/styles.css` and the `@eqv/replay` and `@eqv/views` styles.
 
 **Names are Candidates** until AP #334 confirms the endpoint ids, group and permission strings.
 
-- `eqvScreens` — `Record<'topview' | 'focus', ComponentType<ModuleScreenProps>>`, keyed by the manifest screen ids (also `TopViewScreen`, `FocusScreen`).
-- `@eqv/platform-adapter/styles.css` also imports the `@eqv/replay` and `@eqv/views` styles.
-
 ## Screens
 
-`eqv:topview` (the layout and scene state as of the end of the applied window, Component detail, "Focus 열기") and `eqv:focus` (`FocusView` on one cursor, "Top View로"). Both read the equipment from `host.page('equipment')` and the time from `host.context()` (naive host seconds padded once with `.000`), load through `host.query` with the two declared endpoints only (`src/replay-load.ts`, one hook `src/use-replay-input.ts`), verify every Mapping Version and Layout (`checkBindingMapping`/`checkBindingLayout`, then `assertReplayInput`) and draw nothing partial. Selection detail goes to `host.detail.show` when the host grants `detailSlot` (stable callback; `clear` on reset/unmount), inline otherwise. The full behaviour is in `docs/INTEGRATION.md` (화면 동작).
+`eqv:topview` (the layout and scene state as of the end of the applied window, Component detail, "Focus 열기") and `eqv:focus` (`FocusView` on one cursor, "Top View로"). Both read the equipment from `host.page('equipment')` and the time from `host.context()` (naive host seconds padded once with `.000`), load through `host.query` with the two declared endpoints only (`src/replay-load.ts`, one hook `src/use-replay-input.ts`), verify every Mapping Version and Layout (`verifyBindingContext` from `@eqv/core`, then `assertReplayInput`) and draw nothing partial. Selection detail goes to `host.detail.show` when the host grants `detailSlot` (stable callback; `clear` on reset/unmount), inline otherwise. The full behaviour is in `docs/INTEGRATION.md` (화면 동작).
 
 States (never a default range or a guessed equipment):
 

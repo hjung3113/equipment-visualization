@@ -17,7 +17,7 @@ status: accepted
 
 **그대로인 것.** `--eqv-*` 토큰 소유와 어댑터의 토큰 주입(ADR-0001 Consequences), [ADR-0002](0002-occurrence-input-contract.md) Occurrence 입력 계약, 플랫폼 안 1차 범위가 읽기(뷰어·재생)라는 점, 쓰기(초안·Publish)의 별도 설계, 저장소가 플랫폼 없이 빌드·테스트된다는 점.
 
-**정한 것과 남은 것.** SDK 패키지 이름(게시된 `@ap/*`), 계약 버전 `1`, 이 저장소 CI의 SDK 설치(공개 Release tarball), 디자인 시스템 원본의 ADR-0008 개정(`@ap/ui`)은 [ADR-0013](0013-platform-sdk-release-tarballs.md)이 정했다. `eslint.config.js`의 `platform-adapter` 예외를 `@ap/contracts`·`@ap/ui` 둘로 좁히는 일은 어댑터를 만들 때 한다.
+**정한 것과 남은 것.** SDK 패키지 이름(게시된 `@ap/*`), 계약 버전 `1`, 이 저장소 CI의 SDK 설치(공개 Release tarball), 디자인 시스템 원본의 ADR-0008 개정(`@ap/ui`)은 [ADR-0013](0013-platform-sdk-release-tarballs.md)이 정했다. `eslint.config.js`의 `platform-adapter` 예외를 `@ap/contracts`·`@ap/ui` 둘로 좁히는 일은 어댑터를 만들 때 한다(177c, #189에서 했다).
 
 ## Considered Options
 

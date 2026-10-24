@@ -7,9 +7,10 @@ import { bindingLayout, seekSceneState, type EquipmentLayoutDocument, type Repla
 import { TopViewer, type ReplayOverlay } from '@eqv/renderer';
 import { ACTIVITY_KO, CursorStateList, Evidence } from '@eqv/replay';
 import { Panel, StateMessage, ViewerZoomControls } from '@eqv/ui';
+import { NoticeList } from '@eqv/views';
 import { useReplayScreen } from '../use-replay-input.js';
 import { useDetailSlot, usePublishDetail, type DetailPayload } from './detail-slot.js';
-import { Notices, stateFor } from './states.js';
+import { stateFor } from './states.js';
 
 type Scene = { state: SceneState; layout: EquipmentLayoutDocument | null } | { error: string };
 
@@ -66,7 +67,7 @@ export function TopViewScreen({ host }: ModuleScreenProps) {
   if (scene === null || 'error' in scene) return <StateMessage tone="danger" icon={ServerCrash} title={`Replay 오류: ${scene?.error ?? ''}`} />;
   return (
     <>
-      <Notices notices={load.notices} />
+      <NoticeList notices={load.notices} />
       <div className="flex flex-wrap items-start gap-4">
         <Panel title="Top View" subtitle={scene.state.at} className="max-w-full min-w-0 flex-none overflow-auto"
           actions={<>
