@@ -1,12 +1,26 @@
-import { HOST_CONTRACTS, KERNEL_PERMISSIONS, projectContext, type AnyEndpointSpec, type ModuleManifest } from '@ap/contracts';
+import { GLOBAL_KEYS, HOST_CONTRACTS, KERNEL_PERMISSIONS, projectContext, type AnyEndpointSpec, type ModuleManifest } from '@ap/contracts';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { eqvManifest, topviewContext, topviewEvents, type TopviewContextParams, type TopviewEventsParams } from '../src/index.js';
 
 // The host (AP kernel `mountModule`, ADR-0053) cannot be imported here; these are its manifest rules, re-implemented.
 const HOST_FEATURES = ['query', 'detailSlot', 'write'];
 const kernelNamespaces = new Set(KERNEL_PERMISSIONS.map((p) => p.split(':')[0]));
-const isPathPattern = (path: string) =>
-  !/[?#\\\s]/u.test(path) && !path.includes('//') && !path.split('/').some((s) => s === '.' || s === '..');
+// Mirrors AP `isDotSegment` (kernel location.ts): decode once; an invalid escape counts as a dot segment (fail-closed).
+const isDotSegment = (segment: string) => {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(segment);
+  } catch {
+    return true;
+  }
+  return decoded === '.' || decoded === '..';
+};
+// Mirrors AP `isPathPattern` (kernel module.ts): no URL delimiters, backslash, control characters or whitespace, no `//`, no dot segments.
+// eslint-disable-next-line no-control-regex -- the control range is the rule being mirrored
+const isPathPattern = (path: string) => !/[?#\\\u0000-\u0020\u007F]|\s/u.test(path) && !path.includes('//') && !path.split('/').some(isDotSegment);
+// Mirrors the AP registry's route helpers; a module screen path is mounted as `<prefix>/<path>` (`''` is the prefix itself).
+const segments = (path: string) => path.split('/').filter(Boolean);
+const isParam = (segment: string) => segment.startsWith(':');
 
 const { module: mod, screens, groups } = eqvManifest;
 const screenIds = new Set(screens.map((s) => s.id));
@@ -23,6 +37,11 @@ const rules: [string, (m: ModuleManifest) => boolean][] = [
   ['every screen group is declared', (m) => m.screens.every((s) => m.groups.some((g) => g.id === s.group))],
   ['screen paths are relative patterns', (m) => m.screens.every((s) => !s.path.startsWith('/') && isPathPattern(s.path))],
   ['a parent is a screen of the module', (m) => m.screens.every((s) => s.parent === undefined || screenIds.has(s.parent))],
+  // createRegistry rules a module's menus must also pass (kernel registry.ts):
+  ['a parent route needs no params (breadcrumbs link to it bare)', (m) => m.screens.every((s) => s.parent === undefined || !segments(m.screens.find((p) => p.id === s.parent)!.path).some(isParam))],
+  ['each declared group has exactly one primary screen', (m) => m.groups.every((g) => m.screens.filter((s) => s.group === g.id && s.primary).length === 1)],
+  ['no page key is a global Context key', (m) => m.screens.every((s) => s.pageKeys.every((k) => !GLOBAL_KEYS.has(k)))],
+  ['no two screens share a route shape', (m) => new Set(m.screens.map((s) => segments(s.path).map((x) => (isParam(x) ? ':' : x)).join('/'))).size === m.screens.length],
 ];
 
 describe('eqvManifest vs host registration rules', () => {
@@ -34,6 +53,13 @@ describe('eqvManifest vs host registration rules', () => {
     expect([...screenIds].sort()).toEqual(['focus', 'topview']);
     expect(groups.map((g) => g.id)).toEqual(['eqv:equipment']);
   });
+});
+
+describe('path pattern mirror (AP kernel module.test.ts cases)', () => {
+  it.each(['', 'focus', ':id', 'a/b'])('accepts %j', (path) => expect(isPathPattern(path)).toBe(true));
+  it.each(['..', 'a/../b', '%2e%2e/admin', '%2E%2e/admin', '%2e/x', '%zz/admin', 'a\\b', 'items?x=1', 'items#x', 'a//b', 'a\u0001b', 'a b', 'a\u3000b'])('rejects %j', (path) =>
+    expect(isPathPattern(path)).toBe(false),
+  );
 });
 
 describe('endpoint declarations', () => {

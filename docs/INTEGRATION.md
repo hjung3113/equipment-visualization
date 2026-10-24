@@ -70,7 +70,7 @@ Equipment Management
 
 - `eqv.topview-context` — params `{ equipmentId }` → `Omit<ReplayInput, 'batch'>` (`layouts`, `layoutRevisions?`, `bindings`, `mappings`): 적용 시간에 유효한 모든 Binding, Mapping Version, draft Layout, Layout Revision (ADR-0011).
 - `eqv.topview-events` — params `{ equipmentId, continuationToken? }` → `OccurrenceBatch` (`REPLAY-CONTRACT.md`): `{ equipmentId, from, to, timeDomain, watermark, parserContractVersion, dataGeneration, occurrences, issues, continuationToken? }`. 구간과 **겹치는** source-paired Occurrence를 그대로 반환하며 클라이언트는 Start/End를 짝짓거나 재정렬하지 않는다(ADR-0002). `limits.maxHours: 8`(한 교대; REPLAY-CONTRACT/INTEGRATION에 수치가 없어 정한 값, Focus Gantt 예산이 단일 window batch로 측정됨).
-- 두 엔드포인트 공통: `kinds` = `collection`, `processing_delay`, `coverage`, `time_domain`(`mergeTimeDomain: true`) — 창의 완전성(Watermark·늦은 데이터)과 Site 시간축을 알리는 assessment. `requiresScope: false`(설비는 `:equipmentId` 경로 param으로 지정).
+- 두 엔드포인트 공통: `kinds` = `collection`, `processing_delay`, `coverage`, `time_domain`(`mergeTimeDomain: true`) — 창의 완전성(Watermark·늦은 데이터)과 Site 시간축을 알리는 assessment. `requiresScope: false`(설비는 page key `equipment`로 지정 — 모듈 prefix 뒤 `?equipment=<id>`; `eqv:topview`는 prefix 자체(그룹의 primary 화면), `eqv:focus`는 그 하위 `<prefix>/focus`이며 page key `equipment`·`window`·`entityType`·`anchor`. AP 레지스트리가 param이 필요한 부모 경로와 primary 없는 그룹을 거부하므로 경로 param을 쓰지 않는다. 화면이 page key를 엔드포인트 params `{ equipmentId }`로 복사하고, 키가 없으면 "설비를 고르세요" 상태를 보인다).
 - metrics·inventory 엔드포인트와 변경 API(`saveDraft`/`publish`)는 선언하지 않았다: 첫 범위는 read-only(ADR-0012). 변경 API는 `defineAction`·감사·권한 경계를 갖춘 별도 설계 후속.
 
 ### 서버 쿼리 유의사항
