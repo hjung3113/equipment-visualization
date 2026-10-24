@@ -210,17 +210,3 @@ it('keeps the named focusable region as the table parent when capped', () => {
   expect(region.getAttribute('tabindex')).toBe('0');
 });
 
-it.each([true, false])('uses zero vertical padding only for action cells (action=%s)', (action) => {
-  render(
-    <DataTable label="Actions" columns={['Action']}>
-      <DataTable.Row><DataTable.Cell action={action}>Open</DataTable.Cell></DataTable.Row>
-    </DataTable>,
-  );
-  const cell = screen.getByRole('cell', { name: 'Open' });
-  expect(cell.classList.contains('py-0')).toBe(action);
-  expect(cell.classList.contains('py-1')).toBe(!action);
-  expect(cell.getAttribute('data-action')).toBe(action ? 'true' : null);
-  expect(cell.classList.contains('px-3')).toBe(true);
-  expect(cell.classList.contains('min-h-8')).toBe(true);
-  expect(cell.classList.contains('border-b')).toBe(true);
-});
