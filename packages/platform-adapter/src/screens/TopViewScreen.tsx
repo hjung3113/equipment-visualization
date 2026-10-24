@@ -5,7 +5,7 @@ import { ArrowRight, MapPinOff, MousePointerClick, ServerCrash } from 'lucide-re
 import { Button, EmptyState, FieldRow } from '@ap/ui';
 import { bindingLayout, seekSceneState, type EquipmentLayoutDocument, type ReplayInput, type SceneState, type SiteWallClock } from '@eqv/core';
 import { TopViewer, type ReplayOverlay } from '@eqv/renderer';
-import { CursorStateList, Evidence } from '@eqv/replay';
+import { ACTIVITY_KO, CursorStateList, Evidence } from '@eqv/replay';
 import { Panel, StateMessage, ViewerZoomControls } from '@eqv/ui';
 import { useReplayScreen } from '../use-replay-input.js';
 import { useDetailSlot, usePublishDetail, type DetailPayload } from './detail-slot.js';
@@ -23,7 +23,7 @@ function ComponentDetail({ layout, state, componentId }: { layout: EquipmentLayo
       <FieldRow label="라벨" layout="property">{component.label}</FieldRow>
       <FieldRow label="역할" layout="property">{component.role}</FieldRow>
       <FieldRow label="활동" layout="property">
-        {activity ? <>{activity.activity} · 활동 근거 <Evidence level={activity.activityEvidence} /></> : '이 시점에 Binding이 없어 알 수 없음'}
+        {activity ? <>{ACTIVITY_KO[activity.activity as keyof typeof ACTIVITY_KO] ?? '기록된 활동 없음'} · 활동 근거 <Evidence level={activity.activityEvidence} /></> : '이 시점에 Binding이 없어 알 수 없음'}
       </FieldRow>
     </section>
   );

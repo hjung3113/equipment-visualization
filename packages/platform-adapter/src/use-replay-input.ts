@@ -24,6 +24,8 @@ export function useReplayScreen(host: ModuleHost): { props: HostProps; load: Rep
   const loadable = equipment !== null && from !== null && to !== null;
   const [settled, setSettled] = useState<{ key: string; load: Settled } | null>(null);
   const statusSet = useRef(false);
+  // A settled result belongs to one request: any other key (an invalid input included) discards it, so revisiting a key waits for a new one.
+  if (settled !== null && settled.key !== resetKey) setSettled(null);
 
   useEffect(() => {
     const leaveStatus = () => {

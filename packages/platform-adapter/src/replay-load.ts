@@ -91,15 +91,19 @@ export function mergePages(pages: readonly OccurrenceBatch[]): OccurrenceBatch {
 /** Server data is not trusted to be self-consistent (ADR-0011): every Mapping Version and Layout is content-checked against its Binding. */
 export async function verifyContext(context: Omit<ReplayInput, 'batch'>, equipmentId: string): Promise<{ input: Omit<ReplayInput, 'batch'>; notices: string[] }> {
   const mappings = new Map<string, MappingVersion>();
+  const relationships = new Set<string>();
   const layouts = new Map<string, EquipmentLayoutDocument>();
   const layoutRevisions: Record<string, EquipmentLayoutDocument> = {};
   const notices = new Set<string>();
   for (const binding of context.bindings.bindings) {
-    if (!mappings.has(binding.mappingHash)) {
+    // Each distinct (hash, Layout) relationship is checked: a hash seen under another Layout proves nothing about this one.
+    const relationship = JSON.stringify([binding.mappingHash, binding.layoutId]);
+    if (!relationships.has(relationship)) {
       const raw = context.mappings.find((m) => m.hash === binding.mappingHash);
       if (raw === undefined) throw new RangeError(`Mapping Version ${binding.mappingHash}이(가) 응답에 없습니다`);
       const checked = await checkBindingMapping(raw, binding, equipmentId);
       if (!checked.ok) throw new RangeError(`Mapping Version ${binding.mappingHash}: ${checked.problem}`);
+      relationships.add(relationship);
       mappings.set(binding.mappingHash, checked.value);
     }
     const revision = binding.layoutRevision;

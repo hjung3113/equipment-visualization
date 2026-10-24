@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { OccurrenceBatch } from '@eqv/core';
 import { eqvManifest, eqvScreens, FOCUS_SCREEN, TOPVIEW_SCREEN } from '../src/index.js';
 import { createFakeHost, deferred, ok, response, type FakeHostOptions, type QueryCall } from './fake-host.js';
-import { contextData, EQUIPMENT, HOST_TIME, mappings, pages } from './replay-fixture.js';
+import { bindings, contextData, EQUIPMENT, HOST_TIME, layout, mappings, pages } from './replay-fixture.js';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -94,6 +94,51 @@ describe('load races', () => {
   });
 });
 
+describe('request generations', () => {
+  it.each(SCREENS)('%s: restoring an earlier equipment waits for a new response instead of reviving the old result', async (_name, Screen) => {
+    const late = deferred<ApiResponse<unknown>>();
+    let calls = 0;
+    const fake = hostFor({
+      detailSlot: true,
+      query: async (call) => {
+        if (call.id === CONTEXT_ID && ++calls === 2) return await late.promise;
+        return await server()(call);
+      },
+    });
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(document.querySelector('tr[data-occurrence-id], [data-layer="replay"]')).not.toBeNull());
+    fake.setPage({ equipment: null });
+    await screen.findByText('설비를 고르세요');
+    fake.setPage({ equipment: EQUIPMENT });
+    await waitFor(() => expect(calls).toBe(2));
+    screen.getByText('불러오는 중…');
+    expect(document.querySelector('tr[data-occurrence-id], [data-layer="replay"]')).toBeNull();
+    await act(async () => { late.resolve(ok(contextData())); await late.promise; });
+    await waitFor(() => expect(document.querySelector('tr[data-occurrence-id], [data-layer="replay"]')).not.toBeNull());
+  });
+
+  it.each(SCREENS)('%s: A → B → A with B unsettled does not show the first A result', async (_name, Screen) => {
+    const slowB = deferred<ApiResponse<unknown>>();
+    let aCalls = 0;
+    const fake = hostFor({
+      query: async (call) => {
+        const equipmentId = (call.params as { equipmentId: string }).equipmentId;
+        if (call.id === CONTEXT_ID && equipmentId === 'eq-b') return await slowB.promise;
+        if (call.id === CONTEXT_ID && ++aCalls === 2) return await new Promise<never>(() => undefined);
+        return await server()(call);
+      },
+    });
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(document.querySelector('tr[data-occurrence-id], [data-layer="replay"]')).not.toBeNull());
+    fake.setPage({ equipment: 'eq-b' });
+    await screen.findByText('불러오는 중…');
+    fake.setPage({ equipment: EQUIPMENT });
+    await waitFor(() => expect(aCalls).toBe(2));
+    screen.getByText('불러오는 중…');
+    expect(document.querySelector('tr[data-occurrence-id], [data-layer="replay"]')).toBeNull();
+  });
+});
+
 describe('outcomes', () => {
   const failing = (outcome: ApiResponse<unknown>['outcome']) => hostFor({ query: server({ context: response(outcome, null, { message: `${outcome}-text` }) }) });
 
@@ -116,15 +161,30 @@ describe('outcomes', () => {
     expect(fake.log.statuses).toEqual([]);
   });
 
-  it('forbidden sets auth_required; the next successful load returns to ready', async () => {
+  it('forbidden sets auth_required; the next load of an equipment the server answers returns to ready and shows the data', async () => {
+    const fake = hostFor({
+      page: { equipment: 'eq-denied' },
+      query: async (call) => (call.params as { equipmentId: string }).equipmentId === EQUIPMENT ? await server()(call) : response('forbidden', null),
+    });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(fake.log.statuses).toEqual(['auth_required']));
+    fake.setPage({ equipment: EQUIPMENT });
+    await waitFor(() => expect(row('occ-open')).not.toBeNull());
+    expect(fake.log.statuses).toEqual(['auth_required', 'ready']);
+    expect(screen.queryByText('데이터 오류')).toBeNull();
+  });
+
+  it('forbidden → a local error on the next equipment also returns the host to ready', async () => {
     let allowed = false;
-    const fake = hostFor({ query: async (call) => allowed ? await server()(call) : response('forbidden', null) });
+    const fake = hostFor({ query: async () => allowed ? response('error', null, { message: 'local' }) : response('forbidden', null) });
     const Screen = eqvScreens.topview;
     render(<Screen host={fake.host} params={{}} />);
     await waitFor(() => expect(fake.log.statuses).toEqual(['auth_required']));
     allowed = true;
     fake.setPage({ equipment: 'eq-synth-02' });
     await waitFor(() => expect(fake.log.statuses).toEqual(['auth_required', 'ready']));
+    await screen.findByText('불러오지 못했습니다');
   });
 
   it('non-clear assessments become notices; unknown is not worded as clear', async () => {
@@ -141,6 +201,17 @@ describe('outcomes', () => {
     render(<Screen host={fake.host} params={{}} />);
     await screen.findByText('데이터 오류');
     screen.getByText(/내용 hash가 맞지 않습니다/);
+    expect(document.querySelector('tr[data-occurrence-id]')).toBeNull();
+  });
+
+  it.each(SCREENS)('%s: two Bindings sharing a Mapping hash but naming different valid Layouts are a data error', async (_name, Screen) => {
+    const [first] = bindings.bindings;
+    const other = { ...layout, id: 'eq-synth-01-layout-b' };
+    const twin = { ...bindings, bindings: [first!, { ...first!, layoutId: other.id, effectiveFrom: '2026-01-01T10:04:30.000' }] };
+    const fake = hostFor({ query: server({ context: ok({ layouts: [layout, other], bindings: twin, mappings }) }) });
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByText('데이터 오류');
+    screen.getByText(/layoutId/);
     expect(document.querySelector('tr[data-occurrence-id]')).toBeNull();
   });
 
@@ -214,6 +285,23 @@ describe('Top View', () => {
     await screen.findByText('Component를 선택하세요');
     fireEvent.click(document.querySelector('[data-component-id="pm-a"]')!);
     await screen.findByRole('region', { name: 'Component 상세 pm-a' });
+  });
+});
+
+describe('Top View Component detail words', () => {
+  it.each([
+    ['pm-b', /처리 중/],
+    ['pm-a', /기록된 활동 없음/],
+  ] as const)('%s shows the activity in Korean with its evidence badge', async (id, words) => {
+    const fake = hostFor();
+    const Screen = eqvScreens.topview;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByText('Component를 선택하세요');
+    fireEvent.click(document.querySelector(`[data-component-id="${id}"]`)!);
+    const region = await screen.findByRole('region', { name: `Component 상세 ${id}` });
+    expect(region.textContent).toMatch(words);
+    expect(region.textContent).not.toMatch(/processing|no recorded activity/);
+    expect(region.textContent).toMatch(/활동 근거/);
   });
 });
 
