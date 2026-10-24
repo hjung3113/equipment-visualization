@@ -29,7 +29,7 @@ packages/renderer/            # Present — static `TopView`/`buildScene` plus i
 packages/editor/              # Onboarding editor parts: Fleet table, Inventory, Template proposals, Mapping Board, Publish panel, and the layout edit model (move/rotate/snap/undo, Component assembly/name/delete and explicit connection editing, #157/#166–168). TS source (no build step); screens on `@ap/ui` / `@eqv/ui`, including the Mapping Board (no `editor.css`)
 packages/ui/                  # `@eqv/ui`: EV components for patterns `@ap/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use all of them
 packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@ap/ui` / `@eqv/ui` (present)
-packages/platform-adapter/    # analytics-platform host: implements the platform SDK contract (planned, ADR-0012)
+packages/platform-adapter/    # analytics-platform host module (ADR-0012): manifest + endpoint declarations + theme styles present; screens planned (177d)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
 fixtures/  # Synthetic source-shaped replay fixtures (present)

@@ -1,0 +1,3 @@
+/* One CSS owner for the --eqv-* mapping is @eqv/ui (theme.css). The @eqv/replay and @eqv/views style imports wait for 177d. */
+@import "@eqv/ui/theme.css";
+@import "@eqv/ui/styles.css";
