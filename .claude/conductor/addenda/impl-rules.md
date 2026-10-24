@@ -34,3 +34,4 @@ Overrides and additions to the numbered rules above.
   in the report.
 - Report (rule 6) also lists, per test added, which acceptance criterion it covers, and for each changed file one line
   explaining why it changed.
+- **An adopted `@ap/ui` part must render with the platform's own styles:** check its computed style (or that its utility classes exist in the built Studio CSS) against the platform screen of the same kind, not only its markup. The Studio imports the design system through `@ap/ui/styles.css`; a piecewise import missed `platform-tokens.css` and left the platform `StatusBadge` unstyled (#177 node 177f, 2026-10-24).

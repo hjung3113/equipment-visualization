@@ -16,7 +16,7 @@ async function renderGallery() {
   await screen.findByRole('heading', { level: 1, name: 'UI 갤러리' });
 }
 
-it.each(['DataTable', 'Panel', 'StateMessage', 'FileButton', 'FormField', '툴바 버튼', 'ViewerZoomControls', 'Tabs'])(
+it.each(['DataTable', 'Panel', 'StateMessage', 'DetailFields', 'FileButton', 'FormField', '툴바 버튼', 'ViewerZoomControls', 'Tabs'])(
   'has a %s section',
   async (name) => {
     await renderGallery();

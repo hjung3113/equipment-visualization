@@ -6,7 +6,7 @@ import {
 } from '@eqv/core';
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  Button, FieldRow, StatusBadge,
+  Button, StatusBadge,
 } from '@ap/ui';
 import {
   CircleCheck, CircleX, FileJson, Info, Replace, TriangleAlert, Upload, X,
@@ -14,7 +14,8 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
-  DataTable, EvidenceBadge, LoadingBlock, Panel, StateMessage,
+  DataTable, DetailFields, EvidenceBadge, LoadingBlock, Panel, StateMessage,
+  type DetailField,
 } from '@eqv/ui';
 import { ApiError, importWindow, putAliasMetadata, putTypeDictionary } from './api.js';
 import { checkScope, readAliasMetadata, shortWindowHash } from './onboarding-data.js';
@@ -186,8 +187,6 @@ function rowsFor(inspection: Inspection) {
   ];
 }
 
-const mono = (value: ReactNode) => <span className="font-mono text-xs">{value}</span>;
-
 function WindowDetails({ summary }: { summary: Inspection['summary'] }) {
   if (summary === undefined) return null;
   const levels = ['observed', 'derived', 'illustrative', 'unknown'] as const;
@@ -196,36 +195,34 @@ function WindowDetails({ summary }: { summary: Inspection['summary'] }) {
       {levels.map((level, index) => <EvidenceBadge key={level} level={level}>{['관측', '파생', '예시', '미확인'][index]} {counts[level]}</EvidenceBadge>)}
     </span>
   );
-  return (
-    <>
-      <FieldRow label="구간" layout="property">{mono(`${summary.from} – ${summary.to}`)}</FieldRow>
-      <FieldRow label="timeDomain" layout="property">{mono(summary.timeDomain)}</FieldRow>
-      <FieldRow label="Data Generation" layout="property">{mono(summary.dataGeneration)}</FieldRow>
-      <FieldRow label="parserContractVersion" layout="property">{mono(summary.parserContractVersion)}</FieldRow>
-      <FieldRow label="Watermark" layout="property">{mono(`${summary.watermark.at} · seq ${summary.watermark.seq}`)}</FieldRow>
-      <FieldRow label="Record Sequence" layout="property">{mono(summary.seq === null ? '—' : `${summary.seq.min} – ${summary.seq.max}`)}</FieldRow>
-      <FieldRow label="Occurrence" layout="property">{`${summary.occurrences}개 · 열린 Occurrence ${summary.openOccurrences}개`}</FieldRow>
-      <FieldRow label="시각 없는 경계" layout="property">{`${summary.nullBoundaryTimes}개 (at: null)`}</FieldRow>
-      <FieldRow label="Data Quality Issue" layout="property">{`${summary.dataQualityIssues}개${Object.keys(summary.dataQualityIssuesByType).sort().map((key) => ` · ${key} ${summary.dataQualityIssuesByType[key]}개 보존됨`).join('')}`}</FieldRow>
-      <FieldRow label="alias" layout="property">{`${summary.aliases}개`}</FieldRow>
-      <FieldRow label="경계 근거" layout="property">{evidence(summary.boundaryEvidence)}</FieldRow>
-      <FieldRow label="식별 근거" layout="property">{evidence(summary.identityEvidence)}</FieldRow>
-      {'hash' in summary && <FieldRow label="hash" layout="property">{mono(shortWindowHash(summary.hash))}</FieldRow>}
-    </>
-  );
+  const items: DetailField[] = [
+    { key: 'range', label: '구간', value: `${summary.from} – ${summary.to}`, mono: true },
+    { key: 'timeDomain', label: 'timeDomain', value: summary.timeDomain, mono: true },
+    { key: 'generation', label: 'Data Generation', value: summary.dataGeneration, mono: true },
+    { key: 'parser', label: 'parserContractVersion', value: summary.parserContractVersion, mono: true },
+    { key: 'watermark', label: 'Watermark', value: `${summary.watermark.at} · seq ${summary.watermark.seq}`, mono: true },
+    { key: 'seq', label: 'Record Sequence', value: summary.seq === null ? '—' : `${summary.seq.min} – ${summary.seq.max}`, mono: true },
+    { key: 'occurrences', label: 'Occurrence', value: `${summary.occurrences}개 · 열린 Occurrence ${summary.openOccurrences}개` },
+    { key: 'null-boundaries', label: '시각 없는 경계', value: `${summary.nullBoundaryTimes}개 (at: null)` },
+    { key: 'dqi', label: 'Data Quality Issue', value: `${summary.dataQualityIssues}개${Object.keys(summary.dataQualityIssuesByType).sort().map((key) => ` · ${key} ${summary.dataQualityIssuesByType[key]}개 보존됨`).join('')}` },
+    { key: 'aliases', label: 'alias', value: `${summary.aliases}개` },
+    { key: 'boundary-evidence', label: '경계 근거', value: evidence(summary.boundaryEvidence) },
+    { key: 'identity-evidence', label: '식별 근거', value: evidence(summary.identityEvidence) },
+    ...('hash' in summary ? [{ key: 'hash', label: 'hash', value: shortWindowHash(summary.hash), mono: true }] : []),
+  ];
+  return <DetailFields items={items} />;
 }
 
 function AliasDetails({ alias }: { alias: NonNullable<Inspection['alias']> }) {
   const { file, current, diff } = alias;
   const currentText = current.kind === 'absent' ? '없음' : current.kind === 'ok' ? `alias ${current.file.aliases.length}개` : `읽을 수 없음: ${current.message}`;
-  return (
-    <>
-      <FieldRow label="equipmentId" layout="property">{mono(file?.equipmentId ?? '—')}</FieldRow>
-      <FieldRow label="alias" layout="property">{file ? `${file.aliases.length}개` : '—'}</FieldRow>
-      <FieldRow label="현재 파일" layout="property">{currentText}</FieldRow>
-      {diff && <FieldRow label="변경" layout="property">{`추가 ${diff.added}개 · 삭제 ${diff.deleted}개 · 변경 ${diff.changed}개 · 그대로 ${diff.unchanged}개`}</FieldRow>}
-    </>
-  );
+  const items: DetailField[] = [
+    { key: 'equipment', label: 'equipmentId', value: file?.equipmentId ?? '—', mono: true },
+    { key: 'aliases', label: 'alias', value: file ? `${file.aliases.length}개` : '—' },
+    { key: 'current', label: '현재 파일', value: currentText },
+    ...(diff ? [{ key: 'diff', label: '변경', value: `추가 ${diff.added}개 · 삭제 ${diff.deleted}개 · 변경 ${diff.changed}개 · 그대로 ${diff.unchanged}개` }] : []),
+  ];
+  return <DetailFields items={items} />;
 }
 
 function DictionaryDetails({ dictionary, record, typeDictionary }: {
@@ -234,13 +231,11 @@ function DictionaryDetails({ dictionary, record, typeDictionary }: {
   const currentText = typeDictionary.kind === 'absent' ? '없음'
     : typeDictionary.kind === 'ok' ? `ModuleType ${typeDictionary.count}개 (이미 있음)`
       : `읽을 수 없음: ${typeDictionary.error}`;
-  return (
-    <>
-      <FieldRow label="범위" layout="property">{mono(`model · ${record.maker} / ${record.model}`)}</FieldRow>
-      <FieldRow label="항목" layout="property">{dictionary.file ? `ModuleType ${dictionary.file.entries.length}개` : '—'}</FieldRow>
-      <FieldRow label="현재 파일" layout="property">{currentText}</FieldRow>
-    </>
-  );
+  return <DetailFields items={[
+    { key: 'scope', label: '범위', value: `model · ${record.maker} / ${record.model}`, mono: true },
+    { key: 'entries', label: '항목', value: dictionary.file ? `ModuleType ${dictionary.file.entries.length}개` : '—' },
+    { key: 'current', label: '현재 파일', value: currentText },
+  ]} />;
 }
 
 function DialogCopy({ inspection }: { inspection: Inspection }) {

@@ -69,7 +69,7 @@ async function preview(title = 'Sample Window 미리보기') {
 
 function detailValue(scope: HTMLElement, label: string) {
   const term = within(scope).getByText(label, { exact: true });
-  return term.nextElementSibling?.textContent ?? null;
+  return term.closest('div')?.querySelector('dd')?.textContent ?? null;
 }
 
 function rowsOf(table: HTMLElement) {
@@ -134,7 +134,10 @@ it('previews and imports w1 with preserved evidence, exact body text, toast, and
   expect(document.activeElement).toBe(importButton);
   fireEvent.click(importButton);
   const message = 'Sample Window 2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000을(를) 가져왔습니다';
-  await screen.findByText(message);
+  const toastText = await screen.findByText(message);
+  expect(toastText.closest('[aria-live="polite"]')).not.toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '알림 닫기' }));
+  await waitFor(() => expect(screen.queryByText(message)).toBeNull());
   await waitFor(() => expect(screen.getByText('1개', { exact: true })).toBeTruthy());
   expect(document.activeElement).toBe(screen.getByRole('link', {
     name: '2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000 Onboarding 열기',
@@ -228,7 +231,7 @@ it('creates absent alias metadata without a replacement dialog', async () => {
   await preview('Alias metadata 미리보기');
   fireEvent.click(screen.getByRole('button', { name: '가져오기' }));
   await screen.findByText('Alias metadata를 저장했습니다 (alias 12개)');
-  await waitFor(() => expect(screen.getAllByText('Alias metadata', { exact: true }).some((label) => label.nextElementSibling?.textContent === 'alias 12개')).toBe(true));
+  await waitFor(() => expect(screen.getAllByRole('definition').some((item) => item.textContent === 'alias 12개')).toBe(true));
   expect(screen.queryByRole('alertdialog')).toBeNull();
   expect(JSON.parse(await readFile(join(root, 'observations/eq-synth-03/alias-metadata.json'), 'utf8'))).toEqual(fixture);
   const request = sent.find(({ url }) => new URL(url, 'http://studio.test').pathname === '/api/import/alias-metadata')!;
@@ -284,7 +287,7 @@ it('creates a Model Type Dictionary, then blocks a second import as create-only'
   const path = 'onboarding/scopes/model/synth-maker-b/synth-wet/type-dictionary.json';
   await screen.findByText('Type Dictionary를 저장했습니다 (ModuleType 6개)');
   expect(JSON.parse(await readFile(join(root, path), 'utf8'))).toEqual(fixture);
-  await waitFor(() => expect(screen.getAllByText('Type Dictionary (Model 범위)', { exact: true }).some((label) => label.nextElementSibling?.textContent === 'ModuleType 6개')).toBe(true));
+  await waitFor(() => expect(screen.getAllByRole('definition').some((item) => item.textContent === 'ModuleType 6개')).toBe(true));
   await upload('Type Dictionary(Model 범위)', text, 'type-dictionary.json');
   const panel = await preview('Type Dictionary 미리보기');
   expect(within(panel).getByText('이 Model의 Type Dictionary가 이미 있습니다')).toBeTruthy();

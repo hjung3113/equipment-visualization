@@ -14,6 +14,7 @@ The package is consumed as TypeScript source (`exports` → `src/`). The host im
   - `DataTable.Cell` — `<td>`, or `<th scope="row">` with `rowHeader`; `numeric` (right-aligned tabular figures) and `mono`; `action` removes vertical padding for 32 px toolbar buttons and adds `data-action`; `colSpan` etc. pass through.
 - `Panel` — framed section: `title?`, `subtitle?`, `actions?`, `headingLevel?` (2 or 3), `className?` (layout), `children`. With a title it is a `region` named by the heading.
 - `StateMessage` / `LoadingBlock` — AP `StateView`. `StateMessage`: `tone?` (`neutral | warning | danger`; `danger` is `role="alert"`, the others `status`), `icon` (a lucide component), `title`, `body?`, `action?`, `compact?`. `LoadingBlock`: `label` (announced), `rows?` (default 3).
+- `DetailFields` — `dl` of `{ key; label; value; mono? }` rows; long values wrap inside the column.
 - `FileButton` — toolbar button that opens the file picker. Props: `label` (names the button and the hidden input), `accept?`, `disabled?`, `aria-describedby?` (on the visible button), `onFile(file)`, `icon?` (default `Upload`). Picking the same file twice fires twice.
 - `FormField` — one labelled form control: `label`, `required?` (the `*` is `aria-hidden`), `hint?`, `error?` and `children: (control) => ReactNode`. Spread `control` (`id`, `aria-describedby`, `aria-invalid`, `aria-required`) onto the `@ap/ui` `Input`. `aria-describedby` lists the error id, then the hint id, each only while its text exists; `aria-invalid` is set only with an error. No `role="alert"`: the host moves focus to the first invalid field, which reads its description.
 - `EvidenceBadge` — `level: EvidenceLevel` (`observed | derived | illustrative | unknown`) and `children` (the label). The level shows without colour: always its text, plus a distinct border style per level (solid, dashed, dotted + italic, double). `illustrative` never looks like `observed` (ADR-0003). The level is exposed as `data-evidence` on the badge.
@@ -25,7 +26,7 @@ The package is consumed as TypeScript source (`exports` → `src/`). The host im
 
 ## Not here
 
-Status badge, label/value rows and toasts are `@ap/ui` parts, not EV components: `StatusBadge` (`tone`, `dot?`; never an evidence level, `EvidenceBadge` is the only evidence presentation), `FieldRow layout="property"` and `Toaster` (mounted once by the host) with `toast`.
+Status badge and toasts are `@ap/ui` parts, not EV components: `StatusBadge` (`tone`, `dot?`; never an evidence level, `EvidenceBadge` is the only evidence presentation) and `Toaster` (mounted once by the host) with `toast`.
 
 ## Conventions
 

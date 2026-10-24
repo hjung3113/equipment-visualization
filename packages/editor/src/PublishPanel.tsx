@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { layoutRevision, type BindingsFile, type MappingConflict, type MappingVersion } from '@eqv/core';
-import { DataTable, LoadingBlock, Panel, StateMessage } from '@eqv/ui';
-import { Button, Callout, EmptyState, FieldRow, Input, Label, PanelSectionTitle } from '@ap/ui';
+import { DataTable, DetailFields, LoadingBlock, Panel, StateMessage } from '@eqv/ui';
+import { Button, Callout, EmptyState, Input, Label, PanelSectionTitle } from '@ap/ui';
 import { Play, Send, TriangleAlert } from 'lucide-react';
 import type { TopViewerProps } from '@eqv/renderer';
 import { describeConflict } from './conflict-text.js';
@@ -174,10 +174,10 @@ export function PublishPanel(props: PublishPanelProps) {
           )}
           {coverage && (
             <>
-              <FieldRow label="커버리지" layout="property">{
+              <DetailFields items={[{ key: 'coverage', label: '커버리지', value:
                 `참조 ${coverage.references.resolved}/${coverage.references.total} (${percent(coverage.references.ratio)}) · `
                 + `alias ${coverage.aliases.resolved}/${coverage.aliases.total} (${percent(coverage.aliases.ratio)}) · `
-                + `assumed ${percent(coverage.assumed.ratio)} · 무시 ${coverage.ignored.aliases.length}`}</FieldRow>
+                + `assumed ${percent(coverage.assumed.ratio)} · 무시 ${coverage.ignored.aliases.length}` }]} />
               <div>
                 <PanelSectionTitle className="mb-2">미매핑 alias</PanelSectionTitle>
                 {coverage.unmapped.length === 0 ? <EmptyState size="sm" title="미매핑 alias가 없습니다." /> : (
@@ -229,14 +229,14 @@ export function PublishPanel(props: PublishPanelProps) {
           </div>
           {plan && (
             <>
-              <FieldRow label="Layout" layout="property">{plan.diff.layout}</FieldRow>
-              <FieldRow label="Baseline" layout="property">{`Baseline Inventory: ${plan.baseline.from} – ${plan.baseline.to}`}</FieldRow>
-              {plan.diff.binding.length > 0 && (
-                <FieldRow label="Binding 변경" layout="property">
+              <DetailFields items={[
+                { key: 'layout', label: 'Layout', value: plan.diff.layout },
+                { key: 'baseline', label: 'Baseline', value: `Baseline Inventory: ${plan.baseline.from} – ${plan.baseline.to}` },
+                ...(plan.diff.binding.length > 0 ? [{ key: 'binding', label: 'Binding 변경', value: (
                   <ul aria-label="Binding 변경" className="m-0 list-none p-0">{plan.diff.binding.map((line) => <li key={line}>{line}</li>)}</ul>
-                </FieldRow>
-              )}
-              <FieldRow label="요약" layout="property">{`변경 없음 ${plan.diff.unchanged}건 · Mapping Conflict ${plan.diff.conflicts}건 (게시를 막지 않습니다)`}</FieldRow>
+                ) }] : []),
+                { key: 'unchanged', label: '요약', value: `변경 없음 ${plan.diff.unchanged}건 · Mapping Conflict ${plan.diff.conflicts}건 (게시를 막지 않습니다)` },
+              ]} />
               {plan.diff.entries.length > 0 && (
                 <DataTable label={diffCaption} title={diffCaption} headingLevel={3} columns={['alias', '변경', '이전', '이후']}>
                   {plan.diff.entries.map((entry) => (

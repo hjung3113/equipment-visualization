@@ -3,7 +3,7 @@ import {
   Download, Inbox, Play, RotateCw, Save, ServerCrash, SkipBack, TriangleAlert, Undo2,
 } from 'lucide-react';
 import {
-  DataTable, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger,
+  DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger,
   ViewerZoomControls, type DataTableSort,
 } from '@eqv/ui';
 import { Button, Input } from '@ap/ui';
@@ -40,6 +40,7 @@ const ROWS: readonly Row[] = Array.from({ length: 40 }, (_, i) => ({
   note: i % 3 === 0 ? NOTE : '합성 메모',
 }));
 
+const SHA = `sha256:${'0123456789abcdef'.repeat(4)}`;
 
 const COLUMNS = [
   { id: 'id', header: '설비', sortable: true, className: 'whitespace-nowrap' },
@@ -183,6 +184,19 @@ export default function UiGallery() {
             <StateMessage compact tone="danger" icon={ServerCrash} title="데이터를 읽지 못했습니다" />
             <LoadingBlock label="불러오는 중" rows={3} />
           </div>
+        </Panel>
+
+        <Panel title="DetailFields">
+          <DetailFields
+            items={[
+              { key: 'location', label: '위치', value: 'synth-chamber-01' },
+              { key: 'activity', label: '활동', value: '이송' },
+              { key: 'start', label: '시작', value: '2026-01-01 00:00:00 · seq 12' },
+              { key: 'end', label: '끝', value: '2026-01-01 00:00:05 · seq 18' },
+              { key: 'mapping', label: 'Mapping Version', value: SHA, mono: true },
+              { key: 'ruleset', label: 'Ruleset', value: 'synth-ruleset-v1', mono: true },
+            ]}
+          />
         </Panel>
 
         <Panel title="FileButton">

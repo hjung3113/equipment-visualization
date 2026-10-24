@@ -1,9 +1,5 @@
 @import "tailwindcss";
-@import "@ap/ui/styles/tokens.css" layer(base);
-@import "@ap/ui/styles/semantic.css" layer(base);
-@import "@ap/ui/styles/theme.css";
-@import "@ap/ui/styles/compat.css";
-@import "@ap/ui/styles/sources.css";
+@import "@ap/ui/styles.css";
 @import "@eqv/ui/styles.css";
 @import "@eqv/ui/theme.css";
 @import "@eqv/editor/styles.css";

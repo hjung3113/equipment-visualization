@@ -1,5 +1,5 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
-import { Factory, FileQuestion, LayoutTemplate } from 'lucide-react';
+import { CircleCheck, CircleX, Factory, FileQuestion, Info, LayoutTemplate, TriangleAlert } from 'lucide-react';
 import { APP_FRAME_MAIN_ID, AppFrame, Page, StateMessage } from '@eqv/ui';
 import { Button, Toaster } from '@ap/ui';
 import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
@@ -74,7 +74,20 @@ export function App() {
       labels={{ nav: '주 메뉴', skipToContent: '본문으로 건너뛰기', collapse: '사이드바 접기', expand: '사이드바 펼치기' }}
     >
       <RoutePage route={route} />
-      <Toaster />
+      <Toaster
+        position="bottom-center"
+        richColors
+        closeButton
+        duration={5000}
+        containerAriaLabel="알림"
+        toastOptions={{ closeButtonAriaLabel: '알림 닫기' }}
+        icons={{
+          info: <Info className="h-4 w-4" aria-hidden />,
+          success: <CircleCheck className="h-4 w-4" aria-hidden />,
+          warning: <TriangleAlert className="h-4 w-4" aria-hidden />,
+          error: <CircleX className="h-4 w-4" aria-hidden />,
+        }}
+      />
     </AppFrame>
   );
 }
