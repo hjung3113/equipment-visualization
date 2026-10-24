@@ -4,6 +4,7 @@ import {
   bindingsFileSchema, checkBindingLayout, checkBindingMapping, layoutRevision, mappingVersionSchema, validateLayout, verifyBindingContext,
   type Binding, type MappingVersion,
 } from '../src/index.js';
+import { canonicalJson, sha256Hex } from '../src/canonical.js';
 
 const root = new URL('../../../fixtures/cluster-single/', import.meta.url);
 const read = (path: string): unknown => JSON.parse(readFileSync(new URL(path, root), 'utf8'));
@@ -79,6 +80,21 @@ describe('verifyBindingContext', () => {
     expect(reads).toEqual(['mapping', 'layout draft']);
     expect(result).toMatchObject({ ok: true, layoutRevisions: {}, notices: [draftNotice] });
     expect(result.ok && [result.mappings.length, result.layouts.length]).toEqual([1, 1]);
+  });
+
+  it('reports one draft notice per Layout, in first-unpinned-Binding order', async () => {
+    const other = 'b-layout';
+    const body: Partial<MappingVersion> = { ...mappingVersionSchema.parse(rawMapping), layoutId: other };
+    delete body.hash;
+    const otherMapping = { ...body, hash: await sha256Hex(canonicalJson(body)) } as MappingVersion;
+    const second: Binding = { ...binding, layoutId: other, mappingHash: otherMapping.hash };
+    const readers = {
+      mapping: async (b: Binding) => b.layoutId === other ? otherMapping : rawMapping,
+      layout: async (id: string) => ({ ...rawLayout, id }),
+    };
+    // `b-layout` sorts before `eq-synth-01-layout`; the notices follow the Bindings, not the ids.
+    const result = await verifyBindingContext([binding, second, binding], readers, equipmentId);
+    expect(result).toMatchObject({ ok: true, notices: [draftNotice, `게시된 Layout Revision이 없어 초안 레이아웃으로 표시합니다 (${other})`] });
   });
 
   it('checks a Mapping hash again under another layoutId and rejects the mismatch', async () => {

@@ -63,7 +63,8 @@ export type BindingContext =
 /**
  * Server and file data is not trusted to be self-consistent (ADR-0011): checks each distinct (mappingHash, layoutId)
  * relationship once, each unpinned `layoutId` once as the draft, and each pinned Layout Revision once. Stops at the first failure
- * (Mapping Versions first, then drafts, then pinned revisions).
+ * (Mapping Versions first, then drafts, then pinned revisions). Both hosts (Studio, platform adapter) use this one order, so the
+ * same bad input reports the same first failure everywhere (#177 slice close; the adapter used a per-Binding order before).
  */
 export async function verifyBindingContext(bindings: readonly Binding[], readers: BindingContextReaders, equipmentId: string): Promise<BindingContext> {
   const mappings: MappingVersion[] = [];
