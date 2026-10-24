@@ -58,7 +58,7 @@ export default defineConfig([
   {
     // ADR-0013: the DOM UI packages and Studio consume the design system '@ap/ui' and nothing else from the platform SDK.
     // A flat-config block replaces the rule options above, so the patterns and selectors are repeated with the '@ap/ui' exception.
-    files: ['packages/ui/**', 'packages/replay/**', 'packages/editor/**', 'apps/studio/**'],
+    files: ['packages/ui/**', 'packages/replay/**', 'packages/editor/**', 'packages/views/**', 'apps/studio/**'],
     rules: {
       'no-restricted-imports': [
         'error',
@@ -141,7 +141,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['packages/ui/src/**/*.tsx', 'packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
+    files: ['packages/ui/src/**/*.tsx', 'packages/replay/src/**/*.tsx', 'packages/editor/src/**/*.tsx', 'packages/views/src/**/*.tsx', 'apps/studio/src/**/*.tsx'],
     plugins: { shadcn },
     settings: {
       shadcn: {

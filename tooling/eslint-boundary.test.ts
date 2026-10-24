@@ -205,6 +205,11 @@ it.each<Variant>([
     rule: 'no-restricted-syntax',
   },
   {
+    code: "import { defineEndpoint } from '@ap/contracts';",
+    filePath: 'packages/views/src/x.tsx',
+    rule: 'no-restricted-imports',
+  },
+  {
     code: "export const dep = await import('@ap/ui');",
     filePath: 'packages/ui/src/x.tsx',
     rule: null,

@@ -9,7 +9,8 @@ import {
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { createFileApi } from '../server/files.js';
 import { stubFileApi } from './file-api.js';
-import { GANTT_SPAN_LIMIT, loadFocus, TIMELINE_BUDGET, timelineCost, type FocusData } from '../src/focus-data.js';
+import { GANTT_SPAN_LIMIT, TIMELINE_BUDGET, timelineCost } from '@eqv/views';
+import { loadFocus, type FocusData } from '../src/focus-data.js';
 import { generateDemo } from '../scripts/demo/generate.ts';
 
 const repo = resolve(process.cwd(), '../..');
