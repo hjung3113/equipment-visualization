@@ -1,10 +1,10 @@
 import { useMemo, useState } from 'react';
 import {
-  Ban, Check, Circle, CircleCheck, CircleDashed, CircleDot, Download, Inbox, Play, RotateCw, Save, ServerCrash, SkipBack, TriangleAlert, Undo2, X,
+  Download, Inbox, Play, RotateCw, Save, ServerCrash, SkipBack, TriangleAlert, Undo2,
 } from 'lucide-react';
 import {
-  DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, Tabs, TabsContent, TabsList, TabsTrigger,
-  ToastRegion, ViewerZoomControls, useToastQueue, type DataTableSort, type StatusBadgeProps,
+  DataTable, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, Tabs, TabsContent, TabsList, TabsTrigger,
+  ViewerZoomControls, type DataTableSort,
 } from '@eqv/ui';
 import { Button, Input } from '@ap/ui';
 
@@ -40,18 +40,6 @@ const ROWS: readonly Row[] = Array.from({ length: 40 }, (_, i) => ({
   note: i % 3 === 0 ? NOTE : '합성 메모',
 }));
 
-const SHA = `sha256:${'0123456789abcdef'.repeat(4)}`;
-
-const CANDIDATES: readonly { glyph: string; label: string; tone: StatusBadgeProps['tone']; icon: StatusBadgeProps['icon'] }[] = [
-  { glyph: '●', label: '게시됨 / 확정', tone: 'success', icon: CircleCheck },
-  { glyph: '◐', label: '초안 / 자동', tone: 'warning', icon: CircleDashed },
-  { glyph: '○', label: '미착수 / 미매핑', tone: 'neutral', icon: Circle },
-  { glyph: '⊘', label: '무시', tone: 'neutral', icon: Ban },
-  { glyph: '⚠', label: '오류', tone: 'danger', icon: TriangleAlert },
-  { glyph: '—', label: '진행 중', tone: 'info', icon: CircleDot },
-  { glyph: '✓', label: '적합', tone: 'success', icon: Check },
-  { glyph: '✗', label: '부적합', tone: 'danger', icon: X },
-];
 
 const COLUMNS = [
   { id: 'id', header: '설비', sortable: true, className: 'whitespace-nowrap' },
@@ -112,7 +100,6 @@ function ZoomHarness() {
 
 export default function UiGallery() {
   const [fileName, setFileName] = useState<string | null>(null);
-  const { toasts, notify, dismiss } = useToastQueue();
   return (
     <Page
       title="UI 갤러리"
@@ -198,38 +185,6 @@ export default function UiGallery() {
           </div>
         </Panel>
 
-        <Panel title="StatusBadge" subtitle="tone별 · 제안 매핑">
-          <div className="grid gap-3">
-            <div className="flex flex-wrap gap-2">
-              <StatusBadge tone="success" icon={CircleCheck}>success</StatusBadge>
-              <StatusBadge tone="warning" icon={CircleDashed}>warning</StatusBadge>
-              <StatusBadge tone="danger" icon={TriangleAlert}>danger</StatusBadge>
-              <StatusBadge tone="neutral" icon={Circle}>neutral</StatusBadge>
-              <StatusBadge tone="info" icon={CircleDot}>info</StatusBadge>
-              <StatusBadge tone="neutral">아이콘 없음</StatusBadge>
-            </div>
-            <p className="m-0 text-xs text-text-muted">제안 매핑 (f2에서 확정)</p>
-            <div className="flex flex-wrap gap-2">
-              {CANDIDATES.map((c) => (
-                <StatusBadge key={c.glyph} tone={c.tone} icon={c.icon}>{c.label}</StatusBadge>
-              ))}
-            </div>
-          </div>
-        </Panel>
-
-        <Panel title="DetailFields">
-          <DetailFields
-            items={[
-              { key: 'location', label: '위치', value: 'synth-chamber-01' },
-              { key: 'activity', label: '활동', value: '이송' },
-              { key: 'start', label: '시작', value: '2026-01-01 00:00:00 · seq 12' },
-              { key: 'end', label: '끝', value: '2026-01-01 00:00:05 · seq 18' },
-              { key: 'mapping', label: 'Mapping Version', value: SHA, mono: true },
-              { key: 'ruleset', label: 'Ruleset', value: 'synth-ruleset-v1', mono: true },
-            ]}
-          />
-        </Panel>
-
         <Panel title="FileButton">
           <div className="flex flex-wrap items-center gap-3">
             <FileButton label="가져오기" accept=".json,application/json" onFile={(file) => setFileName(file.name)} />
@@ -267,14 +222,6 @@ export default function UiGallery() {
           <ZoomHarness />
         </Panel>
 
-        <Panel title="토스트">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="secondary" size="toolbar" onClick={() => notify('정보 토스트입니다', 'info')}>정보</Button>
-            <Button variant="secondary" size="toolbar" onClick={() => notify('경고 토스트입니다', 'warning')}>경고</Button>
-            <Button variant="secondary" size="toolbar" onClick={() => notify('오류 토스트입니다', 'danger')}>오류</Button>
-          </div>
-        </Panel>
-
         <Panel title="Tabs">
           <Tabs defaultValue="one">
             <TabsList aria-label="합성 탭">
@@ -288,7 +235,6 @@ export default function UiGallery() {
           </Tabs>
         </Panel>
       </div>
-      <ToastRegion toasts={toasts} onDismiss={dismiss} labels={{ dismiss: '닫기' }} />
     </Page>
   );
 }

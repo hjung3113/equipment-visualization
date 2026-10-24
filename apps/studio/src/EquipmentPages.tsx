@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react';
 import { equipmentRecordSchema } from '@eqv/core';
-import { Inbox, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
-import { DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ToastRegion, useToastQueue, type DetailField } from '@eqv/ui';
-import { Button, Input } from '@ap/ui';
+import { Inbox, MapPinOff, Plus, ServerCrash } from 'lucide-react';
+import { DataTable, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage } from '@eqv/ui';
+import { Button, FieldRow, Input, StatusBadge, toast } from '@ap/ui';
 import { ApiError, registerEquipment } from './api.js';
 import { loadEquipmentData, type EquipmentDataLoad, type FileState, type WindowRow } from './equipment-data.js';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
@@ -163,12 +163,13 @@ const AWAY = (
   <Button asChild variant="secondary" size="sm"><Link href={hrefFor({ name: 'fleet' })}>Fleet으로 이동</Link></Button>
 );
 
+const mono = (value: ReactNode) => <span className="font-mono text-xs">{value}</span>;
 const badged = (children: ReactNode) => <span className="flex flex-wrap items-center gap-2">{children}</span>;
 
 function fileValue(state: FileState, unit: string, absent: { tone: 'neutral' | 'warning'; text: string }): ReactNode {
   if (state.kind === 'ok') return `${unit} ${state.count}개`;
   if (state.kind === 'absent') return badged(<><StatusBadge tone={absent.tone}>없음</StatusBadge>{absent.text}</>);
-  return badged(<><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge>{state.error}</>);
+  return badged(<><StatusBadge tone="danger" dot>오류</StatusBadge>{state.error}</>);
 }
 
 const WINDOW_COLUMNS = [
@@ -190,7 +191,7 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
       return (
         <DataTable.Row key={entry.name} data-window={entry.name}>
           <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>
-          <DataTable.Cell colSpan={6}><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge> {row.error}</DataTable.Cell>
+          <DataTable.Cell colSpan={6}><StatusBadge tone="danger" dot>오류</StatusBadge> {row.error}</DataTable.Cell>
         </DataTable.Row>
       );
     }
@@ -250,7 +251,6 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
   const [pending, setPending] = useState<{ id: number; kind: ImportKind; file: File; opener: HTMLElement | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const [focusWindow, setFocusWindow] = useState<string | null>(null);
-  const { toasts, notify, dismiss } = useToastQueue();
   const nextPendingId = useRef(0);
   const restoreFocus = useRef<HTMLElement | null>(null);
 
@@ -287,18 +287,18 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
 
   const onImported = (outcome: ImportOutcome) => {
     if (outcome.kind === 'window') {
-      notify(outcome.created
+      toast.info(outcome.created
         ? `Sample Window ${outcome.from} – ${outcome.to}을(를) 가져왔습니다`
         : `이미 있는 window입니다 (${outcome.from} – ${outcome.to}). 새로 쓰지 않았습니다`);
       setFocusWindow(outcome.name);
       restoreFocus.current = null;
     } else if (outcome.kind === 'alias-metadata') {
-      notify(outcome.created
+      toast.info(outcome.created
         ? `Alias metadata를 저장했습니다 (alias ${outcome.aliases}개)`
         : `Alias metadata를 교체했습니다 (alias ${outcome.aliases}개)`);
       restoreFocus.current = pending?.opener ?? null;
     } else {
-      notify(`Type Dictionary를 저장했습니다 (ModuleType ${outcome.entries}개)`);
+      toast.info(`Type Dictionary를 저장했습니다 (ModuleType ${outcome.entries}개)`);
       restoreFocus.current = pending?.opener ?? null;
     }
     setPending(null);
@@ -310,15 +310,19 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
     setPending(null);
   };
 
-  const items = (data: Extract<EquipmentDataLoad, { kind: 'ok' }>): DetailField[] => [
-    { key: 'equipmentId', label: '설비 ID', value: data.record.equipmentId, mono: true },
-    { key: 'maker', label: 'Maker', value: data.record.maker, mono: true },
-    { key: 'model', label: 'Model', value: data.record.model, mono: true },
-    { key: 'alias', label: 'Alias metadata',
-      value: fileValue(data.aliasMetadata, 'alias', { tone: 'neutral', text: 'ModuleType·Port·Robot 정보 없이 Inventory를 만듭니다' }) },
-    { key: 'dictionary', label: 'Type Dictionary (Model 범위)',
-      value: fileValue(data.typeDictionary, 'ModuleType', { tone: 'warning', text: '모든 Role이 unknown이 되어 Template 제안이 맞지 않습니다' }) },
-  ];
+  const fields = (data: Extract<EquipmentDataLoad, { kind: 'ok' }>) => (
+    <>
+      <FieldRow label="설비 ID" layout="property">{mono(data.record.equipmentId)}</FieldRow>
+      <FieldRow label="Maker" layout="property">{mono(data.record.maker)}</FieldRow>
+      <FieldRow label="Model" layout="property">{mono(data.record.model)}</FieldRow>
+      <FieldRow label="Alias metadata" layout="property">
+        {fileValue(data.aliasMetadata, 'alias', { tone: 'neutral', text: 'ModuleType·Port·Robot 정보 없이 Inventory를 만듭니다' })}
+      </FieldRow>
+      <FieldRow label="Type Dictionary (Model 범위)" layout="property">
+        {fileValue(data.typeDictionary, 'ModuleType', { tone: 'warning', text: '모든 Role이 unknown이 되어 Template 제안이 맞지 않습니다' })}
+      </FieldRow>
+    </>
+  );
   return (
     <Page title="설비 데이터" linkComponent={Link}
       breadcrumb={{ label: '경로', items: [{ key: 'fleet', label: 'Fleet', href: '/fleet' }, { key: 'equipment', label: equipmentId }] }}>
@@ -338,12 +342,11 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
             <Panel title="설비" actions={<>
               <FileButton label="Alias metadata" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('alias-metadata', file)} />
               <FileButton label="Type Dictionary(Model 범위)" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('type-dictionary', file)} />
-            </>}><DetailFields items={items(result)} /></Panel>
+            </>}>{fields(result)}</Panel>
             <WindowsTable equipmentId={equipmentId} windows={result.windows}
               actions={<FileButton label="Sample Window 가져오기" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('window', file)} />} />
           </>
         )}
-        <ToastRegion toasts={toasts} onDismiss={dismiss} labels={{ dismiss: '알림 닫기' }} />
       </div>
     </Page>
   );

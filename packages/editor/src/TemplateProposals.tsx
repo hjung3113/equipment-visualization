@@ -1,8 +1,8 @@
 import { useMemo, type ReactNode } from 'react';
 import { buildGenericLayout, proposeTemplates, type ObservedInventory, type TemplateDocument, type TypeDictionaryFile } from '@eqv/core';
-import { Callout, Card, EmptyState } from '@ap/ui';
-import { Panel, StatusBadge } from '@eqv/ui';
-import { Check, TriangleAlert, X } from 'lucide-react';
+import { Callout, Card, EmptyState, StatusBadge } from '@ap/ui';
+import { Panel } from '@eqv/ui';
+import { TriangleAlert } from 'lucide-react';
 import { TopView } from '@eqv/renderer';
 import { formatProposalEvidence } from './evidence.js';
 
@@ -34,7 +34,7 @@ export function TemplateProposals({ inventory, dictionaries, templates, action }
                 <Card padding="compact">
                   <h3 className="mb-2 mt-0 text-base leading-5 font-semibold">{proposal.rank}. {template.name} <code>{template.id}</code></h3>
                   <p className="mb-2">
-                    {proposal.fits ? <StatusBadge tone="success" icon={Check}>적합</StatusBadge> : <StatusBadge tone="warning" icon={X}>부적합</StatusBadge>}
+                    {proposal.fits ? <StatusBadge tone="success" dot>적합</StatusBadge> : <StatusBadge tone="warning" dot>부적합</StatusBadge>}
                   </p>
                   <div role="img" aria-label={`${template.name} 미리보기`} className="mb-2 h-30 w-40 border border-border-subtle bg-surface-canvas">
                     <TopView layout={template} labels="none" {...THUMB} />

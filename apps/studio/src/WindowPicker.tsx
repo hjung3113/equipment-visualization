@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { DetailFields, FormField, Panel } from '@eqv/ui';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
+import { FormField, Panel } from '@eqv/ui';
+import { FieldRow, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
 import { listSampleWindows, shortWindowHash, windowHex, type SampleWindowEntry } from './onboarding-data.js';
 
 export interface WindowPickerProps {
@@ -48,11 +48,11 @@ export function WindowPicker({ equipmentId, value, hint, details, onChange }: Wi
           )}
         </FormField>
         {details && (
-          <DetailFields items={[
-            { key: 'dataGeneration', label: 'Data Generation', value: details.dataGeneration, mono: true },
-            { key: 'timeDomain', label: 'timeDomain', value: details.timeDomain, mono: true },
-            { key: 'hash', label: 'hash', value: shortWindowHash(details.hash), mono: true },
-          ]} />
+          <>
+            <FieldRow label="Data Generation" layout="property"><span className="font-mono text-xs">{details.dataGeneration}</span></FieldRow>
+            <FieldRow label="timeDomain" layout="property"><span className="font-mono text-xs">{details.timeDomain}</span></FieldRow>
+            <FieldRow label="hash" layout="property"><span className="font-mono text-xs">{shortWindowHash(details.hash)}</span></FieldRow>
+          </>
         )}
       </div>
     </Panel>

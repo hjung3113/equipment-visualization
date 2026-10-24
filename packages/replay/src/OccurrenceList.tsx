@@ -1,8 +1,8 @@
 import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { activeBinding, type BindingsFile, type Occurrence, type OccurrenceBatch, type ReplayTimeline } from '@eqv/core';
-import { Inbox, Circle } from 'lucide-react';
-import { DataTable, StatusBadge } from '@eqv/ui';
-import { EmptyState } from '@ap/ui';
+import { Inbox } from 'lucide-react';
+import { DataTable } from '@eqv/ui';
+import { EmptyState, StatusBadge } from '@ap/ui';
 import { LEVEL_KO, NO_TIME } from './words.js';
 
 export interface OccurrenceListProps {
@@ -100,7 +100,7 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
             <DataTable.Cell className="whitespace-nowrap">
               <div>시작 {o.start.at ?? NO_TIME}</div>
               <div>끝 {o.end === null ? '열림' : o.end.at ?? NO_TIME}</div>
-              {running && <StatusBadge tone="info" icon={Circle}>진행 중</StatusBadge>}
+              {running && <StatusBadge tone="info" dot>진행 중</StatusBadge>}
             </DataTable.Cell>
             <DataTable.Cell numeric>{o.start.seq} / {o.end?.seq ?? '—'}</DataTable.Cell>
             <DataTable.Cell>{o.kind}</DataTable.Cell>

@@ -3,9 +3,9 @@ import { CircleCheck, Info, Send, ServerCrash, TriangleAlert } from 'lucide-reac
 import type { LayoutDocument } from '@eqv/core';
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  Button,
+  Button, FieldRow,
 } from '@ap/ui';
-import { DataTable, DetailFields, LoadingBlock, StateMessage, type DetailField } from '@eqv/ui';
+import { DataTable, LoadingBlock, StateMessage } from '@eqv/ui';
 import { publishBaseline, type PublishBaseline } from './layout-baseline.js';
 import { COLLECTIONS, isUnchanged, type LayoutChanges } from './layout-changes.js';
 import { errorMessage } from './error-message.js';
@@ -27,13 +27,11 @@ function Changes({ changes }: { changes: LayoutChanges }) {
   if (isUnchanged(changes)) return <StateMessage compact icon={CircleCheck} title="변경 없음" />;
   return (
     <>
-      <DetailFields items={[
-        { key: 'header', label: '머리 필드', value: changes.header.length > 0 ? changes.header.join(', ') : '변경 없음' },
-        ...COLLECTIONS.map((name): DetailField => {
-          const { added, removed, changed } = changes.collections[name];
-          return { key: name, label: name, value: `추가 ${added.length} · 삭제 ${removed.length} · 변경 ${changed.length}` };
-        }),
-      ]} />
+      <FieldRow label="머리 필드" layout="property">{changes.header.length > 0 ? changes.header.join(', ') : '변경 없음'}</FieldRow>
+      {COLLECTIONS.map((name) => {
+        const { added, removed, changed } = changes.collections[name];
+        return <FieldRow key={name} label={name} layout="property">{`추가 ${added.length} · 삭제 ${removed.length} · 변경 ${changed.length}`}</FieldRow>;
+      })}
       <DataTable label="Layout 변경 목록" columns={['항목', 'ID', '변경']} capped>
         {rows.map((row) => (
           <DataTable.Row key={`${row.item}/${row.id}/${row.change}`}>
@@ -56,11 +54,9 @@ function Summary({ baseline, layout }: { baseline: PublishBaseline; layout: Layo
     case 'first':
       return <>
         <StateMessage compact icon={Info} title="첫 Revision" />
-        <DetailFields items={[
-          { key: 'components', label: 'components', value: layout.components.length },
-          { key: 'physicalInterfaces', label: 'physicalInterfaces', value: layout.physicalInterfaces.length },
-          { key: 'transferCapabilities', label: 'transferCapabilities', value: layout.transferCapabilities.length },
-        ]} />
+        <FieldRow label="components" layout="property">{layout.components.length}</FieldRow>
+        <FieldRow label="physicalInterfaces" layout="property">{layout.physicalInterfaces.length}</FieldRow>
+        <FieldRow label="transferCapabilities" layout="property">{layout.transferCapabilities.length}</FieldRow>
         {skipped}
       </>;
     case 'unpinned':

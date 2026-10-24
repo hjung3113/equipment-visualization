@@ -24,9 +24,9 @@ it('renders fleet rows with status badges, integer percentages, dashes and a hos
   expect(row('eq-new').getAllByRole('cell').map((cell) => cell.textContent).slice(2, 6)).toEqual(['미착수', '—', '—', expect.any(String)]);
   const empty = screen.getByRole('link', { name: 'eq-empty' }).closest('tr')!;
   expect(Array.from(empty.querySelectorAll('td')).map((cell) => cell.textContent)).toEqual(['synth-maker', 'synth-model', '관측 없음', '—', '—', '—']);
-  expect(empty.querySelector('[data-tone="danger"]')).toBeNull();
+  expect(empty.querySelector('.text-text-danger-label')).toBeNull();
   const bad = screen.getByRole('link', { name: 'eq-bad' }).closest('tr')!;
-  expect(bad.querySelector('[data-tone="danger"]')?.textContent).toBe('오류');
+  expect(bad.querySelector('.text-text-danger-label')?.textContent).toBe('오류');
   expect(bad.textContent).toContain('관측 데이터 없음');
   expect(screen.getAllByRole('columnheader')).toHaveLength(7);
   const table = screen.getByRole('table');

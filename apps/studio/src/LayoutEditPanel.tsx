@@ -3,8 +3,8 @@ import { Redo2, RotateCcw, RotateCw, Undo2, Plus, Trash2 } from 'lucide-react';
 import type { Component } from '@eqv/core';
 import { PRIMITIVE_CATALOG } from '@eqv/renderer';
 import type { TransformPatch } from '@eqv/editor';
-import { DetailFields, FormField } from '@eqv/ui';
-import { Button, Checkbox, EmptyState, Input, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
+import { FormField } from '@eqv/ui';
+import { Button, Checkbox, EmptyState, FieldRow, Input, Label, PanelSectionTitle, Select, SelectContent, SelectGroup, SelectLabel, SelectItem, SelectTrigger, SelectValue } from '@ap/ui';
 
 const TOOL_ICON = 'size-3.5';
 /** Degrees per rotate button press and per `[` / `]`. */
@@ -151,11 +151,9 @@ export function SelectionPanel({ component, busy, onTransform, onLabel, onDelete
         <EmptyState size="sm" title="Top View에서 Component를 선택하세요." />
       ) : (
         <>
-          <DetailFields items={[
-            { key: 'id', label: 'ID', value: component.id, mono: true },
-            { key: 'role', label: 'Role', value: component.role },
-            { key: 'parent', label: '부모', value: component.parentId ?? '없음' },
-          ]} />
+          <FieldRow label="ID" layout="property"><span className="font-mono text-xs">{component.id}</span></FieldRow>
+          <FieldRow label="Role" layout="property">{component.role}</FieldRow>
+          <FieldRow label="부모" layout="property">{component.parentId ?? '없음'}</FieldRow>
           <LabelField key={`${component.id}-label`} value={component.label} disabled={busy} onCommit={onLabel} />
           <div className="grid gap-3 sm:grid-cols-3">
             {/* A new Component remounts the fields so no half-typed text carries over. */}

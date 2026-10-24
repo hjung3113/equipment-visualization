@@ -76,14 +76,14 @@ it('registers an equipment by keyboard path: Fleet entry, form, data page, then 
   await waitFor(() => expect(document.activeElement).toBe(heading('설비 데이터')));
   expect(JSON.parse(await readFile(join(root, 'equipment/eq-synth-03.json'), 'utf8'))).toEqual(await importFixture('eq-synth-03.equipment.json'));
   await screen.findByText('Sample Window가 없습니다');
-  expect(screen.getAllByRole('definition').slice(0, 3).map((definition) => definition.textContent)).toEqual(['eq-synth-03', 'synth-maker-b', 'synth-wet']);
+  expect(['설비 ID', 'Maker', 'Model'].map((label) => screen.getByText(label, { exact: true }).nextElementSibling?.textContent)).toEqual(['eq-synth-03', 'synth-maker-b', 'synth-wet']);
 
   act(() => navigate('/fleet'));
   await loaded();
   const row = screen.getByRole('link', { name: 'eq-synth-03' }).closest('tr')!;
   expect(within(row).getByText('관측 없음')).toBeTruthy();
   expect(screen.getByRole('link', { name: 'eq-synth-03' }).getAttribute('href')).toBe('/equipment/eq-synth-03');
-  expect(row.querySelector('[data-tone="danger"]')).toBeNull();
+  expect(row.querySelector('.text-text-danger-label')).toBeNull();
 });
 
 it.each<[string, { equipmentId: string; maker: string; model: string }, string, RegExp, boolean]>([
@@ -168,7 +168,7 @@ it.each<[string, boolean, string]>([
   at('/equipment/eq-synth-01');
   render(<App />);
   await screen.findByText('가져오기를 쓸 수 없습니다');
-  await waitFor(() => expect(screen.getAllByRole('definition')[0]!.textContent).toBe('eq-synth-01'));
+  await waitFor(() => expect(screen.getByText('설비 ID', { exact: true }).nextElementSibling?.textContent).toBe('eq-synth-01'));
 });
 
 it('warns when the data root is inside a git work tree', async () => {
@@ -199,9 +199,8 @@ it('lists every Sample Window with its counts, hash and links, and the alias and
   expect(screen.getByRole('link', { name: `${rangeOf(b1)} Onboarding 열기` }).getAttribute('href')).toBe(`/onboarding/eq-synth-03?window=${w1}`);
   expect(screen.getByRole('link', { name: `${rangeOf(b1)} Focus 열기` }).getAttribute('href')).toBe(`/focus/eq-synth-03?window=${w1}`);
   expect(screen.getByRole('link', { name: `${rangeOf(b2)} Onboarding 열기` }).getAttribute('href')).toBe(`/onboarding/eq-synth-03?window=${w2}`);
-  const definitions = screen.getAllByRole('definition').map((definition) => definition.textContent);
-  expect(definitions).toContain('alias 12개');
-  expect(definitions).toContain('ModuleType 6개');
+  expect(screen.getByText('Alias metadata', { exact: true, selector: 'span' }).nextElementSibling?.textContent).toBe('alias 12개');
+  expect(screen.getByText('Type Dictionary (Model 범위)', { exact: true }).nextElementSibling?.textContent).toBe('ModuleType 6개');
 });
 
 it('shows absent, wrong-scope and per-window file problems without hiding the rest', async () => {
@@ -235,7 +234,7 @@ it('shows a list error instead of rows when the windows folder holds a stray fil
   at('/equipment/eq-synth-03');
   render(<App />);
   await screen.findByText('Sample Window 목록을 읽을 수 없습니다');
-  expect(screen.getAllByRole('definition')[0]!.textContent).toBe('eq-synth-03');
+  expect(screen.getByText('설비 ID', { exact: true }).nextElementSibling?.textContent).toBe('eq-synth-03');
 });
 
 it('says so for an unknown equipment id', async () => {

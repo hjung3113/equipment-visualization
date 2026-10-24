@@ -1,7 +1,7 @@
 import { Suspense, lazy, useEffect, useRef } from 'react';
 import { Factory, FileQuestion, LayoutTemplate } from 'lucide-react';
 import { APP_FRAME_MAIN_ID, AppFrame, Page, StateMessage } from '@eqv/ui';
-import { Button } from '@ap/ui';
+import { Button, Toaster } from '@ap/ui';
 import { EquipmentDataPage, RegisterEquipmentPage } from './EquipmentPages.js';
 import { FocusPage } from './FocusPage.js';
 import { JourneyPage } from './JourneyPage.js';
@@ -74,6 +74,7 @@ export function App() {
       labels={{ nav: '주 메뉴', skipToContent: '본문으로 건너뛰기', collapse: '사이드바 접기', expand: '사이드바 펼치기' }}
     >
       <RoutePage route={route} />
+      <Toaster />
     </AppFrame>
   );
 }

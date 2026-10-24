@@ -2,11 +2,11 @@ import { useEffect, useId, useMemo, useRef, useState, type DragEvent, type Keybo
 import type { AliasRulesFile } from '@eqv/core';
 import {
   Button, Callout, Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, EmptyState, Input, KeyboardShortcut, Label,
-  PanelSectionTitle, RadioGroup, RadioGroupItem,
+  FieldRow, PanelSectionTitle, RadioGroup, RadioGroupItem, StatusBadge, type Tone,
 } from '@ap/ui';
 import { Check, CheckCheck, ChevronRight, Diamond, Redo2, Save, Search, TriangleAlert, Undo2 } from 'lucide-react';
 import { TopViewer, type TopViewerProps } from '@eqv/renderer';
-import { DetailFields, OutlineBadge, Panel, StatusBadge, ViewerZoomControls, type StatusBadgeTone } from '@eqv/ui';
+import { OutlineBadge, Panel, ViewerZoomControls } from '@eqv/ui';
 import {
   addPatternRule, applyEdit, applyEdits, applySaveOutcome, buildSavePayload, canRedo, canUndo, createBoardState, dirtyScopes, explainRow, isDirty,
   paletteOptions, previewPatternRule, redo, resolveBoard, suggestPattern, undo,
@@ -27,7 +27,7 @@ export interface MappingBoardProps extends BoardInput {
 const VIEW = { width: 560, height: 420 };
 const LEVEL_TEXT: Record<string, string> = { global: '전역', maker: 'Maker', model: 'Model', equipment: '설비' };
 const MARKED_NAME = ', 선택한 component에 배정됨';
-const STATUS_TONE: Record<BoardStatus, StatusBadgeTone> = {
+const STATUS_TONE: Record<BoardStatus, Tone> = {
   conflict: 'danger', verified: 'info', assumed: 'warning', unmapped: 'neutral', ignored: 'neutral',
 };
 const SHORTCUTS: readonly (readonly [string, string?])[] = [
@@ -468,15 +468,13 @@ export function MappingBoard(props: MappingBoardProps) {
             <>
               <h3 className="mt-2 mb-2 text-md font-semibold">{selected.alias}</h3>
               <div className="mb-2">
-                <DetailFields items={[
-                  { key: 'moduleType', label: 'ModuleType', value: selected.moduleType ?? '—' },
-                  { key: 'role', label: 'Role', value: selected.role },
-                  { key: 'slots', label: 'slots', value: selected.slots.length ? selected.slots.join(', ') : '—' },
-                  { key: 'status', label: '상태', value: selected.statusText },
-                  { key: 'target', label: '대상 component', value: targetText(selected) },
-                  { key: 'rule', label: '규칙', value: selected.draft ? `초안 (저장 시 ${selected.rule?.ruleId})` : selected.rule ? `${LEVEL_TEXT[selected.rule.level] ?? selected.rule.level} · ${selected.rule.ruleId} · ${selected.rule.kind === 'exact' ? '정확' : '패턴'}` : '—' },
-                  { key: 'certainty', label: '확실성', value: selected.certainty ?? '—' },
-                ]} />
+                <FieldRow label="ModuleType" layout="property">{selected.moduleType ?? '—'}</FieldRow>
+                <FieldRow label="Role" layout="property">{selected.role}</FieldRow>
+                <FieldRow label="slots" layout="property">{selected.slots.length ? selected.slots.join(', ') : '—'}</FieldRow>
+                <FieldRow label="상태" layout="property">{selected.statusText}</FieldRow>
+                <FieldRow label="대상 component" layout="property">{targetText(selected)}</FieldRow>
+                <FieldRow label="규칙" layout="property">{selected.draft ? `초안 (저장 시 ${selected.rule?.ruleId})` : selected.rule ? `${LEVEL_TEXT[selected.rule.level] ?? selected.rule.level} · ${selected.rule.ruleId} · ${selected.rule.kind === 'exact' ? '정확' : '패턴'}` : '—'}</FieldRow>
+                <FieldRow label="확실성" layout="property">{selected.certainty ?? '—'}</FieldRow>
               </div>
               {saveScope === 'model' && selected.changedModelRule && <Note>Model 규칙 {selected.changedModelRule}을(를) 바꿉니다: {equipment.maker}/{equipment.model}의 모든 설비에 적용됩니다</Note>}
               {selected.rule?.level === 'model' && selected.issues.some(({ code }) => code === 'unknown-target') && <Note>이 설비만 다르면 저장 범위를 설비로 바꾸세요</Note>}

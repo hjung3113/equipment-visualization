@@ -9,6 +9,7 @@
 @import "@eqv/editor/styles.css";
 @import "@eqv/replay/styles.css";
 @import "@eqv/views/styles.css";
+@import "sonner/dist/styles.css";
 @source ".";
 
 /* Studio base: body typography, mono `code` and inline text links, the only bare elements left: @ap/ui has no link component.
