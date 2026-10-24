@@ -38,3 +38,8 @@ E6. **A large-input change is measured where it renders.** When a brief lifts a 
 E7. **UI copy uses glossary terms.** Every label, button text and accessible name a brief prescribes is checked
     against `GLOSSARY.md`, including each entry's _Avoid_ list: the #145 brief prescribed a `Replay` action for the
     screen GLOSSARY calls **Focus** (_Avoid_: replay 화면), and the slice-close quality review had to rename it (#150).
+E8. **A brief that mirrors a platform contract copies every validating step.** When a brief makes the adapter satisfy
+    an analytics-platform rule (manifest, endpoint, registration), it copies or names every place the host validates
+    it, not only the first: the 177c brief copied AP `mountModule` and missed `createRegistry` (param-free parent,
+    one primary menu per group), which the code review caught as two blockers (#189). Read the SDK release tag, not AP
+    `main`, and check that adopted `@ap/ui` parts render with the platform styles (impl-rules addendum, #192).
