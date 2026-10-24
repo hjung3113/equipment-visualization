@@ -16,8 +16,9 @@ const isDotSegment = (segment: string) => {
   return decoded === '.' || decoded === '..';
 };
 // Mirrors AP `isPathPattern` (kernel module.ts): no URL delimiters, backslash, control characters or whitespace, no `//`, no dot segments.
-// eslint-disable-next-line no-control-regex -- the control range is the rule being mirrored
-const isPathPattern = (path: string) => !/[?#\\\u0000-\u0020\u007F]|\s/u.test(path) && !path.includes('//') && !path.split('/').some(isDotSegment);
+const isControlOrSpace = (char: string) => { const code = char.codePointAt(0)!; return code <= 0x20 || code === 0x7f || /\s/u.test(char); };
+const isPathPattern = (path: string) => ![...path].some((char) => '?#\\'.includes(char) || isControlOrSpace(char))
+  && !path.includes('//') && !path.split('/').some(isDotSegment);
 // Mirrors the AP registry's route helpers; a module screen path is mounted as `<prefix>/<path>` (`''` is the prefix itself).
 const segments = (path: string) => path.split('/').filter(Boolean);
 const isParam = (segment: string) => segment.startsWith(':');
