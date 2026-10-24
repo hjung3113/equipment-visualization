@@ -1,7 +1,7 @@
 import type { SceneState } from '@eqv/core';
-import { MapPinOff, OctagonAlert, TriangleAlert, MoveRight, Inbox } from 'lucide-react';
-import { DataTable, Panel, StatusBadge } from '@eqv/ui';
-import { Callout, EmptyState, FieldRow, PanelSectionTitle } from '@ap/ui';
+import { MoveRight, Inbox } from 'lucide-react';
+import { DataTable, Panel } from '@eqv/ui';
+import { Callout, EmptyState, FieldRow, PanelSectionTitle, StatusBadge } from '@ap/ui';
 import type { IllustrativeGhost } from './ghosts.js';
 import { Evidence } from './Evidence.js';
 import { ACTIVITY_KO, UNKNOWN_LANE } from './words.js';
@@ -77,11 +77,11 @@ export function CursorStateList({ state, illustrative = [] }: CursorStateListPro
           <ul className="my-0 flex flex-wrap gap-2">
             {state.markers.map((marker) => {
               switch (marker.kind) {
-                case 'after-watermark': return <li key={marker.kind}><StatusBadge tone="warning" icon={TriangleAlert}>Watermark 이후 ({marker.watermarkAt})</StatusBadge></li>;
-                case 'time-anomaly': return <li key={`${marker.kind}:${marker.occurrenceId}`}><StatusBadge tone="danger" icon={OctagonAlert}>시각 역전 ({marker.occurrenceId})</StatusBadge></li>;
+                case 'after-watermark': return <li key={marker.kind}><StatusBadge tone="warning" dot>Watermark 이후 ({marker.watermarkAt})</StatusBadge></li>;
+                case 'time-anomaly': return <li key={`${marker.kind}:${marker.occurrenceId}`}><StatusBadge tone="danger" dot>시각 역전 ({marker.occurrenceId})</StatusBadge></li>;
                 case 'occupancy-conflict':
-                  return <li key={`${marker.kind}:${marker.componentId}:${marker.holdingSiteId}`}><StatusBadge tone="danger" icon={TriangleAlert}>점유 충돌 ({marker.componentId} / {marker.holdingSiteId}: {marker.materialKeys.join(', ')})</StatusBadge></li>;
-                case 'unmapped-alias': return <li key={`${marker.kind}:${marker.alias}:${marker.occurrenceId}`}><StatusBadge tone="warning" icon={MapPinOff}>미매핑 alias ({marker.alias}, {marker.occurrenceId})</StatusBadge></li>;
+                  return <li key={`${marker.kind}:${marker.componentId}:${marker.holdingSiteId}`}><StatusBadge tone="danger" dot>점유 충돌 ({marker.componentId} / {marker.holdingSiteId}: {marker.materialKeys.join(', ')})</StatusBadge></li>;
+                case 'unmapped-alias': return <li key={`${marker.kind}:${marker.alias}:${marker.occurrenceId}`}><StatusBadge tone="warning" dot>미매핑 alias ({marker.alias}, {marker.occurrenceId})</StatusBadge></li>;
               }
             })}
           </ul>

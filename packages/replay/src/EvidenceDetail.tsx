@@ -34,7 +34,6 @@ export function EvidenceDetail({ batch, state, selectedOccurrenceId }: EvidenceD
   return (
     <section className="text-text-primary" aria-label={`근거 상세 ${o.id}`}>
       <PanelSectionTitle size="tiny">{o.id} <small>{o.kind}</small></PanelSectionTitle>
-      <PanelSectionTitle size="tiny">위치</PanelSectionTitle>
       {material && (
         <FieldRow label="위치" layout="property">
           {material.location === null ? UNKNOWN_LANE
@@ -48,7 +47,6 @@ export function EvidenceDetail({ batch, state, selectedOccurrenceId }: EvidenceD
         </FieldRow>
       )}
       {!material && !component && <FieldRow label="위치" layout="property">이 시점에 열려 있지 않음</FieldRow>}
-      <PanelSectionTitle size="tiny">식별</PanelSectionTitle>
       {o.material
         ? <FieldRow label="식별" layout="property">{o.material.kind} {o.material.id ?? '익명'} · 식별 근거 {material ? <Evidence level={material.identityEvidence} /> : <><Evidence level={o.material.identityEvidence} /> (원본)</>}</FieldRow>
         : <FieldRow label="식별" layout="property">물질 없음</FieldRow>}

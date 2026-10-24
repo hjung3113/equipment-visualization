@@ -16,7 +16,7 @@ async function renderGallery() {
   await screen.findByRole('heading', { level: 1, name: 'UI 갤러리' });
 }
 
-it.each(['DataTable', 'Panel', 'StateMessage', 'StatusBadge', 'DetailFields', 'FileButton', 'FormField', '툴바 버튼', 'ViewerZoomControls', '토스트', 'Tabs'])(
+it.each(['DataTable', 'Panel', 'StateMessage', 'DetailFields', 'FileButton', 'FormField', '툴바 버튼', 'ViewerZoomControls', 'Tabs'])(
   'has a %s section',
   async (name) => {
     await renderGallery();
@@ -35,10 +35,4 @@ it('sorts the equipment table by a header button', async () => {
   const header = table.getAllByRole('columnheader', { name: /커버리지/ })[0]!;
   fireEvent.click(within(header).getByRole('button'));
   expect(header.getAttribute('aria-sort')).toBe('ascending');
-});
-
-it('shows an info toast', async () => {
-  await renderGallery();
-  fireEvent.click(within(screen.getByRole('region', { name: '토스트' })).getByRole('button', { name: '정보' }));
-  expect(screen.getByText('정보 토스트입니다').closest('[role="status"]')).toBeTruthy();
 });

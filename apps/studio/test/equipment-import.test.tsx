@@ -134,7 +134,10 @@ it('previews and imports w1 with preserved evidence, exact body text, toast, and
   expect(document.activeElement).toBe(importButton);
   fireEvent.click(importButton);
   const message = 'Sample Window 2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000을(를) 가져왔습니다';
-  await waitFor(() => expect(screen.getAllByRole('status').some((item) => item.textContent?.includes(message))).toBe(true));
+  const toastText = await screen.findByText(message);
+  expect(toastText.closest('[aria-live="polite"]')).not.toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: '알림 닫기' }));
+  await waitFor(() => expect(screen.queryByText(message)).toBeNull());
   await waitFor(() => expect(screen.getByText('1개', { exact: true })).toBeTruthy());
   expect(document.activeElement).toBe(screen.getByRole('link', {
     name: '2026-01-01T10:00:00.000 – 2026-01-01T10:30:00.000 Onboarding 열기',
@@ -214,7 +217,7 @@ it('keeps an identical window idempotent and leaves its stored bytes unchanged',
   const panel = await preview();
   expect(within(panel).getByText('같은 내용의 window가 이미 있습니다')).toBeTruthy();
   fireEvent.click(screen.getByRole('button', { name: '가져오기' }));
-  await waitFor(() => expect(screen.getAllByRole('status').some((item) => item.textContent?.includes('이미 있는 window입니다'))).toBe(true));
+  await screen.findByText(/이미 있는 window입니다/);
   expect(screen.getByText('1개', { exact: true })).toBeTruthy();
   const after = await readFile(join(root, `observations/eq-synth-03/windows/${(await storedWindowNames())[0]}`), 'utf8');
   expect(after).toBe(before);
@@ -227,7 +230,7 @@ it('creates absent alias metadata without a replacement dialog', async () => {
   await upload('Alias metadata', text, 'eq-synth-03.alias-metadata.json');
   await preview('Alias metadata 미리보기');
   fireEvent.click(screen.getByRole('button', { name: '가져오기' }));
-  await waitFor(() => expect(screen.getAllByRole('status').some((item) => item.textContent?.includes('alias 12개'))).toBe(true));
+  await screen.findByText('Alias metadata를 저장했습니다 (alias 12개)');
   await waitFor(() => expect(screen.getAllByRole('definition').some((item) => item.textContent === 'alias 12개')).toBe(true));
   expect(screen.queryByRole('alertdialog')).toBeNull();
   expect(JSON.parse(await readFile(join(root, 'observations/eq-synth-03/alias-metadata.json'), 'utf8'))).toEqual(fixture);
@@ -260,7 +263,7 @@ it('shows alias changes and replaces only after the alert dialog is confirmed', 
   fireEvent.click(screen.getByRole('button', { name: '가져오기' }));
   const confirm = await screen.findByRole('alertdialog');
   fireEvent.click(within(confirm).getByRole('button', { name: '교체' }));
-  await waitFor(() => expect(screen.getAllByRole('status').some((item) => item.textContent?.includes('교체했습니다'))).toBe(true));
+  await screen.findByText(/Alias metadata를 교체했습니다/);
   expect(JSON.parse(await readFile(join(root, 'observations/eq-synth-03/alias-metadata.json'), 'utf8'))).toEqual(changed);
 });
 
@@ -282,7 +285,7 @@ it('creates a Model Type Dictionary, then blocks a second import as create-only'
   await preview('Type Dictionary 미리보기');
   fireEvent.click(screen.getByRole('button', { name: '가져오기' }));
   const path = 'onboarding/scopes/model/synth-maker-b/synth-wet/type-dictionary.json';
-  await waitFor(() => expect(screen.getAllByRole('status').some((item) => item.textContent?.includes('ModuleType 6개'))).toBe(true));
+  await screen.findByText('Type Dictionary를 저장했습니다 (ModuleType 6개)');
   expect(JSON.parse(await readFile(join(root, path), 'utf8'))).toEqual(fixture);
   await waitFor(() => expect(screen.getAllByRole('definition').some((item) => item.textContent === 'ModuleType 6개')).toBe(true));
   await upload('Type Dictionary(Model 범위)', text, 'type-dictionary.json');

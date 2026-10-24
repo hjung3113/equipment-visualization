@@ -1,8 +1,8 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode, type RefObject } from 'react';
 import { equipmentRecordSchema } from '@eqv/core';
-import { Inbox, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
-import { DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, StatusBadge, ToastRegion, useToastQueue, type DetailField } from '@eqv/ui';
-import { Button, Input } from '@ap/ui';
+import { Inbox, MapPinOff, Plus, ServerCrash } from 'lucide-react';
+import { DataTable, DetailFields, FileButton, FormField, LoadingBlock, Page, Panel, StateMessage, type DetailField } from '@eqv/ui';
+import { Button, Input, StatusBadge, toast } from '@ap/ui';
 import { ApiError, registerEquipment } from './api.js';
 import { loadEquipmentData, type EquipmentDataLoad, type FileState, type WindowRow } from './equipment-data.js';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
@@ -168,7 +168,7 @@ const badged = (children: ReactNode) => <span className="flex flex-wrap items-ce
 function fileValue(state: FileState, unit: string, absent: { tone: 'neutral' | 'warning'; text: string }): ReactNode {
   if (state.kind === 'ok') return `${unit} ${state.count}개`;
   if (state.kind === 'absent') return badged(<><StatusBadge tone={absent.tone}>없음</StatusBadge>{absent.text}</>);
-  return badged(<><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge>{state.error}</>);
+  return badged(<><StatusBadge tone="danger" dot>오류</StatusBadge>{state.error}</>);
 }
 
 const WINDOW_COLUMNS = [
@@ -190,7 +190,7 @@ function WindowRows({ equipmentId, rows }: { equipmentId: string; rows: readonly
       return (
         <DataTable.Row key={entry.name} data-window={entry.name}>
           <DataTable.Cell rowHeader mono>{rangeDisplay}</DataTable.Cell>
-          <DataTable.Cell colSpan={6}><StatusBadge tone="danger" icon={TriangleAlert}>오류</StatusBadge> {row.error}</DataTable.Cell>
+          <DataTable.Cell colSpan={6}><StatusBadge tone="danger" dot>오류</StatusBadge> {row.error}</DataTable.Cell>
         </DataTable.Row>
       );
     }
@@ -250,7 +250,6 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
   const [pending, setPending] = useState<{ id: number; kind: ImportKind; file: File; opener: HTMLElement | null } | null>(null);
   const [busy, setBusy] = useState(false);
   const [focusWindow, setFocusWindow] = useState<string | null>(null);
-  const { toasts, notify, dismiss } = useToastQueue();
   const nextPendingId = useRef(0);
   const restoreFocus = useRef<HTMLElement | null>(null);
 
@@ -287,18 +286,18 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
 
   const onImported = (outcome: ImportOutcome) => {
     if (outcome.kind === 'window') {
-      notify(outcome.created
+      toast.info(outcome.created
         ? `Sample Window ${outcome.from} – ${outcome.to}을(를) 가져왔습니다`
         : `이미 있는 window입니다 (${outcome.from} – ${outcome.to}). 새로 쓰지 않았습니다`);
       setFocusWindow(outcome.name);
       restoreFocus.current = null;
     } else if (outcome.kind === 'alias-metadata') {
-      notify(outcome.created
+      toast.info(outcome.created
         ? `Alias metadata를 저장했습니다 (alias ${outcome.aliases}개)`
         : `Alias metadata를 교체했습니다 (alias ${outcome.aliases}개)`);
       restoreFocus.current = pending?.opener ?? null;
     } else {
-      notify(`Type Dictionary를 저장했습니다 (ModuleType ${outcome.entries}개)`);
+      toast.info(`Type Dictionary를 저장했습니다 (ModuleType ${outcome.entries}개)`);
       restoreFocus.current = pending?.opener ?? null;
     }
     setPending(null);
@@ -343,7 +342,6 @@ export function EquipmentDataPage({ equipmentId }: { equipmentId: string }) {
               actions={<FileButton label="Sample Window 가져오기" accept="application/json,.json" disabled={blocked || busy} aria-describedby={blocked && status.kind !== 'loading' ? disabledId : undefined} onFile={(file) => openPreview('window', file)} />} />
           </>
         )}
-        <ToastRegion toasts={toasts} onDismiss={dismiss} labels={{ dismiss: '알림 닫기' }} />
       </div>
     </Page>
   );

@@ -6,7 +6,7 @@ import {
 } from '@eqv/core';
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  Button,
+  Button, StatusBadge,
 } from '@ap/ui';
 import {
   CircleCheck, CircleX, FileJson, Info, Replace, TriangleAlert, Upload, X,
@@ -14,7 +14,7 @@ import {
 import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import {
-  DataTable, DetailFields, EvidenceBadge, LoadingBlock, Panel, StateMessage, StatusBadge,
+  DataTable, DetailFields, EvidenceBadge, LoadingBlock, Panel, StateMessage,
   type DetailField,
 } from '@eqv/ui';
 import { ApiError, importWindow, putAliasMetadata, putTypeDictionary } from './api.js';
@@ -182,8 +182,8 @@ function alertNotice(notice: Notice) {
 
 function rowsFor(inspection: Inspection) {
   return [
-    ...inspection.rejects.map((problem) => ({ problem, tone: 'danger' as const, text: '거부', icon: CircleX })),
-    ...inspection.warnings.map((problem) => ({ problem, tone: 'warning' as const, text: '경고', icon: TriangleAlert })),
+    ...inspection.rejects.map((problem) => ({ problem, tone: 'danger' as const, text: '거부' })),
+    ...inspection.warnings.map((problem) => ({ problem, tone: 'warning' as const, text: '경고' })),
   ];
 }
 
@@ -418,9 +418,9 @@ export function ImportPreview(props: ImportPreviewProps) {
                   { id: 'path', header: '위치' },
                   { id: 'message', header: '내용' },
                 ]}>
-                {warningList.map(({ problem, tone, text, icon: Icon }, index) => (
+                {warningList.map(({ problem, tone, text }, index) => (
                   <DataTable.Row key={`${problem.code}-${pathText(problem.path)}-${index}`}>
-                    <DataTable.Cell><StatusBadge tone={tone} icon={Icon}>{text}</StatusBadge></DataTable.Cell>
+                    <DataTable.Cell><StatusBadge tone={tone} dot>{text}</StatusBadge></DataTable.Cell>
                     <DataTable.Cell mono>{problem.code}</DataTable.Cell>
                     <DataTable.Cell mono>{pathText(problem.path)}</DataTable.Cell>
                     <DataTable.Cell>{problem.message}</DataTable.Cell>

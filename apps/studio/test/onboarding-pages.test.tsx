@@ -158,7 +158,7 @@ it.each<[string, (id: string) => Promise<void>]>([
   const healthy = await fleetRow('eq-synth-01');
   expect(within(healthy).getByText('게시됨')).toBeTruthy();
   const bad = await fleetRow('eq-bad');
-  expect(bad.querySelector('[data-tone="danger"]')?.textContent).toBe('오류');
+  expect(bad.querySelector('.text-text-danger-label')?.textContent).toBe('오류');
   if (scenario === 'a record whose equipmentId differs from its file name') {
     expect(bad.textContent).toContain('equipment/eq-bad.json: equipmentId(eq-other)가 파일 이름과 다릅니다');
   }
@@ -193,7 +193,7 @@ it('treats an invalid alias-metadata file as an error, not as absent', async () 
   await writeJson(root, 'observations/eq-badmeta/alias-metadata.json', { schemaVersion: '0.4' });
   at('/fleet');
   const first = render(<App />);
-  expect((await fleetRow('eq-badmeta')).querySelector('[data-tone="danger"]')?.textContent).toBe('오류');
+  expect((await fleetRow('eq-badmeta')).querySelector('.text-text-danger-label')?.textContent).toBe('오류');
   first.unmount();
 
   at('/onboarding/eq-badmeta');
