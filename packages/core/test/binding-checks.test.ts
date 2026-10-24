@@ -81,6 +81,14 @@ describe('verifyBindingContext', () => {
     expect(result.ok && [result.mappings.length, result.layouts.length]).toEqual([1, 1]);
   });
 
+  it('checks a Mapping hash again under another layoutId and rejects the mismatch', async () => {
+    const { readers } = reading();
+    const second = { ...binding, layoutId: 'other-layout' };
+    const result = await verifyBindingContext([binding, second], readers, equipmentId);
+    expect(result).toMatchObject({ ok: false, at: { kind: 'mapping', binding: second } });
+    expect(result.ok ? '' : result.problem).toMatch(/^layoutId\(eq-synth-01-layout\)가 binding의 layoutId와 다릅니다$/);
+  });
+
   it('reads a pinned Layout Revision, not the draft, and raises no notice', async () => {
     const validated = validateLayout(rawLayout);
     if (!validated.ok) throw new Error('fixture layout invalid');
