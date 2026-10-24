@@ -30,7 +30,7 @@ packages/editor/              # Onboarding editor parts: Fleet table, Inventory,
 packages/ui/                  # `@eqv/ui`: EV components for patterns `@ap/ui` lacks, built on its primitives and tokens (`DataTable`, `EvidenceBadge`, `Legend`, `ViewerZoomControls`, `AppFrame`, `Page`, `Panel`, `StateMessage`/`LoadingBlock`, `StatusBadge`, `DetailFields`, `FileButton`, `useToastQueue`/`ToastRegion`); Studio screens use all of them
 packages/replay/              # Focus and Journey screen parts over the core reducer: component-lane Gantt, Occurrence / Data Quality / evidence lists, shared cursor, playback controls, record steps, example-motion ghosts, Journey hop and execution lists; TypeScript source on `@ap/ui` / `@eqv/ui` (present)
 packages/views/               # `@eqv/views`: host-neutral screen compositions; `FocusView` (Top View · Gantt · Occurrence list on one cursor, from props only) and the Gantt budgets, over core, renderer, replay and `@ap/ui` / `@eqv/ui` (present, #177)
-packages/platform-adapter/    # analytics-platform host module (ADR-0012): manifest + endpoint declarations + theme styles present; screens planned (177d)
+packages/platform-adapter/    # analytics-platform host module (ADR-0012): manifest + endpoint declarations + theme styles + `eqv:topview`/`eqv:focus` screens present; AP mount pending (AP #333/#334)
 tooling/                      # Workspace tooling: ESLint package-boundary guard (present)
 assets/                       # 25 reusable primitives & 6 generalized v0.4 templates (present)
 fixtures/  # Synthetic source-shaped replay fixtures (present)

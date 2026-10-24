@@ -22,7 +22,11 @@
   },
   "dependencies": {
     "@eqv/core": "workspace:*",
-    "@eqv/ui": "workspace:*"
+    "@eqv/renderer": "workspace:*",
+    "@eqv/replay": "workspace:*",
+    "@eqv/ui": "workspace:*",
+    "@eqv/views": "workspace:*",
+    "lucide-react": "0.469.0"
   },
   "devDependencies": {
     "@ap/contracts": "https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz",

@@ -210,9 +210,21 @@ importers:
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
+      '@eqv/renderer':
+        specifier: workspace:*
+        version: link:../renderer
+      '@eqv/replay':
+        specifier: workspace:*
+        version: link:../replay
       '@eqv/ui':
         specifier: workspace:*
         version: link:../ui
+      '@eqv/views':
+        specifier: workspace:*
+        version: link:../views
+      lucide-react:
+        specifier: 0.469.0
+        version: 0.469.0(react@19.3.1)
     devDependencies:
       '@testing-library/dom':
         specifier: 10.4.2
@@ -438,7 +450,7 @@ importers:
 packages:
 
   '@ap/contracts@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz':
-    resolution: {integrity: sha512-TVXIQIJsvDG67BzjJ7J2tuMl70r+UU1VE4AGDDUezSUPZQtLGbqlFXUVP2O5eeZqzMv9ywmDKTdkKbzclN4DZw==, tarball: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz}
+    resolution: {tarball: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz}
     version: 0.12.0
 
   '@ap/ui@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz':
