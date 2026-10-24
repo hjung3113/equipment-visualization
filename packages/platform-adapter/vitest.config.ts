@@ -5,6 +5,7 @@ export default defineConfig({
   root: fileURLToPath(new URL('.', import.meta.url)),
   esbuild: { jsx: 'automatic' },
   test: {
+    environment: 'jsdom',
     include: ['test/**/*.test.{ts,tsx}'],
   },
 });

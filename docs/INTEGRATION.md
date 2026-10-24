@@ -73,6 +73,19 @@ Equipment Management
 - 두 엔드포인트 공통: `kinds` = `collection`, `processing_delay`, `coverage`, `time_domain`(`mergeTimeDomain: true`) — 창의 완전성(Watermark·늦은 데이터)과 Site 시간축을 알리는 assessment. `requiresScope: false`(설비는 page key `equipment`로 지정 — 모듈 prefix 뒤 `?equipment=<id>`; `eqv:topview`는 prefix 자체(그룹의 primary 화면), `eqv:focus`는 그 하위 `<prefix>/focus`이며 page key `equipment`·`window`·`entityType`·`anchor`. AP 레지스트리가 param이 필요한 부모 경로와 primary 없는 그룹을 거부하므로 경로 param을 쓰지 않는다. 화면이 page key를 엔드포인트 params `{ equipmentId }`로 복사하고, 키가 없으면 "설비를 고르세요" 상태를 보인다).
 - metrics·inventory 엔드포인트와 변경 API(`saveDraft`/`publish`)는 선언하지 않았다: 첫 범위는 read-only(ADR-0012). 변경 API는 `defineAction`·감사·권한 경계를 갖춘 별도 설계 후속.
 
+### 화면 동작 (`packages/platform-adapter/src/screens/`, 177d)
+
+`eqvScreens`(`topview`, `focus`; 호스트가 `eqv:<id>`로 등록)는 `({ host, params })` 화면이다. 마운트는 AP PR(AP #333/#334)이며 이 저장소에는 아직 없다.
+
+- **입력**: 설비는 `host.page('equipment')`, 진입 키는 `entityType`·`anchor` page key, 시간은 `host.context()`의 `from`/`to`. 호스트 시각은 초 단위 naive(`YYYY-MM-DDTHH:mm:ss`)라 읽을 때 한 번 `.000`을 붙여 Site Wall-clock으로 만든다. 기본 구간·기본 설비를 채우지 않는다.
+- **상태**: `time`이 `unsupported`면 "이 화면에는 시간 구간이 적용되지 않습니다"(쿼리 없음), 설비가 없으면 "설비를 고르세요", `from`/`to`가 없으면 "시간 구간을 고르세요"(둘 다 쿼리 없음).
+- **로드**: `host.query`로 `eqv.topview-context`와 `eqv.topview-events`만 호출한다. 이벤트는 `continuationToken`이 없어질 때까지 따라가 한 batch로 합친다(`occurrences`/`issues`는 서버 page 순서 그대로, window 필드는 첫 page 기준이며 다른 page가 다르면 데이터 오류, `watermark`는 `(seq, at)` 최댓값, 토큰 제거). 루프는 서버 `maxHours`, 반복 토큰 거부, 화면 signal 중단으로 끝난다. 새 설비/시간은 이전 로드를 중단하고 늦은 응답을 버린다.
+- **검증**: 모든 Mapping Version·Layout Revision을 `checkBindingMapping`/`checkBindingLayout`으로 내용 검증한 뒤 `assertReplayInput`. 실패는 부분 replay 없이 오류 상태.
+- **outcome**: `ok` → 렌더(이전에 `auth_required`를 세팅했다면 `host.status('ready')`), `empty` → 빈 상태(status 호출 없음), `forbidden` → `host.status('auth_required')`(호스트가 상태를 그림), `error` → 화면 안 danger 상태, `timeout`/`too_large` → 화면 안 warning 상태(`message`와 `host.reportError` id 표시, status 호출 없음). `unavailable`·`identity_mismatch`는 쿼리 outcome으로 세팅하지 않는다.
+- **assessment**: `clear`가 아닌 것만 안내로 보이며 `unknown`은 "확인하지 못했습니다 — 이상 없음이 아닙니다"로 `confirmed`와 구분한다.
+- **`eqv:focus`**: `FocusView`(Top View · Gantt · Occurrence 목록, 한 커서). `host.detail`이 있으면 선택한 Occurrence의 근거 상세를 `host.detail.show(node, label)`로 보내고(리셋·선택 해제·언마운트 시 `clear`) 인라인 "근거 상세" 탭은 없다. 없으면 인라인 탭. Journey 링크 없음, "Top View로" 버튼.
+- **`eqv:topview`**: 적용 구간 끝(`to`)에 유효한 Layout과 그 시점의 `seekSceneState`(근거 라벨은 reducer가 준 그대로), Component 선택 시 id·라벨·역할·활동·활동 근거를 `host.detail.show` 또는 인라인 패널로, "Focus 열기" 버튼.
+
 ### 서버 쿼리 유의사항
 
 - Parser Postgres 원본 직접 join 금지: read-only 호환 view/mart/service 어댑터를 통해 관찰 이벤트를 normalize.

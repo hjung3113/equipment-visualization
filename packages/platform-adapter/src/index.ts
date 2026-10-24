@@ -2,3 +2,6 @@
 export { eqvManifest, TOPVIEW_SCREEN, FOCUS_SCREEN } from './manifest.js';
 export { topviewContext, topviewEvents } from './endpoints.js';
 export type { TopviewContextParams, TopviewEventsParams } from './endpoints.js';
+export { FocusScreen } from './screens/FocusScreen.js';
+export { TopViewScreen } from './screens/TopViewScreen.js';
+export { eqvScreens } from './screens/screens.js';
