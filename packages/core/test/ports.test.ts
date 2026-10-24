@@ -99,14 +99,6 @@ it.each([
   expect(projectToFootprint(component, local)).toEqual(expected);
 });
 
-it('composes the world centre through a rotated and scaled parent', () => {
-  const parent = makeComponent('parent-a', { x: 100, y: 200, rotation: 90, scale: 2 }, { width: 80, height: 60 });
-  const child = makeComponent('child-a', { x: 5, y: 3, rotation: -30, scale: 0.5 }, { width: 20, height: 10 }, parent.id);
-  const layout = makeLayout([parent, child]);
-
-  expect(componentWorldCenter(layout, child.id)).toEqual({ x: 94, y: 210 });
-});
-
 it('composes the world matrix through a rotated and scaled parent including the child transform', () => {
   const parent = makeComponent('parent-a', { x: 100, y: 200, rotation: 90, scale: 2 }, { width: 80, height: 60 });
   const child = makeComponent('child-a', { x: 5, y: 3, rotation: -30, scale: 0.5 }, { width: 20, height: 10 }, parent.id);

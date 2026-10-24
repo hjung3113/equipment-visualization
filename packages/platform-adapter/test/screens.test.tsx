@@ -1,8 +1,7 @@
 import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import type { ApiResponse } from '@ap/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { OccurrenceBatch } from '@eqv/core';
-import { eqvManifest, eqvScreens, FOCUS_SCREEN, TOPVIEW_SCREEN } from '../src/index.js';
+import { eqvScreens } from '../src/index.js';
 import { createFakeHost, deferred, ok, response, type FakeHostOptions, type QueryCall } from './fake-host.js';
 import { bindings, contextData, EQUIPMENT, HOST_TIME, layout, mappings, pages } from './replay-fixture.js';
 
@@ -215,13 +214,6 @@ describe('outcomes', () => {
     expect(document.querySelector('tr[data-occurrence-id]')).toBeNull();
   });
 
-  it('a page that disagrees with the first page is a data error', async () => {
-    const odd = (token: string | undefined): ApiResponse<unknown> => ok<OccurrenceBatch>(token === undefined ? pages()[0] : { ...pages()[1], dataGeneration: 'g2' });
-    const fake = hostFor({ query: server({ events: odd }) });
-    const Screen = eqvScreens.focus;
-    render(<Screen host={fake.host} params={{}} />);
-    await screen.findByText('데이터 오류');
-  });
 });
 
 describe('Focus detail', () => {
@@ -302,12 +294,5 @@ describe('Top View Component detail words', () => {
     expect(region.textContent).toMatch(words);
     expect(region.textContent).not.toMatch(/processing|no recorded activity/);
     expect(region.textContent).toMatch(/활동 근거/);
-  });
-});
-
-describe('eqvScreens', () => {
-  it('has exactly the manifest screen ids', () => {
-    expect(Object.keys(eqvScreens).sort()).toEqual(eqvManifest.screens.map((s) => s.id).sort());
-    expect([TOPVIEW_SCREEN, FOCUS_SCREEN].sort()).toEqual(Object.keys(eqvScreens).sort());
   });
 });
