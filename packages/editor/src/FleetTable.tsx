@@ -15,8 +15,10 @@ const STATUS: Record<FleetStatus, { text: string; tone: Tone }> = {
   unstarted: { text: '미착수', tone: 'neutral' },
   draft: { text: '초안', tone: 'warning' },
   published: { text: '게시됨', tone: 'success' },
+  drift: { text: 'Drift', tone: 'warning' },
   'no-observations': { text: '관측 없음', tone: 'neutral' },
 };
+const DRIFT_UNKNOWN = { text: '게시됨 · Drift 미확인', tone: 'neutral' as Tone };
 const NUMERIC_COLUMNS = ['커버리지', 'assumed 비율', '미매핑 참조'].map((header) => ({ id: header, header, align: 'end' as const }));
 const percent = (ratio: number | null) => ratio === null ? '—' : `${Math.round(ratio * 100)}%`;
 
@@ -37,7 +39,9 @@ export function FleetTable({ rows, renderLink, renderActions }: FleetTableProps)
               <DataTable.Cell colSpan={renderActions === undefined ? 4 : 5}><StatusBadge tone="danger" dot>오류</StatusBadge> {row.error}</DataTable.Cell>
             ) : (
               <>
-                <DataTable.Cell><StatusBadge tone={STATUS[row.status!].tone} dot>{STATUS[row.status!].text}</StatusBadge></DataTable.Cell>
+                <DataTable.Cell>{row.status === 'published' && row.driftUnknown !== null
+                  ? <span title={row.driftUnknown}><StatusBadge tone={DRIFT_UNKNOWN.tone} dot>{DRIFT_UNKNOWN.text}</StatusBadge><span className="sr-only"> ({row.driftUnknown})</span></span>
+                  : <StatusBadge tone={STATUS[row.status!].tone} dot>{STATUS[row.status!].text}</StatusBadge>}</DataTable.Cell>
                 <DataTable.Cell numeric>{percent(row.coverage?.references.ratio ?? null)}</DataTable.Cell>
                 <DataTable.Cell numeric>{percent(row.assumedRatio)}</DataTable.Cell>
                 <DataTable.Cell numeric>{row.unmappedReferences ?? '—'}</DataTable.Cell>

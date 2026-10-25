@@ -19,7 +19,7 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 | ④ Mapping Board | alias 목록 · Top View · 선택 상세 (§4) | 배정·규칙화·무시·충돌 해결 |
 | ⑤ 검증 | 샘플 기간 dry-run replay | 선택한 Sample Window로 검증한다. 커버리지, Mapping Conflict 목록, 미매핑 영향도. 충돌 클릭 → SVG 강조. reducer는 실행하지 않는다. |
 | ⑥ Publish | 이전 버전 diff | 규칙 평탄화 → 불변 Mapping Version + Binding(effectiveFrom) |
-| ⑦ Drift | Fleet 상태 배지 + 검토 대기열 | 게시 후 새 alias·slot, Transfer Capability 없는 관측 이송 |
+| ⑦ Drift | Fleet 상태 배지 + 검토 대기열 | 게시 후 새 alias·slot, Transfer Capability 없는 관측 이송. Fleet `Drift` 배지는 **가장 늦은** Sample Window를, Onboarding의 `⑦ Drift 검토` 패널은 **선택한** window를 최신 Binding의 Baseline과 비교한다 |
 
 ## 2. Observed Inventory
 
@@ -171,7 +171,7 @@ type Coverage = {
 
 충돌은 `kind`, alias(이송은 `(from, to)`) code-unit 순으로 정렬하며 slot은 §2 순서다. 같은 수준의 winning rule 중첩은 `findMappingConflicts`가 아니라 `publishMapping`의 범위 평탄화에서 공급된 alias를 대상으로 `same-level-overlap`으로 보고한다. 파일 내부의 중복 exact alias·겹치는 slot 범위 검사는 `validateAliasRules`가 담당한다. 조치는 사람 확인 후 이송 경로 추가(sourceEvidence = 로그 관측) 또는 재매핑이며 자동 게시하지 않는다.
 
-`detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`와 영향도로 표시하며 외부 알림은 플랫폼 통합 단계다.
+`detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`(세 목록 중 하나라도 비어 있지 않을 때, 가장 늦은 window 기준)와 Onboarding의 검토 대기열(선택한 window 기준, 종류별 건수와 항목, Mapping Board 링크)로 표시하며 외부 알림은 플랫폼 통합 단계다. Baseline Inventory 파일이나 최신 Binding의 Layout이 없거나(#14d 이전에 게시한 Binding), 읽을 수 없거나, 스키마·hash가 틀리거나, `detectDrift`가 `RangeError`를 던지면 Drift는 **알 수 없음**이다: 설비 로드는 그대로 성공하고(Fleet·Onboarding·Board가 막히지 않는다), Fleet은 `게시됨 · Drift 미확인`(neutral, 이유는 title)으로 두며 패널은 "Drift를 판단할 수 없습니다"와 이유(없으면 "Baseline Inventory가 없습니다", 틀린 파일이면 경로와 문제)를 보인다. "Drift 없음"으로 취급하지 않고 오류 행도 아니다. 검토 대기열은 항목이 있을 때만 Mapping Board 링크를 보이며 Onboarding 페이지의 마지막(②, ③, ⑦ 순)에 놓인다.
 
 ### 검증과 Publish (#14d)
 

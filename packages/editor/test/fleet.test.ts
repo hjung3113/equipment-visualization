@@ -1,10 +1,11 @@
 import { expect, it } from 'vitest';
-import { computeCoverage } from '@eqv/core';
+import { computeCoverage, layoutDocumentSchema, type EquipmentLayoutDocument } from '@eqv/core';
 import { summarizeFleet, type FleetData } from '../src/index.js';
-import { bindings, inventory, mappings, record } from './data.js';
+import { bindings, inventory, mappings, read, record } from './data.js';
 
 const published = (change: Partial<FleetData> = {}): FleetData =>
-  ({ record, inventory: inventory(), bindings, mappings, hasAliasRules: true, ...change });
+  ({ record, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: null, layout: null, ...change });
+const layout = layoutDocumentSchema.parse(read('fixtures/cluster-single/layout.json')) as EquipmentLayoutDocument;
 const LATEST = 'sha256:0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef';
 
 it('takes coverage from the binding with the latest effectiveFrom', () => {
@@ -37,6 +38,45 @@ it('turns a core tuple RangeError into an error row', () => {
   const [row] = summarizeFleet([published({ inventory: other })]);
   expect(row).toMatchObject({ status: null, unmappedReferences: null });
   expect(row!.error).toContain('eq-other');
+});
+
+it('stays published, not drift-free, when the baseline or the layout is missing', () => {
+  const rows = summarizeFleet([published({ layout }), published({ baseline: inventory() })]);
+  expect(rows.map(({ status, drift }) => [status, drift])).toEqual([['published', null], ['published', null]]);
+});
+
+it('is published with an empty drift when the window matches the baseline and every transfer has a capability', () => {
+  const [row] = summarizeFleet([published({ baseline: inventory(), layout })]);
+  expect(row).toMatchObject({ status: 'published', drift: { newAliases: [], newSlots: [], transfersWithoutCapability: [] } });
+});
+
+it.each([
+  ['a new alias', { baseline: () => ({ ...inventory(), aliases: inventory().aliases.filter(({ alias }) => alias !== 'LP1') }), layout: () => layout },
+    (drift: NonNullable<ReturnType<typeof summarizeFleet>[number]['drift']>) => expect(drift.newAliases).toEqual(['LP1'])],
+  ['a new slot', { baseline: () => ({ ...inventory(), aliases: inventory().aliases.map((row) => row.alias === 'LP1' ? { ...row, slots: ['1'] } : row) }), layout: () => layout },
+    (drift: NonNullable<ReturnType<typeof summarizeFleet>[number]['drift']>) => expect(drift.newSlots).toEqual([{ alias: 'LP1', slot: '2' }])],
+  ['a transfer without capability', { baseline: () => inventory(), layout: () => ({ ...layout, transferCapabilities: [] }) },
+    (drift: NonNullable<ReturnType<typeof summarizeFleet>[number]['drift']>) => expect(drift.transfersWithoutCapability.length).toBeGreaterThan(0)],
+])('is drift for %s', (_, { baseline, layout: makeLayout }, check) => {
+  const [row] = summarizeFleet([published({ baseline: baseline(), layout: makeLayout() })]);
+  expect(row).toMatchObject({ status: 'drift', error: null });
+  check(row!.drift!);
+});
+
+it.each([
+  ['a detection failure', { baseline: { ...inventory(), equipmentId: 'eq-other' }, layout }, 'eq-other'],
+  ['a missing baseline', { layout }, 'Baseline Inventory가 없습니다'],
+  ['a missing layout', { baseline: inventory() }, '최신 Binding의 Layout이 없습니다'],
+  ['an unreadable drift input', { driftProblem: 'layouts/x/draft.layout.json: 잘못됨' }, 'layouts/x/draft.layout.json: 잘못됨'],
+] as [string, Partial<FleetData>, string][])('stays published with Drift unknown and the reason for %s', (_, change, reason) => {
+  const [row] = summarizeFleet([published(change)]);
+  expect(row).toMatchObject({ status: 'published', drift: null, error: null });
+  expect(row!.driftUnknown).toContain(reason);
+});
+
+it('has no unknown reason when Drift was checked', () => {
+  const [row] = summarizeFleet([published({ baseline: inventory(), layout })]);
+  expect(row!.driftUnknown).toBeNull();
 });
 
 it('turns a registered equipment without Sample Windows into a status row, not an error', () => {

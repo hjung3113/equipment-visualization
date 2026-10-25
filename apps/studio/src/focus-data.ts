@@ -1,9 +1,9 @@
 import {
   verifyBindingContext,
-  type Binding, type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch,
+  type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
-import { DataError, listSampleWindows, loadEquipment, readOptional, readSampleWindow, windowHex, type SampleWindowEntry } from './onboarding-data.js';
+import { DataError, layoutPath, listSampleWindows, loadEquipment, mappingPath, readOptional, readSampleWindow, windowHex, type SampleWindowEntry } from './onboarding-data.js';
 import { errorMessage } from './error-message.js';
 
 export type FocusData = {
@@ -37,11 +37,6 @@ async function read(path: string): Promise<unknown | undefined> {
     throw new DataError(`${path}: ${errorMessage(error)}`);
   }
 }
-
-const mappingPath = (equipmentId: string, binding: Binding) =>
-  `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
-const layoutPath = (layoutId: string, revision: string | undefined) => revision === undefined ? `layouts/${layoutId}/draft.layout.json`
-  : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
 
 /**
  * Without `window`, the latest-`from` window that contains `anchor`, else the latest window. Every window is read and

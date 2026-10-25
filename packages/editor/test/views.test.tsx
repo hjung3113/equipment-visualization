@@ -8,8 +8,8 @@ afterEach(cleanup);
 
 it('renders fleet rows with status badges, integer percentages, dashes and a host link that receives the row', () => {
   const rows = summarizeFleet([
-    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true },
-    { record: { ...record, equipmentId: 'eq-new' }, inventory: inventory(), bindings: null, mappings: {}, hasAliasRules: false },
+    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: null, layout: null },
+    { record: { ...record, equipmentId: 'eq-new' }, inventory: inventory(), bindings: null, mappings: {}, hasAliasRules: false, baseline: null, layout: null },
     { record: { ...record, equipmentId: 'eq-empty' }, noObservations: true },
     { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
   ]);
@@ -18,9 +18,9 @@ it('renders fleet rows with status badges, integer percentages, dashes and a hos
   expect(screen.getByRole('link', { name: 'eq-synth-01' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
   expect(screen.getByRole('link', { name: 'eq-empty' }).getAttribute('href')).toBe('/equipment/eq-empty');
   const row = (id: string) => within(screen.getByRole('link', { name: id }).closest('tr')!);
-  expect(row('eq-synth-01').getByText('게시됨')).toBeTruthy();
+  expect(row('eq-synth-01').getByText('게시됨 · Drift 미확인')).toBeTruthy();
   expect(row('eq-synth-01').getAllByRole('cell').map((cell) => cell.textContent)).toEqual(
-    ['synth-maker', 'synth-model', '게시됨', expect.stringMatching(/^\d+%$/), expect.stringMatching(/^\d+%$/), expect.any(String)]);
+    ['synth-maker', 'synth-model', '게시됨 · Drift 미확인 (Baseline Inventory가 없습니다)', expect.stringMatching(/^\d+%$/), expect.stringMatching(/^\d+%$/), expect.any(String)]);
   expect(row('eq-new').getAllByRole('cell').map((cell) => cell.textContent).slice(2, 6)).toEqual(['미착수', '—', '—', expect.any(String)]);
   const empty = screen.getByRole('link', { name: 'eq-empty' }).closest('tr')!;
   expect(Array.from(empty.querySelectorAll('td')).map((cell) => cell.textContent)).toEqual(['synth-maker', 'synth-model', '관측 없음', '—', '—', '—']);
@@ -36,7 +36,7 @@ it('renders fleet rows with status badges, integer percentages, dashes and a hos
 
 it('adds the host action column and spans it in error rows when provided', () => {
   const rows = summarizeFleet([
-    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true },
+    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: null, layout: null },
     { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
   ]);
   render(<FleetTable rows={rows} renderLink={(_, children) => children}
