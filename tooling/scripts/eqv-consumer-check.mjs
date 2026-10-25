@@ -66,8 +66,9 @@ export default defineConfig({ plugins: [tailwindcss()] });
   // the package's `@source` line. The adapter is imported by check.ts, which only tsc reads.
   'src/main.ts': `import './style.css';\n`,
   'src/check.ts': `import { eqvManifest, eqvScreens } from '@eqv/platform-adapter';
+import { EQV_MOCK_EQUIPMENT, eqvMockContext, eqvMockEvents } from '@eqv/platform-adapter/mock-data';
 
-export const adapterExports = [eqvManifest, eqvScreens];
+export const adapterExports = [eqvManifest, eqvScreens, EQV_MOCK_EQUIPMENT, eqvMockContext, eqvMockEvents];
 `,
 };
 
