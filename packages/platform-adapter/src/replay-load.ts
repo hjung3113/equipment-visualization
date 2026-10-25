@@ -32,8 +32,11 @@ export function assessmentNotices(assessments: readonly Assessment[]): string[] 
 type Step<T> = { ok: true; data: T } | { ok: false; settled: Settled };
 const message = (error: unknown) => error instanceof Error ? error.message : String(error);
 
-function failure(host: ModuleHost, tone: LoadFailure['tone'], title: string, text: string, assessments: Assessment[], correlationId?: string): LoadFailure {
-  const errorId = host.reportError(new Error(`${title}: ${text}${correlationId ? ` (correlationId ${correlationId})` : ''}`));
+const TOO_LARGE_KO = `설비 재생은 한 번에 최대 ${topviewEvents.limits?.maxHours}시간까지 불러옵니다. 플랫폼의 기간을 ${topviewEvents.limits?.maxHours}시간 이하로 줄이세요.`;
+
+/** `serverText` (the host's raw, often English, message) goes to `reportError` only; the visible `text` is ours. */
+function failure(host: ModuleHost, tone: LoadFailure['tone'], title: string, text: string, assessments: Assessment[], correlationId?: string, serverText?: string): LoadFailure {
+  const errorId = host.reportError(new Error(`${title}: ${serverText || text}${correlationId ? ` (correlationId ${correlationId})` : ''}`));
   return { kind: 'failed', tone, title, message: text, errorId, notices: assessmentNotices(assessments) };
 }
 
@@ -57,8 +60,8 @@ function step<T>(host: ModuleHost, response: ApiResponse<T>, assessments: Assess
         : { ok: true, data: response.data };
     case 'empty': return { ok: false, settled: { kind: 'empty', notices: assessmentNotices(assessments) } };
     case 'forbidden': return { ok: false, settled: { kind: 'forbidden' } };
-    case 'timeout': return { ok: false, settled: failure(host, 'warning', '응답 시간 초과', text || '서버가 제때 응답하지 않았습니다', assessments, response.correlationId) };
-    case 'too_large': return { ok: false, settled: failure(host, 'warning', '구간이 너무 큽니다', text || '시간 구간을 줄이세요', assessments, response.correlationId) };
+    case 'timeout': return { ok: false, settled: failure(host, 'warning', '응답 시간 초과', '서버가 제때 응답하지 않았습니다', assessments, response.correlationId, text) };
+    case 'too_large': return { ok: false, settled: failure(host, 'warning', '구간이 너무 큽니다', TOO_LARGE_KO, assessments, response.correlationId, text) };
     case 'error': return { ok: false, settled: failure(host, 'danger', '불러오지 못했습니다', text || '서버 오류', assessments, response.correlationId) };
   }
 }

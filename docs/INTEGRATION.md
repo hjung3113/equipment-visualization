@@ -17,6 +17,7 @@
 [ADR-0012](adr/0012-platform-first-sdk-host.md)(ADR-0001 일부 대체): `core`/`renderer`/`editor`/`replay`는 이 저장소의 독립 패키지가 정본이고 플랫폼을 모른다. 기본 호스트는 플랫폼 셸이고, 호스트 → 앱 계약은 플랫폼 SDK(게시된 `@ap/*`, [ADR-0013](adr/0013-platform-sdk-release-tarballs.md))가 소유한다. `packages/platform-adapter`가 그 계약을 구현해 화면을 조립하고, 플랫폼 `menus/analytics/equipment`는 연결만 한다. 모델·reducer·renderer 코드를 플랫폼 안에 다시 만들지 않는다.
 
 - 테마: `--eqv-*` → 플랫폼 토큰 매핑은 `@eqv/ui/theme.css`가 소유하고 어댑터 `styles.css`가 import한다. 호스트 입력(설비·진입 키·시간)은 `host-props.ts`가 읽는다.
+- 호스트는 시작 시 `eqvManifest`·엔드포인트를 React 없는 `@eqv/platform-adapter/manifest`에서 등록하고, 화면(`eqvScreens`)은 루트 `@eqv/platform-adapter`에서 lazy `import()`로 불러온다. 루트도 모두 계속 export한다.
 - 타 분석 메뉴는 `linkTo`로 **같은 화면으로 이동**하고 렌더러 코드를 import하지 않는다. 현재 `menu-*` 상호 import 금지와 `packages/components` 범용성 원칙을 그대로 지킨다.
 - 패키지 소비 방식은 게시된 SDK Release tarball이다(ADR-0013). submodule pin이 아니다.
 - 반대 방향(AP가 `@eqv/*`를 소비)도 Release tarball이다([ADR-0014](adr/0014-eqv-release-tarballs.md)). Release `eqv-vX.Y.Z`의 여섯 파일(`eqv-{core,renderer,replay,ui,views,platform-adapter}-X.Y.Z.tgz`)을 모두 호스트의 직접 URL 의존으로 둔다. 패키지 안의 형제 `@eqv/*`는 정확 버전 peer이므로 `overrides`는 필요 없고, `dependencies`로 두면 `blockExoticSubdeps`가 `ERR_PNPM_EXOTIC_SUBDEP`로 막는다. packed manifest의 `@ap/*` peer는 SDK 정확 버전(오늘 `0.12.0`)이고 AP 워크스페이스는 `workspace:*`이므로 `peerDependencyRules.allowedVersions`에 `@eqv/*>@ap/*`를 둔다. CSS 진입은 `@import "tailwindcss"` → `@ap/ui/styles.css` → `@eqv/platform-adapter/styles.css` 순서다.

@@ -8,6 +8,7 @@ The analytics-platform host module (ADR-0012, ADR-0013). The only package that i
 - `TOPVIEW_SCREEN`, `FOCUS_SCREEN` — the bare screen ids.
 - `topviewContext` (`eqv.topview-context`) and `topviewEvents` (`eqv.topview-events`) — `defineEndpoint` declarations; responses are `@eqv/core` types. Time is host-projected (`context.time: 'apply'`), never a param. See `docs/INTEGRATION.md`.
 - `eqvScreens` — `Record<'topview' | 'focus', ComponentType<ModuleScreenProps>>`, keyed by the manifest screen ids (also `TopViewScreen`, `FocusScreen`).
+- `@eqv/platform-adapter/manifest` — `eqvManifest`, `TOPVIEW_SCREEN`, `FOCUS_SCREEN`, `topviewContext`, `topviewEvents` and their param types with no React, screen, replay or renderer module reachable; a host registers from here and loads the screens lazily from the root.
 - `@eqv/platform-adapter/mock-data` — synthetic `eqvMockContext` / `eqvMockEvents` (+ `EQV_MOCK_EQUIPMENT`, `EQV_MOCK_WINDOW`) for a host's mock server, generated from `fixtures/cluster-single` (`pnpm --filter @eqv/platform-adapter gen:mock-data`); never import it from production code.
 - `@eqv/platform-adapter/styles.css` — imports `@eqv/ui/theme.css` (the single owner of the `--eqv-*` → platform-token mapping), `@eqv/ui/styles.css` and the `@eqv/replay` and `@eqv/views` styles.
 

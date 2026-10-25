@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { GLOBAL_KEYS, HOST_CONTRACTS, KERNEL_PERMISSIONS, projectContext, type AnyEndpointSpec, type ModuleManifest } from '@ap/contracts';
 import { describe, expect, expectTypeOf, it } from 'vitest';
 import { eqvManifest, topviewContext, topviewEvents, type TopviewContextParams, type TopviewEventsParams } from '../src/index.js';
@@ -87,5 +90,24 @@ describe('endpoint declarations', () => {
     expectTypeOf(topviewContext.paramKeys).toEqualTypeOf<Readonly<Record<keyof TopviewContextParams & string, true>>>();
     expectTypeOf(topviewEvents.paramKeys).toEqualTypeOf<Readonly<Record<keyof TopviewEventsParams & string, true>>>();
     expect(Object.keys(topviewEvents.paramKeys).sort()).toEqual(['continuationToken', 'equipmentId']);
+  });
+});
+
+describe('@eqv/platform-adapter/manifest', () => {
+  it('reaches no react, react-dom or screen module through its relative imports', () => {
+    const src = join(dirname(fileURLToPath(import.meta.url)), '../src');
+    const seen = new Set<string>();
+    const specifiers: string[] = [];
+    const visit = (file: string) => {
+      if (seen.has(file)) return;
+      seen.add(file);
+      for (const spec of [...readFileSync(file, 'utf8').matchAll(/(?:from|import)\s*\(?\s*'([^']+)'/g)].map((m) => m[1] ?? '')) {
+        specifiers.push(spec);
+        if (spec.startsWith('.')) visit(resolve(dirname(file), spec.replace(/\.js$/, '.ts')));
+      }
+    };
+    visit(join(src, 'manifest-entry.ts'));
+    expect(specifiers.filter((s) => /^react(-dom)?(\/|$)/.test(s) || /screens|replay|renderer|views|@eqv\/ui/.test(s))).toEqual([]);
+    expect([...seen].map((f) => basename(f)).sort()).toEqual(['endpoints.ts', 'manifest-entry.ts', 'manifest.ts']);
   });
 });
