@@ -83,3 +83,17 @@ it('selects a Component through a badge click without drawing Transfer Capabilit
   fireEvent.click(journey.querySelector('[data-journey-hop="3"]')!);
   expect(picked).toEqual(['pm-a']);
 });
+
+it.each([
+  { size: 'large', shrink: 200, above: false },
+  { size: 'small', shrink: 20, above: true },
+])('places the hop row $size Component: outside above bbox = $above', ({ shrink, above }) => {
+  const bbox = scene.components.get('pm-a')!.bbox;
+  const kk = (bbox.y1 - bbox.y0) / shrink;
+  const layer = buildJourneyLayer(scene, { hops: [hop(1, 'pm-a'), hop(2, 'pm-a')] }, kk);
+  for (const b of badges(layer)) {
+    const c = b.children.find((n): n is SvgNode => typeof n !== 'string' && n.tag === 'circle')!;
+    if (above) expect(num(c, 'cy') + num(c, 'r')).toBeLessThanOrEqual(bbox.y0);
+    else expect(num(c, 'cy') - num(c, 'r')).toBeGreaterThanOrEqual(bbox.y0);
+  }
+});

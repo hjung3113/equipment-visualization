@@ -1,4 +1,4 @@
-import { EVIDENCE_DASH, EVIDENCE_KO, PAINT, visible, type StateEvidence } from './overlay.js';
+import { EVIDENCE_DASH, EVIDENCE_KO, PAINT, SMALL_COMPONENT_PX, visible, type StateEvidence } from './overlay.js';
 import type { Scene } from './scene.js';
 import { estimateTextWidth } from './text.js';
 import { el, formatNum, type SvgNode } from './svg.js';
@@ -57,7 +57,8 @@ function badge(hop: JourneyHopMark, cx: number, cy: number, k: number, selected:
 
 /**
  * Journey layer: one numbered circle per hop on its Component, in a row on the inner top edge of the Component's
- * axis-aligned bbox (material discs use the bottom edge), upright in screen space. Ring dash = location evidence.
+ * axis-aligned bbox (just above it when the Component is shorter than `SMALL_COMPONENT_PX` on screen;
+ * material discs use the bottom edge), upright in screen space. Ring dash = location evidence.
  * Discrete marks only: no connector, no motion. Badges take pointer events and carry `data-component-id`, so a click
  * selects the Component like any other part of it.
  */
@@ -80,7 +81,10 @@ export function buildJourneyLayer(scene: Scene, journey: JourneyOverlay, k: numb
     const chipPx = plus ? estimateTextWidth(plus, NUMBER_PX, false) + 8 : 0;
     const rowPx = shown.length * BADGE_PX + Math.max(0, shown.length - 1) * BADGE_GAP_PX
       + (plus ? (shown.length > 0 ? BADGE_GAP_PX : 0) + chipPx : 0);
-    const cy = comp.bbox.y0 + (INSET_PX + BADGE_PX / 2) * k;
+    const small = (comp.bbox.y1 - comp.bbox.y0) / k < SMALL_COMPONENT_PX;
+    const cy = small
+      ? comp.bbox.y0 - (INSET_PX + BADGE_PX / 2) * k
+      : comp.bbox.y0 + (INSET_PX + BADGE_PX / 2) * k;
     let xPx = -rowPx / 2;
     for (const hop of shown) {
       nodes.push(badge(hop, comp.center[0] + (xPx + BADGE_PX / 2) * k, cy, k, hop.number === journey.selected));

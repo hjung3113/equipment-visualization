@@ -835,3 +835,22 @@ it('draws a material cluster upright in scene space on a component rotated 150 d
     expect(Number(node.attrs.cy ?? node.attrs.y)).toBeLessThanOrEqual(comp.bbox.y1);
   }
 });
+
+it.each([
+  { size: 'large', shrink: 200, below: false },
+  { size: 'small', shrink: 20, below: true },
+])('places the material row $size Component: outside below bbox = $below', ({ shrink, below }) => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  const comp = scene.components.get('a')!;
+  const kk = (comp.bbox.y1 - comp.bbox.y0) / shrink;
+  const state = replayState({
+    components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+    materials: [stateMaterial({ key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed' })],
+  });
+  const token = shapes(markOf(buildReplayLayer(scene, { state }, kk), comp)).find((n) => n.tag === 'circle' && n.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)');
+  if (!token) throw new Error('missing token');
+  const cy = Number(token.attrs.cy);
+  const r = Number(token.attrs.r);
+  if (below) expect(cy - r).toBeGreaterThanOrEqual(comp.bbox.y1);
+  else expect(cy + r).toBeLessThanOrEqual(comp.bbox.y1);
+});
