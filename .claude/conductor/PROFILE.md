@@ -260,3 +260,8 @@ perf role is added only once the Studio has a measured interaction budget.
 - A Studio test with several Radix Select interactions runs ~1.5 s locally and has timed out at the 5 s default on a
   loaded CI runner: give it a per-test `15_000` timeout with a reason comment, as `apps/studio/test/layouts-edit.test.tsx`
   does (#173, 2026-10-20).
+- A brief must not write its own "last line" sentinel: the launcher fixes it as `<!-- W-<n>-DONE -->`, and a brief
+  that says otherwise (`W-196 DONE`) makes the worker end with the wrong line and `worker-wait.sh` report finished work
+  as failed (exit 10). End the brief's report line with "Sentinel: as the launcher's task says" (#196, 2026-10-25).
+- Merge a `develop` PR the way `ship-pr.sh` does (squash, title `… (#<pr>)`); a hand `gh pr merge --merge` left a
+  merge commit on `develop` (#195, 2026-10-25). Only the release PR into `main` is a merge commit.
