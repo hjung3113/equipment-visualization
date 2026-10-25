@@ -336,12 +336,43 @@ describe('Focus 재생 구간 in the page keys', () => {
     expect(rangeInputs().map((input) => input.value)).toEqual(['2026-01-01T10:05:00.000', '2026-01-01T10:12:00.000']);
   });
 
-  it('an unordered or malformed pair in the page keys is ignored, not applied', async () => {
-    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom: '2026-01-01T10:12:00.000', rangeTo: '2026-01-01T10:05:00.000' } });
+  it.each([
+    ['reversed', '2026-01-01T10:12:00.000', '2026-01-01T10:05:00.000'],
+    ['equal', '2026-01-01T10:05:00.000', '2026-01-01T10:05:00.000'],
+    ['malformed', 'not-a-time', '2026-01-01T10:12:00.000'],
+    ['missing end', '2026-01-01T10:05:00.000', null],
+    ['impossible calendar', '2026-02-30T10:00:00.000', '2026-02-30T11:00:00.000'],
+  ] as const)('a %s pair in the page keys is ignored, not applied', async (_name, rangeFrom, rangeTo) => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom, ...(rangeTo === null ? {} : { rangeTo }) } });
     const Screen = eqvScreens.focus;
     render(<Screen host={fake.host} params={{}} />);
     await screen.findByRole('form', { name: '구간' });
-    expect(rangeInputs().map((input) => input.value)).not.toContain('2026-01-01T10:12:00.000');
+    expect(rangeInputs().map((input) => input.value)).not.toContain(rangeFrom);
+  });
+
+  it('a saved range survives a host refresh of the same equipment, time and entry', async () => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom: '2026-01-01T10:05:00.000', rangeTo: '2026-01-01T10:12:00.000' } });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    fake.setPage({ unrelated: 'x' });
+    expect(rangeInputs().map((input) => input.value)).toEqual(['2026-01-01T10:05:00.000', '2026-01-01T10:12:00.000']);
+    expect(fake.log.pageWrites).toEqual([]);
+    expect(fake.host.page('rangeFrom')).toBe('2026-01-01T10:05:00.000');
+  });
+
+  it.each([
+    ['applied time', (fake: ReturnType<typeof hostFor>) => fake.setContext({ from: '2026-01-02T10:00:00', to: '2026-01-02T11:00:00' })],
+    ['equipment', (fake: ReturnType<typeof hostFor>) => fake.setPage({ equipment: 'other-tool' })],
+    ['entry anchor', (fake: ReturnType<typeof hostFor>) => fake.setPage({ entityType: 'occurrence', anchor: 'occ-pm1-process' })],
+  ] as const)('a saved range is dropped when the %s changes', async (_name, change) => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom: '2026-01-01T10:05:00.000', rangeTo: '2026-01-01T10:12:00.000' } });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    change(fake);
+    await waitFor(() => expect(fake.host.page('rangeFrom')).toBeNull());
+    expect(fake.host.page('rangeTo')).toBeNull();
   });
 });
 

@@ -1,5 +1,5 @@
 import type { ModuleHost } from '@ap/contracts';
-import { siteWallClockSchema, type SiteWallClock } from '@eqv/core';
+import { siteWallClockSchema, wallClockToMillis, type SiteWallClock } from '@eqv/core';
 
 const NAIVE_SECONDS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
 
@@ -22,7 +22,7 @@ export type HostProps = {
   equipment: string | null;
   entityType: string | null;
   anchor: string | null;
-  /** The applied Focus 재생 구간 (page keys `rangeFrom`/`rangeTo`); null unless both are a valid, ordered Site Wall-clock pair. */
+  /** The applied Focus 재생 구간 (page keys `rangeFrom`/`rangeTo`); null unless both are a real, ordered Site Wall-clock pair. */
   range: { from: SiteWallClock; to: SiteWallClock } | null;
   time: HostTime;
 };
@@ -32,7 +32,13 @@ function readRange(host: ModuleHost): HostProps['range'] {
   const to = host.page('rangeTo');
   const a = from === null ? null : hostWallClock(from);
   const b = to === null ? null : hostWallClock(to);
-  return a !== null && b !== null && a < b ? { from: a, to: b } : null;
+  if (a === null || b === null) return null;
+  try {
+    // The schema checks the shape only; an impossible calendar date (02-30) throws here and the pair is ignored.
+    return wallClockToMillis(a) < wallClockToMillis(b) ? { from: a, to: b } : null;
+  } catch {
+    return null;
+  }
 }
 
 /** Equipment, entry keys, applied Focus range and applied time of a screen, read from the host. No default is ever filled in. */

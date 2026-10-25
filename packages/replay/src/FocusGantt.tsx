@@ -166,7 +166,7 @@ export function FocusGantt({
           return (
             <g key={i} className="eqv-rp-tick" aria-hidden="true">
               <line x1={x(t)} x2={x(t)} y1={AXIS_H - 6} y2={plotBottom} />
-              <text x={x(t)} y={AXIS_H - 10} textAnchor={i === 0 ? 'start' : i === TICKS - 1 ? 'end' : 'middle'}>{spanMs < 60_000 ? t.slice(11, 23) : t.slice(11, 19)}</text>
+              <text x={x(t)} y={AXIS_H - 10} textAnchor={i === 0 ? 'start' : i === TICKS - 1 ? 'end' : 'middle'}>{spanMs < 60_000 ? clock(t) : t.slice(11, 19)}</text>
             </g>
           );
         })}
