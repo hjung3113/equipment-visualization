@@ -145,8 +145,8 @@ P0+P1의 6종이 conformance fixture 대상이며 P2 2종은 설계 검토용이
 
 - `SVG Native DOM` 우선: 개별 `<g id="cmp-..." data-component-id="...">` 그룹과 역할별 stroke/fill.
 - ViewBox는 기하 좌표를 관리, 전체 Zoom/Pan은 UI 상태. 로봇 모션 상태는 SVG 원본을 직접 변경하지 않고 runtime transform overlay에서 합성.
-- 1차 편집: move/resize/rotate, group hierarchy, port snapping, arrow routing, undo/redo, level selector, ID/property panel, color token override.
-- 2차 편집: custom path editing, reference-image overlay alignment, layer-specific editing.
+- 1차 편집: move/resize/rotate, group hierarchy, port snapping, arrow routing, undo/redo, level selector, ID/property panel, color token override. 아직 없는 arrow routing·color token override·group hierarchy(reparenting)는 **Dropped**(소유자 2026-10-26, #177).
+- 2차 편집: custom path editing, reference-image overlay alignment, layer-specific editing. **Dropped**(소유자 2026-10-26, #177).
 - Custom SVG 수용 시 스크립트/외부 href/event-handler/foreignObject/remote CSS 차단; 선언적 허용 요소만 통과.
 - Style tokens: renderer는 자체 semantic CSS 변수(`--eqv-*`)와 fallback 값을 소유한다. 플랫폼 `DESIGN.md`/`@ap/ui` 토큰은 `@eqv/ui/theme.css`가 `--eqv-*`에 매핑하고 `platform-adapter`의 `styles.css`가 import하며, renderer는 이를 직접 참조하지 않는다 (ADR-0001). Studio에서는 `--eqv-*` 값을 `@ap/ui` 토큰에서 정하고, `replay`·`editor`의 DOM 컨트롤은 `@ap/ui` 프리미티브로 그린다 (ADR-0008).
 - Port 위치는 [GLOSSARY.md](../GLOSSARY.md)의 Port 규칙에 따라 Component 로컬 frame에서 상대 Component를 향한 footprint edge에 둔다. 아직 렌더링하지 않는다.
@@ -186,7 +186,7 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 - **출구 조건:** 6개 유형 JSON 로딩, disconnected port / duplicate wafer occupancy / missing mapping 검출.
 
 ### Phase 2 — Viewer + Onboarding (M1)
-- React SVG viewer(selection/highlight, pan/zoom, Level 필터, light/dark)를 Onboarding 흐름 안에서 구현: synthetic cluster 1대의 Inventory → Template 제안 → Mapping Board → dry-run → Publish.
+- React SVG viewer(selection/highlight, pan/zoom, Level 필터, light/dark)를 Onboarding 흐름 안에서 구현(Studio의 Level 필터·layer 토글과 dark 팔레트는 **Dropped**(소유자 2026-10-26, #177)): synthetic cluster 1대의 Inventory → Template 제안 → Mapping Board → dry-run → Publish.
 - 파일 기반 Layout Revision·Mapping Version publish, diff.
 - 자유 편집(move/rotate/snap)은 Template 인스턴스·Generic Layout 형상 다듬기로 축소해 이후 슬라이스.
 - **출구 조건:** 커버리지·Mapping Conflict 계산, Publish 결과의 결정론, JSON→SVG 좌표/ID 보존.
@@ -246,4 +246,4 @@ Replay는 synthetic animation engine이 아니라 Occurrence 집합으로부터 
 - `opticalRelations` → Physical Interface `kind: optical`; `logicalRoutes` → Process Route.
 - 레이아웃 전체 `evidence.class` 폐기, port `verified:false` → Certainty `assumed`.
 - Level id `L0`/`L1` → `level-main`/`level-upper`.
-- 고정 인스턴스 유지 + `roleCardinality` 메타데이터 추가. TS 파라미터 생성기는 N이 다른 장비가 실제로 자주 나오는 것이 확인된 뒤 별도 슬라이스.
+- 고정 인스턴스 유지 + `roleCardinality` 메타데이터 추가. TS 파라미터 생성기는 **Dropped**(소유자 2026-10-26, #177).
