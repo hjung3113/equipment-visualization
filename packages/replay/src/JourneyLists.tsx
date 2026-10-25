@@ -45,7 +45,7 @@ const where = (location: JourneyLocation | null, moduleAlias: string | null) => 
   : moduleAlias === null ? UNKNOWN_LANE : `${UNKNOWN_LANE} (alias ${moduleAlias})`;
 
 function Boundary({ boundary, open }: { boundary: JourneyBoundary | null; open?: string }) {
-  const text = boundary === null ? open : `${boundary.at === null ? NO_TIME : clock(boundary.at)} · seq ${boundary.seq}`;
+  const text = boundary === null ? open : `${boundary.at === null ? NO_TIME : clock(boundary.at)} · Record Sequence ${boundary.seq}`;
   return <div className="flex items-center gap-2"><span>{text}</span><Evidence level={boundary === null ? 'unknown' : boundary.evidence} /></div>;
 }
 

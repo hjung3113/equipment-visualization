@@ -17,8 +17,10 @@
 [ADR-0012](adr/0012-platform-first-sdk-host.md)(ADR-0001 일부 대체): `core`/`renderer`/`editor`/`replay`는 이 저장소의 독립 패키지가 정본이고 플랫폼을 모른다. 기본 호스트는 플랫폼 셸이고, 호스트 → 앱 계약은 플랫폼 SDK(게시된 `@ap/*`, [ADR-0013](adr/0013-platform-sdk-release-tarballs.md))가 소유한다. `packages/platform-adapter`가 그 계약을 구현해 화면을 조립하고, 플랫폼 `menus/analytics/equipment`는 연결만 한다. 모델·reducer·renderer 코드를 플랫폼 안에 다시 만들지 않는다.
 
 - 테마: `--eqv-*` → 플랫폼 토큰 매핑은 `@eqv/ui/theme.css`가 소유하고 어댑터 `styles.css`가 import한다. 호스트 입력(설비·진입 키·시간)은 `host-props.ts`가 읽는다.
+- 호스트는 시작 시 `eqvManifest`·엔드포인트를 React 없는 `@eqv/platform-adapter/manifest`에서 등록하고, 화면(`eqvScreens`)은 루트 `@eqv/platform-adapter`에서 lazy `import()`로 불러온다. 루트도 모두 계속 export한다.
 - 타 분석 메뉴는 `linkTo`로 **같은 화면으로 이동**하고 렌더러 코드를 import하지 않는다. 현재 `menu-*` 상호 import 금지와 `packages/components` 범용성 원칙을 그대로 지킨다.
 - 패키지 소비 방식은 게시된 SDK Release tarball이다(ADR-0013). submodule pin이 아니다.
+- 반대 방향(AP가 `@eqv/*`를 소비)도 Release tarball이다([ADR-0014](adr/0014-eqv-release-tarballs.md)). Release `eqv-vX.Y.Z`의 여섯 파일(`eqv-{core,renderer,replay,ui,views,platform-adapter}-X.Y.Z.tgz`)을 모두 호스트의 직접 URL 의존으로 둔다. 패키지 안의 형제 `@eqv/*`는 정확 버전 peer이므로 `overrides`는 필요 없고, `dependencies`로 두면 `blockExoticSubdeps`가 `ERR_PNPM_EXOTIC_SUBDEP`로 막는다. packed manifest의 `@ap/*` peer는 SDK 정확 버전(오늘 `0.12.0`)이고 AP 워크스페이스는 `workspace:*`이므로 `peerDependencyRules.allowedVersions`에 `@eqv/*>@ap/*`를 둔다. CSS 진입은 `@import "tailwindcss"` → `@ap/ui/styles.css` → `@eqv/platform-adapter/styles.css` 순서다.
 - 원천 parser Result → Occurrence 변환은 플랫폼 **서버** read view(`eqv.topview-events`)의 책임이다([ADR-0002](adr/0002-occurrence-input-contract.md)). 클라이언트와 이 저장소에는 원천 parser 코드·어휘를 두지 않는다.
 - 플랫폼 호스트에는 데이터 가져오기가 없다([ADR-0010](adr/0010-studio-data-import.md)). 설비 식별은 플랫폼 설비 마스터가 소유하고, Occurrence는 `eqv.topview-events`가 준다. 가져오기(Sample Window)는 Studio 전용이다.
 - 플랫폼 코드에 설비별 로직을 두지 않는다. 호스트는 어댑터 화면을 마운트할 뿐이다.
@@ -52,14 +54,15 @@ Equipment Management
 
 - `eqv.topview-context` — params `{ equipmentId }` → `Omit<ReplayInput, 'batch'>` (`layouts`, `layoutRevisions?`, `bindings`, `mappings`): 적용 시간에 유효한 모든 Binding, Mapping Version, draft Layout, Layout Revision (ADR-0011).
 - `eqv.topview-events` — params `{ equipmentId, continuationToken? }` → `OccurrenceBatch` (`REPLAY-CONTRACT.md`): `{ equipmentId, from, to, timeDomain, watermark, parserContractVersion, dataGeneration, occurrences, issues, continuationToken? }`. 구간과 **겹치는** source-paired Occurrence를 그대로 반환하며 클라이언트는 Start/End를 짝짓거나 재정렬하지 않는다(ADR-0002). `limits.maxHours: 8`(한 교대; REPLAY-CONTRACT/INTEGRATION에 수치가 없어 정한 값, Focus Gantt 예산이 단일 window batch로 측정됨).
-- 두 엔드포인트 공통: `kinds` = `collection`, `processing_delay`, `coverage`, `time_domain`(`mergeTimeDomain: true`) — 창의 완전성(Watermark·늦은 데이터)과 Site 시간축을 알리는 assessment. `requiresScope: false`(설비는 page key `equipment`로 지정 — 모듈 prefix 뒤 `?equipment=<id>`; `eqv:topview`는 prefix 자체(그룹의 primary 화면), `eqv:focus`는 그 하위 `<prefix>/focus`이며 page key `equipment`·`entityType`·`anchor`. AP 레지스트리가 param이 필요한 부모 경로와 primary 없는 그룹을 거부하므로 경로 param을 쓰지 않는다. 화면이 page key를 엔드포인트 params `{ equipmentId }`로 복사하고, 키가 없으면 "설비를 고르세요" 상태를 보인다).
+- 두 엔드포인트 공통: `kinds` = `collection`, `processing_delay`, `coverage`, `time_domain`(`mergeTimeDomain: true`) — 창의 완전성(Watermark·늦은 데이터)과 Site 시간축을 알리는 assessment. `requiresScope: false`(설비는 page key `equipment`로 지정 — 모듈 prefix 뒤 `?equipment=<id>`; `eqv:topview`는 prefix 자체(그룹의 primary 화면), `eqv:focus`는 그 하위 `<prefix>/focus`이며 page key `equipment`·`entityType`·`anchor`·`rangeFrom`·`rangeTo`. AP 레지스트리가 param이 필요한 부모 경로와 primary 없는 그룹을 거부하므로 경로 param을 쓰지 않는다. 화면이 page key를 엔드포인트 params `{ equipmentId }`로 복사하고, 키가 없으면 "설비를 고르세요" 상태를 보인다).
+- 호스트의 mock 서버는 `@eqv/platform-adapter/mock-data`(`eqvMockContext`, `eqvMockEvents`, `EQV_MOCK_EQUIPMENT`, `EQV_MOCK_WINDOW`)로 두 엔드포인트에 답한다. `fixtures/cluster-single`에서 생성한 합성 데이터이며(`pnpm --filter @eqv/platform-adapter gen:mock-data`, drift 테스트가 검사), 패키지 루트 export에는 없고 프로덕션 코드가 import하지 않는다. 호스트에는 설비 데이터나 로직을 두지 않는다.
 - metrics·inventory 엔드포인트와 변경 API(`saveDraft`/`publish`)는 선언하지 않았다: 첫 범위는 read-only(ADR-0012). 변경 API는 `defineAction`·감사·권한 경계를 갖춘 별도 설계 후속.
 
 ### 화면 동작 (`packages/platform-adapter/src/screens/`, 177d)
 
 `eqvScreens`(`topview`, `focus`; 호스트가 `eqv:<id>`로 등록)는 `({ host, params })` 화면이다. 마운트는 AP PR(AP #333/#334)이며 이 저장소에는 아직 없다.
 
-- **입력**: 설비는 `host.page('equipment')`, 진입 키는 `entityType`·`anchor` page key, 시간은 `host.context()`의 `from`/`to`. 호스트 시각은 초 단위 naive(`YYYY-MM-DDTHH:mm:ss`)라 읽을 때 한 번 `.000`을 붙여 Site Wall-clock으로 만든다. 기본 구간·기본 설비를 채우지 않는다.
+- **입력**: 설비는 `host.page('equipment')`, 진입 키는 `entityType`·`anchor` page key(Top View의 "Focus 열기"는 `entityType: 'occurrence'`와 선택한 Component의 열린 Occurrence id — 선택이 없거나 열린 것이 없으면 커서 시점에 열린 첫 Occurrence id(code unit 순) — 를 `anchor`로 넘긴다), Focus의 적용 재생 구간은 `rangeFrom`·`rangeTo` page key(Site Wall-clock 쌍, 순서가 맞지 않으면 무시; `host.setPage`로 쓴다), 시간은 `host.context()`의 `from`/`to`. 호스트 시각은 초 단위 naive(`YYYY-MM-DDTHH:mm:ss`)라 읽을 때 한 번 `.000`을 붙여 Site Wall-clock으로 만든다. 기본 구간·기본 설비를 채우지 않는다.
 - **상태**: `time`이 `unsupported`면 "이 화면에는 시간 구간이 적용되지 않습니다"(쿼리 없음), 설비가 없으면 "설비를 고르세요", `from`/`to`가 없으면 "시간 구간을 고르세요"(둘 다 쿼리 없음).
 - **로드**: `host.query`로 `eqv.topview-context`와 `eqv.topview-events`만 호출한다. 이벤트는 `continuationToken`이 없어질 때까지 따라가 한 batch로 합친다(`occurrences`/`issues`는 서버 page 순서 그대로, window 필드는 첫 page 기준이며 다른 page가 다르면 데이터 오류, `watermark`는 `(seq, at)` 최댓값, 토큰 제거). 루프는 서버 `maxHours`, 반복 토큰 거부, 화면 signal 중단으로 끝난다. 새 설비/시간은 이전 로드를 중단하고 늦은 응답을 버린다.
 - **검증**: 모든 Mapping Version·Layout Revision을 `verifyBindingContext`(`@eqv/core`; `checkBindingMapping`/`checkBindingLayout`)로 내용 검증한 뒤 `assertReplayInput`. 실패는 부분 replay 없이 오류 상태.

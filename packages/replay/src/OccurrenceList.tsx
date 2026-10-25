@@ -3,7 +3,7 @@ import { activeBinding, type BindingsFile, type Occurrence, type OccurrenceBatch
 import { Inbox } from 'lucide-react';
 import { DataTable } from '@eqv/ui';
 import { EmptyState, StatusBadge } from '@ap/ui';
-import { LEVEL_KO, NO_TIME } from './words.js';
+import { LEVEL_KO, NO_TIME, wallClockText } from './words.js';
 
 export interface OccurrenceListProps {
   batch: OccurrenceBatch;
@@ -25,7 +25,7 @@ const COLUMNS = [
   { id: 'sequence', header: 'Record Sequence', align: 'end', className: 'whitespace-nowrap' },
   { id: 'kind', header: '종류' },
   { id: 'target', header: '대상' },
-  { id: 'evidence', header: 'Evidence' },
+  { id: 'evidence', header: '근거' },
   { id: 'mapping-version', header: 'Mapping Version', className: 'whitespace-nowrap' },
   { id: 'record-ref', header: '원본 참조' },
   { id: 'data-quality', header: 'Data Quality' },
@@ -98,8 +98,8 @@ export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selected
             ref={(el: HTMLTableRowElement | null) => { if (el !== null && focusId.current === o.id) { focusId.current = null; el.focus(); } }}
             onActivate={() => onSelectOccurrence(o.id)} onKeyDown={onKey}>
             <DataTable.Cell className="whitespace-nowrap">
-              <div>시작 {o.start.at ?? NO_TIME}</div>
-              <div>끝 {o.end === null ? '열림' : o.end.at ?? NO_TIME}</div>
+              <div>시작 {o.start.at === null ? NO_TIME : wallClockText(o.start.at)}</div>
+              <div>끝 {o.end === null ? '열림' : o.end.at === null ? NO_TIME : wallClockText(o.end.at)}</div>
               {running && <StatusBadge tone="info" dot>진행 중</StatusBadge>}
             </DataTable.Cell>
             <DataTable.Cell numeric>{o.start.seq} / {o.end?.seq ?? '—'}</DataTable.Cell>

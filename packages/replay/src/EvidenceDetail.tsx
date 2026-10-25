@@ -2,7 +2,7 @@ import { MousePointerClick, SearchX } from 'lucide-react';
 import { EmptyState, FieldRow, PanelSectionTitle } from '@ap/ui';
 import { RULESET_VERSION, type Boundary, type OccurrenceBatch, type SceneState } from '@eqv/core';
 import { Evidence } from './Evidence.js';
-import { ACTIVITY_KO, NO_TIME, UNKNOWN_LANE } from './words.js';
+import { ACTIVITY_KO, NO_TIME, UNKNOWN_LANE, wallClockText } from './words.js';
 
 export interface EvidenceDetailProps {
   batch: OccurrenceBatch;
@@ -15,7 +15,7 @@ function boundary(label: string, b: Boundary | null) {
   return (
     <FieldRow label={label} layout="property">
       {b === null ? '열림 (끝 Record 없음)' : <>
-        {b.at ?? NO_TIME} · Record Sequence {b.seq} · 근거 <Evidence level={b.evidence} />{b.reason === undefined ? '' : ` · 사유 ${b.reason}`}
+        {b.at === null ? NO_TIME : wallClockText(b.at)} · Record Sequence {b.seq} · 근거 <Evidence level={b.evidence} />{b.reason === undefined ? '' : ` · 사유 ${b.reason}`}
       </>}
     </FieldRow>
   );
@@ -54,9 +54,9 @@ export function EvidenceDetail({ batch, state, selectedOccurrenceId }: EvidenceD
       {boundary('시작', o.start)}
       {boundary('끝', o.end)}
       <PanelSectionTitle size="tiny">출처</PanelSectionTitle>
-      <FieldRow label="synthetic" layout="property">{o.synthetic ? '예' : '아니오'}</FieldRow>
+      <FieldRow label="합성 데이터" layout="property">{o.synthetic ? '예' : '아니오'}</FieldRow>
       <FieldRow label="Mapping Version" layout="property">{state.binding?.mappingHash ?? '—'}</FieldRow>
-      <FieldRow label="Ruleset" layout="property">{RULESET_VERSION}</FieldRow>
+      <FieldRow label="Ruleset Version" layout="property">{RULESET_VERSION}</FieldRow>
     </section>
   );
 }

@@ -160,17 +160,17 @@ it('PlaybackControls: the speed group cannot be emptied by pressing the active s
 
 it('PlaybackControls: record buttons are disabled at the ends; the status names the seq and time only in sequence mode', () => {
   controls({}, { active: true, step: { seq: 7, at: time('10:02:00') }, onPrevious: vi.fn(), onNext: null });
-  expect((screen.getByRole('button', { name: '이전 record' }) as HTMLButtonElement).disabled).toBe(false);
-  expect((screen.getByRole('button', { name: '다음 record' }) as HTMLButtonElement).disabled).toBe(true);
-  expect(screen.getByRole('button', { name: 'Sequence step' }).getAttribute('aria-pressed')).toBe('true');
-  expect(screen.getByRole('status').textContent).toBe('Sequence step · Record Sequence 7 · 2026-01-01T10:02:00.000');
+  expect((screen.getByRole('button', { name: '이전 기록' }) as HTMLButtonElement).disabled).toBe(false);
+  expect((screen.getByRole('button', { name: '다음 기록' }) as HTMLButtonElement).disabled).toBe(true);
+  expect(screen.getByRole('button', { name: '기록 단위 보기' }).getAttribute('aria-pressed')).toBe('true');
+  expect(screen.getByRole('status').textContent).toBe('기록 단위 · Record Sequence 7 · 2026-01-01 10:02:00');
   cleanup();
   controls();
   expect(screen.getByRole('status').textContent).toBe('');
   cleanup();
-  controls({}, { available: false, unavailableReason: '이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다' });
-  const disabledToggle = screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement;
-  const reason = screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다');
+  controls({}, { available: false, unavailableReason: '이 시점까지 적용된 기록이 구간 안에 없어 기록 단위 보기를 쓸 수 없습니다' });
+  const disabledToggle = screen.getByRole('button', { name: '기록 단위 보기' }) as HTMLButtonElement;
+  const reason = screen.getByText('이 시점까지 적용된 기록이 구간 안에 없어 기록 단위 보기를 쓸 수 없습니다');
   expect(disabledToggle.disabled).toBe(true);
   expect(disabledToggle.getAttribute('aria-describedby')).toBe(reason.id);
   expect(reason.getAttribute('role')).toBeNull();

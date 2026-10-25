@@ -28,11 +28,16 @@ export function createFakeHost(options: FakeHostOptions) {
     statuses: [] as ModuleStatus[],
     errors: [] as unknown[],
     navigations: [] as ModuleTarget[],
+    pageWrites: [] as Record<string, string | null>[],
     shown: [] as { node: unknown; label: string }[],
     cleared: 0,
   };
   // A host change reaches mounted screens through subscribe; React expects it inside act.
   const emit = () => act(() => listeners.forEach((listener) => listener()));
+  const writePage = (patch: Record<string, string | null>) => {
+    for (const [key, value] of Object.entries(patch)) if (value === null) delete page[key]; else page[key] = value;
+    emit();
+  };
   const query = options.query;
   const host: ModuleHost = {
     contract: 1,
@@ -40,7 +45,7 @@ export function createFakeHost(options: FakeHostOptions) {
     can: () => true,
     params: () => ({}),
     page: (key) => page[key] ?? null,
-    setPage: () => undefined,
+    setPage: (patch) => { log.pageWrites.push(patch); writePage(patch); },
     href: () => null,
     navigate: (target) => { log.navigations.push(target); return true; },
     returnTarget: () => '/',
@@ -68,10 +73,7 @@ export function createFakeHost(options: FakeHostOptions) {
   return {
     host,
     log,
-    setPage(patch: Record<string, string | null>) {
-      for (const [key, value] of Object.entries(patch)) if (value === null) delete page[key]; else page[key] = value;
-      emit();
-    },
+    setPage: writePage,
     setContext(next: Partial<GlobalContext>) { context = { ...next }; emit(); },
     abortScreen: () => abort.abort(),
   };

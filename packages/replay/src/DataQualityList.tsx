@@ -3,7 +3,7 @@ import type { ReplayTimeline } from '@eqv/core';
 import { Inbox } from 'lucide-react';
 import { Button, EmptyState } from '@ap/ui';
 import { DataTable } from '@eqv/ui';
-import { NO_TIME } from './words.js';
+import { NO_TIME, wallClockText } from './words.js';
 
 export interface DataQualityListProps {
   timeline: Pick<ReplayTimeline, 'issues'>;
@@ -37,7 +37,7 @@ export function DataQualityList({ timeline, appliedSeq = null, onSelectOccurrenc
         const issue = issues[index]!;
         return (
           <DataTable.Row>
-            <DataTable.Cell className="whitespace-nowrap">{issue.at ?? NO_TIME}</DataTable.Cell>
+            <DataTable.Cell className="whitespace-nowrap">{issue.at === null ? NO_TIME : wallClockText(issue.at)}</DataTable.Cell>
             <DataTable.Cell numeric>{issue.seq}</DataTable.Cell>
             <DataTable.Cell>{issue.issueType}</DataTable.Cell>
             <DataTable.Cell mono>{issue.id}</DataTable.Cell>

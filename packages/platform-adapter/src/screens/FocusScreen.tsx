@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { ModuleScreenProps } from '@ap/contracts';
 import { ArrowLeft } from 'lucide-react';
 import { Button } from '@ap/ui';
@@ -18,10 +18,20 @@ export function FocusScreen({ host }: ModuleScreenProps) {
   const renderDetail = useDetailSlot(host);
   const [tab, setTab] = useState<FocusTab>('list');
   const state = stateFor(props, load);
+  // A saved range belongs to one (equipment, applied time, entry): when any of them changes under a mounted screen it is cleared, so it
+  // cannot override the new window or entry. The first run keeps it (refresh / link restoration of the same context).
+  const identity = JSON.stringify([resetKey, props.entityType, props.anchor]);
+  const seen = useRef(identity);
+  useEffect(() => {
+    if (seen.current === identity) return;
+    seen.current = identity;
+    if (host.page('rangeFrom') !== null || host.page('rangeTo') !== null) host.setPage({ rangeFrom: null, rangeTo: null }, { replace: true });
+  }, [host, identity]);
   if (state !== null || load?.kind !== 'ready' || props.equipment === null) return <div>{state}</div>;
   const { equipment } = props;
   return (
     <FocusView input={load.input} notices={load.notices} entityType={props.entityType} anchor={props.anchor} resetKey={resetKey}
+      range={{ value: props.range, onChange: (range) => host.setPage({ rangeFrom: range.from, rangeTo: range.to }, { replace: true }) }}
       tab={tab} onTabChange={setTab} {...(renderDetail ? { renderDetail } : {})}
       links={{ actions: <Button variant="secondary" size="toolbar" onClick={() => host.navigate({ screen: 'topview', page: { equipment } })}><ArrowLeft className="size-3.5" aria-hidden />Top View로</Button> }} />
   );

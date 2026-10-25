@@ -1,5 +1,5 @@
 import { GLOBAL_KEYS, HOST_CONTRACTS, KERNEL_PERMISSIONS, projectContext, type AnyEndpointSpec, type ModuleManifest } from '@ap/contracts';
-import { describe, expect, expectTypeOf, it } from 'vitest';
+import { afterEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 import { eqvManifest, topviewContext, topviewEvents, type TopviewContextParams, type TopviewEventsParams } from '../src/index.js';
 
 // The host (AP kernel `mountModule`, ADR-0053) cannot be imported here; these are its manifest rules, re-implemented.
@@ -87,5 +87,27 @@ describe('endpoint declarations', () => {
     expectTypeOf(topviewContext.paramKeys).toEqualTypeOf<Readonly<Record<keyof TopviewContextParams & string, true>>>();
     expectTypeOf(topviewEvents.paramKeys).toEqualTypeOf<Readonly<Record<keyof TopviewEventsParams & string, true>>>();
     expect(Object.keys(topviewEvents.paramKeys).sort()).toEqual(['continuationToken', 'equipmentId']);
+  });
+});
+
+describe('@eqv/platform-adapter/manifest', () => {
+  const forbidden = ['react', 'react-dom', 'react/jsx-runtime', '@eqv/views', '@eqv/replay', '@eqv/renderer', '@eqv/ui'];
+
+  afterEach(() => {
+    vi.resetModules();
+    for (const id of forbidden) vi.doUnmock(id);
+  });
+
+  it('loads with react, react-dom and the screen packages unloadable', async () => {
+    vi.resetModules();
+    for (const id of forbidden) {
+      vi.doMock(id, () => {
+        throw new Error(`manifest entry loaded ${id}`);
+      });
+    }
+    const entry = await import('../src/manifest-entry.js');
+    expect(entry.eqvManifest.module.id).toBe('eqv');
+    expect(entry.topviewContext.id).toBe('eqv.topview-context');
+    expect(entry.topviewEvents.id).toBe('eqv.topview-events');
   });
 });

@@ -12,6 +12,7 @@
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json && node ../../tooling/scripts/eqv-finalize-dist.mjs",
     "test": "vitest run --config vitest.config.ts"
   },
   "peerDependencies": {

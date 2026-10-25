@@ -227,7 +227,7 @@ describe('large-window guard', () => {
     batch = occurrenceBatchSchema.parse(await importFixture('eq-synth-03.w1.batch.json'));
     cost = timelineCost(emptyInput(batch), replayTimelineFrame(emptyInput(batch), { from: batch.from, to: batch.to })).cost;
   });
-  const gantt = () => screen.queryByRole('group', { name: 'Component lane Gantt' });
+  const gantt = () => screen.queryByRole('group', { name: 'Component 레인 Gantt' });
   const page = (budget?: number, id = 'eq-synth-03', window: string | null = w1, spanLimit?: number) =>
     render(<FocusPage equipmentId={id} sampleWindow={window} entityType={null} anchor={null}
       {...(budget === undefined ? {} : { timelineBudget: budget })} {...(spanLimit === undefined ? {} : { ganttSpanLimit: spanLimit })} />);

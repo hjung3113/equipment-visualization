@@ -22,8 +22,8 @@ it('lists a hop per row with location, the three evidence facets and each bounda
   render(<JourneyHopList hops={hops} selectedHop={null} onSelectHop={vi.fn()} renderAction={(h) => <a href={`#${h.number}`}>Focus 열기</a>} />);
   expect(screen.getAllByRole('columnheader').map((c) => c.textContent)).toEqual(['#', '위치', '위치 근거', '식별 근거', '도착', '떠남', '동작']);
   expect(row(1).getByText('pm-a')).toBeTruthy();
-  expect(row(1).getByText('10:00:00.250 · seq 4')).toBeTruthy();
-  expect(row(1).getByText('시각 없음 · seq 9')).toBeTruthy();
+  expect(row(1).getByText('10:00:00.250 · Record Sequence 4')).toBeTruthy();
+  expect(row(1).getByText('시각 없음 · Record Sequence 9')).toBeTruthy();
   expect(row(1).getAllByText('관측')).toHaveLength(3);
   expect(row(1).getByText('파생')).toBeTruthy();
   expect(row(2).getByText('lp-a / slot-01')).toBeTruthy();
@@ -60,7 +60,7 @@ it('lists executions with kind words, unknown locations, evidence badges and an 
   expect(at('pp').getByText('위치 미확인 (alias PM5)')).toBeTruthy();
   expect(at('f').getByText('기능')).toBeTruthy();
   expect(at('f').getByText('위치 미확인')).toBeTruthy();
-  expect(at('p').getByText('10:01:00.000 · seq 3').closest('td')!.textContent).toContain('미확인');
+  expect(at('p').getByText('10:01:00 · Record Sequence 3').closest('td')!.textContent).toContain('미확인');
 });
 
 it('says so when there is no execution history', () => {

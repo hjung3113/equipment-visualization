@@ -49,8 +49,9 @@ export const eqvManifest: ModuleManifest = {
       context: contextCapabilities({ time: 'apply' }),
       pageType: 'analysis',
       features: noFeatures,
-      // `equipment` selects the equipment; the entityType/anchor pair survives navigation on this route.
-      pageKeys: ['equipment', 'entityType', 'anchor'],
+      // `equipment` selects the equipment; the entityType/anchor pair survives navigation on this route; rangeFrom/rangeTo hold the
+      // applied 재생 구간 so a refresh or a copied link reopens it.
+      pageKeys: ['equipment', 'entityType', 'anchor', 'rangeFrom', 'rangeTo'],
       parent: TOPVIEW_SCREEN,
     },
   ],

@@ -1,8 +1,7 @@
-import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ApiResponse } from '@ap/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
-import type { OccurrenceBatch } from '@eqv/core';
-import { eqvManifest, eqvScreens, FOCUS_SCREEN, TOPVIEW_SCREEN } from '../src/index.js';
+import { eqvScreens } from '../src/index.js';
 import { createFakeHost, deferred, ok, response, type FakeHostOptions, type QueryCall } from './fake-host.js';
 import { bindings, contextData, EQUIPMENT, HOST_TIME, layout, mappings, pages } from './replay-fixture.js';
 
@@ -142,13 +141,18 @@ describe('request generations', () => {
 describe('outcomes', () => {
   const failing = (outcome: ApiResponse<unknown>['outcome']) => hostFor({ query: server({ context: response(outcome, null, { message: `${outcome}-text` }) }) });
 
-  it.each([['error', '불러오지 못했습니다'], ['timeout', '응답 시간 초과'], ['too_large', '구간이 너무 큽니다']] as const)(
-    '%s is a screen-local state with the message and the reportError id, and no status call', async (outcome, title) => {
+  it.each([
+    ['error', '불러오지 못했습니다', /error-text/],
+    ['timeout', '응답 시간 초과', /서버가 제때 응답하지 않았습니다/],
+    ['too_large', '구간이 너무 큽니다', /최대 8시간까지.*기간을 8시간 이하로 줄이세요/],
+  ] as const)(
+    '%s is a screen-local state with the message and the reportError id, and no status call', async (outcome, title, message) => {
       const fake = failing(outcome);
       const Screen = eqvScreens.topview;
       render(<Screen host={fake.host} params={{}} />);
       await screen.findByText(title);
-      screen.getByText(new RegExp(`${outcome}-text`));
+      screen.getByText(message);
+      if (outcome !== 'error') expect(screen.queryByText(new RegExp(`${outcome}-text`))).toBeNull();
       screen.getByText('오류 ID err-1');
       expect(fake.log.statuses).toEqual([]);
     });
@@ -215,13 +219,6 @@ describe('outcomes', () => {
     expect(document.querySelector('tr[data-occurrence-id]')).toBeNull();
   });
 
-  it('a page that disagrees with the first page is a data error', async () => {
-    const odd = (token: string | undefined): ApiResponse<unknown> => ok<OccurrenceBatch>(token === undefined ? pages()[0] : { ...pages()[1], dataGeneration: 'g2' });
-    const fake = hostFor({ query: server({ events: odd }) });
-    const Screen = eqvScreens.focus;
-    render(<Screen host={fake.host} params={{}} />);
-    await screen.findByText('데이터 오류');
-  });
 });
 
 describe('Focus detail', () => {
@@ -262,17 +259,31 @@ describe('Top View', () => {
     const fake = hostFor();
     const Screen = eqvScreens.topview;
     render(<Screen host={fake.host} params={{}} />);
-    await screen.findAllByText('2026-01-01T10:30:00.000');
+    await screen.findAllByText('2026-01-01 10:30:00');
     expect(document.querySelector('[data-layer="replay"]')).not.toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Focus 열기' }));
-    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT } }]);
+    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'occurrence', anchor: 'occ-open' } }]);
+  });
+
+  it.each([
+    [null, 'occ-carrier'],
+    ['pm-b', 'occ-pm2-slot-one'],
+    ['pm-a', 'occ-pm1-process'],
+  ] as const)('Focus 열기 at 10:08:30 with %s selected opens Focus on that Component\'s open Occurrence, else the first one open at the cursor', async (id, anchor) => {
+    const fake = hostFor({ context: { from: HOST_TIME.from, to: '2026-01-01T10:08:30' } });
+    const Screen = eqvScreens.topview;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByText('Component를 선택하세요');
+    if (id !== null) fireEvent.click(document.querySelector(`[data-component-id="${id}"]`)!);
+    fireEvent.click(screen.getByRole('button', { name: 'Focus 열기' }));
+    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'occurrence', anchor } }]);
   });
 
   it('with detailSlot, selecting a Component shows its detail in the host slot', async () => {
     const fake = hostFor({ detailSlot: true });
     const Screen = eqvScreens.topview;
     render(<Screen host={fake.host} params={{}} />);
-    await screen.findAllByText('2026-01-01T10:30:00.000');
+    await screen.findAllByText('2026-01-01 10:30:00');
     fireEvent.click(document.querySelector('[data-component-id="pm-a"]')!);
     await waitFor(() => expect(fake.log.shown.at(-1)?.label).toBe('Component · pm-a'));
     expect(screen.queryByRole('region', { name: 'Component 상세' })).toBeNull();
@@ -305,9 +316,88 @@ describe('Top View Component detail words', () => {
   });
 });
 
-describe('eqvScreens', () => {
-  it('has exactly the manifest screen ids', () => {
-    expect(Object.keys(eqvScreens).sort()).toEqual(eqvManifest.screens.map((s) => s.id).sort());
-    expect([TOPVIEW_SCREEN, FOCUS_SCREEN].sort()).toEqual(Object.keys(eqvScreens).sort());
+describe('Focus 재생 구간 in the page keys', () => {
+  const rangeInputs = () => [screen.getByLabelText('시작'), screen.getByLabelText('끝')] as HTMLInputElement[];
+
+  it('applying a range writes rangeFrom/rangeTo through the host, and a remount reads the range back', async () => {
+    const fake = hostFor();
+    const Screen = eqvScreens.focus;
+    const first = render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    const [from, to] = rangeInputs();
+    fireEvent.change(from!, { target: { value: '2026-01-01T10:05:00.000' } });
+    fireEvent.change(to!, { target: { value: '2026-01-01T10:12:00.000' } });
+    fireEvent.submit(screen.getByRole('form', { name: '구간' }));
+    expect(fake.log.pageWrites).toEqual([{ rangeFrom: '2026-01-01T10:05:00.000', rangeTo: '2026-01-01T10:12:00.000' }]);
+    first.unmount();
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    expect(rangeInputs().map((input) => input.value)).toEqual(['2026-01-01T10:05:00.000', '2026-01-01T10:12:00.000']);
+  });
+
+  it.each([
+    ['reversed', '2026-01-01T10:12:00.000', '2026-01-01T10:05:00.000'],
+    ['equal', '2026-01-01T10:05:00.000', '2026-01-01T10:05:00.000'],
+    ['malformed', 'not-a-time', '2026-01-01T10:12:00.000'],
+    ['missing end', '2026-01-01T10:05:00.000', null],
+    ['impossible calendar', '2026-02-30T10:00:00.000', '2026-02-30T11:00:00.000'],
+  ] as const)('a %s pair in the page keys is ignored, not applied', async (_name, rangeFrom, rangeTo) => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom, ...(rangeTo === null ? {} : { rangeTo }) } });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    expect(rangeInputs().map((input) => input.value)).not.toContain(rangeFrom);
+  });
+
+  it('a saved range survives a host refresh of the same equipment, time and entry', async () => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom: '2026-01-01T10:05:00.000', rangeTo: '2026-01-01T10:12:00.000' } });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    fake.setPage({ unrelated: 'x' });
+    expect(rangeInputs().map((input) => input.value)).toEqual(['2026-01-01T10:05:00.000', '2026-01-01T10:12:00.000']);
+    expect(fake.log.pageWrites).toEqual([]);
+    expect(fake.host.page('rangeFrom')).toBe('2026-01-01T10:05:00.000');
+  });
+
+  it.each([
+    ['applied time', (fake: ReturnType<typeof hostFor>) => fake.setContext({ from: '2026-01-02T10:00:00', to: '2026-01-02T11:00:00' })],
+    ['equipment', (fake: ReturnType<typeof hostFor>) => fake.setPage({ equipment: 'other-tool' })],
+    ['entry anchor', (fake: ReturnType<typeof hostFor>) => fake.setPage({ entityType: 'occurrence', anchor: 'occ-pm1-process' })],
+  ] as const)('a saved range is dropped when the %s changes', async (_name, change) => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom: '2026-01-01T10:05:00.000', rangeTo: '2026-01-01T10:12:00.000' } });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    change(fake);
+    await waitFor(() => expect(fake.host.page('rangeFrom')).toBeNull());
+    expect(fake.host.page('rangeTo')).toBeNull();
+  });
+});
+
+describe('Korean copy', () => {
+  it.each([
+    ['topview', eqvScreens.topview, '2026-01-01 10:30:00'],
+    ['focus', eqvScreens.focus, '2026-01-01 10:'],
+  ] as const)('%s: times read YYYY-MM-DD HH:mm:ss and no control keeps an English label', async (_name, Screen, shown) => {
+    const fake = hostFor();
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(document.querySelector('table, [data-layer="replay"]')).not.toBeNull());
+    const text = document.body.textContent ?? '';
+    expect(text).toContain(shown);
+    expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+    expect(text).not.toMatch(/Sequence step|이전 record|다음 record/);
+  });
+
+  it('the evidence detail names its provenance rows in Korean (Ruleset Version stays a glossary term)', async () => {
+    const fake = hostFor();
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(row('occ-pm1-process')).not.toBeNull());
+    fireEvent.click(row('occ-pm1-process')!);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
+    const detail = await screen.findByRole('region', { name: '근거 상세 occ-pm1-process' });
+    for (const label of ['합성 데이터', 'Mapping Version', 'Ruleset Version']) expect(within(detail).getByText(label)).toBeTruthy();
+    expect(within(detail).queryByText('synthetic')).toBeNull();
   });
 });

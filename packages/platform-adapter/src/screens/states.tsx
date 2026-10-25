@@ -12,7 +12,7 @@ export function stateFor(props: HostProps, load: ReplayLoad | null): ReactNode {
     return <StateMessage icon={CalendarX2} title="이 화면에는 시간 구간이 적용되지 않습니다" body="호스트가 시간 컨텍스트를 이 화면에 적용하지 않아 구간을 알 수 없습니다. 기본 구간을 대신 쓰지 않습니다." />;
   }
   if (props.equipment === null) {
-    return <StateMessage icon={Cpu} title="설비를 고르세요" body="호스트의 설비 선택(?equipment=)으로 설비를 정하면 이 화면이 열립니다." />;
+    return <StateMessage icon={Cpu} title="설비를 고르세요" body="플랫폼에서 설비를 선택하면 이 화면에 표시됩니다." />;
   }
   if (time.kind === 'missing') {
     return <StateMessage icon={CalendarClock} title="시간 구간을 고르세요" body="호스트의 컨텍스트 바에서 시작·끝 시각을 적용하세요. 기본 구간을 대신 쓰지 않습니다." />;

@@ -3,7 +3,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, expect, it, vi } from 'vitest';
 import type { SiteWallClock } from '@eqv/core';
 import { FocusGantt } from '../src/index.js';
-import { batch, equipmentLayout, time, timeline } from './data.js';
+import { replayTimeline } from '@eqv/core';
+import { batch, equipmentLayout, input, time, timeline } from './data.js';
 
 afterEach(cleanup);
 
@@ -38,7 +39,7 @@ it('draws the Binding boundary, Watermark line and shade, Time Anomaly band and 
 it('moves the cursor with ←/→ to the previous/next breakpoint and Home/End to the range ends', () => {
   const { onCursorChange } = setup();
   const slider = screen.getByRole('slider', { name: '커서 시각' });
-  expect(slider.getAttribute('aria-valuetext')).toBe(time('10:06:00'));
+  expect(slider.getAttribute('aria-valuetext')).toBe('2026-01-01 10:06:00');
   expect(slider.getAttribute('aria-valuemax')).toBe(String(Number(slider.getAttribute('aria-valuemin')) + 30 * 60_000 - 1));
   for (const [key, expected] of [['ArrowLeft', time('10:05:00')], ['ArrowRight', time('10:07:00')],
     ['Home', time('10:00:00')], ['End', '2026-01-01T10:29:59.999']] as const) {
@@ -87,4 +88,13 @@ it('expands a Component into Holding Site sublanes through its disclosure button
   setup(time('10:06:00'), ['ll-a']);
   expect(screen.getByRole('button', { name: /^ll-a.* Holding Site 접기$/ }).getAttribute('aria-expanded')).toBe('true');
   expect(screen.getByRole('group', { name: /^레인 .*slot-1$/ })).toBeTruthy();
+});
+
+it('labels sub-minute ticks without a .000 fraction', () => {
+  const short = replayTimeline(input, { from: time('10:05:00'), to: time('10:05:10') });
+  const { container } = render(<FocusGantt timeline={short} layout={equipmentLayout} batch={batch} cursor={time('10:05:00')} selectedOccurrenceId={null}
+    selectedComponentId={null} expanded={new Set()} onCursorChange={vi.fn()} onSelectOccurrence={vi.fn()} onToggleExpand={vi.fn()} />);
+  const labels = [...container.querySelectorAll('.eqv-rp-tick text')].map((node) => node.textContent);
+  expect(labels[0]).toBe('10:05:00');
+  expect(labels.join(' ')).not.toContain('.000');
 });

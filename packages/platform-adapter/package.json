@@ -8,10 +8,14 @@
   ],
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./manifest": "./src/manifest-entry.ts",
+    "./styles.css": "./src/styles.css",
+    "./mock-data": "./src/mock-data/index.ts"
   },
   "scripts": {
+    "gen:mock-data": "node scripts/gen-mock-data.mjs",
     "typecheck": "tsc --noEmit",
+    "build": "tsc -p tsconfig.build.json && node ../../tooling/scripts/eqv-finalize-dist.mjs",
     "test": "vitest run --config vitest.config.ts"
   },
   "peerDependencies": {
