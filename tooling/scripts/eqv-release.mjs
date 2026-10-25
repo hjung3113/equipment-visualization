@@ -48,7 +48,7 @@ export function mapExport(target, label) {
   throw new Error(`${label}: export target ${JSON.stringify(target)} must start with ./src/, ./dist/ or ./schema/`);
 }
 
-/** The manifest staged for `pnpm pack`: dist exports, exact @eqv/* versions, the source package's peers, nothing else. */
+/** The manifest staged for `pnpm pack`: dist exports, @eqv/* siblings as exact peers next to the source package's peers, nothing else. */
 export function releaseManifest(source, version) {
   const exports = {};
   for (const [subpath, target] of Object.entries(source.exports ?? {})) exports[subpath] = mapExport(target, `${source.name} exports["${subpath}"]`);
@@ -57,10 +57,12 @@ export function releaseManifest(source, version) {
   if (source.sideEffects !== undefined) manifest.sideEffects = source.sideEffects;
   manifest.exports = exports;
   manifest.files = source.name === '@eqv/core' ? ['dist', 'schema'] : ['dist'];
-  if (source.dependencies) {
-    manifest.dependencies = Object.fromEntries(Object.entries(source.dependencies).map(([dep, range]) => [dep, dep.startsWith(SCOPE) ? version : range]));
-  }
-  if (source.peerDependencies) manifest.peerDependencies = { ...source.peerDependencies };
+  // Siblings are exact peers, not dependencies: pnpm rejects a URL-resolved @eqv/* as an exotic subdependency (blockExoticSubdeps).
+  const dependencies = Object.entries(source.dependencies ?? {});
+  const plain = dependencies.filter(([dep]) => !dep.startsWith(SCOPE));
+  const siblings = dependencies.filter(([dep]) => dep.startsWith(SCOPE)).map(([dep]) => [dep, version]);
+  if (plain.length > 0) manifest.dependencies = Object.fromEntries(plain);
+  if (source.peerDependencies || siblings.length > 0) manifest.peerDependencies = { ...source.peerDependencies, ...Object.fromEntries(siblings) };
   return manifest;
 }
 
@@ -85,6 +87,7 @@ export function validateArchive(name, paths, manifest, version) {
   for (const field of ['dependencies', 'peerDependencies', 'optionalDependencies']) {
     for (const [dep, range] of Object.entries(manifest[field] ?? {})) {
       if (range.startsWith('workspace:')) throw new Error(`${name} tarball ${field}.${dep} is ${range}, a workspace range`);
+      if (dep.startsWith(SCOPE) && field === 'dependencies') throw new Error(`${name} tarball dependencies.${dep}: an @eqv/* sibling must be an exact peerDependency`);
       if (dep.startsWith(SCOPE) && range !== version) throw new Error(`${name} tarball ${field}.${dep} is ${range}, expected exactly ${version}`);
     }
   }
