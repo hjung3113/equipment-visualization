@@ -1,5 +1,5 @@
 import type { ModuleHost } from '@ap/contracts';
-import { siteWallClockSchema, type SiteWallClock } from '@eqv/core';
+import { siteWallClockSchema, wallClockToMillis, type SiteWallClock } from '@eqv/core';
 
 const NAIVE_SECONDS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
 
@@ -22,13 +22,29 @@ export type HostProps = {
   equipment: string | null;
   entityType: string | null;
   anchor: string | null;
+  /** The applied Focus 재생 구간 (page keys `rangeFrom`/`rangeTo`); null unless both are a real, ordered Site Wall-clock pair. */
+  range: { from: SiteWallClock; to: SiteWallClock } | null;
   time: HostTime;
 };
 
-/** Equipment, entry keys and the applied time of a screen, read from the host. No default is ever filled in. */
+function readRange(host: ModuleHost): HostProps['range'] {
+  const from = host.page('rangeFrom');
+  const to = host.page('rangeTo');
+  const a = from === null ? null : hostWallClock(from);
+  const b = to === null ? null : hostWallClock(to);
+  if (a === null || b === null) return null;
+  try {
+    // The schema checks the shape only; an impossible calendar date (02-30) throws here and the pair is ignored.
+    return wallClockToMillis(a) < wallClockToMillis(b) ? { from: a, to: b } : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Equipment, entry keys, applied Focus range and applied time of a screen, read from the host. No default is ever filled in. */
 export function readHostProps(host: ModuleHost): HostProps {
   const { values, unsupported } = host.context();
-  const base = { equipment: host.page('equipment'), entityType: host.page('entityType'), anchor: host.page('anchor') };
+  const base = { equipment: host.page('equipment'), entityType: host.page('entityType'), anchor: host.page('anchor'), range: readRange(host) };
   if (unsupported.includes('time')) return { ...base, time: { kind: 'unsupported' } };
   if (!values.from || !values.to) return { ...base, time: { kind: 'missing' } };
   const from = hostWallClock(values.from);

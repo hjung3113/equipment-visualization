@@ -4,12 +4,12 @@ import { DataTable, Panel } from '@eqv/ui';
 import { Callout, EmptyState, FieldRow, PanelSectionTitle, StatusBadge } from '@ap/ui';
 import type { IllustrativeGhost } from './ghosts.js';
 import { Evidence } from './Evidence.js';
-import { ACTIVITY_KO, UNKNOWN_LANE } from './words.js';
+import { ACTIVITY_KO, UNKNOWN_LANE, wallClockText } from './words.js';
 
 const COMPONENT_COLUMNS = [
   { id: 'component', header: 'Component', className: 'whitespace-nowrap' },
   { id: 'activity', header: '활동' },
-  { id: 'evidence', header: 'Evidence', className: 'whitespace-nowrap' },
+  { id: 'evidence', header: '근거', className: 'whitespace-nowrap' },
 ] as const;
 
 const MATERIAL_COLUMNS = [
@@ -29,7 +29,7 @@ export interface CursorStateListProps {
 export function CursorStateList({ state, illustrative = [] }: CursorStateListProps) {
   const active = state.components.filter((c) => c.activity !== 'no recorded activity');
   return (
-    <Panel title="커서 시점 상태" subtitle={state.at}>
+    <Panel title="커서 시점 상태" subtitle={wallClockText(state.at)}>
       <FieldRow label="Binding" layout="property">
         {state.binding ? <span className="break-all">{state.binding.layoutId} · {state.binding.mappingHash}</span> : '적용된 Binding 없음'}
       </FieldRow>
@@ -77,7 +77,7 @@ export function CursorStateList({ state, illustrative = [] }: CursorStateListPro
           <ul className="my-0 flex flex-wrap gap-2">
             {state.markers.map((marker) => {
               switch (marker.kind) {
-                case 'after-watermark': return <li key={marker.kind}><StatusBadge tone="warning" dot>Watermark 이후 ({marker.watermarkAt})</StatusBadge></li>;
+                case 'after-watermark': return <li key={marker.kind}><StatusBadge tone="warning" dot>Watermark 이후 ({wallClockText(marker.watermarkAt)})</StatusBadge></li>;
                 case 'time-anomaly': return <li key={`${marker.kind}:${marker.occurrenceId}`}><StatusBadge tone="danger" dot>시각 역전 ({marker.occurrenceId})</StatusBadge></li>;
                 case 'occupancy-conflict':
                   return <li key={`${marker.kind}:${marker.componentId}:${marker.holdingSiteId}`}><StatusBadge tone="danger" dot>점유 충돌 ({marker.componentId} / {marker.holdingSiteId}: {marker.materialKeys.join(', ')})</StatusBadge></li>;

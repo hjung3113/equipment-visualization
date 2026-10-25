@@ -4,7 +4,7 @@ import {
 } from '@eqv/core';
 import { Legend, type LegendItem } from '@eqv/ui';
 import { buildLanes, type Bar } from './lanes.js';
-import { ACTIVITY_KO, EVIDENCE_KO, clock, type StateEvidence } from './words.js';
+import { ACTIVITY_KO, EVIDENCE_KO, clock, wallClockText, type StateEvidence } from './words.js';
 
 export interface FocusGanttProps {
   timeline: ReplayTimeline;
@@ -26,6 +26,8 @@ const AXIS_H = 34;
 const ROW_H = 18;
 const PAD = 4;
 const TICKS = 6;
+/** Room under the plot for the time-anomaly label, so it never sits on a bar. */
+const LABEL_BAND = 14;
 const DRAG_THRESHOLD = 4;
 const EVIDENCES: StateEvidence[] = ['observed', 'derived', 'unknown'];
 const PATTERN_TEXT: Record<StateEvidence, string> = { observed: '단색', derived: '사선 무늬', unknown: '교차 무늬' };
@@ -140,12 +142,13 @@ export function FocusGantt({
       '▸ 구간 끝에서 열림 — 끝 미확정', '▼ 축 위 눈금 — Data Quality Issue'].map((label) => ({ swatch: null, label })),
   ];
 
+  const hasTimeAnomaly = timeline.markers.some(({ marker }) => marker.kind === 'time-anomaly');
   const timeAnomalyKeys = new Set<string>();
   let componentLabel = '';
   return (
     <div className="text-text-primary">
       <div className="max-w-full overflow-x-auto focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-focus-ring" role="region" aria-label="Gantt 차트" tabIndex={0}>
-      <svg viewBox={`0 0 ${WIDTH} ${plotBottom + PAD}`} width="100%" style={{ '--eqv-rp-min': `${WIDTH}px` } as CSSProperties} role="group" aria-label="Component lane Gantt" className="eqv-rp-svg">
+      <svg viewBox={`0 0 ${WIDTH} ${plotBottom + PAD + (hasTimeAnomaly ? LABEL_BAND : 0)}`} width="100%" style={{ '--eqv-rp-min': `${WIDTH}px` } as CSSProperties} role="group" aria-label="Component 레인 Gantt" className="eqv-rp-svg">
         <defs>
           <pattern id={`${prefix}-observed`} width="8" height="8" patternUnits="userSpaceOnUse"><rect width="8" height="8" fill="none" /></pattern>
           <pattern id={`${prefix}-derived`} width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
@@ -163,7 +166,7 @@ export function FocusGantt({
           return (
             <g key={i} className="eqv-rp-tick" aria-hidden="true">
               <line x1={x(t)} x2={x(t)} y1={AXIS_H - 6} y2={plotBottom} />
-              <text x={x(t)} y={AXIS_H - 10} textAnchor={i === 0 ? 'start' : i === TICKS - 1 ? 'end' : 'middle'}>{clock(t).slice(0, spanMs < 60_000 ? 12 : 8)}</text>
+              <text x={x(t)} y={AXIS_H - 10} textAnchor={i === 0 ? 'start' : i === TICKS - 1 ? 'end' : 'middle'}>{spanMs < 60_000 ? clock(t) : t.slice(11, 19)}</text>
             </g>
           );
         })}
@@ -187,7 +190,7 @@ export function FocusGantt({
                 <rect className="eqv-rp-time-anomaly" x={x(span.from)} y={AXIS_H} width={Math.max(2, x(span.to) - x(span.from))} height={plotBottom - AXIS_H}>
                   <title>{`시각 역전 · ${marker.occurrenceId}`}</title>
                 </rect>
-                {label && <text className="eqv-rp-marker-label" x={x(span.from) + 3} y={plotBottom - 3}>시각 역전</text>}
+                {label && <text className="eqv-rp-marker-label" x={x(span.from) + 3} y={plotBottom + LABEL_BAND - 3}>시각 역전</text>}
               </g>
             );
           }
@@ -255,28 +258,28 @@ export function FocusGantt({
 
         {timeline.bindingBoundaries.map((t) => (
           <g key={t} data-marker="binding-boundary">
-            <line className="eqv-rp-binding" x1={x(t)} x2={x(t)} y1={AXIS_H} y2={plotBottom}><title>{`Binding 경계 · ${t}`}</title></line>
+            <line className="eqv-rp-binding" x1={x(t)} x2={x(t)} y1={AXIS_H} y2={plotBottom}><title>{`Binding 경계 · ${wallClockText(t)}`}</title></line>
             <text className="eqv-rp-marker-label" x={x(t) + 3} y={AXIS_H + 11}>Binding 경계</text>
           </g>
         ))}
         {batch.watermark.at >= range.from && batch.watermark.at < range.to && (
           <g data-marker="watermark">
             <line className="eqv-rp-watermark" x1={x(batch.watermark.at)} x2={x(batch.watermark.at)} y1={AXIS_H} y2={plotBottom}>
-              <title>{`Watermark · ${batch.watermark.at}`}</title>
+              <title>{`Watermark · ${wallClockText(batch.watermark.at)}`}</title>
             </line>
             <text className="eqv-rp-marker-label" x={x(batch.watermark.at) - 3} y={AXIS_H + 11} textAnchor="end">Watermark</text>
           </g>
         )}
         {timeline.issues.map((issue) => issue.at === null ? null : (
-          <g key={issue.id} data-marker="dqi" role="img" aria-label={`Data Quality Issue ${issue.issueType} ${issue.at}`}>
+          <g key={issue.id} data-marker="dqi" role="img" aria-label={`Data Quality Issue ${issue.issueType} ${wallClockText(issue.at)}`}>
             <path className="eqv-rp-dqi" d={`M${x(issue.at) - 4} ${AXIS_H - 14}h8l-4 8z`} />
-            <title>{`${issue.issueType} · ${issue.id} · ${issue.at}`}</title>
+            <title>{`${issue.issueType} · ${issue.id} · ${wallClockText(issue.at)}`}</title>
           </g>
         ))}
 
         <line className="eqv-rp-cursor" x1={x(millisToWallClock(cursorMs))} x2={x(millisToWallClock(cursorMs))} y1={0} y2={plotBottom} aria-hidden="true" />
         <rect className="eqv-rp-axis" role="slider" tabIndex={0} aria-label="커서 시각" aria-orientation="horizontal"
-          aria-valuemin={fromMs} aria-valuemax={lastMs} aria-valuenow={cursorMs} aria-valuetext={millisToWallClock(cursorMs)}
+          aria-valuemin={fromMs} aria-valuemax={lastMs} aria-valuenow={cursorMs} aria-valuetext={wallClockText(millisToWallClock(cursorMs))}
           x={LABEL_W} y={0} width={PLOT_W} height={AXIS_H - 14} onKeyDown={onSliderKey}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerEnd} onPointerCancel={onPointerEnd} onPointerLeave={onPointerLeave} />
       </svg>

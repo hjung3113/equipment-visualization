@@ -62,7 +62,7 @@ Equipment Management
 
 `eqvScreens`(`topview`, `focus`; 호스트가 `eqv:<id>`로 등록)는 `({ host, params })` 화면이다. 마운트는 AP PR(AP #333/#334)이며 이 저장소에는 아직 없다.
 
-- **입력**: 설비는 `host.page('equipment')`, 진입 키는 `entityType`·`anchor` page key, 시간은 `host.context()`의 `from`/`to`. 호스트 시각은 초 단위 naive(`YYYY-MM-DDTHH:mm:ss`)라 읽을 때 한 번 `.000`을 붙여 Site Wall-clock으로 만든다. 기본 구간·기본 설비를 채우지 않는다.
+- **입력**: 설비는 `host.page('equipment')`, 진입 키는 `entityType`·`anchor` page key(Top View의 "Focus 열기"는 `entityType: 'occurrence'`와 선택한 Component의 열린 Occurrence id — 선택이 없거나 열린 것이 없으면 커서 시점에 열린 첫 Occurrence id(code unit 순) — 를 `anchor`로 넘긴다), Focus의 적용 재생 구간은 `rangeFrom`·`rangeTo` page key(Site Wall-clock 쌍, 순서가 맞지 않으면 무시; `host.setPage`로 쓴다), 시간은 `host.context()`의 `from`/`to`. 호스트 시각은 초 단위 naive(`YYYY-MM-DDTHH:mm:ss`)라 읽을 때 한 번 `.000`을 붙여 Site Wall-clock으로 만든다. 기본 구간·기본 설비를 채우지 않는다.
 - **상태**: `time`이 `unsupported`면 "이 화면에는 시간 구간이 적용되지 않습니다"(쿼리 없음), 설비가 없으면 "설비를 고르세요", `from`/`to`가 없으면 "시간 구간을 고르세요"(둘 다 쿼리 없음).
 - **로드**: `host.query`로 `eqv.topview-context`와 `eqv.topview-events`만 호출한다. 이벤트는 `continuationToken`이 없어질 때까지 따라가 한 batch로 합친다(`occurrences`/`issues`는 서버 page 순서 그대로, window 필드는 첫 page 기준이며 다른 page가 다르면 데이터 오류, `watermark`는 `(seq, at)` 최댓값, 토큰 제거). 루프는 서버 `maxHours`, 반복 토큰 거부, 화면 signal 중단으로 끝난다. 새 설비/시간은 이전 로드를 중단하고 늦은 응답을 버린다.
 - **검증**: 모든 Mapping Version·Layout Revision을 `verifyBindingContext`(`@eqv/core`; `checkBindingMapping`/`checkBindingLayout`)로 내용 검증한 뒤 `assertReplayInput`. 실패는 부분 replay 없이 오류 상태.

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { OutlineBadge } from './OutlineBadge.js';
+import { Badge } from '@ap/ui';
 import type { EvidenceLevel } from '@eqv/core';
 
 export interface EvidenceBadgeProps {
@@ -9,7 +9,8 @@ export interface EvidenceBadgeProps {
 }
 
 // Not colour alone (ADR-0003): each level has its own border style, and `illustrative` is also italic so it never
-// reads as `observed`. The border sits on a span this package owns; the Badge inside gets no restyle class.
+// reads as `observed`. The border sits on a span this package owns; the Badge inside is the borderless `secondary` variant so the
+// level's frame is the only border (the outline variant added a second one).
 const FRAME: Record<EvidenceLevel, string> = {
   observed: 'border-2 border-solid',
   derived: 'border-2 border-dashed',
@@ -20,7 +21,7 @@ const FRAME: Record<EvidenceLevel, string> = {
 export function EvidenceBadge({ level, children }: EvidenceBadgeProps) {
   return (
     <span className={`inline-flex rounded-md border-border-subtle ${FRAME[level]}`}>
-      <OutlineBadge data-evidence={level}>{children}</OutlineBadge>
+      <Badge variant="secondary" data-evidence={level}>{children}</Badge>
     </span>
   );
 }

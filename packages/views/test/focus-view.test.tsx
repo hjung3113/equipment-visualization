@@ -27,7 +27,7 @@ const input: ReplayInput = {
 };
 const OCCURRENCE = 'occ-pm1-process';
 const row = () => document.querySelector(`tr[data-occurrence-id="${OCCURRENCE}"]`)!;
-const shownAt = () => within(screen.getByRole('region', { name: '커서 시점 상태' })).getByText(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/).textContent;
+const shownAt = () => within(screen.getByRole('region', { name: '커서 시점 상태' })).getByText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3})?$/).textContent;
 
 it('renders the Top View, the Gantt and the Occurrence list from props', () => {
   render(<FocusView input={input} notices={['안내 한 줄']} entityType={null} anchor={null} resetKey="a" />);
@@ -108,4 +108,12 @@ it('resets the cursor and selection when resetKey changes', () => {
   view.rerender(<FocusView input={input} notices={[]} entityType={null} anchor={null} resetKey="b" />);
   expect(shownAt()).toBe(initial);
   expect(document.querySelector('tr[aria-selected="true"]')).toBeNull();
+});
+
+it('Escape on a focused list row closes the host detail slot', () => {
+  render(<DetailHost />);
+  fireEvent.click(row());
+  expect(slot().textContent).not.toBe('');
+  fireEvent.keyDown(row(), { key: 'Escape' });
+  expect(slot().textContent).toBe('');
 });
