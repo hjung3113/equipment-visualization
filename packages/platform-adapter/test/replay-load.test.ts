@@ -24,6 +24,7 @@ describe('readHostProps', () => {
     expect(read({ query: null, context: { from: '2026-01-01T10:00:00', to: null } })).toEqual({ kind: 'missing' });
     expect(read({ query: null, unsupported: ['time'], context: { from: '2026-01-01T10:00:00', to: '2026-01-01T10:30:00' } })).toEqual({ kind: 'unsupported' });
     expect(read({ query: null, context: { from: '2026-01-01T11:00:00', to: '2026-01-01T10:30:00' } }).kind).toBe('invalid');
+    expect(read({ query: null, context: { from: '2026-02-30T10:00:00', to: '2026-02-30T11:00:00' } }).kind).toBe('invalid');
   });
 });
 
