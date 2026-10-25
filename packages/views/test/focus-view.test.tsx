@@ -126,6 +126,8 @@ it('selects the anchored Occurrence on entry and on an entry change, and nothing
   expect(selected()).toBe('occ-pm1-process');
   view.rerender(entry('occ-carrier'));
   expect(selected()).toBe('occ-carrier');
+  view.rerender(entry(null));
+  expect(selected()).toBeNull();
   view.unmount();
   cleanup();
   render(entry(null));

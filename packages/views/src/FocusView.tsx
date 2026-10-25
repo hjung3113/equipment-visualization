@@ -106,7 +106,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, range:
   // Everything below belongs to the reset key and the entry key: a change clears it during render. The cursor, range and
   // selection belong to one batch.
   if (view.resetKey !== resetKey) setView(fresh());
-  else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, selectedOccurrenceId: entryId ?? view.selectedOccurrenceId, mode: { kind: 'time' } });
+  else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, selectedOccurrenceId: entryId, mode: { kind: 'time' } });
 
   const entry = useMemo(() => focusRange(input.batch, { entityType, anchor }), [input.batch, entityType, anchor]);
   const range = (hostRange ? hostRange.value : view.applied) ?? entry.range ?? null;
