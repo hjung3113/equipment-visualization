@@ -14,7 +14,7 @@ latest window, and an unknown `?window=` is an error, never a fallback. The Gant
 for a narrower range, and the Top View, state list, Occurrence list, Data Quality and evidence detail stay. `loadFocus` (`src/focus-data.ts`) reads and checks
 the batch, every Mapping Version a Binding names and each Binding's Layout (its published Layout Revision, else the draft with
 a notice); it never rejects. Playback (#15d) moves only the cursor: play/pause, speed x0.25–x4 (screen time), previous/next breakpoint, and a debug
-Sequence step that shows the state after a chosen Record Sequence instead of the cursor's seek. `예시 이동 표시` (off by default,
+기록 단위 보기 (Sequence step) that shows the state after a chosen Record Sequence instead of the cursor's seek. `예시 이동 표시` (off by default,
 page-local) adds badged example-motion ghosts between two observed boundaries of an open TRANSFER; they are never log evidence.
 
 Journey (`/journey/:equipmentId?anchor=&window=`, #152) follows one wafer through one Sample Window. `anchor` is an Occurrence id

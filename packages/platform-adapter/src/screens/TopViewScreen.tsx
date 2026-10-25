@@ -5,7 +5,7 @@ import { ArrowRight, MapPinOff, MousePointerClick, ServerCrash } from 'lucide-re
 import { Button, EmptyState, FieldRow } from '@ap/ui';
 import { bindingLayout, seekSceneState, type EquipmentLayoutDocument, type ReplayInput, type SceneState, type SiteWallClock } from '@eqv/core';
 import { TopViewer, type ReplayOverlay } from '@eqv/renderer';
-import { ACTIVITY_KO, CursorStateList, Evidence } from '@eqv/replay';
+import { ACTIVITY_KO, CursorStateList, Evidence, wallClockText } from '@eqv/replay';
 import { Panel, StateMessage, ViewerZoomControls } from '@eqv/ui';
 import { NoticeList } from '@eqv/views';
 import { useReplayScreen } from '../use-replay-input.js';
@@ -28,6 +28,21 @@ function ComponentDetail({ layout, state, componentId }: { layout: EquipmentLayo
       </FieldRow>
     </section>
   );
+}
+
+/**
+ * The Focus entry keys for "Focus 열기": an Occurrence open at the cursor, so Focus opens on it. The selected Component's own
+ * activity Occurrence first, then a material held there, then any activity or material Occurrence at the cursor (ids sorted by code
+ * unit, so the choice is deterministic). None open: no entry keys, and Focus shows the whole window.
+ */
+function focusEntry(state: SceneState, componentId: string | null): { entityType: string; anchor: string } | null {
+  const own = componentId === null ? [] : [
+    ...state.components.filter((c) => c.componentId === componentId).flatMap((c) => c.occurrenceIds),
+    ...state.materials.filter((m) => m.location?.componentId === componentId).map((m) => m.occurrenceId),
+  ];
+  const any = [...state.components.flatMap((c) => c.occurrenceIds), ...state.materials.map((m) => m.occurrenceId)].sort();
+  const anchor = own[0] ?? any[0];
+  return anchor === undefined ? null : { entityType: 'occurrence', anchor };
 }
 
 function sceneAt(input: ReplayInput, to: SiteWallClock): Scene {
@@ -69,10 +84,10 @@ export function TopViewScreen({ host }: ModuleScreenProps) {
     <>
       <NoticeList notices={load.notices} />
       <div className="flex flex-wrap items-start gap-4">
-        <Panel title="Top View" subtitle={scene.state.at} className="max-w-full min-w-0 flex-none overflow-auto"
+        <Panel title="Top View" subtitle={wallClockText(scene.state.at)} className="max-w-full min-w-0 flex-none overflow-auto"
           actions={<>
             <span ref={setZoomHost} className="contents" />
-            <Button variant="secondary" size="toolbar" onClick={() => host.navigate({ screen: 'focus', page: { equipment } })}><ArrowRight className="size-3.5" aria-hidden />Focus 열기</Button>
+            <Button variant="secondary" size="toolbar" onClick={() => host.navigate({ screen: 'focus', page: { equipment, ...focusEntry(scene.state, selectedId) } })}><ArrowRight className="size-3.5" aria-hidden />Focus 열기</Button>
           </>}>
           {scene.layout ? (
             <TopViewer layout={scene.layout} width={720} height={420} replay={replay} selectedId={selectedId}

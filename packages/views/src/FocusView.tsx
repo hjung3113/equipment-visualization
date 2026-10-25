@@ -65,6 +65,8 @@ type FocusViewBaseProps = {
   anchor: string | null;
   /** The host's load identity: a change resets every piece of view state (range, cursor, selections, mode). */
   resetKey: string;
+  /** The applied 재생 구간 held by the host (page keys), so it survives a refresh and a copied link: `value` is shown as the applied range and "적용" reports the new one through `onChange`. Absent: the view keeps the range itself (Studio). The host owns clearing it when the entry changes. */
+  range?: { value: Range | null; onChange: (range: Range) => void };
   /** When given, selecting an Occurrence hands its `EvidenceDetail` to the host (null clears the slot: reset, no valid state, no selection, removal, unmount) and the inline "근거 상세" tab is omitted. The callback must be stable (memoised or a state setter): a new identity re-publishes. */
   renderDetail?: (detail: { node: ReactNode; label: string } | null) => void;
   links?: {
@@ -88,7 +90,7 @@ export type FocusViewProps = FocusViewBaseProps & (
 );
 
 /** Top View, Gantt and Occurrence list on one cursor, from props only (no page chrome, router or loader). */
-export function FocusView({ input, notices, entityType, anchor, resetKey, renderDetail, tab: controlledTab, onTabChange, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
+export function FocusView({ input, notices, entityType, anchor, resetKey, range: hostRange, renderDetail, tab: controlledTab, onTabChange, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
   const entryKey = JSON.stringify([entityType, anchor]);
   const fresh = (): View => ({ resetKey, entryKey, applied: null, draft: null, rangeError: null, cursor: null,
     selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
@@ -105,7 +107,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
   else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, mode: { kind: 'time' } });
 
   const entry = useMemo(() => focusRange(input.batch, { entityType, anchor }), [input.batch, entityType, anchor]);
-  const range = view.applied ?? entry.range ?? null;
+  const range = (hostRange ? hostRange.value : view.applied) ?? entry.range ?? null;
   const rawCursor = view.cursor ?? entry.cursor ?? null;
   const cursor = range && rawCursor && rawCursor >= range.from && rawCursor < range.to ? rawCursor : range?.from ?? null;
 
@@ -194,6 +196,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
     const parsed = parseRange(draft.from, draft.to);
     if ('error' in parsed) { patch({ rangeError: parsed.error }); return; }
     const outside = cursor === null || cursor < parsed.range.from || cursor >= parsed.range.to;
+    hostRange?.onChange(parsed.range);
     patch({ applied: parsed.range, draft: null, rangeError: null, mode: { kind: 'time' }, ...(outside ? { cursor: parsed.range.from } : {}) });
   };
   const select = (id: string, moveCursor: boolean) => {
@@ -241,7 +244,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
             onPreviousBreakpoint={previousBreakpoint === undefined ? null : () => stepBreakpoint(previousBreakpoint)}
             onNextBreakpoint={nextBreakpoint === undefined ? null : () => stepBreakpoint(nextBreakpoint)}
             sequence={{ available: entryStep !== undefined || sequenceSeq !== null,
-              unavailableReason: '이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다', active: sequenceSeq !== null,
+              unavailableReason: '이 시점까지 적용된 기록이 구간 안에 없어 기록 단위 보기를 쓸 수 없습니다', active: sequenceSeq !== null,
               onToggle: () => sequenceSeq !== null ? patch({ mode: { kind: 'time' } }) : enterSequence(),
               onPrevious: stepIndex > 0 ? () => moveStep(stepIndex - 1) : null,
               onNext: stepIndex >= 0 && stepIndex < steps.length - 1 ? () => moveStep(stepIndex + 1) : null,
@@ -278,12 +281,14 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
                 })} />
             ) : tooLarge ? (
               <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
-                body={`범위를 좁히세요. 지금 범위는 record ${count(cost.records)}개 + breakpoint ${count(cost.breakpoints)}개 × (읽기마다 Binding·Layout 탐색 ${count(cost.context)} + (동시 open Occurrence ${count(cost.open)}개 + 시간 역전 ${count(cost.inversions)}개) × 위치 해석 ${count(cost.resolve)}) = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
+                body={`범위를 좁히세요. 지금 범위는 기록 ${count(cost.records)}개 + 전환 시점 ${count(cost.breakpoints)}개 × (읽기마다 Binding·Layout 탐색 ${count(cost.context)} + (동시 open Occurrence ${count(cost.open)}개 + 시간 역전 ${count(cost.inversions)}개) × 위치 해석 ${count(cost.resolve)}) = ${count(cost.cost)}로 Gantt 계산 한도 ${count(timelineBudget)}을 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
             ) : tooManySpans && (
               <StateMessage tone="warning" icon={ChartGantt} title="구간이 커서 Gantt를 그리지 않습니다"
                 body={`범위를 좁히세요. 지금 범위의 Gantt 막대는 ${count(spans)}개로 그리기 한도 ${count(ganttSpanLimit)}개를 넘습니다. Top View·커서 시점 상태·Occurrence 목록·Data Quality·근거 상세는 그대로 씁니다.`} />
             )}
           </Panel>
+          {/* Escape closes the detail from anywhere in the tabs, a focused table row included. */}
+          <div onKeyDown={(event) => { if (event.key === 'Escape' && selectedId !== null) patch({ selectedOccurrenceId: null }); }}>
           <Tabs value={tab} onValueChange={(value) => { setOwnTab(value as FocusTab); onTabChange?.(value as FocusTab); }} className="mt-4">
             <TabsList aria-label="Focus 상세">
               {tabs.map((item) => <TabsTrigger key={item.id} value={item.id}>{item.label}</TabsTrigger>)}
@@ -295,6 +300,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, render
             <TabsContent value="quality"><DataQualityList timeline={frame} appliedSeq={state.appliedSeq} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
             {!renderDetail && <TabsContent value="detail"><EvidenceDetail batch={input.batch} state={state} selectedOccurrenceId={selectedId} /></TabsContent>}
           </Tabs>
+          </div>
         </>
       )}
     </>

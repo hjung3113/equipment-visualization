@@ -11,4 +11,4 @@ export { usePlayback, SPEEDS, type PlaybackScheduler, type PlaybackSpeed, type U
 export { PlaybackControls, type PlaybackControlsProps } from './PlaybackControls.js';
 export { JourneyHopList, JourneyExecutionList, type JourneyHopListProps, type JourneyExecutionListProps } from './JourneyLists.js';
 export { Evidence } from './Evidence.js';
-export { ACTIVITY_KO } from './words.js';
+export { ACTIVITY_KO, wallClockText } from './words.js';

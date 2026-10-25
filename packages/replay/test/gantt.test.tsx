@@ -38,7 +38,7 @@ it('draws the Binding boundary, Watermark line and shade, Time Anomaly band and 
 it('moves the cursor with ←/→ to the previous/next breakpoint and Home/End to the range ends', () => {
   const { onCursorChange } = setup();
   const slider = screen.getByRole('slider', { name: '커서 시각' });
-  expect(slider.getAttribute('aria-valuetext')).toBe(time('10:06:00'));
+  expect(slider.getAttribute('aria-valuetext')).toBe('2026-01-01 10:06:00');
   expect(slider.getAttribute('aria-valuemax')).toBe(String(Number(slider.getAttribute('aria-valuemin')) + 30 * 60_000 - 1));
   for (const [key, expected] of [['ArrowLeft', time('10:05:00')], ['ArrowRight', time('10:07:00')],
     ['Home', time('10:00:00')], ['End', '2026-01-01T10:29:59.999']] as const) {

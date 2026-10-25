@@ -22,6 +22,7 @@ export function FocusScreen({ host }: ModuleScreenProps) {
   const { equipment } = props;
   return (
     <FocusView input={load.input} notices={load.notices} entityType={props.entityType} anchor={props.anchor} resetKey={resetKey}
+      range={{ value: props.range, onChange: (range) => host.setPage({ rangeFrom: range.from, rangeTo: range.to }, { replace: true }) }}
       tab={tab} onTabChange={setTab} {...(renderDetail ? { renderDetail } : {})}
       links={{ actions: <Button variant="secondary" size="toolbar" onClick={() => host.navigate({ screen: 'topview', page: { equipment } })}><ArrowLeft className="size-3.5" aria-hidden />Top View로</Button> }} />
   );

@@ -39,7 +39,7 @@ const loaded = () => waitFor(() => expect(screen.queryByText('불러오는 중�
 const ENTRY = '/focus/eq-synth-01?entityType=occurrence&anchor=occ-pm1-process';
 const heading = () => {
   const panel = within(screen.getByRole('region', { name: '커서 시점 상태' }));
-  return `${panel.getByRole('heading', { name: '커서 시점 상태' }).textContent} (${panel.getByText(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}$/).textContent})`;
+  return `${panel.getByRole('heading', { name: '커서 시점 상태' }).textContent} (${panel.getByText(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(\.\d{3})?$/).textContent})`;
 };
 const row = (id: string) => document.querySelector(`tr[data-occurrence-id="${id}"]`)!;
 const MAPPING_OLD = 'onboarding/mappings/eq-synth-01/30d2c1a312841e4cfb9d293107651d4125c0ea37806e473e564b03ff52bf8ca2.mapping.json';
@@ -60,16 +60,16 @@ it('opens Focus at the entry Occurrence with the draft notice, the Top View, the
   expect(screen.getByDisplayValue('2026-01-01T10:05:00.000')).toBeTruthy();
   expect(screen.getByDisplayValue('2026-01-01T10:11:00.000')).toBeTruthy();
   screen.getByRole('group', { name: 'Synthetic single-hub cluster' });
-  screen.getByRole('group', { name: 'Component lane Gantt' });
+  screen.getByRole('group', { name: 'Component 레인 Gantt' });
   expect(screen.getAllByRole('tab')).toEqual(['Occurrence 목록', 'Data Quality', '근거 상세'].map((name) => screen.getByRole('tab', { name })));
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:06:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:06:00)');
   const before = document.querySelector('[data-layer="replay"]');
   expect(before).not.toBeNull();
 
   const slider = screen.getByRole('slider', { name: '커서 시각' });
   slider.focus();
   fireEvent.keyDown(slider, { key: 'ArrowRight' });
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:07:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:07:00)');
   expect(document.querySelector('[data-layer="replay"]')).not.toBeNull();
 });
 
@@ -79,9 +79,9 @@ it('selects an Occurrence in every view: row, Top View highlight on its Componen
   render(<App />);
   await loaded();
   fireEvent.click(row('occ-lla-slot-two'));
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:05:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:05:00)');
   fireEvent.click(row('occ-pm1-process'));
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:06:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:06:00)');
   expect(row('occ-pm1-process').getAttribute('aria-selected')).toBe('true');
   const ring = document.querySelector('[data-layer="highlight"] g[transform]')!;
   // The ring is drawn with a matrix, the Component group with translate/rotate/scale: same placement, different spelling.
@@ -89,7 +89,7 @@ it('selects an Occurrence in every view: row, Top View highlight on its Componen
   expect(document.querySelector('[data-component-id="pm-a"]')!.getAttribute('transform')).toMatch(/^translate\(24 32\) /);
   fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
   const detail = within(screen.getByRole('region', { name: '근거 상세 occ-pm1-process' }));
-  expect(detail.getByText('시작', { exact: true }).parentElement?.lastElementChild?.textContent).toMatch(/^2026-01-01T10:06:00.000 · Record Sequence/);
+  expect(detail.getByText('시작', { exact: true }).parentElement?.lastElementChild?.textContent).toMatch(/^2026-01-01 10:06:00 · Record Sequence/);
 });
 
 it.each([
@@ -138,7 +138,7 @@ it('applies a typed range, and keeps the old range with an error for an invalid 
   fireEvent.change(from!, { target: { value: '2026-01-01T10:08:00.000' } });
   fireEvent.click(screen.getByRole('button', { name: '적용' }));
   expect(screen.queryByRole('alert')).toBeNull();
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:08:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:08:00)');
   expect(from!.value).toBe('2026-01-01T10:08:00.000');
 });
 
@@ -253,7 +253,7 @@ const applyRange = (from: string, to = '2026-01-01T10:30:00.000') => {
   fireEvent.click(screen.getByRole('button', { name: '적용' }));
 };
 const stateList = () => screen.getByRole('region', { name: '커서 시점 상태' });
-const sequenceStatus = () => screen.queryByText(/^Sequence step · Record Sequence/);
+const sequenceStatus = () => screen.queryByText(/^기록 단위 · Record Sequence/);
 
 it('playing frames show the same state as a direct seek to that cursor', async () => {
   await writeDraft(root, 'eq-synth-01-layout');
@@ -267,7 +267,7 @@ it('playing frames show the same state as a direct seek to that cursor', async (
   fireEvent.click(screen.getByRole('radio', { name: 'x4' }));
   fireEvent.click(screen.getByRole('button', { name: '재생' }));
   for (let i = 0; i < 15; i += 1) clock.frame(250);
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:35.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:01:35)');
   const played = stateList().textContent;
   cleanup();
   render(<CursorStateList state={seekSceneState(data, '2026-01-01T10:01:35.000')} />);
@@ -283,23 +283,23 @@ it('sequence mode shows the record-ordered state; the previous record differs fr
   render(<App />);
   await loaded();
   applyRange('2026-01-01T10:02:00.000');
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:02:00)');
   const materialTable = () => within(screen.getByRole('table', { name: '물질' }));
   const waferRow = () => materialTable().getAllByRole('row').find((item) => item.textContent?.includes('wafer W01'))!;
   expect(within(waferRow()).getAllByRole('cell').slice(0, 2).map((cell) => cell.textContent)).toEqual(['ll-a / slot-1', '관측']);
-  fireEvent.click(screen.getByRole('button', { name: 'Sequence step' }));
-  expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 7 · 2026-01-01T10:02:00.000');
-  fireEvent.click(screen.getByRole('button', { name: '이전 record' }));
-  expect(sequenceStatus()!.textContent).toBe('Sequence step · Record Sequence 6 · 2026-01-01T10:02:00.000');
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:02:00.000)');
+  fireEvent.click(screen.getByRole('button', { name: '기록 단위 보기' }));
+  expect(sequenceStatus()!.textContent).toBe('기록 단위 · Record Sequence 7 · 2026-01-01 10:02:00');
+  fireEvent.click(screen.getByRole('button', { name: '이전 기록' }));
+  expect(sequenceStatus()!.textContent).toBe('기록 단위 · Record Sequence 6 · 2026-01-01 10:02:00');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:02:00)');
   const priorW01 = materialTable().getAllByRole('row').find((row) => within(row).queryByRole('rowheader')?.textContent === 'wafer W01');
   expect(priorW01 ? within(priorW01).getAllByRole('cell')[0]!.textContent : '').not.toMatch(/^ll-a\b/);
-  expect((screen.getByRole('button', { name: '이전 record' }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole('button', { name: '이전 기록' }) as HTMLButtonElement).disabled).toBe(true);
   const slider = screen.getByRole('slider', { name: '커서 시각' });
   slider.focus();
   fireEvent.keyDown(slider, { key: 'ArrowRight' });
   expect(sequenceStatus()).toBeNull();
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:03:00.000)');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:03:00)');
 });
 
 it('the example-motion toggle is off by default, badges and draws one ghost at 10:01:30, and resets on an equipment change', async () => {
@@ -309,9 +309,9 @@ it('the example-motion toggle is off by default, badges and draws one ghost at 1
   render(<App />);
   await loaded();
   applyRange('2026-01-01T10:01:30.000');
-  expect(heading()).toBe('커서 시점 상태 (2026-01-01T10:01:30.000)');
-  expect((screen.getByRole('button', { name: 'Sequence step' }) as HTMLButtonElement).disabled).toBe(true);
-  screen.getByText('이 시점까지 적용된 record가 구간 안에 없어 Sequence step을 쓸 수 없습니다');
+  expect(heading()).toBe('커서 시점 상태 (2026-01-01 10:01:30)');
+  expect((screen.getByRole('button', { name: '기록 단위 보기' }) as HTMLButtonElement).disabled).toBe(true);
+  screen.getByText('이 시점까지 적용된 기록이 구간 안에 없어 기록 단위 보기를 쓸 수 없습니다');
   const badge = () => document.querySelector('[data-evidence="illustrative"]');
   const toggle = () => screen.getByRole('checkbox', { name: '예시 이동 표시' });
   const checked = () => toggle().getAttribute('aria-checked');

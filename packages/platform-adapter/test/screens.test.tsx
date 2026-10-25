@@ -1,4 +1,4 @@
-import { act, cleanup, configure, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { ApiResponse } from '@ap/contracts';
 import { afterEach, describe, expect, it } from 'vitest';
 import { eqvScreens } from '../src/index.js';
@@ -60,6 +60,7 @@ describe('states that need the user', () => {
     const fake = hostFor({ page: {} });
     render(<Screen host={fake.host} params={{}} />);
     screen.getByText('설비를 고르세요');
+    expect(screen.getByText('플랫폼에서 설비를 선택하면 이 화면에 표시됩니다.').textContent).not.toMatch(/\?equipment=/);
     expect(fake.log.queries).toEqual([]);
   });
 
@@ -259,17 +260,31 @@ describe('Top View', () => {
     const fake = hostFor();
     const Screen = eqvScreens.topview;
     render(<Screen host={fake.host} params={{}} />);
-    await screen.findAllByText('2026-01-01T10:30:00.000');
+    await screen.findAllByText('2026-01-01 10:30:00');
     expect(document.querySelector('[data-layer="replay"]')).not.toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Focus 열기' }));
-    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT } }]);
+    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'occurrence', anchor: 'occ-open' } }]);
+  });
+
+  it.each([
+    [null, 'occ-carrier'],
+    ['pm-b', 'occ-pm2-slot-one'],
+    ['pm-a', 'occ-pm1-process'],
+  ] as const)('Focus 열기 at 10:08:30 with %s selected opens Focus on that Component\'s open Occurrence, else the first one open at the cursor', async (id, anchor) => {
+    const fake = hostFor({ context: { from: HOST_TIME.from, to: '2026-01-01T10:08:30' } });
+    const Screen = eqvScreens.topview;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByText('Component를 선택하세요');
+    if (id !== null) fireEvent.click(document.querySelector(`[data-component-id="${id}"]`)!);
+    fireEvent.click(screen.getByRole('button', { name: 'Focus 열기' }));
+    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'occurrence', anchor } }]);
   });
 
   it('with detailSlot, selecting a Component shows its detail in the host slot', async () => {
     const fake = hostFor({ detailSlot: true });
     const Screen = eqvScreens.topview;
     render(<Screen host={fake.host} params={{}} />);
-    await screen.findAllByText('2026-01-01T10:30:00.000');
+    await screen.findAllByText('2026-01-01 10:30:00');
     fireEvent.click(document.querySelector('[data-component-id="pm-a"]')!);
     await waitFor(() => expect(fake.log.shown.at(-1)?.label).toBe('Component · pm-a'));
     expect(screen.queryByRole('region', { name: 'Component 상세' })).toBeNull();
@@ -299,5 +314,60 @@ describe('Top View Component detail words', () => {
     expect(region.textContent).toMatch(words);
     expect(region.textContent).not.toMatch(/processing|no recorded activity/);
     expect(region.textContent).toMatch(/활동 근거/);
+  });
+});
+
+describe('Focus 재생 구간 in the page keys', () => {
+  const rangeInputs = () => [screen.getByLabelText('시작'), screen.getByLabelText('끝')] as HTMLInputElement[];
+
+  it('applying a range writes rangeFrom/rangeTo through the host, and a remount reads the range back', async () => {
+    const fake = hostFor();
+    const Screen = eqvScreens.focus;
+    const first = render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    const [from, to] = rangeInputs();
+    fireEvent.change(from!, { target: { value: '2026-01-01T10:05:00.000' } });
+    fireEvent.change(to!, { target: { value: '2026-01-01T10:12:00.000' } });
+    fireEvent.submit(screen.getByRole('form', { name: '구간' }));
+    expect(fake.log.pageWrites).toEqual([{ rangeFrom: '2026-01-01T10:05:00.000', rangeTo: '2026-01-01T10:12:00.000' }]);
+    first.unmount();
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    expect(rangeInputs().map((input) => input.value)).toEqual(['2026-01-01T10:05:00.000', '2026-01-01T10:12:00.000']);
+  });
+
+  it('an unordered or malformed pair in the page keys is ignored, not applied', async () => {
+    const fake = hostFor({ page: { equipment: EQUIPMENT, rangeFrom: '2026-01-01T10:12:00.000', rangeTo: '2026-01-01T10:05:00.000' } });
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await screen.findByRole('form', { name: '구간' });
+    expect(rangeInputs().map((input) => input.value)).not.toContain('2026-01-01T10:12:00.000');
+  });
+});
+
+describe('Korean copy', () => {
+  it.each([
+    ['topview', eqvScreens.topview, '2026-01-01 10:30:00'],
+    ['focus', eqvScreens.focus, '2026-01-01 10:'],
+  ] as const)('%s: times read YYYY-MM-DD HH:mm:ss and no control keeps an English label', async (_name, Screen, shown) => {
+    const fake = hostFor();
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(document.querySelector('table, [data-layer="replay"]')).not.toBeNull());
+    const text = document.body.textContent ?? '';
+    expect(text).toContain(shown);
+    expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/);
+    expect(text).not.toMatch(/Sequence step|이전 record|다음 record/);
+  });
+
+  it('the evidence detail names its provenance rows in Korean (Ruleset Version stays a glossary term)', async () => {
+    const fake = hostFor();
+    const Screen = eqvScreens.focus;
+    render(<Screen host={fake.host} params={{}} />);
+    await waitFor(() => expect(row('occ-pm1-process')).not.toBeNull());
+    fireEvent.click(row('occ-pm1-process')!);
+    fireEvent.mouseDown(screen.getByRole('tab', { name: '근거 상세' }));
+    const detail = await screen.findByRole('region', { name: '근거 상세 occ-pm1-process' });
+    for (const label of ['합성 데이터', 'Mapping Version', 'Ruleset Version']) expect(within(detail).getByText(label)).toBeTruthy();
+    expect(within(detail).queryByText('synthetic')).toBeNull();
   });
 });
