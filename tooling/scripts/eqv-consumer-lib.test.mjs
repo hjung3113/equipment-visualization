@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { blockEntries, hasCssSelector, readWorkspaceBlock, selectCssProbes } from './eqv-consumer-lib.mjs';
+import { blockEntries, findCopyMismatches, hasCssSelector, readWorkspaceBlock, selectCssProbes } from './eqv-consumer-lib.mjs';
 
 describe('readWorkspaceBlock + blockEntries', () => {
   const yaml = ['allowBuilds:', '  esbuild: true', 'overrides:', '  "@ap/ui": "https://example.test/ap-ui-0.12.0.tgz"', '  "@tiptap/core": 3.23.5', '# comment', 'patchedDependencies:', '  "a@1.0.0": patches/a.patch', ''].join('\n');
@@ -38,5 +38,40 @@ describe('hasCssSelector', () => {
     ['.size-3\\.5{width:1px}', 'size-3.5', true],
   ])('%s has %s: %s', (css, name, expected) => {
     expect(hasCssSelector(css, name)).toBe(expected);
+  });
+});
+
+describe('findCopyMismatches', () => {
+  const release = ['core', 'renderer', 'platform-adapter'];
+  const declared = {
+    '@eqv/core': [],
+    '@eqv/renderer': ['react', '@eqv/core'],
+    '@eqv/platform-adapter': ['react', 'react-dom', '@ap/ui', '@ap/contracts', '@eqv/core'],
+    '@ap/ui': ['react', 'react-dom'],
+    'react-dom': ['react'],
+  };
+  const single = {
+    consumer: { react: '/r1', 'react-dom': '/rd1', '@ap/ui': '/ui1', '@ap/contracts': '/c1' },
+    '@eqv/core': {},
+    '@eqv/renderer': { react: '/r1', '@eqv/core': '/core' },
+    '@eqv/platform-adapter': { react: '/r1', 'react-dom': '/rd1', '@ap/ui': '/ui1', '@ap/contracts': '/c1', '@eqv/core': '/core' },
+    '@ap/ui': { react: '/r1', 'react-dom': '/rd1' },
+    'react-dom': { react: '/r1' },
+  };
+  const check = (override) => {
+    const copies = Object.fromEntries(Object.entries(single).map(([from, found]) => [from, { ...found, ...override[from] }]));
+    return findCopyMismatches({ release, declared: (from) => declared[from] ?? [], resolve: (from, name) => copies[from]?.[name] });
+  };
+
+  it.each([
+    ['one copy everywhere passes', {}, []],
+    ['consumer React differs from the one every @eqv package resolves', { consumer: { react: '/r2' } }, ['@eqv/renderer', '@eqv/platform-adapter', '@ap/ui', 'react-dom']],
+    ['@ap/ui resolves a second React', { '@ap/ui': { react: '/r2' } }, ['@ap/ui']],
+    ['react-dom resolves a second React', { 'react-dom': { react: '/r2' } }, ['react-dom']],
+    ['a second @eqv/core', { '@eqv/renderer': { '@eqv/core': '/core2' } }, ['@eqv/renderer']],
+  ])('%s', (_name, override, offenders) => {
+    const found = check(override);
+    expect(found).toHaveLength(offenders.length);
+    for (const offender of offenders) expect(found.some((line) => line.startsWith(`${offender} resolves`))).toBe(true);
   });
 });

@@ -11,12 +11,11 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, 
 import { tmpdir } from 'node:os';
 import { dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { blockEntries, hasCssSelector, readWorkspaceBlock, selectCssProbes } from './eqv-consumer-lib.mjs';
+import { blockEntries, findCopyMismatches, hasCssSelector, readWorkspaceBlock, selectCssProbes } from './eqv-consumer-lib.mjs';
 import { RELEASE_PACKAGES } from './eqv-release.mjs';
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const STUDIO_TOOLS = ['react', 'react-dom', 'vite', 'tailwindcss', '@tailwindcss/vite', 'typescript', '@types/react', '@types/react-dom'];
-const SINGLE_COPY = ['react', 'react-dom', '@ap/ui', '@ap/contracts', '@eqv/core'];
 const PROBE_PACKAGES = ['ui', 'replay', 'views'];
 
 let step = 'setup';
@@ -136,23 +135,23 @@ function resolveFrom(dir, name) {
   }
 }
 
-/** One copy of react, react-dom, @ap/ui, @ap/contracts and @eqv/core, whichever @eqv package resolves it. */
+/** One copy of react, react-dom, @ap/ui, @ap/contracts and @eqv/core, as the consumer root and @eqv/platform-adapter resolve them. */
 function assertSingleCopies(root) {
-  const eqvDirs = Object.fromEntries(RELEASE_PACKAGES.map((name) => [name, resolveFrom(join(root, 'node_modules', '@eqv', 'platform-adapter'), `@eqv/${name}`)]));
-  const missing = Object.entries(eqvDirs).filter(([, dir]) => !dir).map(([name]) => `@eqv/${name}`);
+  const installedDir = (from) => {
+    if (from === 'consumer') return root;
+    if (from === '@ap/ui' || from === 'react-dom') return resolveFrom(root, from);
+    return resolveFrom(join(root, 'node_modules', '@eqv', 'platform-adapter'), from);
+  };
+  const missing = ['@ap/ui', 'react-dom', ...RELEASE_PACKAGES.map((name) => `@eqv/${name}`)].filter((name) => !installedDir(name));
   if (missing.length > 0) fail(`not installed: ${missing.join(', ')}`);
-  const reference = Object.fromEntries(SINGLE_COPY.map((name) => [name, resolveFrom(eqvDirs['platform-adapter'], name)]));
-  const mismatches = [];
-  for (const [name, dir] of Object.entries(reference)) if (!dir) mismatches.push(`${name} does not resolve from @eqv/platform-adapter`);
-  for (const name of RELEASE_PACKAGES) {
-    const manifest = readJson(join(eqvDirs[name], 'package.json'));
-    const declared = new Set([...Object.keys(manifest.dependencies ?? {}), ...Object.keys(manifest.peerDependencies ?? {})]);
-    for (const copy of SINGLE_COPY.filter((candidate) => declared.has(candidate))) {
-      const found = resolveFrom(eqvDirs[name], copy);
-      if (found !== reference[copy]) mismatches.push(`@eqv/${name} resolves ${copy} to ${found}, @eqv/platform-adapter resolves ${reference[copy]}`);
-    }
-    if (resolveFrom(eqvDirs[name], '@eqv/core') !== eqvDirs.core && declared.has('@eqv/core')) mismatches.push(`@eqv/${name} resolves another @eqv/core`);
-  }
+  const mismatches = findCopyMismatches({
+    release: RELEASE_PACKAGES,
+    resolve: (from, name) => resolveFrom(installedDir(from), name),
+    declared: (from) => {
+      const manifest = readJson(join(installedDir(from), 'package.json'));
+      return [...Object.keys(manifest.dependencies ?? {}), ...Object.keys(manifest.peerDependencies ?? {})];
+    },
+  });
   if (mismatches.length > 0) fail(mismatches.join('; '));
 }
 

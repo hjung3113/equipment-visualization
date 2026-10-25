@@ -17,7 +17,7 @@ status: accepted
 - **Peer 계약.** 생성 manifest의 `peerDependencies`는 소스 패키지의 peer와 정확히 같다(core·renderer는 `@ap/*`를 얻지 않는다). `@ap/*`는 SDK 버전 정확값(오늘 `0.12.0`, EV가 빌드·검증한 버전), React는 `^19.0.0`이다. 호스트에는 `react`, `react-dom`, `@ap/ui`, `@ap/contracts`가 각각 한 벌이다. analytics-platform 워크스페이스의 `@ap/*`는 `workspace:*`(`0.0.0`)이라 정확값 peer와 어긋나므로, AP는 `peerDependencyRules.allowedVersions`에 `@eqv/*>@ap/*`를 둔다.
 - **소비.** AP는 여섯 URL을 모두 의존으로 두고 `pnpm-workspace.yaml` `overrides`로 같은 Release 파일에 고정한다(EV가 `@ap/*`를 고정하는 방식). CSS는 `@import "tailwindcss"`, `@ap/ui/styles.css`, `@eqv/platform-adapter/styles.css` 순서다. 자세한 절차는 [INTEGRATION.md](../INTEGRATION.md).
 - **검증.** `pnpm eqv:consumer-check <dir>`가 저장소 밖 임시 프로젝트에 여섯 tarball만 설치해 설치 → `react`·`react-dom`·`@ap/ui`·`@ap/contracts`·`@eqv/core` 단일 복사본 → `tsc`(`eqvManifest`, `eqvScreens` import) → vite build와 CSS 프로브(`ui`·`replay`·`views` 각각, 그 패키지 컴포넌트에서만 쓰는 클래스가 결과 CSS에 있어야 한다)를 확인한다. `@ap/*` URL·`@tiptap/*` 고정·패치는 `pnpm-workspace.yaml`에서, 도구 버전은 `apps/studio/package.json`에서 실행 시점에 읽는다. 이 검사는 **외부 SDK 소비자**를 덮을 뿐 analytics-platform 워크스페이스를 덮지 않는다. CI `Gate`의 `Build` 다음 단계가 pack과 이 검사를 돌린다.
-- **태그와 업로드.** `eqv-vX.Y.Z` 태그와 Release는 소유자가 만든다(AGENTS.md: 태그는 사용자 소유). conductor는 `pnpm eqv:pack --version X.Y.Z`로 파일을 만들고, 그 세션에서 소유자가 허락한 경우에만 올린다. 태그로 도는 워크플로는 두지 않는다.
+- **태그와 업로드.** `eqv-vX.Y.Z` 태그와 Release는 소유자가 만든다(AGENTS.md: 태그는 사용자 소유). conductor는 `pnpm eqv:pack --version X.Y.Z --out <없거나 빈 디렉터리>`로 파일을 만들고, 그 세션에서 소유자가 허락한 경우에만 올린다. 태그로 도는 워크플로는 두지 않는다.
 
 **그대로인 것.** ADR-0012·0013의 경계(`core`·`renderer`는 `@ap/*`를 import하지 않고, `@ap/contracts`는 어댑터만 쓴다), 런타임 소스 동작, `pnpm dev`와 기존 테스트.
 
