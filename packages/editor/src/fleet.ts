@@ -1,9 +1,10 @@
 import {
   latestBinding,
-  computeCoverage, type BindingsFile, type Coverage, type EquipmentRecord, type MappingVersion, type ObservedInventory,
+  computeCoverage, detectDrift, type BindingsFile, type Coverage, type Drift, type EquipmentLayoutDocument, type EquipmentRecord,
+  type MappingVersion, type ObservedInventory,
 } from '@eqv/core';
 
-export type FleetStatus = 'unstarted' | 'draft' | 'published' | 'no-observations';
+export type FleetStatus = 'unstarted' | 'draft' | 'published' | 'drift' | 'no-observations';
 
 /** Everything `summarizeFleet` needs for one equipment whose inputs loaded. */
 export interface FleetData {
@@ -14,6 +15,10 @@ export interface FleetData {
   mappings: Readonly<Record<string, MappingVersion>>;
   /** Whether an alias-rules file exists at equipment scope or at the maker or model scope of this equipment. */
   hasAliasRules: boolean;
+  /** The Baseline Inventory of the latest Binding's Mapping Version; `null` when none was stored (Drift is then unknown). */
+  baseline: ObservedInventory | null;
+  /** The latest Binding's Layout (its pinned revision, else the draft); `null` when it is not there. */
+  layout: EquipmentLayoutDocument | null;
 }
 
 /** An equipment whose inputs could not be loaded; the host supplies the reason. */
@@ -40,6 +45,8 @@ export interface FleetRow {
   assumedRatio: number | null;
   /** `null` on an error row: no number is invented for data that could not be read. */
   unmappedReferences: number | null;
+  /** `null` when not published, or when the Baseline Inventory or the Layout is missing: unknown, never "no drift". */
+  drift: Drift | null;
   error: string | null;
 }
 
@@ -48,25 +55,27 @@ const errorText = (error: unknown) => error instanceof Error ? error.message : S
 function summarize(input: FleetData | FleetFailure | FleetNoObservations): FleetRow {
   if ('noObservations' in input) {
     const { equipmentId, maker, model } = input.record;
-    return { equipmentId, maker, model, status: 'no-observations', coverage: null, assumedRatio: null, unmappedReferences: null, error: null };
+    return { equipmentId, maker, model, status: 'no-observations', coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, error: null };
   }
   if ('error' in input) {
-    return { ...input, status: null, coverage: null, assumedRatio: null, unmappedReferences: null };
+    return { ...input, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, drift: null };
   }
-  const { record, inventory, bindings, mappings, hasAliasRules } = input;
+  const { record, inventory, bindings, mappings, hasAliasRules, baseline, layout } = input;
   const identity = { equipmentId: record.equipmentId, maker: record.maker, model: record.model };
   const failed = (error: string): FleetRow =>
-    ({ ...identity, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, error });
+    ({ ...identity, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, error });
   if (!bindings || bindings.bindings.length === 0) {
     return { ...identity, status: hasAliasRules ? 'draft' : 'unstarted', coverage: null, assumedRatio: null,
-      unmappedReferences: inventory.aliases.reduce((sum, { references }) => sum + references, 0), error: null };
+      unmappedReferences: inventory.aliases.reduce((sum, { references }) => sum + references, 0), drift: null, error: null };
   }
   const latest = latestBinding(bindings.bindings)!;
   const mapping = Object.hasOwn(mappings, latest.mappingHash) ? mappings[latest.mappingHash] : undefined;
   if (!mapping) return failed(`Mapping Version ${latest.mappingHash} 없음`);
   try {
     const coverage = computeCoverage(inventory, mapping);
-    return { ...identity, status: 'published', coverage, assumedRatio: coverage.assumed.ratio, error: null,
+    const drift = baseline && layout ? detectDrift({ baseline, current: inventory, mapping, layout }) : null;
+    const drifted = drift !== null && (drift.newAliases.length > 0 || drift.newSlots.length > 0 || drift.transfersWithoutCapability.length > 0);
+    return { ...identity, status: drifted ? 'drift' : 'published', coverage, assumedRatio: coverage.assumed.ratio, drift, error: null,
       unmappedReferences: coverage.unmapped.reduce((sum, { references }) => sum + references, 0) };
   } catch (error) {
     return failed(errorText(error));

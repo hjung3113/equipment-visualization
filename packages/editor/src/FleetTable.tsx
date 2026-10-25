@@ -15,6 +15,7 @@ const STATUS: Record<FleetStatus, { text: string; tone: Tone }> = {
   unstarted: { text: '미착수', tone: 'neutral' },
   draft: { text: '초안', tone: 'warning' },
   published: { text: '게시됨', tone: 'success' },
+  drift: { text: 'Drift', tone: 'warning' },
   'no-observations': { text: '관측 없음', tone: 'neutral' },
 };
 const NUMERIC_COLUMNS = ['커버리지', 'assumed 비율', '미매핑 참조'].map((header) => ({ id: header, header, align: 'end' as const }));

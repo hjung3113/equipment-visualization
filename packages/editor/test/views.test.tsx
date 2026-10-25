@@ -8,8 +8,8 @@ afterEach(cleanup);
 
 it('renders fleet rows with status badges, integer percentages, dashes and a host link that receives the row', () => {
   const rows = summarizeFleet([
-    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true },
-    { record: { ...record, equipmentId: 'eq-new' }, inventory: inventory(), bindings: null, mappings: {}, hasAliasRules: false },
+    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: null, layout: null },
+    { record: { ...record, equipmentId: 'eq-new' }, inventory: inventory(), bindings: null, mappings: {}, hasAliasRules: false, baseline: null, layout: null },
     { record: { ...record, equipmentId: 'eq-empty' }, noObservations: true },
     { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
   ]);
@@ -36,7 +36,7 @@ it('renders fleet rows with status badges, integer percentages, dashes and a hos
 
 it('adds the host action column and spans it in error rows when provided', () => {
   const rows = summarizeFleet([
-    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true },
+    { record, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: null, layout: null },
     { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
   ]);
   render(<FleetTable rows={rows} renderLink={(_, children) => children}

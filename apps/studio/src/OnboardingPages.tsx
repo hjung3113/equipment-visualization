@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
-import { buildGenericLayout, instantiateLayout, latestBinding, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
+import { buildGenericLayout, detectDrift, instantiateLayout, latestBinding, type Drift, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
   FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
@@ -8,8 +8,8 @@ import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, P
 import { ApiError, createDraft, publishRevision, putImmutable, saveAliasRules, saveBindings } from './api.js';
 import { listEquipmentIds, loadEquipment, loadOnboarding, windowHex, type DraftLookup, type OnboardingLoad } from './onboarding-data.js';
 import { errorMessage } from './error-message.js';
-import { LoadingBlock, Page, StateMessage } from '@eqv/ui';
-import { Button, Callout } from '@ap/ui';
+import { DataTable, LoadingBlock, Page, Panel, StateMessage } from '@eqv/ui';
+import { Button, Callout, PanelSectionTitle } from '@ap/ui';
 import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
 import { Link, hrefFor, navigate, setNavigationBlocker } from './router.js';
 import { WindowPicker } from './WindowPicker.js';
@@ -58,7 +58,7 @@ export function FleetPage() {
             renderLink={(equipmentId, children, row) => (
               <Link href={hrefFor(row.status === 'no-observations' ? { name: 'equipment', equipmentId } : { name: 'onboarding', equipmentId, window: null })}>{children}</Link>
             )}
-            renderActions={(row) => row.status === 'published' ? (
+            renderActions={(row) => row.status === 'published' || row.status === 'drift' ? (
               <Button asChild variant="secondary" size="toolbar">
                 <Link href={hrefFor({ name: 'focus', equipmentId: row.equipmentId, entityType: null, anchor: null, window: null })}
                   aria-label={`${row.equipmentId} Focus 열기`}>
@@ -152,6 +152,79 @@ function StartActions({ equipmentId, sampleWindow, result, draft }: {
   );
 }
 
+/** ⑦ Drift review queue: the selected Sample Window against the latest Binding's Baseline Inventory. */
+function DriftReview({ equipmentId, sampleWindow, data }: { equipmentId: string; sampleWindow: string | null; data: Ok['data'] }) {
+  const { bindings, mappings, baseline, layout, inventory } = data;
+  const latest = bindings && bindings.bindings.length > 0 ? latestBinding(bindings.bindings)! : null;
+  const mapping = latest ? mappings[latest.mappingHash] : undefined;
+  if (!latest || !mapping) return null;
+  const board = (
+    <Button asChild variant="secondary" size="toolbar">
+      <Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}><Grid2x2Check className="size-3.5" aria-hidden />Mapping Board에서 검토</Link>
+    </Button>
+  );
+  let body: ReactNode;
+  if (!baseline || !layout) {
+    body = <StateMessage compact icon={Info} title={baseline ? '최신 Binding의 Layout이 없어 Drift를 판단할 수 없습니다' : 'Baseline Inventory가 없어 Drift를 판단할 수 없습니다'} />;
+  } else {
+    let drift: Drift | null = null;
+    let error: string | null = null;
+    try {
+      drift = detectDrift({ baseline, current: inventory, mapping, layout });
+    } catch (e) {
+      error = errorMessage(e);
+    }
+    if (drift === null) {
+      body = <StateMessage compact tone="danger" icon={ServerCrash} title="Drift를 계산하지 못했습니다" body={error ?? undefined} />;
+    } else if (drift.newAliases.length + drift.newSlots.length + drift.transfersWithoutCapability.length === 0) {
+      body = <StateMessage compact icon={Info} title="기준 대비 Drift 없음" />;
+    } else {
+      body = (
+        <div className="grid gap-4">
+          {drift.newAliases.length > 0 && (
+            <div>
+              <PanelSectionTitle className="mb-2">새 alias ({drift.newAliases.length})</PanelSectionTitle>
+              <DataTable label="새 alias" columns={['alias']}>
+                {drift.newAliases.map((alias) => (
+                  <DataTable.Row key={alias}><DataTable.Cell rowHeader>{alias}</DataTable.Cell></DataTable.Row>
+                ))}
+              </DataTable>
+            </div>
+          )}
+          {drift.newSlots.length > 0 && (
+            <div>
+              <PanelSectionTitle className="mb-2">새 slot ({drift.newSlots.length})</PanelSectionTitle>
+              <DataTable label="새 slot" columns={['alias / slot']}>
+                {drift.newSlots.map(({ alias, slot }) => (
+                  <DataTable.Row key={`${alias}\u0000${slot}`}><DataTable.Cell rowHeader>{alias} / {slot}</DataTable.Cell></DataTable.Row>
+                ))}
+              </DataTable>
+            </div>
+          )}
+          {drift.transfersWithoutCapability.length > 0 && (
+            <div>
+              <PanelSectionTitle className="mb-2">Transfer Capability 없는 관측 이송 ({drift.transfersWithoutCapability.length})</PanelSectionTitle>
+              <DataTable label="Transfer Capability 없는 관측 이송" columns={['from → to', { id: 'count', header: '건수', align: 'end', className: 'whitespace-nowrap' }]}>
+                {drift.transfersWithoutCapability.map(({ from, to, count }) => (
+                  <DataTable.Row key={`${from}\u0000${to}`}>
+                    <DataTable.Cell rowHeader>{from} → {to}</DataTable.Cell>
+                    <DataTable.Cell numeric>{count}</DataTable.Cell>
+                  </DataTable.Row>
+                ))}
+              </DataTable>
+            </div>
+          )}
+        </div>
+      );
+    }
+  }
+  return (
+    <Panel title="⑦ Drift 검토" subtitle="선택한 Sample Window를 최신 Binding의 Baseline Inventory와 비교합니다." actions={board}>
+      {body}
+    </Panel>
+  );
+}
+
 const PICKER_HINT = 'Inventory·Template 제안·Mapping Board·Publish의 Baseline Inventory가 이 window에서 나옵니다. 기본은 가장 늦은 window이며, 고른 window는 주소(?window=)에 남습니다.';
 
 export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: string; sampleWindow: string | null }) {
@@ -200,6 +273,7 @@ export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: str
             <div role="status"><Callout tone="blue" icon={<Info className="size-3.5" aria-hidden />}>건너뛴 Template: {result.skippedTemplates.join(', ')}</Callout></div>
           )}
           <InventoryView inventory={result.data.inventory} dictionaries={result.data.dictionaries} />
+          <DriftReview equipmentId={equipmentId} sampleWindow={sampleWindow} data={result.data} />
           {result.draft.kind === 'error' && <StateMessage compact tone="danger" icon={ServerCrash} title={`레이아웃 draft 오류: ${result.draft.error}`} />}
           {result.draft.kind === 'found' ? (
             <TemplateProposals inventory={result.data.inventory} dictionaries={result.data.dictionaries} templates={result.templates} />

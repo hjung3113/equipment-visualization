@@ -1,9 +1,9 @@
 import {
   latestBinding, checkBindingLayout, checkBindingMapping,
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, parseSampleWindowName,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, observedInventorySchema, parseSampleWindowName,
   validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary,
-  type AliasMetadataFile, type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
-  type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
+  type AliasMetadataFile, type AliasRulesFile, type Binding, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
+  type MappingVersion, type ObservedInventory, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
 import { ApiError, dirOrEmpty, listDir, readFile, type DirEntry } from './api.js';
@@ -46,6 +46,13 @@ export class DataError extends Error {}
 export const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const problems = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
   issues.map(({ path, message }) => `${path.map(String).join('.') || '(root)'}: ${message}`).join('; ');
+
+export const mappingPath = (equipmentId: string, binding: Pick<Binding, 'mappingHash'>) =>
+  `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
+export const baselinePath = (equipmentId: string, binding: Pick<Binding, 'mappingHash'>) =>
+  `onboarding/baselines/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.inventory.json`;
+export const layoutPath = (layoutId: string, revision: string | undefined) => revision === undefined ? `layouts/${layoutId}/draft.layout.json`
+  : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
 
 /** Only a 404 is absence; every other failure propagates. */
 export async function readOptional(path: string): Promise<unknown | undefined> {
@@ -202,18 +209,36 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     }
 
     const mappings: Record<string, MappingVersion> = {};
+    let baseline: ObservedInventory | null = null;
+    let layout: EquipmentLayoutDocument | null = null;
     if (bindings && bindings.bindings.length > 0) {
       const latest = latestBinding(bindings.bindings)!;
-      const hex = latest.mappingHash.slice('sha256:'.length);
-      const mappingPath = `onboarding/mappings/${equipmentId}/${hex}.mapping.json`;
-      const rawMapping = await readOptional(mappingPath);
-      if (rawMapping === undefined) throw new DataError(`${mappingPath}: Mapping Version 파일 없음`);
+      const mappingFile = mappingPath(equipmentId, latest);
+      const rawMapping = await readOptional(mappingFile);
+      if (rawMapping === undefined) throw new DataError(`${mappingFile}: Mapping Version 파일 없음`);
       const checked = await checkBindingMapping(rawMapping, latest, equipmentId);
-      if (!checked.ok) throw new DataError(`${mappingPath}: ${checked.problem}`);
+      if (!checked.ok) throw new DataError(`${mappingFile}: ${checked.problem}`);
       const mapping = checked.value;
       mappings[mapping.hash] = mapping;
+
+      // Absent is unknown (a Binding published before the Baseline Inventory existed); present but invalid is an error.
+      const baselineFile = baselinePath(equipmentId, latest);
+      const rawBaseline = await readOptional(baselineFile);
+      if (rawBaseline !== undefined) {
+        const parsed = observedInventorySchema.safeParse(rawBaseline);
+        if (!parsed.success) throw new DataError(`${baselineFile}: ${problems(parsed.error.issues)}`);
+        baseline = parsed.data;
+      }
+      // A pinned Binding uses its Layout Revision, an unpinned one the draft of its layoutId (ADR-0011).
+      const layoutFile = layoutPath(latest.layoutId, latest.layoutRevision);
+      const rawLayout = await readOptional(layoutFile);
+      if (rawLayout !== undefined) {
+        const checkedLayout = await checkBindingLayout(rawLayout, latest.layoutId, latest.layoutRevision);
+        if (!checkedLayout.ok) throw new DataError(`${layoutFile}: ${checkedLayout.problem}`);
+        layout = checkedLayout.value;
+      }
     }
-    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
+    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, baseline, layout, ruleFiles } };
   } catch (error) {
     return { kind: 'error', record, error: errorMessage(error) };
   }
