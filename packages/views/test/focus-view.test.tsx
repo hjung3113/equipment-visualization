@@ -117,3 +117,26 @@ it('Escape on a focused list row closes the host detail slot', () => {
   fireEvent.keyDown(row(), { key: 'Escape' });
   expect(slot().textContent).toBe('');
 });
+
+it('selects the anchored Occurrence on entry and on an entry change, and nothing for no anchor or a missing one', () => {
+  const entry = (anchor: string | null, renderDetail?: (d: Detail) => void) =>
+    <FocusView input={input} notices={[]} entityType={null} anchor={anchor} resetKey="a" {...(renderDetail ? { renderDetail } : {})} />;
+  const selected = () => document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id') ?? null;
+  const view = render(entry('occ-pm1-process'));
+  expect(selected()).toBe('occ-pm1-process');
+  view.rerender(entry('occ-carrier'));
+  expect(selected()).toBe('occ-carrier');
+  view.rerender(entry(null));
+  expect(selected()).toBeNull();
+  view.unmount();
+  cleanup();
+  render(entry(null));
+  expect(selected()).toBeNull();
+  cleanup();
+  render(entry('occ-not-in-batch'));
+  expect(selected()).toBeNull();
+  cleanup();
+  const details: Detail[] = [];
+  render(entry('occ-pm1-process', (d) => { details.push(d); }));
+  expect(details.at(-1)?.label).toBe('근거 상세 · occ-pm1-process');
+});
