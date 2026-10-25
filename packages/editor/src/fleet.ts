@@ -19,6 +19,19 @@ export interface FleetData {
   baseline: ObservedInventory | null;
   /** The latest Binding's Layout (its pinned revision, else the draft); `null` when it is not there. */
   layout: EquipmentLayoutDocument | null;
+  /**
+   * Why `baseline` / `layout` could not be read (unreadable or invalid file); Drift is then unknown with this reason.
+   * It never fails the load: Drift inputs are optional context.
+   */
+  driftProblem?: string | null;
+}
+
+/** Why Drift is unknown for these inputs, or `null` when both the Baseline Inventory and the Layout are there. */
+export function driftUnknownReason({ baseline, layout, driftProblem }: Pick<FleetData, 'baseline' | 'layout' | 'driftProblem'>): string | null {
+  if (driftProblem) return driftProblem;
+  if (!baseline) return 'Baseline Inventory가 없습니다';
+  if (!layout) return '최신 Binding의 Layout이 없습니다';
+  return null;
 }
 
 /** An equipment whose inputs could not be loaded; the host supplies the reason. */
@@ -47,6 +60,8 @@ export interface FleetRow {
   unmappedReferences: number | null;
   /** `null` when not published, or when the Baseline Inventory or the Layout is missing: unknown, never "no drift". */
   drift: Drift | null;
+  /** Why a published row's Drift is unknown (missing or invalid Drift input, or detection failed); `null` when it was checked or the row is not published. */
+  driftUnknown: string | null;
   error: string | null;
 }
 
@@ -55,27 +70,35 @@ const errorText = (error: unknown) => error instanceof Error ? error.message : S
 function summarize(input: FleetData | FleetFailure | FleetNoObservations): FleetRow {
   if ('noObservations' in input) {
     const { equipmentId, maker, model } = input.record;
-    return { equipmentId, maker, model, status: 'no-observations', coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, error: null };
+    return { equipmentId, maker, model, status: 'no-observations', coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, driftUnknown: null, error: null };
   }
   if ('error' in input) {
-    return { ...input, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, drift: null };
+    return { ...input, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, driftUnknown: null };
   }
-  const { record, inventory, bindings, mappings, hasAliasRules, baseline, layout } = input;
+  const { record, inventory, bindings, mappings, hasAliasRules } = input;
   const identity = { equipmentId: record.equipmentId, maker: record.maker, model: record.model };
   const failed = (error: string): FleetRow =>
-    ({ ...identity, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, error });
+    ({ ...identity, status: null, coverage: null, assumedRatio: null, unmappedReferences: null, drift: null, driftUnknown: null, error });
   if (!bindings || bindings.bindings.length === 0) {
     return { ...identity, status: hasAliasRules ? 'draft' : 'unstarted', coverage: null, assumedRatio: null,
-      unmappedReferences: inventory.aliases.reduce((sum, { references }) => sum + references, 0), drift: null, error: null };
+      unmappedReferences: inventory.aliases.reduce((sum, { references }) => sum + references, 0), drift: null, driftUnknown: null, error: null };
   }
   const latest = latestBinding(bindings.bindings)!;
   const mapping = Object.hasOwn(mappings, latest.mappingHash) ? mappings[latest.mappingHash] : undefined;
   if (!mapping) return failed(`Mapping Version ${latest.mappingHash} 없음`);
   try {
     const coverage = computeCoverage(inventory, mapping);
-    const drift = baseline && layout ? detectDrift({ baseline, current: inventory, mapping, layout }) : null;
+    let drift: Drift | null = null;
+    let driftUnknown = driftUnknownReason(input);
+    if (driftUnknown === null) {
+      try {
+        drift = detectDrift({ baseline: input.baseline!, current: inventory, mapping, layout: input.layout! });
+      } catch (error) {
+        driftUnknown = errorText(error);
+      }
+    }
     const drifted = drift !== null && (drift.newAliases.length > 0 || drift.newSlots.length > 0 || drift.transfersWithoutCapability.length > 0);
-    return { ...identity, status: drifted ? 'drift' : 'published', coverage, assumedRatio: coverage.assumed.ratio, drift, error: null,
+    return { ...identity, status: drifted ? 'drift' : 'published', coverage, assumedRatio: coverage.assumed.ratio, drift, driftUnknown, error: null,
       unmappedReferences: coverage.unmapped.reduce((sum, { references }) => sum + references, 0) };
   } catch (error) {
     return failed(errorText(error));

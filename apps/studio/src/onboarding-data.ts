@@ -211,6 +211,7 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     const mappings: Record<string, MappingVersion> = {};
     let baseline: ObservedInventory | null = null;
     let layout: EquipmentLayoutDocument | null = null;
+    let driftProblem: string | null = null;
     if (bindings && bindings.bindings.length > 0) {
       const latest = latestBinding(bindings.bindings)!;
       const mappingFile = mappingPath(equipmentId, latest);
@@ -221,24 +222,30 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
       const mapping = checked.value;
       mappings[mapping.hash] = mapping;
 
-      // Absent is unknown (a Binding published before the Baseline Inventory existed); present but invalid is an error.
-      const baselineFile = baselinePath(equipmentId, latest);
-      const rawBaseline = await readOptional(baselineFile);
-      if (rawBaseline !== undefined) {
-        const parsed = observedInventorySchema.safeParse(rawBaseline);
-        if (!parsed.success) throw new DataError(`${baselineFile}: ${problems(parsed.error.issues)}`);
-        baseline = parsed.data;
-      }
-      // A pinned Binding uses its Layout Revision, an unpinned one the draft of its layoutId (ADR-0011).
-      const layoutFile = layoutPath(latest.layoutId, latest.layoutRevision);
-      const rawLayout = await readOptional(layoutFile);
-      if (rawLayout !== undefined) {
-        const checkedLayout = await checkBindingLayout(rawLayout, latest.layoutId, latest.layoutRevision);
-        if (!checkedLayout.ok) throw new DataError(`${layoutFile}: ${checkedLayout.problem}`);
-        layout = checkedLayout.value;
+      // Drift inputs are optional context: absent, unreadable or invalid leaves the load ok and Drift unknown with a reason.
+      try {
+        const baselineFile = baselinePath(equipmentId, latest);
+        const rawBaseline = await readOptional(baselineFile);
+        if (rawBaseline !== undefined) {
+          const parsed = observedInventorySchema.safeParse(rawBaseline);
+          if (!parsed.success) throw new DataError(`${baselineFile}: ${problems(parsed.error.issues)}`);
+          baseline = parsed.data;
+        }
+        // A pinned Binding uses its Layout Revision, an unpinned one the draft of its layoutId (ADR-0011).
+        const layoutFile = layoutPath(latest.layoutId, latest.layoutRevision);
+        const rawLayout = await readOptional(layoutFile);
+        if (rawLayout !== undefined) {
+          const checkedLayout = await checkBindingLayout(rawLayout, latest.layoutId, latest.layoutRevision);
+          if (!checkedLayout.ok) throw new DataError(`${layoutFile}: ${checkedLayout.problem}`);
+          layout = checkedLayout.value;
+        }
+      } catch (error) {
+        baseline = null;
+        layout = null;
+        driftProblem = errorMessage(error);
       }
     }
-    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, baseline, layout, ruleFiles } };
+    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, baseline, layout, driftProblem, ruleFiles } };
   } catch (error) {
     return { kind: 'error', record, error: errorMessage(error) };
   }

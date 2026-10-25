@@ -63,10 +63,20 @@ it.each([
   check(row!.drift!);
 });
 
-it('turns a drift detection RangeError into an error row', () => {
-  const [row] = summarizeFleet([published({ baseline: { ...inventory(), equipmentId: 'eq-other' }, layout })]);
-  expect(row).toMatchObject({ status: null, drift: null });
-  expect(row!.error).toContain('eq-other');
+it.each([
+  ['a detection failure', { baseline: { ...inventory(), equipmentId: 'eq-other' }, layout }, 'eq-other'],
+  ['a missing baseline', { layout }, 'Baseline Inventory가 없습니다'],
+  ['a missing layout', { baseline: inventory() }, '최신 Binding의 Layout이 없습니다'],
+  ['an unreadable drift input', { driftProblem: 'layouts/x/draft.layout.json: 잘못됨' }, 'layouts/x/draft.layout.json: 잘못됨'],
+] as [string, Partial<FleetData>, string][])('stays published with Drift unknown and the reason for %s', (_, change, reason) => {
+  const [row] = summarizeFleet([published(change)]);
+  expect(row).toMatchObject({ status: 'published', drift: null, error: null });
+  expect(row!.driftUnknown).toContain(reason);
+});
+
+it('has no unknown reason when Drift was checked', () => {
+  const [row] = summarizeFleet([published({ baseline: inventory(), layout })]);
+  expect(row!.driftUnknown).toBeNull();
 });
 
 it('turns a registered equipment without Sample Windows into a status row, not an error', () => {

@@ -59,7 +59,7 @@ it('lists a published equipment on /fleet with a link to its onboarding page', a
   at('/fleet');
   render(<App />);
   const row = await fleetRow('eq-synth-01');
-  expect(within(row).getByText('게시됨')).toBeTruthy();
+  expect(within(row).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   expect(screen.getByRole('link', { name: 'eq-synth-01' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
 });
 
@@ -156,7 +156,7 @@ it.each<[string, (id: string) => Promise<void>]>([
   at('/fleet');
   render(<App />);
   const healthy = await fleetRow('eq-synth-01');
-  expect(within(healthy).getByText('게시됨')).toBeTruthy();
+  expect(within(healthy).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   const bad = await fleetRow('eq-bad');
   expect(bad.querySelector('.text-text-danger-label')?.textContent).toBe('오류');
   if (scenario === 'a record whose equipmentId differs from its file name') {
@@ -324,12 +324,42 @@ describe('⑦ Drift', () => {
     await writeDraft(root, 'eq-synth-01-layout');
     at('/onboarding/eq-synth-01');
     const first = render(<App />);
-    await screen.findByText('Baseline Inventory가 없어 Drift를 판단할 수 없습니다');
+    await screen.findByText('Drift를 판단할 수 없습니다');
+    expect(screen.getByText('Baseline Inventory가 없습니다')).toBeTruthy();
     expect(within(screen.getByRole('main')).queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Mapping Board에서 검토' })).toBeNull();
     first.unmount();
 
     at('/fleet');
     render(<App />);
-    expect(within(await fleetRow('eq-synth-01')).getByText('게시됨')).toBeTruthy();
+    expect(within(await fleetRow('eq-synth-01')).getByText('게시됨 · Drift 미확인')).toBeTruthy();
+  });
+
+  it('keeps a checked, clean Fleet row as plain 게시됨', async () => {
+    await withBaseline();
+    at('/fleet');
+    render(<App />);
+    const row = within(await fleetRow('eq-synth-01'));
+    expect(row.getByText('게시됨')).toBeTruthy();
+    expect(row.queryByText('게시됨 · Drift 미확인')).toBeNull();
+  });
+
+  it('leaves Fleet, Onboarding and the Board loading when a Drift input is broken, and says Drift is unknown', async () => {
+    await withBaseline();
+    await writeJson(root, 'layouts/eq-synth-01-layout/draft.layout.json', { broken: true });
+    expect(await onboardingData.loadOnboarding('eq-synth-01')).toMatchObject({ kind: 'ok', data: { baseline: null, layout: null, driftProblem: expect.stringContaining('draft.layout.json') } });
+
+    await writeJson(root, BASELINE, { broken: true });
+    expect(await onboardingData.loadOnboarding('eq-synth-01')).toMatchObject({ kind: 'ok', data: { baseline: null, driftProblem: expect.stringContaining('.inventory.json') } });
+
+    at('/onboarding/eq-synth-01');
+    const first = render(<App />);
+    await screen.findByText('Drift를 판단할 수 없습니다');
+    expect(screen.getByRole('heading', { name: /Inventory/ })).toBeTruthy();
+    first.unmount();
+
+    at('/fleet');
+    render(<App />);
+    expect(within(await fleetRow('eq-synth-01')).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   });
 });
