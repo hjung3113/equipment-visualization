@@ -18,7 +18,10 @@ const propose = (input: ObservedInventory, candidates = templates()) => proposeT
 it('validates the synthetic candidates and preserves the single-cluster structure', () => {
   for (const template of templates()) expect(validateLayout(template)).toMatchObject({ ok: true });
   const original = layoutDocumentSchema.parse(read('cluster-single/layout.json'));
-  expect(templates()[0]).toMatchObject({ components: original.components, physicalInterfaces: original.physicalInterfaces,
+  // The fixture layout uses catalog primitives; the onboarding candidate keeps its synthetic assetRefs (out of scope, #206).
+  const withoutAssetRef = (components: typeof original.components) => components.map((component) => ({ ...component, assetRef: undefined }));
+  expect(withoutAssetRef(templates()[0]!.components)).toMatchObject(withoutAssetRef(original.components));
+  expect(templates()[0]).toMatchObject({ physicalInterfaces: original.physicalInterfaces,
     transferCapabilities: original.transferCapabilities, levels: original.levels });
 });
 

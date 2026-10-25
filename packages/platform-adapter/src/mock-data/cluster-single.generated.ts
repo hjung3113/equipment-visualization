@@ -34,7 +34,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "lp-a",
         "role": "lp",
-        "assetRef": "synthetic-lp",
+        "assetRef": "primitive:lp",
         "label": "lp-a",
         "levelId": "level-main",
         "transform": {
@@ -142,7 +142,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "efem-1",
         "role": "efem",
-        "assetRef": "synthetic-efem",
+        "assetRef": "primitive:efem",
         "label": "efem-1",
         "levelId": "level-main",
         "transform": {
@@ -226,7 +226,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "efem-robot",
         "role": "robot",
-        "assetRef": "synthetic-robot",
+        "assetRef": "primitive:robot-single",
         "label": "efem-robot",
         "levelId": "level-main",
         "transform": {
@@ -303,7 +303,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "ll-a",
         "role": "ll",
-        "assetRef": "synthetic-ll",
+        "assetRef": "primitive:loadlock",
         "label": "ll-a",
         "levelId": "level-main",
         "transform": {
@@ -412,7 +412,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "tm-1",
         "role": "tm",
-        "assetRef": "synthetic-tm",
+        "assetRef": "primitive:tm",
         "label": "tm-1",
         "levelId": "level-main",
         "transform": {
@@ -509,7 +509,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "tm-robot",
         "role": "robot",
-        "assetRef": "synthetic-robot",
+        "assetRef": "primitive:robot-single",
         "label": "tm-robot",
         "levelId": "level-main",
         "transform": {
@@ -598,7 +598,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "pm-a",
         "role": "pm",
-        "assetRef": "synthetic-pm",
+        "assetRef": "primitive:pm",
         "label": "pm-a",
         "levelId": "level-main",
         "transform": {
@@ -682,7 +682,7 @@ export const layouts: EquipmentLayoutDocument[] = [
       {
         "id": "pm-b",
         "role": "pm",
-        "assetRef": "synthetic-pm",
+        "assetRef": "primitive:pm",
         "label": "pm-b",
         "levelId": "level-main",
         "transform": {
