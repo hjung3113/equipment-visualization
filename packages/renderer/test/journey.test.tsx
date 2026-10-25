@@ -85,12 +85,20 @@ it('selects a Component through a badge click without drawing Transfer Capabilit
 });
 
 it.each([
-  { size: 'large', shrink: 200, above: false },
-  { size: 'small', shrink: 20, above: true },
-])('places the hop row $size Component: outside above bbox = $above', ({ shrink, above }) => {
-  const bbox = scene.components.get('pm-a')!.bbox;
+  { size: 'large', pm: 'pm-a', shrink: 200, above: false },
+  { size: 'small', pm: 'pm-a', shrink: 20, above: true },
+  { size: 'small at the viewBox top edge', pm: 'edge', shrink: 20, above: false },
+])('places the hop row $size Component: outside above bbox = $above', ({ pm, shrink, above }) => {
+  const doc: LayoutDocument = structuredClone(layout);
+  const base = doc.components.find((c) => c.id === 'pm-a')!;
+  // A copy of pm-a whose bbox top sits on the viewBox top edge.
+  doc.components.push({ ...base, id: 'edge', parentId: undefined, ports: [], holdingSites: [], transform: { ...base.transform, y: doc.viewBox.y + (base.size?.height ?? 0) / 2, rotation: 0 } });
+  const probe = buildScene(doc, { width: 1000, height: 700, pxPerUnit: 4, interactive: true });
+  const bbox = probe.components.get(pm)!.bbox;
+  if (pm === 'edge') expect(bbox.y0).toBeCloseTo(doc.viewBox.y, 6);
   const kk = (bbox.y1 - bbox.y0) / shrink;
-  const layer = buildJourneyLayer(scene, { hops: [hop(1, 'pm-a'), hop(2, 'pm-a')] }, kk);
+  const sc = buildScene(doc, { width: 1000, height: 700, pxPerUnit: 1 / kk, interactive: true });
+  const layer = buildJourneyLayer(sc, { hops: [hop(1, pm), hop(2, pm)] }, kk);
   for (const b of badges(layer)) {
     const c = b.children.find((n): n is SvgNode => typeof n !== 'string' && n.tag === 'circle')!;
     if (above) expect(num(c, 'cy') + num(c, 'r')).toBeLessThanOrEqual(bbox.y0);

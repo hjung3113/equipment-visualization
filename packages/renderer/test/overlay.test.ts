@@ -6,6 +6,7 @@ import { layoutDocumentSchema, type Component, type LayoutDocument, type SceneSt
 import { buildScene, TopView, type Scene, type SceneComponent, type SvgNode } from '../src/index.js';
 import { buildOverlay, buildReplayLayer, type IllustrativeGhost, type OverlayState } from '../src/overlay.js';
 import { robotR, shapeLocal } from '../src/geom.js';
+import { outsideLabelBottomPx } from '../src/scene.js';
 import { formatNum, renderNode } from '../src/svg.js';
 
 const root = new URL('../../../', import.meta.url);
@@ -837,20 +838,32 @@ it('draws a material cluster upright in scene space on a component rotated 150 d
 });
 
 it.each([
-  { size: 'large', shrink: 200, below: false },
-  { size: 'small', shrink: 20, below: true },
-])('places the material row $size Component: outside below bbox = $below', ({ shrink, below }) => {
-  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'A', x: 400, y: 300, w: 96, h: 100 })]);
+  { size: 'large', w: 96, h: 100, y: 300, shrink: 200, mode: 'inner' },
+  { size: 'small', w: 96, h: 100, y: 100, shrink: 20, mode: 'outside' },
+  { size: 'small at the viewBox bottom edge', w: 96, h: 100, y: 550, shrink: 20, mode: 'inner' },
+  { size: 'small with an outside label', w: 16, h: 16, y: 300, shrink: 16, mode: 'below-label' },
+] as const)('places the material row $size Component: $mode', ({ w, h, y, shrink, mode }) => {
+  const { layout } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'PM', x: 400, y, w, h })]);
+  const kk = h / shrink;
+  const scene = buildScene(layout, { width: 800 / kk, height: 600 / kk, pxPerUnit: 1 / kk, interactive: true });
   const comp = scene.components.get('a')!;
-  const kk = (comp.bbox.y1 - comp.bbox.y0) / shrink;
   const state = replayState({
     components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
     materials: [stateMaterial({ key: 'm:wafer:W1', kind: 'wafer', id: 'W1', location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'observed' })],
   });
-  const token = shapes(markOf(buildReplayLayer(scene, { state }, kk), comp)).find((n) => n.tag === 'circle' && n.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)');
-  if (!token) throw new Error('missing token');
+  const cluster = markOf(buildReplayLayer(scene, { state }, kk), comp);
+  const token = shapes(cluster).find((n) => n.tag === 'circle' && n.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)');
+  const idLabel = shapes(cluster).find((n) => n.tag === 'text' && n.children.includes('W1'));
+  if (!token || !idLabel) throw new Error('missing token');
   const cy = Number(token.attrs.cy);
   const r = Number(token.attrs.r);
-  if (below) expect(cy - r).toBeGreaterThanOrEqual(comp.bbox.y1);
-  else expect(cy + r).toBeLessThanOrEqual(comp.bbox.y1);
+  if (mode === 'inner') expect(cy + r).toBeLessThanOrEqual(comp.bbox.y1);
+  else {
+    expect(cy - r).toBeGreaterThanOrEqual(comp.bbox.y1);
+    // The id label's text top (≈ 0.78 of the font size above its baseline) must clear the bbox and, when the Component's
+    // own label is drawn below it, that label's box.
+    const clear = comp.bbox.y1 + (comp.outsideLabelPx != null ? outsideLabelBottomPx(comp.outsideLabelPx) * kk : 0);
+    expect(Number(idLabel.attrs.y) - 0.78 * Number(idLabel.attrs['font-size'])).toBeGreaterThanOrEqual(clear);
+    expect(cy + r).toBeLessThanOrEqual(scene.viewBox.y1);
+  }
 });

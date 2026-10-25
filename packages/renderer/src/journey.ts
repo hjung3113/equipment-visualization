@@ -81,10 +81,11 @@ export function buildJourneyLayer(scene: Scene, journey: JourneyOverlay, k: numb
     const chipPx = plus ? estimateTextWidth(plus, NUMBER_PX, false) + 8 : 0;
     const rowPx = shown.length * BADGE_PX + Math.max(0, shown.length - 1) * BADGE_GAP_PX
       + (plus ? (shown.length > 0 ? BADGE_GAP_PX : 0) + chipPx : 0);
-    const small = (comp.bbox.y1 - comp.bbox.y0) / k < SMALL_COMPONENT_PX;
-    const cy = small
-      ? comp.bbox.y0 - (INSET_PX + BADGE_PX / 2) * k
-      : comp.bbox.y0 + (INSET_PX + BADGE_PX / 2) * k;
+    // A small Component's row sits just above the bbox (no outside label is drawn there) unless its stroked
+    // extent would cross the scene viewBox; then it stays on the inner top edge.
+    const outer = comp.bbox.y0 - (INSET_PX + BADGE_PX / 2) * k;
+    const small = (comp.bbox.y1 - comp.bbox.y0) / k < SMALL_COMPONENT_PX && outer - (BADGE_PX / 2 + 1.5) * k >= scene.viewBox.y0;
+    const cy = small ? outer : comp.bbox.y0 + (INSET_PX + BADGE_PX / 2) * k;
     let xPx = -rowPx / 2;
     for (const hop of shown) {
       nodes.push(badge(hop, comp.center[0] + (xPx + BADGE_PX / 2) * k, cy, k, hop.number === journey.selected));
