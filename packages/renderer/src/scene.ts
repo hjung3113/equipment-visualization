@@ -43,6 +43,8 @@ export interface SceneComponent {
   bodyStroke: string;
   /** The layout's ordered Holding Site ids. Order only: Holding Sites have no geometry. */
   holdingSiteIds: readonly string[];
+  /** Font px of the Component's own label when it is drawn below the bbox (label plan `outside`), else null. */
+  outsideLabelPx: number | null;
 }
 
 /** One explicit transfer capability. Endpoints stay paired; a flat handler/target set is not enough. */
@@ -55,6 +57,8 @@ export interface SceneCapability {
 export interface Scene {
   node: SvgNode;
   pxPerUnit: number;
+  /** The Layout viewBox the viewer fits, as a box. */
+  viewBox: Box;
   components: ReadonlyMap<string, SceneComponent>;
   capabilities: readonly SceneCapability[];
 }
@@ -158,6 +162,14 @@ function localTransform(component: Component): string {
 
 function normRot(deg: number): number {
   return ((deg % 360) + 360) % 360;
+}
+
+/** Gap between the bbox bottom and an `outside` Component label's line box, screen px. */
+const OUTSIDE_LABEL_GAP_PX = 9;
+
+/** Bottom of an `outside` label's estimated text box below the bbox, screen px (centre 0.5px, baseline +0.36px, descent 0.22px). */
+export function outsideLabelBottomPx(px: number): number {
+  return OUTSIDE_LABEL_GAP_PX + px * (0.5 + 0.36 + 0.22);
 }
 
 function labelPx(cls: Placed['cls'], idMode: boolean): number {
@@ -670,7 +682,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
           const ly = row.asset === 'loadlock' ? 0 : row.h / 2 - plan.band / 2;
           [x, y] = apply(row.matrix, 0, ly);
         } else if (plan.mode === 'outside') {
-          y = row.bbox.y1 + 9 * k + px * 0.5 * k;
+          y = row.bbox.y1 + OUTSIDE_LABEL_GAP_PX * k + px * 0.5 * k;
           halo = true;
         }
         const by = y + px * 0.36 * k;
@@ -802,6 +814,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       hidden: row.hidden,
       bodyStroke: row.prim.body.attrs.stroke ?? 'none',
       holdingSiteIds: row.component.holdingSites.map((site) => site.id),
+      outsideLabelPx: plans.get(row.id)?.mode === 'outside' ? plans.get(row.id)!.px : null,
     });
   }
   const capabilities = layout.transferCapabilities.map((edge) => ({
@@ -839,5 +852,11 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
     // Chips are not one of the four named overlay layers; they follow badges.
     layer('chips', chipNodes),
   ]);
-  return { node, pxPerUnit, components, capabilities };
+  return {
+    node,
+    pxPerUnit,
+    viewBox: { x0: viewBox.x, y0: viewBox.y, x1: viewBox.x + viewBox.width, y1: viewBox.y + viewBox.height },
+    components,
+    capabilities,
+  };
 }

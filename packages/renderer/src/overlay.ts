@@ -1,7 +1,7 @@
 import type { SceneState } from '@eqv/core';
 import { capabilitySegment } from './capability.js';
 import { isArm, robotR, shapeLocal, type Mat } from './geom.js';
-import type { Scene, SceneComponent } from './scene.js';
+import { outsideLabelBottomPx, type Scene, type SceneComponent } from './scene.js';
 import { estimateTextWidth } from './text.js';
 import { el, formatNum, withPointerEventsNone, type SvgNode } from './svg.js';
 
@@ -69,6 +69,12 @@ const DISC_GAP_PX = 3;
 const CLUSTER_INSET_PX = 2;
 const GROUP_GAP_PX = 10;
 const LABEL_PX = 10;
+/**
+ * A Component whose on-screen bbox is shorter than this (screen px) cannot hold the inner mark rows and its own
+ * centred label: Journey row 2 + 16, material row with id labels 2 + 12 + 12, one label line 12 add up to 56, and 48
+ * accepts a slightly tight fit for mid-size boxes. Below it both rows move just outside the bbox.
+ */
+export const SMALL_COMPONENT_PX = 48;
 const LABEL_CHARS = 8;
 const MAX_LABELLED = 4;
 const SHOWN_WITH_CHIP = 3;
@@ -287,11 +293,26 @@ function siteOrdered(comp: SceneComponent, materials: readonly StateMaterial[]):
 }
 
 /**
+ * Row centre y. A small Component's row sits outside, below the bbox and below the Component's own `outside` label
+ * box, with room for the id labels above the disc; if its stroked extent would cross the scene viewBox it stays on
+ * the inner bottom edge.
+ */
+function materialRowCy(scene: Scene, comp: SceneComponent, k: number): number {
+  const inner = comp.bbox.y1 - (CLUSTER_INSET_PX + DISC_PX / 2) * k;
+  if ((comp.bbox.y1 - comp.bbox.y0) / k >= SMALL_COMPONENT_PX) return inner;
+  const labelPx = comp.outsideLabelPx == null ? 0 : outsideLabelBottomPx(comp.outsideLabelPx);
+  const offsetPx = labelPx + CLUSTER_INSET_PX + LABEL_PX + 2 + DISC_PX / 2;
+  const outer = comp.bbox.y1 + offsetPx * k;
+  return outer + (DISC_PX / 2 + 1) * k <= scene.viewBox.y1 ? outer : inner;
+}
+
+/**
  * Disc clusters in screen-upright scene space (never the component's rotated frame): one row centred on the
- * component's scene centre, on the inner bottom edge of its axis-aligned bbox, one group per Holding Site;
+ * component's scene centre, on the inner bottom edge of its axis-aligned bbox (just below it when the
+ * component is shorter than `SMALL_COMPONENT_PX` on screen), one group per Holding Site;
  * screen-pixel sizes through `k`.
  */
-function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[], k: number): SvgNode[] {
+function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly StateMaterial[], k: number): SvgNode[] {
   const ordered = siteOrdered(comp, materials);
   const overflow = ordered.length > MAX_LABELLED;
   const shown = overflow ? ordered.slice(0, SHOWN_WITH_CHIP) : ordered;
@@ -310,7 +331,7 @@ function materialTokens(comp: SceneComponent, materials: readonly StateMaterial[
     rowPx += item.width + (i === 0 ? 0 : item.group === items[i - 1]!.group ? DISC_GAP_PX : GROUP_GAP_PX);
   });
   if (plus) rowPx += (items.length > 0 ? DISC_GAP_PX : 0) + chipPx;
-  const cy = comp.bbox.y1 - (CLUSTER_INSET_PX + DISC_PX / 2) * k;
+  const cy = materialRowCy(scene, comp, k);
   const nodes: SvgNode[] = [];
   let xPx = -rowPx / 2;
   const cx = comp.center[0];
@@ -415,7 +436,7 @@ export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number)
     }
     if (parts.length > 0) nodes.push(mark(comp, parts));
     const located = byComponent.get(state.componentId);
-    if (located) clusters.push(el('g', { 'data-material-cluster': comp.id }, materialTokens(comp, located, k)));
+    if (located) clusters.push(el('g', { 'data-material-cluster': comp.id }, materialTokens(scene, comp, located, k)));
   }
   nodes.push(...clusters);
   for (const marker of replay.state.markers) {
