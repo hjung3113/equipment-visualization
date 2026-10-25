@@ -1,6 +1,6 @@
 # Equipment Visualization Framework — 설계 초안 v0.4
 
-**상태:** Proposed — 실제 데이터 계약 확인 전 구현 금지. v0.3(2026-10-14) → v0.4(2026-10-14, 설계 grilling 반영).
+**상태:** 설계 기준 문서. 구현된 범위는 [README](../README.md) Status가 기준이고, 아직 Proposed인 항목은 §11 Open과 #177의 미추적 표다. v0.3(2026-10-14) → v0.4(2026-10-14, 설계 grilling 반영).
 용어는 [`GLOSSARY.md`](../GLOSSARY.md), 확정 결정은 [`docs/adr/`](adr/)가 authoritative다.
 
 ## 1. 제품 목표 / 비목표
