@@ -168,6 +168,11 @@ export default defineConfig([
     files: ['packages/ui/src/DataTable.tsx'],
     rules: { 'shadcn/no-inline-styles': 'off' },
   },
+  {
+    // ADR-0014: Node scripts (pack, consumer check, finalize) run under Node and read `process`.
+    files: ['tooling/scripts/**/*.mjs'],
+    languageOptions: { globals: { process: 'readonly' } },
+  },
   globalIgnores([
     '**/node_modules/**',
     '**/dist/**',

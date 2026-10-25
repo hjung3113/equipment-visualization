@@ -70,4 +70,4 @@ Test code is a liability. Fewer, sharper tests beat more tests.
 - Platform handles auth/Scope/time/route/context/permissions/audit; visualization accepts data through explicit props/adapters.
 - The adapter reads through declared `defineEndpoint` endpoints with `host.query`; no domain-specific methods on the host contract.
 - Do not modify analytics-platform from this repository; coordinate separate PRs/issues.
-- The platform SDK is pinned by its release tarball version (ADR-0013); an SDK upgrade is an explicit PR that bumps every `@ap/*` URL together and passes the lockfile and CI gate. How analytics-platform installs `@eqv/platform-adapter` is decided with its mount PR (#187).
+- The platform SDK is pinned by its release tarball version (ADR-0013); an SDK upgrade is an explicit PR that bumps every `@ap/*` URL together and passes the lockfile and CI gate. analytics-platform installs `@eqv/platform-adapter` from the six `eqv-vX.Y.Z` Release tarballs pinned by URL (ADR-0014); the owner creates the tag and Release, and `pnpm eqv:pack --version X.Y.Z --out <new-or-empty-dir>` builds the files.

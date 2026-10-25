@@ -46,3 +46,9 @@ jobs:
         run: pnpm test
       - name: Build
         run: pnpm build
+      - name: Release tarballs
+        # ADR-0014: pack the six @eqv/* tarballs and install only them in a clean project outside the repo.
+        run: |
+          out="$RUNNER_TEMP/eqv-pack"
+          pnpm eqv:pack --out "$out"
+          pnpm eqv:consumer-check "$out"

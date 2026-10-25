@@ -1,0 +1,18 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": [],
+    "paths": {
+      "@eqv/core": ["../core/dist/index.d.ts"],
+      "@eqv/renderer": ["../renderer/dist/index.d.ts"],
+      "@eqv/replay": ["../replay/dist/index.d.ts"],
+      "@eqv/ui": ["../ui/dist/index.d.ts"],
+      "@eqv/views": ["../views/dist/index.d.ts"]
+    }
+  },
+  "include": ["src"],
+  "exclude": ["**/*.test.ts", "**/*.test.tsx"]
+}
