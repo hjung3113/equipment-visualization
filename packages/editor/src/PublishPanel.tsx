@@ -238,7 +238,7 @@ export function PublishPanel(props: PublishPanelProps) {
                 { key: 'unchanged', label: '요약', value: `변경 없음 ${plan.diff.unchanged}건 · Mapping Conflict ${plan.diff.conflicts}건 (게시를 막지 않습니다)` },
               ]} />
               {plan.diff.entries.length > 0 && (
-                <DataTable label={diffCaption} title={diffCaption} headingLevel={3} columns={['alias', '변경', '이전', '이후']}>
+                <DataTable label={diffCaption} title={diffCaption} headingLevel={3} columns={['alias', { id: 'change', header: '변경', className: 'whitespace-nowrap' }, '이전', '이후']}>
                   {plan.diff.entries.map((entry) => (
                     <DataTable.Row key={entry.alias}>
                       <DataTable.Cell rowHeader>{entry.alias}</DataTable.Cell>
