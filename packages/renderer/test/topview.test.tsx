@@ -30,8 +30,10 @@ function load(id: string): LayoutDocument {
   return layoutDocumentSchema.parse(JSON.parse(readFileSync(new URL(`assets/templates/${id}.template.json`, root), 'utf8')));
 }
 
-function loadClusterLayout(): LayoutDocument {
-  return layoutDocumentSchema.parse(JSON.parse(readFileSync(new URL('fixtures/cluster-single/layout.json', root), 'utf8')));
+/** The cluster-single fixture with every assetRef outside the primitive catalog, to exercise the unknown-shape fallback. */
+function loadUnlistedClusterLayout(): LayoutDocument {
+  const layout = layoutDocumentSchema.parse(JSON.parse(readFileSync(new URL('fixtures/cluster-single/layout.json', root), 'utf8')));
+  return { ...layout, components: layout.components.map((component) => ({ ...component, assetRef: 'synthetic-unlisted' })) };
 }
 
 function firstRect(node: SvgNode): SvgNode | undefined {
@@ -65,7 +67,7 @@ function render(layout: LayoutDocument, options: Partial<SceneOptions> = {}) {
 }
 
 it('renders unknown cluster assetRefs as role-classed dashed neutral boxes', () => {
-  const layout = loadClusterLayout();
+  const layout = loadUnlistedClusterLayout();
   const { scene } = render(layout);
   const groups = componentsOf(scene.node);
 
