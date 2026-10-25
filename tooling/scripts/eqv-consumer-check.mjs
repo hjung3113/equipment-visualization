@@ -249,7 +249,7 @@ async function main() {
     await runStep('write consumer project', () => writeProject(root, tarballDir, server.port));
     await runStep('pnpm install (@eqv/* tarballs over http://127.0.0.1, @ap/* URLs, tiptap pins, patches from pnpm-workspace.yaml)', () => runAsync('pnpm', ['install', '--no-frozen-lockfile', ...(process.env.EQV_OFFLINE === '1' ? ['--offline'] : [])], root));
     await runStep('single copy of react, react-dom, @ap/ui, @ap/contracts and @eqv/core', () => assertSingleCopies(root));
-    await runStep('tsc --noEmit (imports eqvManifest, eqvScreens from @eqv/platform-adapter)', () => run('pnpm', ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'], root));
+    await runStep('tsc --noEmit (imports @eqv/platform-adapter, ./manifest and ./mock-data)', () => run('pnpm', ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'], root));
     await runStep('vite build', () => run('pnpm', ['exec', 'vite', 'build'], root));
     await runStep('built CSS carries a class from each of @eqv/ui, replay and views', () => assertCssProbes(root));
     process.stdout.write('eqv:consumer-check passed\n');

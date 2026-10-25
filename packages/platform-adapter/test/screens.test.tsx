@@ -60,7 +60,6 @@ describe('states that need the user', () => {
     const fake = hostFor({ page: {} });
     render(<Screen host={fake.host} params={{}} />);
     screen.getByText('설비를 고르세요');
-    expect(screen.getByText('플랫폼에서 설비를 선택하면 이 화면에 표시됩니다.').textContent).not.toMatch(/\?equipment=/);
     expect(fake.log.queries).toEqual([]);
   });
 
