@@ -8,6 +8,7 @@
   ],
   "exports": {
     ".": "./src/index.ts",
+    "./manifest": "./src/manifest-entry.ts",
     "./styles.css": "./src/styles.css",
     "./mock-data": "./src/mock-data/index.ts"
   },

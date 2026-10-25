@@ -141,13 +141,18 @@ describe('request generations', () => {
 describe('outcomes', () => {
   const failing = (outcome: ApiResponse<unknown>['outcome']) => hostFor({ query: server({ context: response(outcome, null, { message: `${outcome}-text` }) }) });
 
-  it.each([['error', '불러오지 못했습니다'], ['timeout', '응답 시간 초과'], ['too_large', '구간이 너무 큽니다']] as const)(
-    '%s is a screen-local state with the message and the reportError id, and no status call', async (outcome, title) => {
+  it.each([
+    ['error', '불러오지 못했습니다', /error-text/],
+    ['timeout', '응답 시간 초과', /서버가 제때 응답하지 않았습니다/],
+    ['too_large', '구간이 너무 큽니다', /최대 8시간까지.*기간을 8시간 이하로 줄이세요/],
+  ] as const)(
+    '%s is a screen-local state with the message and the reportError id, and no status call', async (outcome, title, message) => {
       const fake = failing(outcome);
       const Screen = eqvScreens.topview;
       render(<Screen host={fake.host} params={{}} />);
       await screen.findByText(title);
-      screen.getByText(new RegExp(`${outcome}-text`));
+      screen.getByText(message);
+      if (outcome !== 'error') expect(screen.queryByText(new RegExp(`${outcome}-text`))).toBeNull();
       screen.getByText('오류 ID err-1');
       expect(fake.log.statuses).toEqual([]);
     });
