@@ -48,8 +48,18 @@ describe('eqvMockEvents', () => {
     expect(narrow.issues).toEqual(batch.issues);
     expect(ids).toEqual(expect.arrayContaining(['occ-null-time', 'occ-open', 'occ-time-anomaly']));
     expect(ids).not.toContain('occ-efem-out');
-    // [from, to) is half-open: a row starting exactly at `to` is out.
-    expect(eqvMockEvents({ ...window, from: '2026-01-01T10:00:00', to: '2026-01-01T10:24:00' }).occurrences.map(({ id }) => id)).not.toContain('occ-open');
+  });
+
+  it('windows judged rows half-open: one ending exactly at `from` stays, one starting exactly at `to` goes', () => {
+    const [from, to] = ['2026-01-01T10:04:00', '2026-01-01T10:10:00'];
+    const judged = batch.occurrences.filter(({ start, end }) => start.at !== null && end?.at != null && start.at <= end.at);
+    const endsAtFrom = judged.filter(({ end }) => end?.at === `${from}.000`).map(({ id }) => id);
+    const startsAtTo = judged.filter(({ start }) => start.at === `${to}.000`).map(({ id }) => id);
+    const ids = eqvMockEvents({ ...window, from, to }).occurrences.map(({ id }) => id);
+    expect(endsAtFrom).not.toEqual([]);
+    expect(startsAtTo).not.toEqual([]);
+    expect(ids).toEqual(expect.arrayContaining(endsAtFrom));
+    for (const id of startsAtTo) expect(ids).not.toContain(id);
   });
 
   it('answers another equipment with one empty page under its own id', () => {
