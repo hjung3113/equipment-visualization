@@ -1,15 +1,17 @@
 // Clean outside-consumer gate for the @eqv/* release tarballs (ADR-0014). Usage: pnpm eqv:consumer-check <dir from `pnpm eqv:pack`>
 //
-// Creates a temp project outside the repo that depends on @eqv/platform-adapter (file:) and pins all six @eqv/* with `overrides` to
-// their tarballs, as ADR-0014 tells analytics-platform to do, then runs: install → single-copy check → tsc → vite build with CSS
+// Serves the tarball directory over HTTP on 127.0.0.1 and creates a temp project outside the repo that lists all six @eqv/* as direct
+// dependencies by URL, as ADR-0014 tells analytics-platform to do (no @eqv overrides; pnpm's blockExoticSubdeps stays at its default,
+// so a URL-resolved @eqv/* sibling in a packed `dependencies` fails the install). Then it runs: install → single-copy check → tsc → vite build with CSS
 // probes. The @ap/* URLs, @tiptap/* pins and patches are read from this repo's pnpm-workspace.yaml and the tool versions from
 // apps/studio/package.json at run time. This is an external SDK consumer; it does not cover analytics-platform's workspace.
 // Probe classes are derived from each package's installed dist JS (a class found in no other @eqv package), so no class list can go
 // stale; the check prints the dist file that carries each probe.
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { createServer } from 'node:http';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { dirname, join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { blockEntries, findCopyMismatches, hasCssSelector, readWorkspaceBlock, selectCssProbes } from './eqv-consumer-lib.mjs';
 import { RELEASE_PACKAGES } from './eqv-release.mjs';
@@ -34,10 +36,43 @@ function run(command, args, cwd) {
   return result.stdout;
 }
 
-function runStep(name, action) {
+/** Like run(), but leaves the event loop free so the tarball server can answer the install. */
+function runAsync(command, args, cwd) {
+  return new Promise((resolvePromise, reject) => {
+    const child = spawn(command, args, { cwd, env: { ...process.env, CI: 'true' } });
+    let output = '';
+    child.stdout.on('data', (chunk) => { output = (output + chunk).slice(-6000); });
+    child.stderr.on('data', (chunk) => { output = (output + chunk).slice(-6000); });
+    child.on('error', (error) => reject(new Error(`${command} could not run: ${error.message}`)));
+    child.on('close', (code) => {
+      if (code === 0) resolvePromise(output);
+      else reject(new Error(`${command} ${args.join(' ')} exited ${code}:\n${output.trim().slice(-3000)}`));
+    });
+  });
+}
+
+/** Serves the files of `directory` (flat) on a free 127.0.0.1 port. */
+async function serveDirectory(directory) {
+  const server = createServer((request, response) => {
+    const name = decodeURIComponent((request.url ?? '').split('?')[0].slice(1));
+    const path = join(directory, name);
+    if (name === '' || name.includes('/') || name.includes('\\') || !existsSync(path)) {
+      response.writeHead(404).end();
+      return;
+    }
+    response.writeHead(200, { 'content-type': 'application/octet-stream' }).end(readFileSync(path));
+  });
+  await new Promise((resolvePromise, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolvePromise);
+  });
+  return { port: server.address().port, close: () => new Promise((resolvePromise) => server.close(resolvePromise)) };
+}
+
+async function runStep(name, action) {
   step = name;
   const started = Date.now();
-  const result = action();
+  const result = await action();
   process.stdout.write(`eqv:consumer-check PASS ${name} (${((Date.now() - started) / 1000).toFixed(1)}s)\n`);
   return result;
 }
@@ -82,8 +117,9 @@ function tarballs(tarballDir) {
   return found;
 }
 
-function writeProject(root, tarballDir) {
+function writeProject(root, tarballDir, port) {
   const files = tarballs(tarballDir);
+  const urls = Object.fromEntries(RELEASE_PACKAGES.map((name) => [`@eqv/${name}`, `http://127.0.0.1:${port}/${basename(files[name])}`]));
   const workspaceYaml = readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8');
   const overrideLines = readWorkspaceBlock(workspaceYaml, 'overrides');
   const overrides = Object.fromEntries(blockEntries(overrideLines));
@@ -100,7 +136,7 @@ function writeProject(root, tarballDir) {
     name: 'eqv-outside-consumer',
     private: true,
     type: 'module',
-    dependencies: { '@eqv/platform-adapter': `file:${files['platform-adapter']}`, '@ap/ui': overrides['@ap/ui'], '@ap/contracts': overrides['@ap/contracts'], ...tools },
+    dependencies: { ...urls, '@ap/ui': overrides['@ap/ui'], '@ap/contracts': overrides['@ap/contracts'], ...tools },
   }, null, 2)}\n`);
 
   const patchLines = [];
@@ -117,7 +153,6 @@ function writeProject(root, tarballDir) {
     ...(patchLines.length > 0 ? ['patchedDependencies:', ...patchLines] : []),
     'overrides:',
     ...overrideLines,
-    ...RELEASE_PACKAGES.map((name) => `  "@eqv/${name}": "file:${files[name]}"`),
     '',
   ].join('\n'));
 
@@ -199,30 +234,33 @@ function assertCssProbes(root) {
   if (missing.length > 0) fail(`built CSS is missing classes used only by one package: ${missing.join(', ')}; check that package's styles.css @source line and the import order`);
 }
 
-function main() {
+async function main() {
   const tarballArg = process.argv[2];
   if (!tarballArg) fail('usage: eqv:consumer-check <dir with the eqv-*.tgz files>');
   const tarballDir = resolve(tarballArg);
   if (!existsSync(tarballDir)) fail(`tarball directory ${tarballDir} does not exist`);
   const root = mkdtempSync(join(tmpdir(), 'eqv-consumer-'));
+  let server;
   try {
     const relativeRoot = relative(repoRoot, root);
     if (relativeRoot === '' || !relativeRoot.startsWith(`..${sep}`)) fail('consumer directory must be outside the repository');
-    runStep('write consumer project', () => writeProject(root, tarballDir));
-    runStep('pnpm install (tarballs, @ap/* URLs, tiptap pins, patches from pnpm-workspace.yaml)', () => run('pnpm', ['install', '--no-frozen-lockfile', ...(process.env.EQV_OFFLINE === '1' ? ['--offline'] : [])], root));
-    runStep('single copy of react, react-dom, @ap/ui, @ap/contracts and @eqv/core', () => assertSingleCopies(root));
-    runStep('tsc --noEmit (imports eqvManifest, eqvScreens from @eqv/platform-adapter)', () => run('pnpm', ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'], root));
-    runStep('vite build', () => run('pnpm', ['exec', 'vite', 'build'], root));
-    runStep('built CSS carries a class from each of @eqv/ui, replay and views', () => assertCssProbes(root));
+    server = await serveDirectory(tarballDir);
+    await runStep('write consumer project', () => writeProject(root, tarballDir, server.port));
+    await runStep('pnpm install (@eqv/* tarballs over http://127.0.0.1, @ap/* URLs, tiptap pins, patches from pnpm-workspace.yaml)', () => runAsync('pnpm', ['install', '--no-frozen-lockfile', ...(process.env.EQV_OFFLINE === '1' ? ['--offline'] : [])], root));
+    await runStep('single copy of react, react-dom, @ap/ui, @ap/contracts and @eqv/core', () => assertSingleCopies(root));
+    await runStep('tsc --noEmit (imports eqvManifest, eqvScreens from @eqv/platform-adapter)', () => run('pnpm', ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'], root));
+    await runStep('vite build', () => run('pnpm', ['exec', 'vite', 'build'], root));
+    await runStep('built CSS carries a class from each of @eqv/ui, replay and views', () => assertCssProbes(root));
     process.stdout.write('eqv:consumer-check passed\n');
   } finally {
+    await server?.close();
     if (process.env.EQV_KEEP === '1') process.stdout.write(`eqv:consumer-check kept ${root}\n`);
     else rmSync(root, { recursive: true, force: true });
   }
 }
 
 try {
-  main();
+  await main();
 } catch (error) {
   process.stderr.write(`eqv:consumer-check FAILED at step "${step}": ${error instanceof Error ? error.message : String(error)}\n`);
   process.exitCode = 1;

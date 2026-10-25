@@ -62,7 +62,7 @@ describe('releaseManifest', () => {
     devDependencies: { vitest: '3.2.7' },
   };
 
-  it('pins @eqv/* exactly, keeps other dependencies, peers and sideEffects, and drops everything else', () => {
+  it('turns @eqv/* siblings into exact peers, keeps other dependencies, source peers and sideEffects, and drops everything else', () => {
     expect(releaseManifest(source, '1.2.3')).toEqual({
       name: '@eqv/views',
       version: '1.2.3',
@@ -70,8 +70,8 @@ describe('releaseManifest', () => {
       sideEffects: ['**/*.css'],
       exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' }, './styles.css': './dist/styles.css' },
       files: ['dist'],
-      dependencies: { '@eqv/core': '1.2.3', 'lucide-react': '0.469.0' },
-      peerDependencies: { '@ap/ui': '0.12.0', react: '^19.0.0' },
+      dependencies: { 'lucide-react': '0.469.0' },
+      peerDependencies: { '@ap/ui': '0.12.0', react: '^19.0.0', '@eqv/core': '1.2.3' },
     });
   });
 
@@ -83,7 +83,7 @@ describe('releaseManifest', () => {
 });
 
 describe('validateArchive', () => {
-  const manifest = { exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' } }, dependencies: { '@eqv/core': '1.2.3' } };
+  const manifest = { exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' } }, peerDependencies: { '@eqv/core': '1.2.3' } };
   const good = ['package/', 'package/package.json', 'package/dist/', 'package/dist/index.js', 'package/dist/index.d.ts'];
 
   it('accepts a clean archive', () => {
@@ -96,8 +96,9 @@ describe('validateArchive', () => {
     ['a test file', 'package/dist/a.test.js', manifest],
     ['a tsconfig', 'package/tsconfig.build.json', manifest],
     ['a path outside package/', 'other/x', manifest],
-    ['a workspace range', 'package/dist/x.js', { ...manifest, dependencies: { '@eqv/core': 'workspace:*' } }],
-    ['a loose @eqv version', 'package/dist/x.js', { ...manifest, dependencies: { '@eqv/core': '^1.2.3' } }],
+    ['a workspace range', 'package/dist/x.js', { ...manifest, peerDependencies: { '@eqv/core': 'workspace:*' } }],
+    ['a loose @eqv version', 'package/dist/x.js', { ...manifest, peerDependencies: { '@eqv/core': '^1.2.3' } }],
+    ['an @eqv sibling in dependencies', 'package/dist/x.js', { ...manifest, dependencies: { '@eqv/core': '1.2.3' } }],
   ])('rejects %s', (_label, extra, withManifest) => {
     expect(() => validateArchive('views', [...good, extra], withManifest, '1.2.3')).toThrow();
   });
