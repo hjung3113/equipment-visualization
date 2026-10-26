@@ -7,7 +7,8 @@ allowBuilds:
 # ADR-0013: the platform SDK comes from its GitHub Release tarballs (analytics-platform
 # docs/integration/sdk-git-tag-consumption.md). Each package that uses @ap/* depends on its Release URL
 # directly (no @ap/* overrides; siblings inside the tarballs are exact peers since sdk-v0.15.0), and
-# strictPeerDependencies fails an install whose @ap/* URLs point at different releases. The overrides
+# an upgrade moves every @ap/* URL and exact peer together (ADR-0013); strictPeerDependencies fails an
+# install whose declared peers do not match (the @eqv packages' exact @ap/* peers included). The overrides
 # carry the consumer conditions the tarballs do not (tiptap 3.23.5, auto-animate patch).
 strictPeerDependencies: true
 overrides:

@@ -57,7 +57,7 @@ pnpm dev         # builds core/renderer, then starts the Studio dev server (see 
 git config core.hooksPath .githooks   # once per clone: enables pre-commit / pre-push guards
 ```
 
-`@ap/ui` (ADR-0008, ADR-0013) is installed from the platform SDK GitHub Release tarball named in `package.json` and `pnpm-workspace.yaml`; `pnpm install` needs access to GitHub Releases. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) so a task never runs before the packages it imports are built.
+`@ap/ui` (ADR-0008, ADR-0013) is installed from the platform SDK GitHub Release tarball URLs named in each package's `package.json` (`pnpm-workspace.yaml` holds the tiptap pins and `strictPeerDependencies`); `pnpm install` needs access to GitHub Releases. `typecheck`, `test` and `build` run in two steps (build the `@eqv/*` dependencies, then the task with `--only`) so a task never runs before the packages it imports are built.
 
 Toolchain (versions pinned in `package.json` / `pnpm-lock.yaml`):
 

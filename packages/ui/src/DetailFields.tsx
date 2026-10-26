@@ -18,7 +18,7 @@ export function DetailFields({ items }: DetailFieldsProps) {
     <FieldList>
       {items.map((item) => (
         <FieldRow key={item.key} label={item.label} layout="property" className="[&>dt]:min-w-0 [&>dt]:break-words">
-          <span className={cn('block min-w-0 [overflow-wrap:anywhere]', item.mono ? 'font-mono text-xs' : 'tabular-nums')}>{item.value}</span>
+          <div className={cn('min-w-0 [overflow-wrap:anywhere]', item.mono ? 'font-mono text-xs' : 'tabular-nums')}>{item.value}</div>
         </FieldRow>
       ))}
     </FieldList>
