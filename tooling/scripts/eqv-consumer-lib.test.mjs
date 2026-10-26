@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { blockEntries, findCopyMismatches, hasCssSelector, readWorkspaceBlock, selectCssProbes } from './eqv-consumer-lib.mjs';
 
 describe('readWorkspaceBlock + blockEntries', () => {
-  const yaml = ['allowBuilds:', '  esbuild: true', 'overrides:', '  "@ap/ui": "https://example.test/ap-ui-0.12.0.tgz"', '  "@tiptap/core": 3.23.5', '# comment', 'patchedDependencies:', '  "a@1.0.0": patches/a.patch', ''].join('\n');
+  const yaml = ['allowBuilds:', '  esbuild: true', 'overrides:', '  "@tiptap/pm": 3.23.5', '  "@tiptap/core": 3.23.5', '# comment', 'patchedDependencies:', '  "a@1.0.0": patches/a.patch', ''].join('\n');
 
   it('reads the entries of one block and stops at the next top-level key', () => {
-    expect(blockEntries(readWorkspaceBlock(yaml, 'overrides'))).toEqual([['@ap/ui', 'https://example.test/ap-ui-0.12.0.tgz'], ['@tiptap/core', '3.23.5']]);
+    expect(blockEntries(readWorkspaceBlock(yaml, 'overrides'))).toEqual([['@tiptap/pm', '3.23.5'], ['@tiptap/core', '3.23.5']]);
     expect(blockEntries(readWorkspaceBlock(yaml, 'patchedDependencies'))).toEqual([['a@1.0.0', 'patches/a.patch']]);
   });
 
