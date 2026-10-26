@@ -11,6 +11,8 @@ const bySource = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 
 interface PromoteDeps {
   root: string;
+  /** The data root's realpath (404 when absent), the anchor every data-root read must stay inside. */
+  rootReal(): Promise<string>;
   repoRoot: string | undefined;
   catalog: ReturnType<typeof createCatalog>;
   assertEnabled(): Promise<WriteScope>;
@@ -25,10 +27,12 @@ interface CatalogFile { source: Source; file: string; document: TemplateDocument
 
 export function createPromoteApi(deps: PromoteDeps) {
   /** The `*.template.json` files of one catalog folder; a missing folder is empty, escaping or unreadable files are skipped. */
-  async function readFolder(dir: string, source: Source): Promise<CatalogFile[]> {
+  async function readFolder(dir: string, source: Source, anchored: boolean): Promise<CatalogFile[]> {
     let base: string;
     try {
       base = await realpath(dir);
+      // A data-root folder must resolve inside the data root; the bundled one is its own base.
+      if (anchored && !contained(await deps.rootReal(), base)) return [];
     } catch {
       return [];
     }
@@ -51,9 +55,9 @@ export function createPromoteApi(deps: PromoteDeps) {
   }
 
   async function readCatalog(kind: CatalogKind): Promise<{ bundled: CatalogFile[]; dataRoot: CatalogFile[] }> {
-    if (kind === 'data-root') return { bundled: await readFolder(join(deps.root, 'templates'), 'bundled'), dataRoot: [] };
-    const bundled = await readFolder(deps.catalog.bundledDir(), 'bundled');
-    return { bundled, dataRoot: kind === 'bundled+data-root' ? await readFolder(join(deps.root, 'templates'), 'data-root') : [] };
+    if (kind === 'data-root') return { bundled: await readFolder(join(deps.root, 'templates'), 'bundled', true), dataRoot: [] };
+    const bundled = await readFolder(deps.catalog.bundledDir(), 'bundled', false);
+    return { bundled, dataRoot: kind === 'bundled+data-root' ? await readFolder(join(deps.root, 'templates'), 'data-root', true) : [] };
   }
 
   async function list(): Promise<FileApiResponse> {

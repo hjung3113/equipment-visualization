@@ -396,7 +396,7 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
     root, repoRoot, readTarget, assertWritable, write, assertJsonType, catalogKind: catalog.kind,
   });
   const promoteApi = createPromoteApi({
-    root, repoRoot, catalog, assertEnabled: importApi.assertEnabled, assertWritable, write, assertJsonType,
+    root, rootReal, repoRoot, catalog, assertEnabled: importApi.assertEnabled, assertWritable, write, assertJsonType,
   });
 
   async function dispatch(request: FileApiRequest): Promise<FileApiResponse> {

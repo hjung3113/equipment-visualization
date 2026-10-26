@@ -74,8 +74,10 @@ async function openDialog() {
   return screen.findByRole('alertdialog');
 }
 const promote = (dialog: HTMLElement) => within(dialog).getByRole('button', { name: '승격' }) as HTMLButtonElement;
-const fill = (dialog: HTMLElement, templateId: string) =>
+const fill = (dialog: HTMLElement, templateId: string) => {
+  fireEvent.change(within(dialog).getByLabelText(/이름/), { target: { value: 'Promoted One' } });
   fireEvent.change(within(dialog).getByLabelText(/Template id/), { target: { value: templateId } });
+};
 const roleCounts = () => {
   const counts: Record<string, number> = {};
   for (const { role } of layout.components) counts[role] = (counts[role] ?? 0) + 1;
@@ -83,11 +85,12 @@ const roleCounts = () => {
 };
 const stored = async () => (await readdir(join(root, 'templates')).catch(() => [] as string[])).sort();
 
-it('promotes the open published revision: prefilled name, preview, success message and the new listing entry', async () => {
+it('promotes the open published revision: name left to the user, preview, success message and the new listing entry', async () => {
   await setup();
   await openPublished();
   const dialog = await openDialog();
-  expect((within(dialog).getByLabelText(/이름/) as HTMLInputElement).value).toBe(layout.name);
+  const nameField = within(dialog).getByLabelText(/이름/) as HTMLInputElement;
+  expect([nameField.value, nameField.placeholder]).toEqual(['', layout.name]);
   expect(promote(dialog).disabled).toBe(true);
   expect(within(dialog).queryByText(/Role별 개수/)).toBeNull();
   fill(dialog, 'Bad_Id');
@@ -96,13 +99,16 @@ it('promotes the open published revision: prefilled name, preview, success messa
   fill(dialog, 'promoted-one');
   expect(within(dialog).getByText(`sha256:${hex.slice(0, 12)}…`)).toBeTruthy();
   expect(within(dialog).getByText(roleCounts())).toBeTruthy();
+  expect(within(dialog).getByText('Role별 개수 (정확히 이 수)')).toBeTruthy();
+  expect(within(dialog).getByText('승격한 Template은 Role마다 이 개수와 정확히 같은 설비에만 맞습니다.')).toBeTruthy();
   fireEvent.click(promote(dialog));
   await screen.findByText('Template으로 승격했습니다');
   expect(screen.queryByRole('alertdialog')).toBeNull();
   expect(screen.getByText('templates/promoted-one.template.json')).toBeTruthy();
   await waitFor(() => expect(screen.getByRole('link', { name: 'promoted-one' })).toBeTruthy());
+  expect(document.activeElement).toBe(opener());
   expect(JSON.parse(await readFile(join(root, 'templates/promoted-one.template.json'), 'utf8')))
-    .toEqual(promoteLayout(layout, { templateId: 'promoted-one', name: layout.name, layoutRevision: `sha256:${hex}` }));
+    .toEqual(promoteLayout(layout, { templateId: 'promoted-one', name: 'Promoted One', layoutRevision: `sha256:${hex}` }));
 });
 
 it.each([
@@ -175,4 +181,16 @@ it.each(['switch', 'import'])('drops a pending promotion result after a file %s'
   await act(async () => { held!.release(); });
   await waitFor(async () => expect(await stored()).toEqual(['promoted-one.template.json']));
   expect(screen.queryByText('Template으로 승격했습니다')).toBeNull();
+});
+
+it.each([
+  ['취소', (dialog: HTMLElement) => fireEvent.click(within(dialog).getByRole('button', { name: '취소' }))],
+  ['Escape', (dialog: HTMLElement) => fireEvent.keyDown(dialog, { key: 'Escape' })],
+])('returns focus to the promote button after %s', async (_name, close) => {
+  await setup();
+  await openPublished();
+  const dialog = await openDialog();
+  close(dialog);
+  await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
+  await waitFor(() => expect(document.activeElement).toBe(opener()));
 });

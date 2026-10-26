@@ -1,6 +1,7 @@
 import { cp, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
+import { symlink } from 'node:fs/promises';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { layoutRevision, promoteLayout, validateLayout, type EquipmentLayoutDocument } from '@eqv/core';
 import { createFileApi } from '../server/files.js';
@@ -149,6 +150,32 @@ describe('GET /api/templates', () => {
     const result = await send(createFileApi({ root }), 'GET', '/api/templates');
     expect(result.body.templates.map(({ file }) => file)).toEqual(['only.template.json']);
   });
+
+  it.each([['with a repository root', true], ['without a repository root', false]])(
+    'does not read a data-root catalog that escapes the data root (%s)', async (_label, withRepo) => {
+      const template = JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8'));
+      const outside = join(base, 'outside');
+      await mkdir(outside);
+      await writeJson(outside, 'leaked.template.json', { ...template, id: 'leaked' });
+      const target = createFileApi(withRepo ? { root, repoRoot: repo } : { root });
+      const names = (result: { body: Body }) => JSON.stringify(result.body);
+
+      await symlink(outside, join(root, 'templates'));
+      const dirListing = await send(target, 'GET', '/api/files?dir=templates');
+      const fileRead = await send(target, 'GET', '/api/files?path=templates/leaked.template.json');
+      expect((await send(target, 'GET', '/api/templates')).body.templates.map(({ file }) => file)).toEqual(withRepo ? ['cluster-single.template.json'] : []);
+      expect(names(dirListing)).not.toContain('leaked');
+      expect(names(fileRead)).not.toContain('leaked');
+      expect([dirListing.status, fileRead.status].every((status) => status !== 200)).toBe(true);
+
+      // A symlinked child file pointing outside the real templates/ folder is excluded too.
+      await rm(join(root, 'templates'));
+      await mkdir(join(root, 'templates'));
+      await symlink(join(outside, 'leaked.template.json'), join(root, 'templates/leaked.template.json'));
+      expect((await send(target, 'GET', '/api/templates')).body.templates.map(({ document }) => document.id)).not.toContain('leaked');
+      expect(names(await send(target, 'GET', '/api/files?dir=templates'))).not.toContain('leaked');
+    },
+  );
 
   it('reads the bundle first for a name both folders have', async () => {
     const bundled = JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8'));

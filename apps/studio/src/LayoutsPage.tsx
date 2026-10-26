@@ -1,5 +1,5 @@
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
-import { CircleCheck, Download, FileJson, Save, Send, ServerCrash, Upload } from 'lucide-react';
+import { CircleCheck, Download, FileJson, LibraryBig, Save, Send, ServerCrash } from 'lucide-react';
 import { validateLayout, type EquipmentLayoutDocument, type LayoutDocument } from '@eqv/core';
 import { PRIMITIVE_CATALOG, TopViewer, type ComponentDrag } from '@eqv/renderer';
 import {
@@ -141,6 +141,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const publishOpener = useRef<HTMLButtonElement>(null);
   /** Document epoch whose publish dialog just closed; the opener regains focus once it is enabled again. */
   const focusOpenerFor = useRef<number | null>(null);
+  const promoteOpener = useRef<HTMLButtonElement>(null);
+  /** Set when the promotion dialog closes by the user (cancel, Escape, success); the toolbar button regains focus once the dialog is gone. */
+  const focusPromoteOpener = useRef(false);
   const viewWidth = useColumnWidth(documentRef);
 
   useLayoutEffect(() => {
@@ -162,6 +165,13 @@ export function LayoutsPage({ file }: { file: string | null }) {
     const lost = document.activeElement === null || document.activeElement === document.body;
     if (owner === documentEpoch && lost) publishOpener.current?.focus();
   }, [publishing, busy, documentEpoch]);
+
+  useEffect(() => {
+    if (!focusPromoteOpener.current || promoting !== null || busy) return;
+    focusPromoteOpener.current = false;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (lost) promoteOpener.current?.focus();
+  }, [promoting, busy]);
 
   // After navigation is approved, opening another file clears the import and previous notices.
   if (prevFile !== file) {
@@ -441,7 +451,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
             {listing === null && listingError === null && <LoadingBlock label="목록을 불러오는 중…" />}
             {listing && (
               <nav aria-label="레이아웃 파일">
-                <PanelSectionTitle className="mb-2">템플릿 (읽기 전용)</PanelSectionTitle>
+                <PanelSectionTitle className="mb-2">Template (읽기 전용)</PanelSectionTitle>
                 <ul className="list-none space-y-0.5 p-0">{listing.templates.map(item)}</ul>
                 <PanelSectionTitle className="mt-4 mb-2">레이아웃</PanelSectionTitle>
                 {listing.layouts.length === 0 && <EmptyState size="sm" icon={<FileJson className="size-4" aria-hidden />} title="저장된 레이아웃이 없습니다." />}
@@ -466,9 +476,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
               <Save className="size-3.5" aria-hidden />초안 저장
             </Button>
             {promotable !== null && (
-              <Button type="button" variant="secondary" size="toolbar" onClick={openPromotion} disabled={promoteBlocked || busy}
+              <Button ref={promoteOpener} type="button" variant="secondary" size="toolbar" onClick={openPromotion} disabled={promoteBlocked || busy}
                 aria-describedby={promoteBlocked && importState.kind !== 'loading' ? PROMOTE_BLOCKED_ID : undefined}>
-                <Upload className="size-3.5" aria-hidden />Template으로 승격
+                <LibraryBig className="size-3.5" aria-hidden />Template으로 승격
               </Button>
             )}
             <Button ref={publishOpener} type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || !editable}>
@@ -542,8 +552,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
       {promoting && (
         <PromoteDialog
           source={promoting.source} edited={promoting.edited}
-          onCancel={() => setPromoting(null)}
-          onPromoted={(path) => { setPromoting(null); setPromoted(path); setListingReload((count) => count + 1); }}
+          onCancel={() => { focusPromoteOpener.current = true; setPromoting(null); }}
+          onPromoted={(path) => { focusPromoteOpener.current = true; setPromoting(null); setPromoted(path); setListingReload((count) => count + 1); }}
         />
       )}
       {publishing && (

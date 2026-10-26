@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Info, ServerCrash, Upload } from 'lucide-react';
+import { Info, LibraryBig, ServerCrash } from 'lucide-react';
 import { idSchema, promoteLayout, type EquipmentLayoutDocument } from '@eqv/core';
 import {
   AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, Button, Input,
@@ -25,7 +25,7 @@ export function PromoteDialog({ source, edited, onPromoted, onCancel }: {
   onCancel(): void;
 }) {
   const [templateId, setTemplateId] = useState('');
-  const [name, setName] = useState(source.layout.name);
+  const [name, setName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const live = useRef(true);
@@ -66,7 +66,7 @@ export function PromoteDialog({ source, edited, onPromoted, onCancel }: {
           </AlertDialogDescription>
         </AlertDialogHeader>
         <form noValidate className="grid gap-3" onSubmit={(event) => { event.preventDefault(); void submit(); }}>
-          <FormField label="Template id" required hint="영문 소문자로 시작하고 소문자·숫자·하이픈(-)만 씁니다."
+          <FormField label="Template id" required hint="영문 소문자로 시작하고 소문자·숫자를 하이픈(-) 하나로 이어 씁니다. 하이픈으로 끝날 수 없습니다."
             error={templateId !== '' && !idValid ? 'Template id 형식이 아닙니다' : undefined}>
             {(control) => (
               <Input {...control} ref={idRef} autoComplete="off" spellCheck={false} value={templateId} disabled={submitting}
@@ -75,7 +75,7 @@ export function PromoteDialog({ source, edited, onPromoted, onCancel }: {
           </FormField>
           <FormField label="이름" required error={!nameValid ? '이름을 입력하세요' : undefined}>
             {(control) => (
-              <Input {...control} autoComplete="off" value={name} disabled={submitting}
+              <Input {...control} autoComplete="off" placeholder={source.layout.name} value={name} disabled={submitting}
                 onChange={(event) => { setName(event.target.value); setError(null); }} />
             )}
           </FormField>
@@ -85,14 +85,15 @@ export function PromoteDialog({ source, edited, onPromoted, onCancel }: {
           {preview !== null && (
             <DetailFields items={[
               { key: 'source', label: '원천 Revision', value: <code className="font-mono">{`sha256:${source.hex.slice(0, 12)}…`}</code> },
-              { key: 'roles', label: 'Role별 개수', value: Object.entries(preview.roleCardinality).map(([role, { min }]) => `${role} ${min}`).join(', ') },
+              { key: 'roles', label: 'Role별 개수 (정확히 이 수)', value: Object.entries(preview.roleCardinality).map(([role, { min }]) => `${role} ${min}`).join(', ') },
             ]} />
           )}
+          {preview !== null && <p className="text-xs text-muted-foreground">승격한 Template은 Role마다 이 개수와 정확히 같은 설비에만 맞습니다.</p>}
           {error !== null && <StateMessage compact tone="danger" icon={ServerCrash} title={error} />}
           <AlertDialogFooter>
             <Button type="button" variant="secondary" size="sm" disabled={submitting} onClick={onCancel}>취소</Button>
             <Button type="submit" variant="primary" size="sm" disabled={preview === null || submitting}>
-              <Upload className="size-3.5" aria-hidden />승격
+              <LibraryBig className="size-3.5" aria-hidden />승격
             </Button>
           </AlertDialogFooter>
         </form>
