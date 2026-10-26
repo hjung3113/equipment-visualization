@@ -72,7 +72,7 @@ type InventoryAlias = {
 LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2
 ```
 
-`fixtures/templates/`의 세 후보는 #11b의 synthetic Template(테스트 입력)이며 OEM 형상이나 기구학 검증을 주장하지 않는다. Studio의 Template 제안은 데이터 루트에 `templates/`가 없으면 `assets/templates/`의 변환 아키타입 여섯 개(#7)를 읽는다(`apps/studio/server/files.ts`).
+`fixtures/templates/`의 세 후보는 #11b의 synthetic Template(테스트 입력)이며 OEM 형상이나 기구학 검증을 주장하지 않는다. Studio의 Template 제안은 데이터 루트에 `templates/`가 없으면 `assets/templates/`의 변환 아키타입 여섯 개(#7)를 읽는다(`apps/studio/server/files.ts`). [ADR-0015](adr/0015-template-promotion.md)가 이 규칙을 번들과 데이터 루트 `templates/`의 합집합으로 바꾼다(구현 #159 전까지는 지금 규칙).
 
 ### Generic Layout
 
@@ -83,7 +83,7 @@ LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 
 - 관측 slot 중 정수 문자열(`/^[+-]?[0-9]+$/`)만 §2의 정렬 순으로 Holding Site를 만든다. 정확한 `BigInt` 값 `v`가 0 이상이면 `slot-v`, 음수면 `slot-neg-절댓값`이다. 같은 값의 문자열(`01`, `1`)은 첫 문자열이 만든 site 하나를 공유하고 둘 다 `assignments.sites`에 남긴다. 정수가 아닌 slot은 site·배정 항목을 만들지 않는다. `materialKinds`는 다섯 종류 전체(`wafer`, `carrier`, `batch`, `boat`, `reticle`)를 나열해 특정 종류를 단정하지 않는다.
 - 모든 생성 속성·Holding Site와 alias 배정의 Certainty는 `assumed`다. provenance는 `src-observed-inventory`를 참조한다. `ports`·Physical Interface·Transfer Capability·Process Route는 비어 있으며 관측 이송으로 연결 가능성을 만들지 않는다. 이송 경로는 사람이 추가한다(/layouts의 Transfer Capability 편집, #168). **자동 게시 없음.**
 
-형상을 다듬고 "Template으로 승격"하는 UI 흐름은 제안 단계다.
+형상을 다듬은 Layout을 "Template으로 승격"하는 규칙은 [ADR-0015](adr/0015-template-promotion.md)가 정한다(게시된 Layout Revision → 데이터 루트 `templates/`, 승인 단계 없음, `promotedFrom` 출처). 구현은 #159이며 아직 없다.
 
 ## 4. Mapping Board
 
