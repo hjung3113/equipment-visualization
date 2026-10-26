@@ -5,8 +5,6 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  '@ap/contracts': https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz
-  '@ap/ui': https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
   '@tiptap/core': 3.23.5
   '@tiptap/pm': 3.23.5
   '@tiptap/extension-blockquote': 3.23.5
@@ -64,8 +62,8 @@ importers:
   apps/studio:
     dependencies:
       '@ap/ui':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@eqv/core':
         specifier: workspace:*
         version: link:../../packages/core
@@ -155,9 +153,6 @@ importers:
 
   packages/editor:
     dependencies:
-      '@ap/ui':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
@@ -171,6 +166,9 @@ importers:
         specifier: 0.469.0
         version: 0.469.0(react@19.3.1)
     devDependencies:
+      '@ap/ui':
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
@@ -204,12 +202,6 @@ importers:
 
   packages/platform-adapter:
     dependencies:
-      '@ap/contracts':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz
-      '@ap/ui':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
@@ -229,6 +221,12 @@ importers:
         specifier: 0.469.0
         version: 0.469.0(react@19.3.1)
     devDependencies:
+      '@ap/contracts':
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-contracts-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-contracts-0.15.0.tgz
+      '@ap/ui':
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
@@ -299,9 +297,6 @@ importers:
 
   packages/replay:
     dependencies:
-      '@ap/ui':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
@@ -312,6 +307,9 @@ importers:
         specifier: 0.469.0
         version: 0.469.0(react@19.3.1)
     devDependencies:
+      '@ap/ui':
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
@@ -345,9 +343,6 @@ importers:
 
   packages/ui:
     dependencies:
-      '@ap/ui':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
@@ -358,6 +353,9 @@ importers:
         specifier: 0.469.0
         version: 0.469.0(react@19.3.1)
     devDependencies:
+      '@ap/ui':
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
@@ -391,9 +389,6 @@ importers:
 
   packages/views:
     dependencies:
-      '@ap/ui':
-        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz
-        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@eqv/core':
         specifier: workspace:*
         version: link:../core
@@ -410,6 +405,9 @@ importers:
         specifier: 0.469.0
         version: 0.469.0(react@19.3.1)
     devDependencies:
+      '@ap/ui':
+        specifier: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz
+        version: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
       '@testing-library/dom':
         specifier: 10.4.2
         version: 10.4.2
@@ -452,13 +450,13 @@ importers:
 
 packages:
 
-  '@ap/contracts@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz':
-    resolution: {tarball: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz}
-    version: 0.12.0
+  '@ap/contracts@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-contracts-0.15.0.tgz':
+    resolution: {integrity: sha512-b0M1+hXkTA2SFb8szFV2j2IFmuS1siqaae+tvzacqc8uizZag3sEhFty38jRU5yqifDixnJZlZy/SKOlXjvlIQ==, tarball: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-contracts-0.15.0.tgz}
+    version: 0.15.0
 
-  '@ap/ui@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz':
-    resolution: {tarball: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz}
-    version: 0.12.0
+  '@ap/ui@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz':
+    resolution: {integrity: sha512-5Aqj7gj87rmBD3an7oCSt92qWxwYbfw8R2/5cEsDAhm6dRdH5Nk0TaGzf/A3hWBGEmbjaDkhydQSgS+11DHW4w==, tarball: https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz}
+    version: 0.15.0
     peerDependencies:
       react: ^19.0.0
       react-dom: ^19.0.0
@@ -2884,9 +2882,9 @@ packages:
 
 snapshots:
 
-  '@ap/contracts@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-contracts-0.12.0.tgz': {}
+  '@ap/contracts@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-contracts-0.15.0.tgz': {}
 
-  '@ap/ui@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.12.0/ap-ui-0.12.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
+  '@ap/ui@https://github.com/hjung3113/analytics-platform/releases/download/sdk-v0.15.0/ap-ui-0.15.0.tgz(@floating-ui/dom@1.8.0)(@tiptap/extensions@3.23.5(@tiptap/core@3.23.5(@tiptap/pm@3.23.5))(@tiptap/pm@3.23.5))(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(happy-dom@20.14.6)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)':
     dependencies:
       '@formkit/auto-animate': 0.10.0(patch_hash=8170eba9200e0561f67c584494b1306b4dcd3f8d9b54465a95a0f4d55bc7d74b)
       '@radix-ui/react-avatar': 1.3.1(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)

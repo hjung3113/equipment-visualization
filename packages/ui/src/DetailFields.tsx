@@ -1,9 +1,9 @@
 import type { ReactNode } from 'react';
-import { cn } from '@ap/ui';
+import { cn, FieldList, FieldRow } from '@ap/ui';
 
 export interface DetailField {
   key: string;
-  label: ReactNode;
+  label: string;
   value: ReactNode;
   mono?: boolean;
 }
@@ -12,16 +12,15 @@ export interface DetailFieldsProps {
   items: readonly DetailField[];
 }
 
-/** Label/value list (AP `DetailDrawer` fields): `dl` semantics, long values wrap inside the column. */
+/** Label/value list on `@ap/ui` `FieldList` + `FieldRow` (`dl`/`dt`/`dd`); long labels and values wrap inside their column. */
 export function DetailFields({ items }: DetailFieldsProps) {
   return (
-    <dl className="m-0">
+    <FieldList>
       {items.map((item) => (
-        <div key={item.key} className="grid grid-cols-[9rem_1fr] gap-3 border-b border-border-subtle py-1.5 text-sm last:border-b-0">
-          <dt className="min-w-0 break-words text-text-muted">{item.label}</dt>
-          <dd className={cn('m-0 min-w-0 [overflow-wrap:anywhere] text-text-primary', item.mono ? 'font-mono text-xs' : 'tabular-nums')}>{item.value}</dd>
-        </div>
+        <FieldRow key={item.key} label={item.label} layout="property" className="[&>dt]:min-w-0 [&>dt]:break-words">
+          <span className={cn('block min-w-0 [overflow-wrap:anywhere]', item.mono ? 'font-mono text-xs' : 'tabular-nums')}>{item.value}</span>
+        </FieldRow>
       ))}
-    </dl>
+    </FieldList>
   );
 }
