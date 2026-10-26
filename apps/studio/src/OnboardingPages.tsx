@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
-import { buildGenericLayout, detectDrift, instantiateLayout, latestBinding, type Drift, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
+import { buildGenericLayout, instantiateLayout, latestBinding, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
-  driftUnknownReason, FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
+  evaluateDrift, FleetTable, InventoryView, MappingBoard, modelDryRunRows, PublishPanel, summarizeFleet, TemplateProposals,
   type FleetRow, type MappingBoardProps, type ModelDryRunInput, type PublishPanelProps, type PublishPlan, type RuleFiles,
 } from '@eqv/editor';
 import { ArrowLeft, Crosshair, Database, Grid2x2Check, Inbox, Info, MapPinOff, Plus, ServerCrash, TriangleAlert } from 'lucide-react';
@@ -154,7 +154,7 @@ function StartActions({ equipmentId, sampleWindow, result, draft }: {
 
 /** ⑦ Drift review queue: the selected Sample Window against the latest Binding's Baseline Inventory. */
 function DriftReview({ equipmentId, sampleWindow, data }: { equipmentId: string; sampleWindow: string | null; data: Ok['data'] }) {
-  const { bindings, mappings, baseline, layout, inventory } = data;
+  const { bindings, mappings, inventory } = data;
   const latest = bindings && bindings.bindings.length > 0 ? latestBinding(bindings.bindings)! : null;
   const mapping = latest ? mappings[latest.mappingHash] : undefined;
   if (!latest || !mapping) return null;
@@ -163,23 +163,13 @@ function DriftReview({ equipmentId, sampleWindow, data }: { equipmentId: string;
       <Link href={hrefFor({ name: 'board', equipmentId, window: sampleWindow })}><Grid2x2Check className="size-3.5" aria-hidden />Mapping Board에서 검토</Link>
     </Button>
   );
-  let unknown = driftUnknownReason(data);
-  let drift: Drift | null = null;
-  if (unknown === null) {
-    try {
-      drift = detectDrift({ baseline: baseline!, current: inventory, mapping, layout: layout! });
-    } catch (e) {
-      unknown = errorMessage(e);
-    }
-  }
+  const { drift, unknown, drifted } = evaluateDrift(data, inventory, mapping);
   let body: ReactNode;
-  let hasItems = false;
   if (drift === null) {
     body = <StateMessage compact icon={Info} title="Drift를 판단할 수 없습니다" body={unknown ?? undefined} />;
-  } else if (drift.newAliases.length + drift.newSlots.length + drift.transfersWithoutCapability.length === 0) {
+  } else if (!drifted) {
     body = <StateMessage compact icon={Info} title="기준 대비 Drift 없음" />;
   } else {
-    hasItems = true;
     body = (
       <div className="grid gap-4">
         {drift.newAliases.length > 0 && (
@@ -219,7 +209,7 @@ function DriftReview({ equipmentId, sampleWindow, data }: { equipmentId: string;
     );
   }
   return (
-    <Panel title="⑦ Drift 검토" subtitle={DRIFT_HINT} actions={hasItems ? board : undefined}>
+    <Panel title="⑦ Drift 검토" subtitle={DRIFT_HINT} actions={drifted ? board : undefined}>
       {body}
     </Panel>
   );

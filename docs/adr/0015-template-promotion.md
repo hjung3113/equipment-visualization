@@ -16,6 +16,7 @@ status: accepted
 - **출처 확인.** 승격 endpoint는 쓰기 전에 원천 파일을 읽어 `layoutRevision(layout)`이 파일 이름의 hex와 같고 `layout.id`가 폴더 이름과 같은지 확인한다(ADR-0011과 같은 확인). 다르면 422이고 쓰지 않는다.
 - **저장과 승인.** 데이터 루트가 저장소 작업 트리 밖일 때만 승격한다(안이면 403, ADR-0010 가져오기와 같은 사유 문구). 데이터 루트 `templates/<id>.template.json`에 create-only로 쓴다(같은 id가 있으면 409, 덮어쓰지 않음). 승인 단계는 없다: 쓰이면 곧바로 ③ Template 제안의 후보다. Studio에서 삭제하지 않는다(파일을 손으로 옮긴다).
 - **카탈로그 합치기.** 데이터 루트가 저장소 밖이면 Studio의 Template 카탈로그는 번들 `assets/templates/`와 데이터 루트 `templates/`의 합집합이다. 데이터 루트가 저장소 안(기본값 `assets/`)이면 두 폴더가 같으므로 번들 하나다. 이 규칙은 [ADR-0010](0010-studio-data-import.md) **데이터 루트** 문단의 "데이터 루트에 `templates/`가 있으면 번들을 대신한다"를 대체한다. 상태 endpoint의 `catalog`는 `'bundled' | 'bundled+data-root'`가 된다. id가 겹치면 번들이 이기고, 겹친 데이터 루트 파일은 파싱 실패 목록(`skippedTemplates`)이 아니라 별도 안내("id가 번들과 겹쳐 건너뛴 Template")로 보인다. 승격 시점에도 번들 id와 겹치면 409로 거절한다.
+  - *명확화(2026-10-26):* 데이터 루트 파일은 **파일 이름**이 번들과 같아도 가려지고(번들이 이긴다), 승격도 `<templateId>.template.json`을 번들이 이미 가지고 있으면 409로 거절한다. `promote.ts`와 `apps/studio/README.md`가 이미 이 규칙이다.
 - **범위.** Studio만. 플랫폼 쪽 저장(플랫폼 메타 DB의 Layout·Template 소유, DESIGN §11 Open)과 승인 정책은 플랫폼 통합 단계의 일이다.
 
 ## Considered Options

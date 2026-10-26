@@ -75,6 +75,8 @@ const LABEL_PX = 10;
  * accepts a slightly tight fit for mid-size boxes. Below it both rows move just outside the bbox.
  */
 export const SMALL_COMPONENT_PX = 48;
+/** Whether the Component's on-screen height (scene units over `k`) is below `SMALL_COMPONENT_PX`. */
+export const isSmallComponent = (comp: SceneComponent, k: number): boolean => (comp.bbox.y1 - comp.bbox.y0) / k < SMALL_COMPONENT_PX;
 const LABEL_CHARS = 8;
 const MAX_LABELLED = 4;
 const SHOWN_WITH_CHIP = 3;
@@ -299,7 +301,7 @@ function siteOrdered(comp: SceneComponent, materials: readonly StateMaterial[]):
  */
 function materialRowCy(scene: Scene, comp: SceneComponent, k: number): number {
   const inner = comp.bbox.y1 - (CLUSTER_INSET_PX + DISC_PX / 2) * k;
-  if ((comp.bbox.y1 - comp.bbox.y0) / k >= SMALL_COMPONENT_PX) return inner;
+  if (!isSmallComponent(comp, k)) return inner;
   const labelPx = comp.outsideLabelPx == null ? 0 : outsideLabelBottomPx(comp.outsideLabelPx);
   const offsetPx = labelPx + CLUSTER_INSET_PX + LABEL_PX + 2 + DISC_PX / 2;
   const outer = comp.bbox.y1 + offsetPx * k;

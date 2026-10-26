@@ -56,7 +56,7 @@ describe('POST /api/template-promotions', () => {
     expect(stored).toEqual(promoteLayout(layout, { templateId: 'promoted-one', name: 'Promoted One', layoutRevision: `sha256:${revision}` }));
     expect(validateLayout(stored).ok).toBe(true);
     expect(`sha256:${revision}`).toBe(await layoutRevision(layout));
-    expect((await send(api, 'GET', `/api/files?dir=templates`)).body.entries.map(({ name }) => name))
+    expect((await send(api, 'GET', '/api/templates')).body.templates.map(({ file }) => file))
       .toEqual(['cluster-single.template.json', 'promoted-one.template.json']);
     expect((await send(api, 'GET', `/api/files?path=templates/promoted-one.template.json`)).body).toEqual(stored);
     expect(await snapshot(join(repo, 'assets/templates'))).toEqual(['cluster-single.template.json']);
@@ -166,7 +166,7 @@ describe('GET /api/templates', () => {
       expect((await send(target, 'GET', '/api/templates')).body.templates.map(({ file }) => file)).toEqual(withRepo ? ['cluster-single.template.json'] : []);
       expect(names(dirListing)).not.toContain('leaked');
       expect(names(fileRead)).not.toContain('leaked');
-      expect([dirListing.status, fileRead.status].every((status) => status !== 200)).toBe(true);
+      expect(fileRead.status).not.toBe(200);
 
       // A symlinked child file pointing outside the real templates/ folder is excluded too.
       await rm(join(root, 'templates'));

@@ -194,3 +194,12 @@ it.each([
   await waitFor(() => expect(screen.queryByRole('alertdialog')).toBeNull());
   await waitFor(() => expect(document.activeElement).toBe(opener()));
 });
+
+it('lists a Template once: a data-root file with a bundled id is shadowed and not shown on the Layouts list', async () => {
+  await setup();
+  const bundled = JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8'));
+  await writeJson(root, 'templates/same-id.template.json', bundled);
+  await openPublished();
+  await waitFor(() => expect(screen.getByRole('link', { name: 'cluster-single' })).toBeTruthy());
+  expect(screen.queryByRole('link', { name: 'same-id' })).toBeNull();
+});

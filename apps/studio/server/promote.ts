@@ -55,7 +55,7 @@ export function createPromoteApi(deps: PromoteDeps) {
   }
 
   async function readCatalog(kind: CatalogKind): Promise<{ bundled: CatalogFile[]; dataRoot: CatalogFile[] }> {
-    if (kind === 'data-root') return { bundled: await readFolder(join(deps.root, 'templates'), 'bundled', true), dataRoot: [] };
+    if (kind === 'data-root') return { bundled: await readFolder(join(deps.root, 'templates'), 'data-root', true), dataRoot: [] };
     const bundled = await readFolder(deps.catalog.bundledDir(), 'bundled', false);
     return { bundled, dataRoot: kind === 'bundled+data-root' ? await readFolder(join(deps.root, 'templates'), 'data-root', true) : [] };
   }
@@ -67,9 +67,9 @@ export function createPromoteApi(deps: PromoteDeps) {
     const templates: { source: Source; file: string; document: TemplateDocument }[] = [];
     const skipped: string[] = [];
     const shadowed: string[] = [];
-    for (const { source, file, document } of [...bundled, ...dataRoot]) {
+    for (const [{ source, file, document }, canShadow] of [...bundled.map((entry) => [entry, false] as const), ...dataRoot.map((entry) => [entry, true] as const)]) {
       if (document === undefined) skipped.push(file);
-      else if (source === 'data-root' && (bundledIds.has(document.id) || bundledFiles.has(file))) shadowed.push(file);
+      else if (canShadow && (bundledIds.has(document.id) || bundledFiles.has(file))) shadowed.push(file);
       else templates.push({ source, file, document });
     }
     return {
