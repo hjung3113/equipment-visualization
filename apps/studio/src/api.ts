@@ -1,4 +1,4 @@
-import type { EquipmentRecord, ImportIssue, ImportWarningCode, SampleWindowSummary } from '@eqv/core';
+import type { EquipmentRecord, ImportIssue, ImportWarningCode, SampleWindowSummary, TemplateDocument } from '@eqv/core';
 
 export class ApiError extends Error {
   /** `body` is the parsed response body (`null` when there was none); a write endpoint reads `issues` and the like from it. */
@@ -11,7 +11,7 @@ export interface ImportStatus {
   enabled: boolean;
   reason?: string;
   insideGitWorkTree: boolean;
-  catalog: 'data-root' | 'bundled';
+  catalog: 'bundled' | 'bundled+data-root';
   maxWindowBytes: number;
 }
 
@@ -91,6 +91,20 @@ export async function putImmutable(path: string, value: unknown): Promise<void> 
 
 export async function saveBindings(equipmentId: string, file: unknown): Promise<void> {
   await putFile(`onboarding/bindings/${equipmentId}.bindings.json`, file);
+}
+
+export interface TemplateCatalog {
+  templates: { source: 'bundled' | 'data-root'; file: string; document: TemplateDocument }[];
+  skipped: string[];
+  shadowed: string[];
+}
+
+export const listTemplates = async (): Promise<TemplateCatalog> => (await request('/api/templates')) as TemplateCatalog;
+
+/** Promotes the published Layout Revision `<layoutId>/<revision>` to a Template in the data root (ADR-0015); create-only. */
+export async function promoteTemplate(body: { layoutId: string; revision: string; templateId: string; name: string }):
+  Promise<{ path: string; templateId: string }> {
+  return (await request('/api/template-promotions', json('POST', body))) as { path: string; templateId: string };
 }
 
 export const importStatus = async (): Promise<ImportStatus> => (await request('/api/import/status')) as ImportStatus;

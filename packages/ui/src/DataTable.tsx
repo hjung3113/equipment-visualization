@@ -171,7 +171,7 @@ export function DataTable({
         }}
         className={cn('overflow-x-auto focus-visible:-outline-offset-2', (capped || rows !== undefined) && 'max-h-[60vh] overflow-auto overscroll-contain', aboveRegion && 'border-t border-border-subtle')}
       >
-        <table aria-label={label} {...(virtualRows ? { 'aria-rowcount': virtualRows.count + 1 } : {})} className={cn('w-full border-separate border-spacing-0 text-sm text-text-primary', className)} {...rest}>
+        <table aria-label={label} {...(virtualRows ? { 'aria-rowcount': virtualRows.count + 1 } : {})} className={cn('w-full border-separate border-spacing-0 break-keep text-sm text-text-primary', className)} {...rest}>
           <thead>
             <tr className="h-8">
               {columns.map((column) => {

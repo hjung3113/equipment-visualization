@@ -1,12 +1,12 @@
 import {
   latestBinding, checkBindingLayout, checkBindingMapping,
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, parseSampleWindowName,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, observedInventorySchema, parseSampleWindowName,
   validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary,
-  type AliasMetadataFile, type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
-  type MappingVersion, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
+  type AliasMetadataFile, type AliasRulesFile, type Binding, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
+  type MappingVersion, type ObservedInventory, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
-import { ApiError, dirOrEmpty, listDir, readFile, type DirEntry } from './api.js';
+import { ApiError, dirOrEmpty, listDir, listTemplates, readFile, type DirEntry } from './api.js';
 import { errorMessage } from './error-message.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
@@ -38,7 +38,7 @@ export type EquipmentLoad =
   | { kind: 'ok'; data: LoadedEquipment };
 export type OnboardingLoad =
   | Exclude<EquipmentLoad, { kind: 'ok' }>
-  | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[]; draft: DraftLookup };
+  | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[]; shadowedTemplates: string[]; draft: DraftLookup };
 
 /** Thrown for any content problem; the message becomes the equipment's error text. */
 export class DataError extends Error {}
@@ -46,6 +46,13 @@ export class DataError extends Error {}
 export const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const problems = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
   issues.map(({ path, message }) => `${path.map(String).join('.') || '(root)'}: ${message}`).join('; ');
+
+export const mappingPath = (equipmentId: string, binding: Pick<Binding, 'mappingHash'>) =>
+  `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
+export const baselinePath = (equipmentId: string, binding: Pick<Binding, 'mappingHash'>) =>
+  `onboarding/baselines/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.inventory.json`;
+export const layoutPath = (layoutId: string, revision: string | undefined) => revision === undefined ? `layouts/${layoutId}/draft.layout.json`
+  : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
 
 /** Only a 404 is absence; every other failure propagates. */
 export async function readOptional(path: string): Promise<unknown | undefined> {
@@ -202,18 +209,43 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     }
 
     const mappings: Record<string, MappingVersion> = {};
+    let baseline: ObservedInventory | null = null;
+    let layout: EquipmentLayoutDocument | null = null;
+    let driftProblem: string | null = null;
     if (bindings && bindings.bindings.length > 0) {
       const latest = latestBinding(bindings.bindings)!;
-      const hex = latest.mappingHash.slice('sha256:'.length);
-      const mappingPath = `onboarding/mappings/${equipmentId}/${hex}.mapping.json`;
-      const rawMapping = await readOptional(mappingPath);
-      if (rawMapping === undefined) throw new DataError(`${mappingPath}: Mapping Version 파일 없음`);
+      const mappingFile = mappingPath(equipmentId, latest);
+      const rawMapping = await readOptional(mappingFile);
+      if (rawMapping === undefined) throw new DataError(`${mappingFile}: Mapping Version 파일 없음`);
       const checked = await checkBindingMapping(rawMapping, latest, equipmentId);
-      if (!checked.ok) throw new DataError(`${mappingPath}: ${checked.problem}`);
+      if (!checked.ok) throw new DataError(`${mappingFile}: ${checked.problem}`);
       const mapping = checked.value;
       mappings[mapping.hash] = mapping;
+
+      // Drift inputs are optional context: absent, unreadable or invalid leaves the load ok and Drift unknown with a reason.
+      try {
+        const baselineFile = baselinePath(equipmentId, latest);
+        const rawBaseline = await readOptional(baselineFile);
+        if (rawBaseline !== undefined) {
+          const parsed = observedInventorySchema.safeParse(rawBaseline);
+          if (!parsed.success) throw new DataError(`${baselineFile}: ${problems(parsed.error.issues)}`);
+          baseline = parsed.data;
+        }
+        // A pinned Binding uses its Layout Revision, an unpinned one the draft of its layoutId (ADR-0011).
+        const layoutFile = layoutPath(latest.layoutId, latest.layoutRevision);
+        const rawLayout = await readOptional(layoutFile);
+        if (rawLayout !== undefined) {
+          const checkedLayout = await checkBindingLayout(rawLayout, latest.layoutId, latest.layoutRevision);
+          if (!checkedLayout.ok) throw new DataError(`${layoutFile}: ${checkedLayout.problem}`);
+          layout = checkedLayout.value;
+        }
+      } catch (error) {
+        baseline = null;
+        layout = null;
+        driftProblem = errorMessage(error);
+      }
     }
-    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, ruleFiles } };
+    return { kind: 'ok', data: { record, inventory, batch, windows, selectedWindow, dictionaries, bindings, mappings, hasAliasRules, baseline, layout, driftProblem, ruleFiles } };
   } catch (error) {
     return { kind: 'error', record, error: errorMessage(error) };
   }
@@ -233,22 +265,9 @@ export async function listEquipmentIds(): Promise<string[]> {
   return entries.filter(({ kind, name }) => kind === 'file' && name.endsWith('.json')).map(({ name }) => name.slice(0, -'.json'.length));
 }
 
-async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped: string[] }> {
-  const entries = await dirOrEmpty('templates');
-  const names = entries.filter(({ kind, name }) => kind === 'file' && name.endsWith('.template.json')).map(({ name }) => name);
-  const templates: TemplateDocument[] = [];
-  const skipped: string[] = [];
-  await Promise.all(names.map(async (name) => {
-    try {
-      const parsed = layoutDocumentSchema.safeParse(await readFile(`templates/${name}`));
-      if (parsed.success && parsed.data.kind === 'template') templates.push(parsed.data);
-      else skipped.push(name);
-    } catch {
-      skipped.push(name);
-    }
-  }));
-  const bySource = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
-  return { templates: templates.sort((a, b) => bySource(a.id, b.id)), skipped: skipped.sort(bySource) };
+async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped: string[]; shadowed: string[] }> {
+  const { templates, skipped, shadowed } = await listTemplates();
+  return { templates: templates.map(({ document }) => document), skipped, shadowed };
 }
 
 
@@ -283,8 +302,8 @@ export async function loadOnboarding(equipmentId: string, options: { window?: st
   const loaded = await loadEquipment(equipmentId, options);
   if (loaded.kind !== 'ok') return loaded;
   try {
-    const { templates, skipped } = await loadTemplates();
-    return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
+    const { templates, skipped, shadowed } = await loadTemplates();
+    return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, shadowedTemplates: shadowed, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
   } catch (error) {
     return { kind: 'error', record: loaded.data.record, error: errorMessage(error) };
   }

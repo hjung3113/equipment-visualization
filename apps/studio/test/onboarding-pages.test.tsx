@@ -3,12 +3,12 @@ import { readFile, readdir, rm } from 'node:fs/promises';
 import { join, relative, resolve } from 'node:path';
 import { parseSampleWindowName, sampleWindowName } from '@eqv/core';
 import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
-import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../src/App.js';
 import * as onboardingData from '../src/onboarding-data.js';
 import { navigate } from '../src/router.js';
 import { createFileApi } from '../server/files.js';
-import { addEquipment, publishEquipment, record, seedOnboardingRoot, signMapping, writeJson } from './seed.js';
+import { addEquipment, publishEquipment, record, seedOnboardingRoot, signMapping, writeDraft, writeJson } from './seed.js';
 
 declare global {
   var IS_REACT_ACT_ENVIRONMENT: boolean | undefined;
@@ -59,7 +59,7 @@ it('lists a published equipment on /fleet with a link to its onboarding page', a
   at('/fleet');
   render(<App />);
   const row = await fleetRow('eq-synth-01');
-  expect(within(row).getByText('게시됨')).toBeTruthy();
+  expect(within(row).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   expect(screen.getByRole('link', { name: 'eq-synth-01' }).getAttribute('href')).toBe('/onboarding/eq-synth-01');
 });
 
@@ -156,7 +156,7 @@ it.each<[string, (id: string) => Promise<void>]>([
   at('/fleet');
   render(<App />);
   const healthy = await fleetRow('eq-synth-01');
-  expect(within(healthy).getByText('게시됨')).toBeTruthy();
+  expect(within(healthy).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   const bad = await fleetRow('eq-bad');
   expect(bad.querySelector('.text-text-danger-label')?.textContent).toBe('오류');
   if (scenario === 'a record whose equipmentId differs from its file name') {
@@ -276,4 +276,104 @@ it('keeps every assets/ seed copy byte-identical to its fixture', async () => {
   for (const [source, copy] of pairs) {
     expect(await readFile(join(repo, copy)), copy).toEqual(await readFile(join(repo, source)));
   }
+});
+
+describe('⑦ Drift', () => {
+  const BASELINE = 'onboarding/baselines/eq-synth-01/0abf3e9ff0b22cb0e7993bfe143461f44ef1b8828df2cdce8e25af3d02987aef.inventory.json';
+  const fixture = async (path: string) => JSON.parse(await readFile(join(repo, path), 'utf8'));
+  /** The published `eq-synth-01` with its draft Layout and a Baseline Inventory (the window's own, minus `without`). */
+  const withBaseline = async (without?: string) => {
+    const inventory = await fixture('fixtures/cluster-single/expected-inventory.json');
+    await writeDraft(root, 'eq-synth-01-layout');
+    await writeJson(root, BASELINE, { ...inventory, aliases: inventory.aliases.filter(({ alias }: { alias: string }) => alias !== without) });
+  };
+
+  it('marks a published Fleet row Drift when the latest window adds an alias', async () => {
+    await withBaseline('LP1');
+    at('/fleet');
+    render(<App />);
+    expect(within(await fleetRow('eq-synth-01')).getByText('Drift')).toBeTruthy();
+  });
+
+  it('lists the new alias, the new slots and the transfers without capability of the selected window', async () => {
+    await withBaseline('LP1');
+    const layout = await fixture('fixtures/cluster-single/layout.json');
+    await writeJson(root, 'layouts/eq-synth-01-layout/draft.layout.json', { ...layout, transferCapabilities: [] });
+    at('/onboarding/eq-synth-01');
+    render(<App />);
+    await screen.findByRole('heading', { name: '⑦ Drift 검토' });
+    expect(screen.getByText('새 alias (1)')).toBeTruthy();
+    expect(within(screen.getByRole('table', { name: '새 alias' })).getByText('LP1')).toBeTruthy();
+    expect(screen.getByText(/^새 slot \(\d+\)$/)).toBeTruthy();
+    expect(within(screen.getByRole('table', { name: '새 slot' })).getByText('LP1 / 1')).toBeTruthy();
+    const transfers = screen.getByRole('table', { name: 'Transfer Capability 없는 관측 이송' });
+    expect(within(transfers).getAllByRole('row').length).toBeGreaterThan(1);
+    expect(within(transfers).getAllByText(/ → /).length).toBeGreaterThan(0);
+    expect(screen.getByRole('link', { name: 'Mapping Board에서 검토' }).getAttribute('href')).toBe('/onboarding/eq-synth-01/board');
+  });
+
+  it('says there is no Drift when the window matches the Baseline', async () => {
+    await withBaseline();
+    at('/onboarding/eq-synth-01');
+    render(<App />);
+    await screen.findByText('기준 대비 Drift 없음');
+    expect(screen.queryByRole('table', { name: '새 alias' })).toBeNull();
+  });
+
+  it('shows a message, not an error, when the Baseline Inventory is missing, and keeps the Fleet row published', async () => {
+    await writeDraft(root, 'eq-synth-01-layout');
+    at('/onboarding/eq-synth-01');
+    const first = render(<App />);
+    await screen.findByText('Drift를 판단할 수 없습니다');
+    expect(screen.getByText('Baseline Inventory가 없습니다')).toBeTruthy();
+    expect(within(screen.getByRole('main')).queryByRole('alert')).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Mapping Board에서 검토' })).toBeNull();
+    first.unmount();
+
+    at('/fleet');
+    render(<App />);
+    expect(within(await fleetRow('eq-synth-01')).getByText('게시됨 · Drift 미확인')).toBeTruthy();
+  });
+
+  it('keeps a checked, clean Fleet row as plain 게시됨', async () => {
+    await withBaseline();
+    at('/fleet');
+    render(<App />);
+    const row = within(await fleetRow('eq-synth-01'));
+    expect(row.getByText('게시됨')).toBeTruthy();
+    expect(row.queryByText('게시됨 · Drift 미확인')).toBeNull();
+  });
+
+  it('leaves Fleet, Onboarding and the Board loading when a Drift input is broken, and says Drift is unknown', async () => {
+    await withBaseline();
+    await writeJson(root, 'layouts/eq-synth-01-layout/draft.layout.json', { broken: true });
+    expect(await onboardingData.loadOnboarding('eq-synth-01')).toMatchObject({ kind: 'ok', data: { baseline: null, layout: null, driftProblem: expect.stringContaining('draft.layout.json') } });
+
+    await writeJson(root, BASELINE, { broken: true });
+    expect(await onboardingData.loadOnboarding('eq-synth-01')).toMatchObject({ kind: 'ok', data: { baseline: null, driftProblem: expect.stringContaining('.inventory.json') } });
+
+    at('/onboarding/eq-synth-01');
+    const first = render(<App />);
+    await screen.findByText('Drift를 판단할 수 없습니다');
+    expect(screen.getByRole('heading', { name: /Inventory/ })).toBeTruthy();
+    first.unmount();
+
+    at('/fleet');
+    render(<App />);
+    expect(within(await fleetRow('eq-synth-01')).getByText('게시됨 · Drift 미확인')).toBeTruthy();
+  });
+});
+
+it('shows data-root Templates that the bundle shadows apart from unparsable ones', async () => {
+  const api = createFileApi({ root, repoRoot: repo });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
+    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
+    return new Response(JSON.stringify(result.body), { status: result.status });
+  });
+  await writeJson(root, 'templates/broken.template.json', { kind: 'template' });
+  at('/onboarding/eq-synth-01');
+  render(<App />);
+  await screen.findByText('id가 번들과 겹쳐 건너뛴 Template: cluster-single.template.json');
+  expect(screen.getByText('건너뛴 Template: broken.template.json')).toBeTruthy();
 });

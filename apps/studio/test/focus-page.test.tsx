@@ -103,7 +103,6 @@ it.each([
   render(<App />);
   await loaded();
   const topView = () => within(screen.getByRole('region', { name: 'Top View' }));
-  expect(topView().queryByRole('link', { name: 'Journey 열기' })).toBeNull();
   applyRange('2026-01-01T09:58:00.000');
   fireEvent.click(row(id));
   const link = topView().queryByRole('link', { name: 'Journey 열기' });

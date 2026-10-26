@@ -210,3 +210,13 @@ it('keeps the named focusable region as the table parent when capped', () => {
   expect(region.getAttribute('tabindex')).toBe('0');
 });
 
+
+it('keeps Korean words whole: the table carries keep-all so text wraps at spaces only', () => {
+  // jsdom has no layout, so the seam is the CSS class (word-break: keep-all), not measured wrapping.
+  render(
+    <DataTable label="Occurrence" columns={['설비']}>
+      <DataTable.Row><DataTable.Cell>EQ-1</DataTable.Cell></DataTable.Row>
+    </DataTable>,
+  );
+  expect(screen.getByRole('table', { name: 'Occurrence' }).className).toContain('break-keep');
+});

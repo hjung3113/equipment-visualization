@@ -19,7 +19,7 @@ Onboarding은 Studio의 MVP 핵심 흐름이다. 장비 모델 수가 많아 사
 | ④ Mapping Board | alias 목록 · Top View · 선택 상세 (§4) | 배정·규칙화·무시·충돌 해결 |
 | ⑤ 검증 | 샘플 기간 dry-run replay | 선택한 Sample Window로 검증한다. 커버리지, Mapping Conflict 목록, 미매핑 영향도. 충돌 클릭 → SVG 강조. reducer는 실행하지 않는다. |
 | ⑥ Publish | 이전 버전 diff | 규칙 평탄화 → 불변 Mapping Version + Binding(effectiveFrom) |
-| ⑦ Drift | Fleet 상태 배지 + 검토 대기열 | 게시 후 새 alias·slot, Transfer Capability 없는 관측 이송 |
+| ⑦ Drift | Fleet 상태 배지 + 검토 대기열 | 게시 후 새 alias·slot, Transfer Capability 없는 관측 이송. Fleet `Drift` 배지는 **가장 늦은** Sample Window를, Onboarding의 `⑦ Drift 검토` 패널은 **선택한** window를 최신 Binding의 Baseline과 비교한다 |
 
 ## 2. Observed Inventory
 
@@ -72,7 +72,7 @@ type InventoryAlias = {
 LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2
 ```
 
-`fixtures/templates/`의 세 후보는 #11b의 synthetic Template이며 OEM 형상이나 기구학 검증을 주장하지 않는다. #7의 변환 아키타입은 후속 후보로 합류한다.
+`fixtures/templates/`의 세 후보는 #11b의 synthetic Template(테스트 입력)이며 OEM 형상이나 기구학 검증을 주장하지 않는다. Studio의 Template 제안은 `assets/templates/`의 변환 아키타입 여섯 개(#7)를 읽고, 데이터 루트가 저장소 밖이면 데이터 루트 `templates/`를 합친다(합집합, id가 겹치면 번들이 이긴다; [ADR-0015](adr/0015-template-promotion.md), `apps/studio/server/files.ts`).
 
 ### Generic Layout
 
@@ -83,7 +83,7 @@ LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 
 - 관측 slot 중 정수 문자열(`/^[+-]?[0-9]+$/`)만 §2의 정렬 순으로 Holding Site를 만든다. 정확한 `BigInt` 값 `v`가 0 이상이면 `slot-v`, 음수면 `slot-neg-절댓값`이다. 같은 값의 문자열(`01`, `1`)은 첫 문자열이 만든 site 하나를 공유하고 둘 다 `assignments.sites`에 남긴다. 정수가 아닌 slot은 site·배정 항목을 만들지 않는다. `materialKinds`는 다섯 종류 전체(`wafer`, `carrier`, `batch`, `boat`, `reticle`)를 나열해 특정 종류를 단정하지 않는다.
 - 모든 생성 속성·Holding Site와 alias 배정의 Certainty는 `assumed`다. provenance는 `src-observed-inventory`를 참조한다. `ports`·Physical Interface·Transfer Capability·Process Route는 비어 있으며 관측 이송으로 연결 가능성을 만들지 않는다. 이송 경로는 사람이 추가한다(/layouts의 Transfer Capability 편집, #168). **자동 게시 없음.**
 
-형상을 다듬고 "Template으로 승격"하는 UI 흐름은 제안 단계다.
+형상을 다듬은 Layout을 "Template으로 승격"하는 규칙은 [ADR-0015](adr/0015-template-promotion.md)가 정한다(게시된 Layout Revision → 데이터 루트 `templates/`, 승인 단계 없음, `promotedFrom` 출처). 구현됨(#159): Layouts 화면의 게시된 Revision에서 **Template으로 승격**하면 `POST /api/template-promotions`가 `templates/<id>.template.json`을 만든다.
 
 ## 4. Mapping Board
 
@@ -171,7 +171,7 @@ type Coverage = {
 
 충돌은 `kind`, alias(이송은 `(from, to)`) code-unit 순으로 정렬하며 slot은 §2 순서다. 같은 수준의 winning rule 중첩은 `findMappingConflicts`가 아니라 `publishMapping`의 범위 평탄화에서 공급된 alias를 대상으로 `same-level-overlap`으로 보고한다. 파일 내부의 중복 exact alias·겹치는 slot 범위 검사는 `validateAliasRules`가 담당한다. 조치는 사람 확인 후 이송 경로 추가(sourceEvidence = 로그 관측) 또는 재매핑이며 자동 게시하지 않는다.
 
-`detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`와 영향도로 표시하며 외부 알림은 플랫폼 통합 단계다.
+`detectDrift({ baseline, current, mapping, layout })`의 `baseline`은 Mapping 게시의 기준 Inventory다. `newAliases`는 current에만 있는 alias, `newSlots`는 current에만 있는 `(alias, slot)`이며 게시 때 이미 미매핑이었던 alias는 새 alias가 아니다. 새 alias의 slot도 기준에 없는 쌍이면 포함한다. alias와 slot 정렬은 §2와 같다. `transfersWithoutCapability`는 current 전체에 위와 같은 Transfer Capability 검사를 적용한 충돌 항목이다. Fleet 상태 `Drift`(세 목록 중 하나라도 비어 있지 않을 때, 가장 늦은 window 기준)와 Onboarding의 검토 대기열(선택한 window 기준, 종류별 건수와 항목, Mapping Board 링크)로 표시하며 외부 알림은 플랫폼 통합 단계다. Baseline Inventory 파일이나 최신 Binding의 Layout이 없거나(#14d 이전에 게시한 Binding), 읽을 수 없거나, 스키마·hash가 틀리거나, `detectDrift`가 `RangeError`를 던지면 Drift는 **알 수 없음**이다: 설비 로드는 그대로 성공하고(Fleet·Onboarding·Board가 막히지 않는다), Fleet은 `게시됨 · Drift 미확인`(neutral, 이유는 title)으로 두며 패널은 "Drift를 판단할 수 없습니다"와 이유(없으면 "Baseline Inventory가 없습니다", 틀린 파일이면 경로와 문제)를 보인다. "Drift 없음"으로 취급하지 않고 오류 행도 아니다. 검토 대기열은 항목이 있을 때만 Mapping Board 링크를 보이며 Onboarding 페이지의 마지막(②, ③, ⑦ 순)에 놓인다.
 
 ### 검증과 Publish (#14d)
 

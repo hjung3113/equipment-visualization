@@ -27,7 +27,7 @@ const COLUMNS = [
   { id: 'target', header: '대상' },
   { id: 'evidence', header: '근거' },
   { id: 'mapping-version', header: 'Mapping Version', className: 'whitespace-nowrap' },
-  { id: 'record-ref', header: '원본 참조' },
+  { id: 'record-ref', header: '원본 참조', className: 'whitespace-nowrap' },
   { id: 'data-quality', header: 'Data Quality' },
 ] as const;
 const MAPPING_PREFIX = 'sha256:'.length + 8;

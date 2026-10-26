@@ -7,6 +7,7 @@ import {
 } from '@eqv/core';
 import { ApiError, contained, fail, NAME } from './errors.js';
 import type { FileApiRequest, FileApiResponse, WriteScope } from './files.js';
+import type { CatalogKind } from './catalog.js';
 
 export const MAX_IMPORT_BYTES = 32 * 1024 * 1024;
 export const IMPORT_API_PREFIX = '/api/import/';
@@ -22,7 +23,7 @@ interface ImportDeps {
   write(segments: string[], value: unknown, immutable: boolean, createOnly: boolean | undefined, scope: WriteScope):
     Promise<{ created: boolean; conflict: boolean; exists?: boolean }>;
   assertJsonType(request: FileApiRequest): void;
-  usesBundledCatalog(): Promise<boolean>;
+  catalogKind(): Promise<CatalogKind>;
 }
 
 type Guard = { enabled: true; insideGitWorkTree: boolean; scope: WriteScope } | { enabled: false; reason: string; status: number; insideGitWorkTree: false };
@@ -81,7 +82,7 @@ export function createImportApi(deps: ImportDeps) {
         enabled: state.enabled,
         ...(state.enabled ? {} : { reason: state.reason }),
         insideGitWorkTree: state.insideGitWorkTree,
-        catalog: await deps.usesBundledCatalog() ? 'bundled' : 'data-root',
+        catalog: await deps.catalogKind() === 'bundled+data-root' ? 'bundled+data-root' : 'bundled',
         maxWindowBytes: MAX_IMPORT_BYTES,
       },
     };
@@ -274,5 +275,5 @@ export function createImportApi(deps: ImportDeps) {
     return route[1]();
   }
 
-  return { dispatch };
+  return { dispatch, assertEnabled };
 }

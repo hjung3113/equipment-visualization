@@ -17,6 +17,8 @@ Studio는 다음 네 가지를 **가져오기 endpoint**(`/api/import/*`, dev �
 
 **데이터 루트.** 가져오기는 dev 서버의 데이터 루트(`EQV_STUDIO_ASSETS`, 미설정이면 저장소 `assets/`)에 쓴다. 데이터 루트의 realpath가 이 저장소 작업 트리 안이면 가져오기 쓰기 endpoint 전부가 403이고, 사유("저장소 밖 경로를 `EQV_STUDIO_ASSETS`로 지정하세요")를 돌려준다. `GET /api/import/status`는 200으로 `enabled: false`와 같은 사유를 알린다. 경고에서 그치지 않는 이유는 한 번의 실수 커밋으로 회사 데이터가 공개 저장소에 들어가기 때문이다. `EQV_STUDIO_ASSETS`가 이미 있으므로 거부는 싸다. 루트가 다른 git 작업 트리 안이면(비공개 데이터 저장소일 수 있다) 거부하지 않고 화면에 경고만 한다. 읽기와 기존 쓰기 경로(초안, 규칙, Publish)는 바뀌지 않는다. 저장소 `assets/`의 synthetic 데모는 그대로 동작한다. 데이터 루트에 `templates/`가 없으면 `templates/` 읽기는 저장소의 번들 카탈로그(`assets/templates/`)에서 하고, 상태 endpoint와 화면이 어느 카탈로그를 쓰는지 알린다. primitive는 이미 renderer에 번들되어 있다.
 
+> 2026-10-26: Template 카탈로그를 고르는 규칙(데이터 루트 `templates/`가 번들을 대신함)은 [ADR-0015](0015-template-promotion.md)가 대체한다(저장소 밖 데이터 루트면 번들과의 합집합). 대체 규칙은 구현됐다(#159).
+
 **검증: 고치지 않고 거부한다.** 서버와 화면은 core의 같은 순수 함수(`validateSampleWindow(raw, { equipmentId, existing })`)를 쓴다. 이 함수는 첫 문제에서 멈추지 않고 모든 문제를 `{ code, path, message }`로 모은다. 서버 판정이 최종이다. 거부 사유는 다음과 같다.
 
 - **형식:** strict `occurrenceBatchSchema` 위반(알 수 없는 필드 포함). 실패 메시지에는 "원천이 짝지은 Occurrence만 가져옵니다. Start/End 점 이벤트나 원시 로그는 원천 변환기에서 Occurrence로 바꾼 뒤 가져오세요(ADR-0002)"를 함께 보인다. Start/End를 짝짓지 않으며, 원시 로그를 받는 입력은 어디에도 없다.

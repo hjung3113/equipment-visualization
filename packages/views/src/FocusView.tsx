@@ -92,8 +92,10 @@ export type FocusViewProps = FocusViewBaseProps & (
 /** Top View, Gantt and Occurrence list on one cursor, from props only (no page chrome, router or loader). */
 export function FocusView({ input, notices, entityType, anchor, resetKey, range: hostRange, renderDetail, tab: controlledTab, onTabChange, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
   const entryKey = JSON.stringify([entityType, anchor]);
+  // An anchor naming an Occurrence of the batch is the entry: it starts selected (view state only; the cursor is the entry's own).
+  const entryId = anchor !== null && input.batch.occurrences.some((o) => o.id === anchor) ? anchor : null;
   const fresh = (): View => ({ resetKey, entryKey, applied: null, draft: null, rangeError: null, cursor: null,
-    selectedOccurrenceId: null, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
+    selectedOccurrenceId: entryId, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);
   const [ownTab, setOwnTab] = useState<FocusTab>('list');
   // The zoom controls render into the Top View panel header (not over the fixed-width viewer, where a narrow page clips them).
@@ -104,7 +106,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, range:
   // Everything below belongs to the reset key and the entry key: a change clears it during render. The cursor, range and
   // selection belong to one batch.
   if (view.resetKey !== resetKey) setView(fresh());
-  else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, mode: { kind: 'time' } });
+  else if (view.entryKey !== entryKey) setView({ ...view, entryKey, applied: null, draft: null, rangeError: null, cursor: null, selectedOccurrenceId: entryId, mode: { kind: 'time' } });
 
   const entry = useMemo(() => focusRange(input.batch, { entityType, anchor }), [input.batch, entityType, anchor]);
   const range = (hostRange ? hostRange.value : view.applied) ?? entry.range ?? null;

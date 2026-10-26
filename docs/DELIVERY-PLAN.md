@@ -1,6 +1,6 @@
 # 구체 실행 계획 (WBS + 의사결정 게이트) v0.4
 
-**순서:** 설계 검증 → Core/Schema → Viewer + Onboarding → Focus(Replay) → Aggregate → Journey → 플랫폼/운영 고도화. 화면 모드는 `VIEWS.md`.
+**순서:** 설계 검증 → Core/Schema → Viewer + Onboarding → Focus(Replay) → Journey → 플랫폼/운영 고도화. Aggregate(T07b)·T09·T10은 **Dropped**(소유자 2026-10-26, #177); Drift ⑦(#2, #3)과 Template 승격(#159)은 **구현됨**. 화면 모드는 `VIEWS.md`.
 
 | WBS | 우선 | 산출물 | 필수 전제 | 완료/리뷰 기준 |
 |---|---|---|---|---|
@@ -10,14 +10,14 @@
 | T04 | P0 | Occurrence → SceneState 결정론적 reducer | T03 | seek/tie/Time Anomaly/Watermark/Binding 경계/dup/conflict fixture 테스트 |
 | T05 | P1 | SVG Viewer + interactive selection + level toggles | T01/T02 | JSON→SVG 일치, theme, keyboard/zoom/port selection |
 | T06 | P1 | Onboarding (Inventory → Template 제안 → Mapping Board → dry-run → Publish, `ONBOARDING.md`) | T05 | 커버리지·Mapping Conflict 계산, Publish 결정론, 키보드만으로 매핑 가능 |
-| T06b | P2 | 형상 다듬기 편집(move/rotate/snap) + Generic Layout → Template 승격 | T06 | undo/redo, key transform 불변 |
+| T06b | P2 | 형상 다듬기 편집(move/rotate/snap) + 게시된 Layout Revision → Template 승격(구현됨, [ADR-0015](adr/0015-template-promotion.md)) | T06 | undo/redo, key transform 불변 |
 | T06c | P2 | 레이아웃 조립: primitive Component 추가·삭제, Port·Physical Interface, Holding Site·Transfer Capability 편집 (#166–#168) | T06b | 연결은 명시 선택으로만, undo/redo, 삭제 cascade |
 | T07 | P1 | Focus 모드 (Top View · Gantt · 목록 커서 공유 + 재생; cluster + wet + dual-stage) | T04/T05 | 실제 경로와 illustrative 경로가 명확히 구분됨, Evidence를 색 외 패턴으로 구분 |
-| T07b | P1 | Aggregate 모드 (Component Metric → Component·Transfer Capability 인코딩) | T05/T06 | 미매핑 지표 패널, 저품질 값 빗금 |
+| T07b | P1 | ~~Aggregate 모드 (Component Metric → Component·Transfer Capability 인코딩)~~ **Dropped**(소유자 2026-10-26, #177) | T05/T06 | 미매핑 지표 패널, 저품질 값 빗금 |
 | T07c | P2 | Journey 모드 (이산 hop, 물리 경유/실행 이력 분리) | T07 | 궤적·애니메이션 없음 |
 | T08 | P1 | 플랫폼 equipment detail + analytics deep link | T05/T07 | 기존 Scope/권한/Context/returnTo + 기존 회귀검사 통과 |
-| T09 | P2 | Multi-level Track / Furnace/Boat playback | T07/T08 | level+batch 상태 모델 증거 연결 |
-| T10 | P2 | Reference→Semantic TopView Skill + 팀 QA workflow | T01/T05/T06 | 매 신규 장비의 도형 재사용·불확실성·라이선스 보고 |
+| T09 | P2 | ~~Multi-level Track / Furnace/Boat playback~~ **Dropped**(소유자 2026-10-26, #177) | T07/T08 | level+batch 상태 모델 증거 연결 |
+| T10 | P2 | ~~Reference→Semantic TopView Skill + 팀 QA workflow~~ **Dropped**(소유자 2026-10-26, #177) | T01/T05/T06 | 매 신규 장비의 도형 재사용·불확실성·라이선스 보고 |
 
 ## 설계 승인 전 체크리스트
 
@@ -42,7 +42,7 @@ F0도 유의미한 Replay MVP. 데이터가 부족하다고 F2 동작을 AI로 �
 
 ## 화면 디자인 (기존 플랫폼 UI 계약 준수)
 
-**Equipment Detail**: `Overview | Focus | Aggregate | Journey` (모드 정의는 `VIEWS.md`; 최종 IA는 사용자 검토로 확정)
+**Equipment Detail**: `Overview | Focus | ~~Aggregate~~ (Dropped, #215) | Journey` (모드 정의는 `VIEWS.md`; 최종 IA는 사용자 검토로 확정)
 
 - Viewer: 좌측 또는 전체폭 SVG, 선택된 Component → Right Detail Slot, 상태색/이름/불확실성.
 - Focus: 상단 Top View, 중단 Component lane × 시간 Gantt, 하단 Occurrence 목록/Data Quality/근거 상세. 커서 하나를 공유하고 재생은 이 안의 기능.

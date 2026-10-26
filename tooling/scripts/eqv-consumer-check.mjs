@@ -3,8 +3,9 @@
 // Serves the tarball directory over HTTP on 127.0.0.1 and creates a temp project outside the repo that lists all six @eqv/* as direct
 // dependencies by URL, as ADR-0014 tells analytics-platform to do (no @eqv overrides; pnpm's blockExoticSubdeps stays at its default,
 // so a URL-resolved @eqv/* sibling in a packed `dependencies` fails the install). Then it runs: install → single-copy check → tsc → vite build with CSS
-// probes. The @ap/* URLs, @tiptap/* pins and patches are read from this repo's pnpm-workspace.yaml and the tool versions from
-// apps/studio/package.json at run time. This is an external SDK consumer; it does not cover analytics-platform's workspace.
+// probes. The @ap/* URLs come from packages/platform-adapter/package.json, the @tiptap/* pins and patches from this repo's
+// pnpm-workspace.yaml (installed with strictPeerDependencies) and the tool versions from apps/studio/package.json at run time.
+// This is an external SDK consumer; it does not cover analytics-platform's workspace.
 // Probe classes are derived from each package's installed dist JS (a class found in no other @eqv package), so no class list can go
 // stale; the check prints the dist file that carries each probe.
 import { spawn, spawnSync } from 'node:child_process';
@@ -123,8 +124,8 @@ function writeProject(root, tarballDir, port) {
   const urls = Object.fromEntries(RELEASE_PACKAGES.map((name) => [`@eqv/${name}`, `http://127.0.0.1:${port}/${basename(files[name])}`]));
   const workspaceYaml = readFileSync(join(repoRoot, 'pnpm-workspace.yaml'), 'utf8');
   const overrideLines = readWorkspaceBlock(workspaceYaml, 'overrides');
-  const overrides = Object.fromEntries(blockEntries(overrideLines));
-  for (const name of ['@ap/ui', '@ap/contracts']) if (!overrides[name]) fail(`pnpm-workspace.yaml overrides carry no ${name} URL`);
+  const adapter = readJson(join(repoRoot, 'packages', 'platform-adapter', 'package.json')).devDependencies;
+  for (const name of ['@ap/ui', '@ap/contracts']) if (!adapter[name]) fail(`packages/platform-adapter/package.json devDependencies carry no ${name} URL`);
 
   const studio = readJson(join(repoRoot, 'apps', 'studio', 'package.json'));
   const studioVersions = { ...studio.dependencies, ...studio.devDependencies };
@@ -137,7 +138,7 @@ function writeProject(root, tarballDir, port) {
     name: 'eqv-outside-consumer',
     private: true,
     type: 'module',
-    dependencies: { ...urls, '@ap/ui': overrides['@ap/ui'], '@ap/contracts': overrides['@ap/contracts'], ...tools },
+    dependencies: { ...urls, '@ap/ui': adapter['@ap/ui'], '@ap/contracts': adapter['@ap/contracts'], ...tools },
   }, null, 2)}\n`);
 
   const patchLines = [];
@@ -152,6 +153,7 @@ function writeProject(root, tarballDir, port) {
     'allowBuilds:',
     '  esbuild: true',
     ...(patchLines.length > 0 ? ['patchedDependencies:', ...patchLines] : []),
+    'strictPeerDependencies: true',
     'overrides:',
     ...overrideLines,
     '',
@@ -247,7 +249,7 @@ async function main() {
     if (relativeRoot === '' || !relativeRoot.startsWith(`..${sep}`)) fail('consumer directory must be outside the repository');
     server = await serveDirectory(tarballDir);
     await runStep('write consumer project', () => writeProject(root, tarballDir, server.port));
-    await runStep('pnpm install (@eqv/* tarballs over http://127.0.0.1, @ap/* URLs, tiptap pins, patches from pnpm-workspace.yaml)', () => runAsync('pnpm', ['install', '--no-frozen-lockfile', ...(process.env.EQV_OFFLINE === '1' ? ['--offline'] : [])], root));
+    await runStep('pnpm install (@eqv/* tarballs over http://127.0.0.1, @ap/* URLs from platform-adapter, tiptap pins, patches from pnpm-workspace.yaml)', () => runAsync('pnpm', ['install', '--no-frozen-lockfile', ...(process.env.EQV_OFFLINE === '1' ? ['--offline'] : [])], root));
     await runStep('single copy of react, react-dom, @ap/ui, @ap/contracts and @eqv/core', () => assertSingleCopies(root));
     await runStep('tsc --noEmit (imports @eqv/platform-adapter, ./manifest and ./mock-data)', () => run('pnpm', ['exec', 'tsc', '--noEmit', '-p', 'tsconfig.json'], root));
     await runStep('vite build', () => run('pnpm', ['exec', 'vite', 'build'], root));

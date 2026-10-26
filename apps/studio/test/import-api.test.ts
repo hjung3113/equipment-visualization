@@ -34,6 +34,7 @@ const query = (params: Record<string, string>) => `?${new URLSearchParams(params
 interface Body {
   error: string; path: string; created: boolean; summary: { name: string }; issues: { code: string }[];
   entries: { name: string }[]; enabled: boolean; catalog: string;
+  templates: { file: string }[];
 }
 const send = async (target: ReturnType<typeof createFileApi>, method: string, url: string, body = '', headers: Record<string, string> = JSON_TYPE) =>
   (await target.handle({ method, url, headers, body })) as { status: number; body: Body };
@@ -149,21 +150,27 @@ describe('data-root guard', () => {
 
   it('reports a plain temp root as outside any git work tree, with the 32 MiB cap', async () => {
     expect(await call('GET', '/api/import/status')).toEqual({
-      status: 200, body: { enabled: true, insideGitWorkTree: false, catalog: 'bundled', maxWindowBytes: 33554432 },
+      status: 200, body: { enabled: true, insideGitWorkTree: false, catalog: 'bundled+data-root', maxWindowBytes: 33554432 },
     });
     expect((await call('POST', '/api/import/status')).status).toBe(405);
     expect((await call('GET', '/api/import/other')).status).toBe(404);
   });
 
   it('reports which catalog is in use', async () => {
-    const bundled = await call('GET', `/api/files${query({ dir: 'templates' })}`);
-    expect(bundled.body.entries.map((entry: { name: string }) => entry.name)).toEqual(
-      (await readdir(join(repo, 'assets/templates'))).filter((name) => name.endsWith('.json')).sort());
+    const bundledNames = (await readdir(join(repo, 'assets/templates'))).filter((name) => name.endsWith('.json')).sort();
+    const bundled = await call('GET', '/api/templates');
+    expect(bundled.body.templates.map(({ file }: { file: string }) => file).sort()).toEqual(bundledNames);
     const seeded = await seedRoot();
     created.push(seeded.base);
+    await writeJson(seeded.root, 'templates/own.template.json',
+      { ...JSON.parse(await readFile(join(repo, 'assets/templates/cluster-single.template.json'), 'utf8')), id: 'own' });
     const own = createFileApi({ root: seeded.root, repoRoot: repo });
-    expect((await send(own, 'GET', '/api/import/status')).body.catalog).toBe('data-root');
-    expect((await send(own, 'GET', `/api/files${query({ dir: 'templates' })}`)).body.entries).toHaveLength(1);
+    expect((await send(own, 'GET', '/api/import/status')).body.catalog).toBe('bundled+data-root');
+    expect((await send(own, 'GET', '/api/templates')).body.templates.map(({ file }: { file: string }) => file).sort())
+      .toEqual([...bundledNames, 'own.template.json'].sort());
+    const inRepo = createFileApi({ root: join(repo, 'assets'), repoRoot: repo });
+    expect((await send(inRepo, 'GET', '/api/import/status')).body.catalog).toBe('bundled');
+    expect((await send(createFileApi({ root: seeded.root }), 'GET', '/api/import/status')).body.catalog).toBe('bundled');
   });
 });
 
