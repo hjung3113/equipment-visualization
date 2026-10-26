@@ -72,7 +72,7 @@ type InventoryAlias = {
 LL 1/1 ✓, LP 1/1 ✓, PM 3 (1–6) ✓, ROBOT 2/2 ✓, 이송 7/7 ✓, 설명 안 되는 alias 2
 ```
 
-`fixtures/templates/`의 세 후보는 #11b의 synthetic Template(테스트 입력)이며 OEM 형상이나 기구학 검증을 주장하지 않는다. Studio의 Template 제안은 데이터 루트에 `templates/`가 없으면 `assets/templates/`의 변환 아키타입 여섯 개(#7)를 읽는다(`apps/studio/server/files.ts`).
+`fixtures/templates/`의 세 후보는 #11b의 synthetic Template(테스트 입력)이며 OEM 형상이나 기구학 검증을 주장하지 않는다. Studio의 Template 제안은 데이터 루트에 `templates/`가 없으면 `assets/templates/`의 변환 아키타입 여섯 개(#7)를 읽는다(`apps/studio/server/files.ts`). [ADR-0015](adr/0015-template-promotion.md)가 이 규칙을 번들과 데이터 루트 `templates/`의 합집합으로 바꾼다(구현 #159 전까지는 지금 규칙).
 
 ### Generic Layout
 
