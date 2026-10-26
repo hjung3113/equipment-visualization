@@ -1,4 +1,4 @@
-import { EVIDENCE_DASH, EVIDENCE_KO, PAINT, SMALL_COMPONENT_PX, visible, type StateEvidence } from './overlay.js';
+import { EVIDENCE_DASH, EVIDENCE_KO, isSmallComponent, PAINT, visible, type StateEvidence } from './overlay.js';
 import type { Scene } from './scene.js';
 import { estimateTextWidth } from './text.js';
 import { el, formatNum, type SvgNode } from './svg.js';
@@ -84,7 +84,7 @@ export function buildJourneyLayer(scene: Scene, journey: JourneyOverlay, k: numb
     // A small Component's row sits just above the bbox (no outside label is drawn there) unless its stroked
     // extent would cross the scene viewBox; then it stays on the inner top edge.
     const outer = comp.bbox.y0 - (INSET_PX + BADGE_PX / 2) * k;
-    const small = (comp.bbox.y1 - comp.bbox.y0) / k < SMALL_COMPONENT_PX && outer - (BADGE_PX / 2 + 1.5) * k >= scene.viewBox.y0;
+    const small = isSmallComponent(comp, k) && outer - (BADGE_PX / 2 + 1.5) * k >= scene.viewBox.y0;
     const cy = small ? outer : comp.bbox.y0 + (INSET_PX + BADGE_PX / 2) * k;
     let xPx = -rowPx / 2;
     for (const hop of shown) {

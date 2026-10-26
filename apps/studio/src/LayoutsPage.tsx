@@ -7,7 +7,7 @@ import {
   addComponent, removalImpact, removeComponent, setLabel, DEFAULT_SNAP, canRedo, canUndo, cancelDrag, createLayoutEdit, dragTo, endDrag, isDirty, markSaved, moveBy, redo, rotateBy, setTransform, undo,
   type LayoutEditState,
 } from '@eqv/editor';
-import { dirOrEmpty, publishRevision, readFile, saveDraft } from './api.js';
+import { dirOrEmpty, listTemplates, publishRevision, readFile, saveDraft } from './api.js';
 import { AddComponentRow, EditToolbar, ROTATE_STEP, SelectionPanel } from './LayoutEditPanel.js';
 import { ConnectionsPanel } from './LayoutConnections.js';
 import { REVISION_FILE } from './layout-baseline.js';
@@ -71,8 +71,9 @@ function parseDoc(raw: unknown): { doc: Doc } | { issues: string } {
 }
 
 async function loadListing(): Promise<Listing> {
-  const templates = (await dirOrEmpty('templates')).filter((entry) => entry.kind === 'file')
-    .map((entry) => ({ path: `templates/${entry.name}`, label: entry.name.replace(/\.template\.json$/, '') }));
+  // The catalog rule (bundle wins, shadowed and unreadable files left out) lives in `/api/templates`.
+  const templates = (await listTemplates()).templates
+    .map(({ file }) => ({ path: `templates/${file}`, label: file.replace(/\.template\.json$/, '') }));
   const folders = (await dirOrEmpty('layouts')).filter((entry) => entry.kind === 'dir');
   const layouts = await Promise.all(folders.map(async ({ name }) => {
     const files = (await dirOrEmpty(`layouts/${name}`)).flatMap((entry) => {

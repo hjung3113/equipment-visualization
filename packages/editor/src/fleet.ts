@@ -27,11 +27,30 @@ export interface FleetData {
 }
 
 /** Why Drift is unknown for these inputs, or `null` when both the Baseline Inventory and the Layout are there. */
-export function driftUnknownReason({ baseline, layout, driftProblem }: Pick<FleetData, 'baseline' | 'layout' | 'driftProblem'>): string | null {
+function driftUnknownReason({ baseline, layout, driftProblem }: Pick<FleetData, 'baseline' | 'layout' | 'driftProblem'>): string | null {
   if (driftProblem) return driftProblem;
   if (!baseline) return 'Baseline Inventory가 없습니다';
   if (!layout) return '최신 Binding의 Layout이 없습니다';
   return null;
+}
+
+const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
+
+/**
+ * The one Drift evaluation for the Fleet badge and the Onboarding Drift review: `drift` is `null` and `unknown` says why
+ * when an input is missing or detection fails (never read as "no drift"); `drifted` is true when any Drift category has an item.
+ */
+export function evaluateDrift(
+  data: Pick<FleetData, 'baseline' | 'layout' | 'driftProblem'>, current: ObservedInventory, mapping: MappingVersion,
+): { drift: Drift | null; unknown: string | null; drifted: boolean } {
+  const reason = driftUnknownReason(data);
+  if (reason !== null) return { drift: null, unknown: reason, drifted: false };
+  try {
+    const drift = detectDrift({ baseline: data.baseline!, current, mapping, layout: data.layout! });
+    return { drift, unknown: null, drifted: drift.newAliases.length > 0 || drift.newSlots.length > 0 || drift.transfersWithoutCapability.length > 0 };
+  } catch (error) {
+    return { drift: null, unknown: errorText(error), drifted: false };
+  }
 }
 
 /** An equipment whose inputs could not be loaded; the host supplies the reason. */
@@ -65,8 +84,6 @@ export interface FleetRow {
   error: string | null;
 }
 
-const errorText = (error: unknown) => error instanceof Error ? error.message : String(error);
-
 function summarize(input: FleetData | FleetFailure | FleetNoObservations): FleetRow {
   if ('noObservations' in input) {
     const { equipmentId, maker, model } = input.record;
@@ -88,16 +105,7 @@ function summarize(input: FleetData | FleetFailure | FleetNoObservations): Fleet
   if (!mapping) return failed(`Mapping Version ${latest.mappingHash} 없음`);
   try {
     const coverage = computeCoverage(inventory, mapping);
-    let drift: Drift | null = null;
-    let driftUnknown = driftUnknownReason(input);
-    if (driftUnknown === null) {
-      try {
-        drift = detectDrift({ baseline: input.baseline!, current: inventory, mapping, layout: input.layout! });
-      } catch (error) {
-        driftUnknown = errorText(error);
-      }
-    }
-    const drifted = drift !== null && (drift.newAliases.length > 0 || drift.newSlots.length > 0 || drift.transfersWithoutCapability.length > 0);
+    const { drift, unknown: driftUnknown, drifted } = evaluateDrift(input, inventory, mapping);
     return { ...identity, status: drifted ? 'drift' : 'published', coverage, assumedRatio: coverage.assumed.ratio, drift, driftUnknown, error: null,
       unmappedReferences: coverage.unmapped.reduce((sum, { references }) => sum + references, 0) };
   } catch (error) {
