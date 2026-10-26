@@ -76,7 +76,7 @@ Alias Rule과 Type Dictionary가 작성되는 범위: `Global → Maker → Mode
 로그 관측과 레이아웃·매핑이 모순되는 지점(Transfer Capability 없는 관측 이송, Holding Site 수를 넘는 slot, Port/Role 불일치, 같은 수준 규칙 중첩). 자동으로 고치지 않는다.
 
 **Template**:
-한 구조 아키타입의 재사용 레이아웃. Role별 허용 개수(`roleCardinality`)를 가지며 매칭 후보가 된다. Component ID는 `pm-a`처럼 Role 기반이며 로그 alias와 같다는 사실은 매핑 근거가 아니다.
+한 구조 아키타입의 재사용 레이아웃. Role별 허용 개수(`roleCardinality`)를 가지며 매칭 후보가 된다. Component ID는 `pm-a`처럼 Role 기반이며 로그 alias와 같다는 사실은 매핑 근거가 아니다. 게시된 Layout Revision에서 승격한 Template은 출처 `promotedFrom`(`layoutId`, `layoutRevision`)을 가질 수 있다.
 _Avoid_: archetype(구조 분류 이름으로만), model(장비 모델)
 
 **Coverage**:

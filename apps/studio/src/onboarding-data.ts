@@ -1,12 +1,12 @@
 import {
   latestBinding, checkBindingLayout, checkBindingMapping,
-  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, layoutDocumentSchema, observedInventorySchema, parseSampleWindowName,
+  aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, observedInventorySchema, parseSampleWindowName,
   validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary,
   type AliasMetadataFile, type AliasRulesFile, type Binding, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
   type MappingVersion, type ObservedInventory, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
-import { ApiError, dirOrEmpty, listDir, readFile, type DirEntry } from './api.js';
+import { ApiError, dirOrEmpty, listDir, listTemplates, readFile, type DirEntry } from './api.js';
 import { errorMessage } from './error-message.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
@@ -38,7 +38,7 @@ export type EquipmentLoad =
   | { kind: 'ok'; data: LoadedEquipment };
 export type OnboardingLoad =
   | Exclude<EquipmentLoad, { kind: 'ok' }>
-  | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[]; draft: DraftLookup };
+  | { kind: 'ok'; data: LoadedEquipment; templates: TemplateDocument[]; skippedTemplates: string[]; shadowedTemplates: string[]; draft: DraftLookup };
 
 /** Thrown for any content problem; the message becomes the equipment's error text. */
 export class DataError extends Error {}
@@ -265,22 +265,9 @@ export async function listEquipmentIds(): Promise<string[]> {
   return entries.filter(({ kind, name }) => kind === 'file' && name.endsWith('.json')).map(({ name }) => name.slice(0, -'.json'.length));
 }
 
-async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped: string[] }> {
-  const entries = await dirOrEmpty('templates');
-  const names = entries.filter(({ kind, name }) => kind === 'file' && name.endsWith('.template.json')).map(({ name }) => name);
-  const templates: TemplateDocument[] = [];
-  const skipped: string[] = [];
-  await Promise.all(names.map(async (name) => {
-    try {
-      const parsed = layoutDocumentSchema.safeParse(await readFile(`templates/${name}`));
-      if (parsed.success && parsed.data.kind === 'template') templates.push(parsed.data);
-      else skipped.push(name);
-    } catch {
-      skipped.push(name);
-    }
-  }));
-  const bySource = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
-  return { templates: templates.sort((a, b) => bySource(a.id, b.id)), skipped: skipped.sort(bySource) };
+async function loadTemplates(): Promise<{ templates: TemplateDocument[]; skipped: string[]; shadowed: string[] }> {
+  const { templates, skipped, shadowed } = await listTemplates();
+  return { templates: templates.map(({ document }) => document), skipped, shadowed };
 }
 
 
@@ -315,8 +302,8 @@ export async function loadOnboarding(equipmentId: string, options: { window?: st
   const loaded = await loadEquipment(equipmentId, options);
   if (loaded.kind !== 'ok') return loaded;
   try {
-    const { templates, skipped } = await loadTemplates();
-    return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
+    const { templates, skipped, shadowed } = await loadTemplates();
+    return { kind: 'ok', data: loaded.data, templates, skippedTemplates: skipped, shadowedTemplates: shadowed, draft: await lookupDraft(equipmentId, loaded.data.bindings) };
   } catch (error) {
     return { kind: 'error', record: loaded.data.record, error: errorMessage(error) };
   }

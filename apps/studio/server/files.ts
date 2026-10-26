@@ -6,7 +6,9 @@ import {
   validateTypeDictionary, verifyMappingHash,
 } from '@eqv/core';
 import { ApiError, contained, fail, NAME } from './errors.js';
+import { createCatalog } from './catalog.js';
 import { createImportApi, IMPORT_API_PREFIX } from './import.js';
+import { createPromoteApi } from './promote.js';
 
 export interface FileApiRequest {
   method: string;
@@ -151,23 +153,9 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
     }
   }
 
-  /** True when the data root has no `templates/`: reads then come from the bundled catalog (needs `repoRoot`). */
-  async function usesBundledCatalog(): Promise<boolean> {
-    if (repoRoot === undefined) return false;
-    return lstat(join(root, 'templates')).then(() => false, (error) => missing(error));
-  }
+  const catalog = createCatalog({ root, repoRoot });
 
-  async function readTarget(segments: string[]): Promise<{ real: string; absolute: string; base: string }> {
-    let base = await rootReal();
-    let absolute = join(root, ...segments);
-    if (repoRoot !== undefined && segments[0] === 'templates' && await usesBundledCatalog()) {
-      try {
-        base = await realpath(join(repoRoot, 'assets/templates'));
-      } catch {
-        return fail(404, 'Not found');
-      }
-      absolute = join(repoRoot, 'assets', ...segments);
-    }
+  async function resolveIn(base: string, absolute: string): Promise<{ real: string; absolute: string; base: string }> {
     let real: string;
     try {
       real = await realpath(absolute);
@@ -178,18 +166,53 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
     return { real, absolute, base };
   }
 
-  async function get(segments: string[], kind: 'file' | 'dir'): Promise<FileApiResponse> {
-    const { real, base } = await readTarget(segments);
-    const info = await stat(real);
-    if (kind === 'file') {
-      if (!info.isFile()) fail(400, 'Not a file');
-      try {
-        return { status: 200, body: JSON.parse(await readFile(real, 'utf8')) as unknown };
-      } catch {
-        return fail(422, 'File is not valid JSON');
+  /** The bundled catalog folder's real path, or 404 when it is absent. */
+  async function bundledBase(): Promise<string> {
+    try {
+      return await realpath(catalog.bundledDir());
+    } catch {
+      return fail(404, 'Not found');
+    }
+  }
+
+  /** `templates/**` reads the bundle first, then (union catalog) the data root; containment is checked against the base the path came from. */
+  async function readTarget(segments: string[]): Promise<{ real: string; absolute: string; base: string }> {
+    if (repoRoot !== undefined && segments[0] === 'templates') {
+      const kind = await catalog.kind();
+      if (kind !== 'data-root') {
+        try {
+          return await resolveIn(await bundledBase(), join(repoRoot, 'assets', ...segments));
+        } catch (error) {
+          if (kind === 'bundled' || !(error instanceof ApiError) || error.status !== 404) throw error;
+        }
       }
     }
-    if (!info.isDirectory()) fail(400, 'Not a directory');
+    return resolveIn(await rootReal(), join(root, ...segments));
+  }
+
+  /** The `templates` listing of a union catalog: bundled names win; a missing side contributes nothing. */
+  async function unionTemplateEntries(): Promise<{ name: string; kind: 'file' | 'dir' }[]> {
+    const merged = new Map<string, { name: string; kind: 'file' | 'dir' }>();
+    let found = false;
+    const sources = [
+      async () => resolveIn(await bundledBase(), catalog.bundledDir()),
+      async () => resolveIn(await rootReal(), join(root, 'templates')),
+    ];
+    for (const source of sources) {
+      let target: { real: string; base: string };
+      try {
+        target = await source();
+      } catch (error) {
+        if (error instanceof ApiError && error.status === 404) continue;
+        throw error;
+      }
+      found = true;
+      for (const entry of await listEntries(target.real, target.base)) if (!merged.has(entry.name)) merged.set(entry.name, entry);
+    }
+    return found ? [...merged.values()] : fail(404, 'Not found');
+  }
+
+  async function listEntries(real: string, base: string): Promise<{ name: string; kind: 'file' | 'dir' }[]> {
     const entries: { name: string; kind: 'file' | 'dir' }[] = [];
     for (const name of await readdir(real)) {
       try {
@@ -202,8 +225,26 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
         continue;
       }
     }
-    entries.sort((a, b) => a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
-    return { status: 200, body: { entries } };
+    return entries;
+  }
+
+  async function get(segments: string[], kind: 'file' | 'dir'): Promise<FileApiResponse> {
+    const sortByName = (entries: { name: string }[]) => entries.sort((x, y) => x.name < y.name ? -1 : x.name > y.name ? 1 : 0);
+    if (kind === 'dir' && repoRoot !== undefined && segments.length === 1 && segments[0] === 'templates' && await catalog.kind() === 'bundled+data-root') {
+      return { status: 200, body: { entries: sortByName(await unionTemplateEntries()) } };
+    }
+    const { real, base } = await readTarget(segments);
+    const info = await stat(real);
+    if (kind === 'file') {
+      if (!info.isFile()) fail(400, 'Not a file');
+      try {
+        return { status: 200, body: JSON.parse(await readFile(real, 'utf8')) as unknown };
+      } catch {
+        return fail(422, 'File is not valid JSON');
+      }
+    }
+    if (!info.isDirectory()) fail(400, 'Not a directory');
+    return { status: 200, body: { entries: sortByName(await listEntries(real, base)) } };
   }
 
   /** Rejects symlinks in existing components below the root and any escape from the real root. */
@@ -352,7 +393,10 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
   }
 
   const importApi = createImportApi({
-    root, repoRoot, readTarget, assertWritable, write, assertJsonType, usesBundledCatalog,
+    root, repoRoot, readTarget, assertWritable, write, assertJsonType, catalogKind: catalog.kind,
+  });
+  const promoteApi = createPromoteApi({
+    root, repoRoot, catalog, assertEnabled: importApi.assertEnabled, assertWritable, write, assertJsonType,
   });
 
   async function dispatch(request: FileApiRequest): Promise<FileApiResponse> {
@@ -369,6 +413,14 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
     }
     if (url.pathname === '/api/layout-revisions') {
       if (request.method === 'POST') return publish(request);
+      return fail(405, 'Method not allowed');
+    }
+    if (url.pathname === '/api/templates') {
+      if (request.method === 'GET') return promoteApi.list();
+      return fail(405, 'Method not allowed');
+    }
+    if (url.pathname === '/api/template-promotions') {
+      if (request.method === 'POST') return promoteApi.promote(request);
       return fail(405, 'Method not allowed');
     }
     if (url.pathname.startsWith(IMPORT_API_PREFIX)) return importApi.dispatch(request, url);

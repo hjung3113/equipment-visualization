@@ -47,7 +47,10 @@ export function ImportStatusNotices({ state, git = false, catalog = false, disab
     ) : null,
     catalog && state.kind === 'ok' && state.status.catalog === 'bundled' ? (
       <StateMessage key="catalog" compact icon={Library} title="번들 Template 카탈로그를 씁니다"
-        body="데이터 루트에 templates/ 폴더가 없어 Studio에 들어 있는 Template(assets/templates/)으로 제안합니다." />
+        body="데이터 루트가 저장소 안이라 Studio에 들어 있는 Template(assets/templates/)만 씁니다." />
+    ) : null,
+    catalog && state.kind === 'ok' && state.status.catalog === 'bundled+data-root' ? (
+      <StateMessage key="catalog" compact icon={Library} title="번들 Template과 데이터 루트 templates/를 함께 씁니다" />
     ) : null,
   ].filter((notice) => notice !== null);
   return notices.length === 0 ? null : <div className="grid gap-2">{notices}</div>;
