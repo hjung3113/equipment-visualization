@@ -6,5 +6,6 @@ export function instantiateLayout(source: TemplateDocument | EquipmentLayoutDocu
   if (source.kind === 'equipment-layout') return { ...source, id: layoutId };
   const copy: Record<string, unknown> = { ...source };
   delete copy.roleCardinality;
+  delete copy.promotedFrom;
   return { ...copy, kind: 'equipment-layout', id: layoutId, templateId: source.id } as EquipmentLayoutDocument;
 }

@@ -273,6 +273,9 @@ export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: str
           {result.skippedTemplates.length > 0 && (
             <div role="status"><Callout tone="blue" icon={<Info className="size-3.5" aria-hidden />}>건너뛴 Template: {result.skippedTemplates.join(', ')}</Callout></div>
           )}
+          {result.shadowedTemplates.length > 0 && (
+            <div role="status"><Callout tone="blue" icon={<Info className="size-3.5" aria-hidden />}>id가 번들과 겹쳐 건너뛴 Template: {result.shadowedTemplates.join(', ')}</Callout></div>
+          )}
           <InventoryView inventory={result.data.inventory} dictionaries={result.data.dictionaries} />
           {result.draft.kind === 'error' && <StateMessage compact tone="danger" icon={ServerCrash} title={`레이아웃 draft 오류: ${result.draft.error}`} />}
           {result.draft.kind === 'found' ? (

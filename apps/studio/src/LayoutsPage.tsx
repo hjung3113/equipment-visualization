@@ -1,6 +1,6 @@
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
-import { CircleCheck, Download, FileJson, Save, Send, ServerCrash } from 'lucide-react';
-import { validateLayout, type LayoutDocument } from '@eqv/core';
+import { CircleCheck, Download, FileJson, LibraryBig, Save, Send, ServerCrash } from 'lucide-react';
+import { validateLayout, type EquipmentLayoutDocument, type LayoutDocument } from '@eqv/core';
 import { PRIMITIVE_CATALOG, TopViewer, type ComponentDrag } from '@eqv/renderer';
 import {
   addPhysicalInterface, removePhysicalInterface, removePort, addHoldingSite, removeHoldingSite, addTransferCapability, removeTransferCapability,
@@ -12,6 +12,8 @@ import { AddComponentRow, EditToolbar, ROTATE_STEP, SelectionPanel } from './Lay
 import { ConnectionsPanel } from './LayoutConnections.js';
 import { REVISION_FILE } from './layout-baseline.js';
 import { newComponentSize } from './new-component-size.js';
+import { ImportStatusNotices, importBlocked, useImportStatus } from './ImportStatus.js';
+import { PromoteDialog, type PromotionSource } from './PromoteDialog.js';
 import { PublishDialog } from './PublishDialog.js';
 import { errorMessage } from './error-message.js';
 import { FileButton, LoadingBlock, Page, Panel, StateMessage, ViewerZoomControls } from '@eqv/ui';
@@ -42,6 +44,9 @@ interface Listing {
   templates: { path: string; label: string }[];
   layouts: LayoutEntry[];
 }
+
+const PUBLISHED_FILE = /^layouts\/([^/]+)\/([0-9a-f]{64})\.layout\.json$/;
+const PROMOTE_BLOCKED_ID = 'promote-blocked';
 
 const ARROWS: Record<string, [number, number]> = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
 
@@ -111,6 +116,10 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const [busy, setBusy] = useState(false);
   /** The document the open publish dialog previews; `onPublish` writes exactly this. */
   const [publishing, setPublishing] = useState<Doc | null>(null);
+  /** The published revision the open promotion dialog starts from, with the document epoch and `Doc.raw` it was captured under. */
+  const [promoting, setPromoting] = useState<{ source: PromotionSource; edited: boolean; epoch: number; raw: unknown; file: string } | null>(null);
+  const [promoted, setPromoted] = useState<string | null>(null);
+  const importState = useImportStatus();
   const [listingReload, setListingReload] = useState(0);
   const [fileReload, setFileReload] = useState(0);
   const [seed, setSeed] = useState<{ file: string; doc: Doc } | null>(null);
@@ -132,6 +141,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
   const publishOpener = useRef<HTMLButtonElement>(null);
   /** Document epoch whose publish dialog just closed; the opener regains focus once it is enabled again. */
   const focusOpenerFor = useRef<number | null>(null);
+  const promoteOpener = useRef<HTMLButtonElement>(null);
+  /** Set when the promotion dialog closes by the user (cancel, Escape, success); the toolbar button regains focus once the dialog is gone. */
+  const focusPromoteOpener = useRef(false);
   const viewWidth = useColumnWidth(documentRef);
 
   useLayoutEffect(() => {
@@ -154,6 +166,13 @@ export function LayoutsPage({ file }: { file: string | null }) {
     if (owner === documentEpoch && lost) publishOpener.current?.focus();
   }, [publishing, busy, documentEpoch]);
 
+  useEffect(() => {
+    if (!focusPromoteOpener.current || promoting !== null || busy) return;
+    focusPromoteOpener.current = false;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (lost) promoteOpener.current?.focus();
+  }, [promoting, busy]);
+
   // After navigation is approved, opening another file clears the import and previous notices.
   if (prevFile !== file) {
     setPrevFile(file);
@@ -161,6 +180,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
     setImportSequence(importSequence + 1);
     setBusy(false);
     setPublishing(null);
+    setPromoting(null);
+    setPromoted(null);
     setImported(null);
     setActionError(null);
     setRevision(null);
@@ -186,6 +207,9 @@ export function LayoutsPage({ file }: { file: string | null }) {
     if (present?.components.some((component) => component.id === pending.id)) deleteOpener.current?.focus();
     else (viewerRef.current?.querySelector<HTMLElement>('button:not([disabled]), [tabindex="0"]') ?? viewerRef.current)?.focus();
   }, [deletion, busy, documentEpoch, session?.source, present]);
+  // A promotion belongs to one published read of one file: a new document, an import or a replaced read closes it.
+  if (promoting && (promoting.epoch !== documentEpoch || prevFile !== file || promoting.file !== file || imported !== null
+    || loaded?.state !== 'ready' || loaded.raw !== promoting.raw)) setPromoting(null);
   const unsavedEdits = edit !== null && isDirty(edit);
   const importPending = imported !== null;
 
@@ -245,6 +269,8 @@ export function LayoutsPage({ file }: { file: string | null }) {
         setDocumentEpoch(epoch);
         setBusy(false);
         setPublishing(null);
+        setPromoting(null);
+        setPromoted(null);
         setRevision(null);
         setImported(parsed.doc);
         setActionError(null);
@@ -310,7 +336,20 @@ export function LayoutsPage({ file }: { file: string | null }) {
   });
   const snapOptions = snap ? DEFAULT_SNAP : null;
   const selected = selectedId === null ? undefined : present?.components.find((component) => component.id === selectedId);
-  const editable = !busy && publishing === null && deletion === null;
+  const editable = !busy && publishing === null && promoting === null && deletion === null;
+  // Offered only for a published revision file as read: not an imported document, a draft or a template.
+  const published = file === null || imported !== null || prevFile !== file || loaded?.state !== 'ready' ? null : PUBLISHED_FILE.exec(file);
+  const promotable = published !== null && loaded?.state === 'ready' && loaded.layout.kind === 'equipment-layout' ? loaded : null;
+  const promoteBlocked = importBlocked(importState);
+
+  function openPromotion() {
+    if (promotable === null || published === null || file === null || promoteBlocked || busy) return;
+    setPromoted(null);
+    setPromoting({
+      source: { layoutId: published[1]!, hex: published[2]!, layout: promotable.layout as EquipmentLayoutDocument },
+      edited: unsavedEdits, epoch: documentEpoch, raw: promotable.raw, file,
+    });
+  }
   const ifEditable = <A extends unknown[]>(fn: (...a: A) => void) => (...a: A) => { if (editable) fn(...a); };
   const template = present?.kind === 'template';
   const impact = selected && present ? removalImpact(present, selected.id) : null;
@@ -412,7 +451,7 @@ export function LayoutsPage({ file }: { file: string | null }) {
             {listing === null && listingError === null && <LoadingBlock label="목록을 불러오는 중…" />}
             {listing && (
               <nav aria-label="레이아웃 파일">
-                <PanelSectionTitle className="mb-2">템플릿 (읽기 전용)</PanelSectionTitle>
+                <PanelSectionTitle className="mb-2">Template (읽기 전용)</PanelSectionTitle>
                 <ul className="list-none space-y-0.5 p-0">{listing.templates.map(item)}</ul>
                 <PanelSectionTitle className="mt-4 mb-2">레이아웃</PanelSectionTitle>
                 {listing.layouts.length === 0 && <EmptyState size="sm" icon={<FileJson className="size-4" aria-hidden />} title="저장된 레이아웃이 없습니다." />}
@@ -436,6 +475,12 @@ export function LayoutsPage({ file }: { file: string | null }) {
             <Button type="button" variant="secondary" size="toolbar" onClick={onSaveDraft} disabled={!current || !editable}>
               <Save className="size-3.5" aria-hidden />초안 저장
             </Button>
+            {promotable !== null && (
+              <Button ref={promoteOpener} type="button" variant="secondary" size="toolbar" onClick={openPromotion} disabled={promoteBlocked || busy}
+                aria-describedby={promoteBlocked && importState.kind !== 'loading' ? PROMOTE_BLOCKED_ID : undefined}>
+                <LibraryBig className="size-3.5" aria-hidden />Template으로 승격
+              </Button>
+            )}
             <Button ref={publishOpener} type="button" variant="primary" size="toolbar" onClick={() => { if (current) setPublishing(current); }} disabled={!current || !editable}>
               <Send className="size-3.5" aria-hidden />Revision 게시
             </Button>
@@ -443,6 +488,10 @@ export function LayoutsPage({ file }: { file: string | null }) {
         >
           <div ref={documentRef} className="space-y-3">
             {actionError !== null && <StateMessage compact tone="danger" icon={ServerCrash} title={actionError} />}
+            {promotable !== null && promoteBlocked && <ImportStatusNotices state={importState} disabledId={PROMOTE_BLOCKED_ID} />}
+            {promoted !== null && (
+              <StateMessage compact icon={CircleCheck} title="Template으로 승격했습니다" body={<code className="font-mono">{promoted}</code>} />
+            )}
             {revision !== null && (
               <StateMessage compact icon={CircleCheck} title="게시된 Revision" body={<code className="font-mono">{revision}</code>} />
             )}
@@ -499,6 +548,13 @@ export function LayoutsPage({ file }: { file: string | null }) {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+      )}
+      {promoting && (
+        <PromoteDialog
+          source={promoting.source} edited={promoting.edited}
+          onCancel={() => { focusPromoteOpener.current = true; setPromoting(null); }}
+          onPromoted={(path) => { focusPromoteOpener.current = true; setPromoting(null); setPromoted(path); setListingReload((count) => count + 1); }}
+        />
       )}
       {publishing && (
         <PublishDialog

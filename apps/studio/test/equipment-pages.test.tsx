@@ -178,11 +178,14 @@ it('warns when the data root is inside a git work tree', async () => {
   await screen.findByText('데이터 루트가 git 작업 트리 안에 있습니다');
 });
 
-it('says when the bundled Template catalog is used', async () => {
-  await rm(join(root, 'templates'), { recursive: true });
+it.each<[string, boolean, string]>([
+  ['a data root inside the repo', true, '번들 Template 카탈로그를 씁니다'],
+  ['a data root outside the repo', false, '번들 Template과 데이터 루트 templates/를 함께 씁니다'],
+])('says which Template catalog is used: %s', async (_name, insideRepo, notice) => {
+  serve({ repoRoot: insideRepo ? base : repo });
   at('/equipment/eq-synth-01');
   render(<App />);
-  await screen.findByText('번들 Template 카탈로그를 씁니다');
+  await screen.findByText(notice);
 });
 
 it('lists every Sample Window with its counts, hash and links, and the alias and dictionary counts', async () => {

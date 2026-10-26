@@ -98,6 +98,9 @@ const body = {
 };
 const templateDocumentSchema = z.strictObject({
   ...body, kind: z.literal('template'), roleCardinality: z.record(idSchema, cardinalitySchema),
+  promotedFrom: z.strictObject({
+    layoutId: idSchema, layoutRevision: z.string().regex(/^sha256:[0-9a-f]{64}$/),
+  }).optional().describe('ADR-0015: the published Layout Revision this Template was promoted from; absent on bundled Templates.'),
 });
 const equipmentLayoutDocumentSchema = z.strictObject({
   ...body, kind: z.literal('equipment-layout'), templateId: idSchema,

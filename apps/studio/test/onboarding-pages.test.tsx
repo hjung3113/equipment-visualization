@@ -363,3 +363,17 @@ describe('⑦ Drift', () => {
     expect(within(await fleetRow('eq-synth-01')).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   });
 });
+
+it('shows data-root Templates that the bundle shadows apart from unparsable ones', async () => {
+  const api = createFileApi({ root, repoRoot: repo });
+  vi.stubGlobal('fetch', async (input: string, init?: RequestInit) => {
+    const headers = Object.fromEntries(Object.entries((init?.headers ?? {}) as Record<string, string>));
+    const result = await api.handle({ method: init?.method ?? 'GET', url: input, headers, body: String(init?.body ?? '') });
+    return new Response(JSON.stringify(result.body), { status: result.status });
+  });
+  await writeJson(root, 'templates/broken.template.json', { kind: 'template' });
+  at('/onboarding/eq-synth-01');
+  render(<App />);
+  await screen.findByText('id가 번들과 겹쳐 건너뛴 Template: cluster-single.template.json');
+  expect(screen.getByText('건너뛴 Template: broken.template.json')).toBeTruthy();
+});
