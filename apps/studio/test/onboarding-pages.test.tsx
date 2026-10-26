@@ -335,15 +335,6 @@ describe('⑦ Drift', () => {
     expect(within(await fleetRow('eq-synth-01')).getByText('게시됨 · Drift 미확인')).toBeTruthy();
   });
 
-  it('keeps a checked, clean Fleet row as plain 게시됨', async () => {
-    await withBaseline();
-    at('/fleet');
-    render(<App />);
-    const row = within(await fleetRow('eq-synth-01'));
-    expect(row.getByText('게시됨')).toBeTruthy();
-    expect(row.queryByText('게시됨 · Drift 미확인')).toBeNull();
-  });
-
   it('leaves Fleet, Onboarding and the Board loading when a Drift input is broken, and says Drift is unknown', async () => {
     await withBaseline();
     await writeJson(root, 'layouts/eq-synth-01-layout/draft.layout.json', { broken: true });

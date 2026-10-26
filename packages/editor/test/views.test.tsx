@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
+import { layoutDocumentSchema, type EquipmentLayoutDocument } from '@eqv/core';
 import { FleetTable, InventoryView, summarizeFleet, TemplateProposals } from '../src/index.js';
-import { bindings, dictionaries, inventory, mappings, record, templates } from './data.js';
+import { bindings, dictionaries, inventory, mappings, read, record, templates } from './data.js';
 
 afterEach(cleanup);
 
 it('renders fleet rows with status badges, integer percentages, dashes and a host link that receives the row', () => {
   const rows = summarizeFleet([
     { record, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: null, layout: null },
+    { record: { ...record, equipmentId: 'eq-clean' }, inventory: inventory(), bindings, mappings, hasAliasRules: true, baseline: inventory(),
+      layout: layoutDocumentSchema.parse(read('fixtures/cluster-single/layout.json')) as EquipmentLayoutDocument },
     { record: { ...record, equipmentId: 'eq-new' }, inventory: inventory(), bindings: null, mappings: {}, hasAliasRules: false, baseline: null, layout: null },
     { record: { ...record, equipmentId: 'eq-empty' }, noObservations: true },
     { equipmentId: 'eq-bad', maker: null, model: null, error: '관측 데이터 없음' },
@@ -21,6 +24,7 @@ it('renders fleet rows with status badges, integer percentages, dashes and a hos
   expect(row('eq-synth-01').getByText('게시됨 · Drift 미확인')).toBeTruthy();
   expect(row('eq-synth-01').getAllByRole('cell').map((cell) => cell.textContent)).toEqual(
     ['synth-maker', 'synth-model', '게시됨 · Drift 미확인 (Baseline Inventory가 없습니다)', expect.stringMatching(/^\d+%$/), expect.stringMatching(/^\d+%$/), expect.any(String)]);
+  expect(row('eq-clean').getAllByRole('cell')[2]!.textContent).toBe('게시됨');
   expect(row('eq-new').getAllByRole('cell').map((cell) => cell.textContent).slice(2, 6)).toEqual(['미착수', '—', '—', expect.any(String)]);
   const empty = screen.getByRole('link', { name: 'eq-empty' }).closest('tr')!;
   expect(Array.from(empty.querySelectorAll('td')).map((cell) => cell.textContent)).toEqual(['synth-maker', 'synth-model', '관측 없음', '—', '—', '—']);
