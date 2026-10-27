@@ -3,7 +3,8 @@ import {
   type BindingsFile, type EquipmentLayoutDocument, type MappingVersion, type OccurrenceBatch,
 } from '@eqv/core';
 import type { FleetData } from '@eqv/editor';
-import { DataError, layoutPath, listSampleWindows, loadEquipment, mappingPath, readOptional, readSampleWindow, windowHex, type SampleWindowEntry } from './onboarding-data.js';
+import { DataError, listSampleWindows, loadEquipment, readOptional, readSampleWindow, windowHex, type SampleWindowEntry } from './onboarding-data.js';
+import { layoutPath, mappingPath } from './paths.js';
 import { errorMessage } from './error-message.js';
 
 export type FocusData = {

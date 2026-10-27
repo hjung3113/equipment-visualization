@@ -1,3 +1,4 @@
+import { equipmentPath, modelDictionaryPath } from './paths.js';
 import { equipmentRecordSchema, validateTypeDictionary, type EquipmentRecord } from '@eqv/core';
 import {
   checkScope, DataError, listSampleWindows, NAME, problems, readAliasMetadata, readOptional, readSampleWindow, type SampleWindowEntry,
@@ -46,7 +47,7 @@ async function aliasMetadataState(equipmentId: string): Promise<FileState> {
 export async function loadEquipmentData(equipmentId: string): Promise<EquipmentDataLoad> {
   try {
     if (!NAME.test(equipmentId)) return { kind: 'not-found' };
-    const recordPath = `equipment/${equipmentId}.json`;
+    const recordPath = equipmentPath(equipmentId);
     const rawRecord = await readOptional(recordPath);
     if (rawRecord === undefined) return { kind: 'not-found' };
     const parsedRecord = equipmentRecordSchema.safeParse(rawRecord);
@@ -57,7 +58,7 @@ export async function loadEquipmentData(equipmentId: string): Promise<EquipmentD
     }
 
     const { maker, model } = record;
-    const dictionaryPath = `onboarding/scopes/model/${maker}/${model}/type-dictionary.json`;
+    const dictionaryPath = modelDictionaryPath(maker, model);
     const [windows, aliasMetadata, typeDictionary] = await Promise.all([
       (async (): Promise<Windows> => {
         try {

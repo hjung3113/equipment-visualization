@@ -1,3 +1,4 @@
+import { layoutDir } from './paths.js';
 import { Component, useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
 import { CircleCheck, Download, FileJson, LibraryBig, Save, Send, ServerCrash } from 'lucide-react';
 import { validateLayout, type EquipmentLayoutDocument, type LayoutDocument } from '@eqv/core';
@@ -76,8 +77,8 @@ async function loadListing(): Promise<Listing> {
     .map(({ file }) => ({ path: `templates/${file}`, label: file.replace(/\.template\.json$/, '') }));
   const folders = (await dirOrEmpty('layouts')).filter((entry) => entry.kind === 'dir');
   const layouts = await Promise.all(folders.map(async ({ name }) => {
-    const files = (await dirOrEmpty(`layouts/${name}`)).flatMap((entry) => {
-      const path = `layouts/${name}/${entry.name}`;
+    const files = (await dirOrEmpty(layoutDir(name))).flatMap((entry) => {
+      const path = `${layoutDir(name)}/${entry.name}`;
       if (entry.name === 'draft.layout.json') return [{ path, label: 'draft' }];
       const revision = REVISION_FILE.exec(entry.name);
       return revision ? [{ path, label: revision[1]!.slice(0, 12) }] : [];

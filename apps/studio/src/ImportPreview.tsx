@@ -1,3 +1,4 @@
+import { modelDictionaryPath } from './paths.js';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
   LEVEL_KO, aliasMetadataFileSchema, validateSampleWindow, validateTypeDictionary,
@@ -163,7 +164,7 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
   const fileData = result.ok ? result.file : undefined;
   if (fileData) {
     try {
-      checkScope(`onboarding/scopes/model/${record.maker}/${record.model}/type-dictionary.json`, fileData.scope,
+      checkScope(modelDictionaryPath(record.maker, record.model), fileData.scope,
         { level: 'model', maker: record.maker, model: record.model });
     } catch (error) {
       rejects.push({ code: 'scope-mismatch', path: ['scope'], message: errorMessage(error) });

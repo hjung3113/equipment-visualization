@@ -1,3 +1,4 @@
+import { bindingsPath, layoutPath } from './paths.js';
 import type { EquipmentRecord, ImportIssue, ImportWarningCode, SampleWindowSummary, TemplateDocument } from '@eqv/core';
 
 export class ApiError extends Error {
@@ -64,7 +65,7 @@ export async function dirOrEmpty(dir: string): Promise<DirEntry[]> {
 }
 
 export async function saveDraft(id: string, layout: unknown): Promise<string> {
-  const path = `layouts/${id}/draft.layout.json`;
+  const path = layoutPath(id, undefined);
   await putFile(path, layout);
   return path;
 }
@@ -75,7 +76,7 @@ export async function publishRevision(layout: unknown): Promise<{ path: string; 
 
 /** Creates the layout draft only if none exists: a 412 ApiError means someone else created it first. */
 export async function createDraft(id: string, layout: unknown): Promise<string> {
-  const path = `layouts/${id}/draft.layout.json`;
+  const path = layoutPath(id, undefined);
   await putFile(path, layout, { 'If-None-Match': '*' });
   return path;
 }
@@ -90,7 +91,7 @@ export async function putImmutable(path: string, value: unknown): Promise<void> 
 }
 
 export async function saveBindings(equipmentId: string, file: unknown): Promise<void> {
-  await putFile(`onboarding/bindings/${equipmentId}.bindings.json`, file);
+  await putFile(bindingsPath(equipmentId), file);
 }
 
 export interface TemplateCatalog {

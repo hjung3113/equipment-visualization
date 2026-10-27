@@ -1,3 +1,4 @@
+import { layoutPath } from '../src/paths.js';
 import { link, lstat, mkdir, readdir, readFile, realpath, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { isDeepStrictEqual } from 'node:util';
@@ -60,14 +61,15 @@ function writeTarget(segments: string[], requireMapping: (equipmentId: string, h
   });
   if (area === 'layouts' && rest.length === 2 && LAYOUT_ID.test(rest[0]!)) {
     const layoutId = rest[0]!;
-    if (file === 'draft.layout.json') {
+    if (segments.join('/') === layoutPath(layoutId, undefined)) {
       return mutable((value) => {
         const result = validateLayout(value);
         check(result, 'Invalid layout');
         if ((value as { id?: unknown }).id !== layoutId) fail(400, `Layout id must equal the folder name ${layoutId}`);
       });
     }
-    if (file.endsWith('.layout.json') && HEX.test(file.slice(0, -'.layout.json'.length))) {
+    if (file.endsWith('.layout.json') && HEX.test(file.slice(0, -'.layout.json'.length))
+      && segments.join('/') === layoutPath(layoutId, `sha256:${file.slice(0, -'.layout.json'.length)}`)) {
       fail(403, 'Layout revisions are immutable: use POST /api/layout-revisions');
     }
   }
@@ -360,7 +362,7 @@ export function createFileApi({ root, repoRoot, hooks }: { root: string; repoRoo
     const result = validateLayout(body);
     if (!result.ok) return fail(400, 'Invalid layout', result.issues);
     const revision = await layoutRevision(result.layout);
-    const segments = ['layouts', result.layout.id, `${revision.slice('sha256:'.length)}.layout.json`];
+    const segments = layoutPath(result.layout.id, revision).split('/');
     await assertWritable(segments);
     const written = await write(segments, body, true);
     if (written.conflict) return { status: 409, body: { error: 'A different file already exists at this path' } };

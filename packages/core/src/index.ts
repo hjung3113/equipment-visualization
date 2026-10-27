@@ -65,3 +65,5 @@ export { promoteLayout } from './onboarding/promote.js';
 export { compareNatural } from './onboarding/order.js';
 export { equipmentRecordSchema } from './onboarding/equipment.js';
 export type { EquipmentRecord } from './onboarding/equipment.js';
+
+export { hashHex } from './hash.js';
