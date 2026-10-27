@@ -7,7 +7,7 @@ import {
 } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
 import {
-  CursorStateList, DataQualityList, EvidenceDetail, FocusGantt, focusRange, illustrativeGhosts, OccurrenceList, PlaybackControls, recordSteps,
+  CursorStateList, DataQualityList, entryOccurrence, EvidenceDetail, FocusGantt, focusRange, illustrativeGhosts, OccurrenceList, PlaybackControls, recordSteps,
   usePlayback, type PlaybackScheduler,
 } from '@eqv/replay';
 import { Button, Checkbox, EmptyState, Input, Label } from '@ap/ui';
@@ -87,7 +87,7 @@ export type FocusViewProps = FocusViewBaseProps & (
 export function FocusView({ input, notices, entityType, anchor, resetKey, range: hostRange, renderDetail, tab: controlledTab, onTabChange, links, timelineBudget = TIMELINE_BUDGET, ganttSpanLimit = GANTT_SPAN_LIMIT, scheduler }: FocusViewProps) {
   const entryKey = JSON.stringify([entityType, anchor]);
   // An anchor naming an Occurrence of the batch is the entry: it starts selected (view state only; the cursor is the entry's own).
-  const entryId = anchor !== null && input.batch.occurrences.some((o) => o.id === anchor) ? anchor : null;
+  const entryId = entryOccurrence(input.batch, { entityType, anchor })?.id ?? null;
   const fresh = (): View => ({ resetKey, entryKey, applied: null, draft: null, rangeError: null, cursor: null,
     selectedOccurrenceId: entryId, selectedComponentId: null, expanded: new Set(), mode: { kind: 'time' }, illustrative: false });
   const [view, setView] = useState<View>(fresh);

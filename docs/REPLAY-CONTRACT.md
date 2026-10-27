@@ -59,6 +59,7 @@ Core는 Start/End 점 이벤트를 짝짓지 않는다. Start/End만 주는 원�
 - **시각:** 모든 시각은 Site Wall-clock(`"YYYY-MM-DDTHH:mm:ss.fff"` naive 문자열 + `timeDomain` id). `Date`·로컬 timezone·UTC 변환 금지; 비교는 문자열 또는 timezone 없는 정수 값으로. 소수 3자리 고정이며 더 정밀한 원천 시각은 자르지 않고 거부한다([ADR-0009](adr/0009-site-wall-clock-millisecond-precision.md)).
 - **구간:** Occurrence 구간은 `[start, end)`; 열린 Occurrence는 `end = null`.
 - **조회:** 재생 구간과 **겹치는** Occurrence를 조회한다(구간 안에서 시작한 것만이 아님). 재생 구간은 `[from, to)`이며 `end == from`인 Occurrence는 겹침(유지), `start >= to`는 end(열린 것 포함)와 무관하게 겹치지 않음이고, 시작 시각이 null이거나 뒤집힌(Time Anomaly) Occurrence는 판정하지 않고 유지한다(`occurrenceOverlapsWindow`). 따라서 중간 진입 시 이미 진행 중이던 체류·실행이 snapshot 없이 복원된다. 완료 Result만 있는 원천에서 Watermark 이후 진행 중인 것은 보이지 않으므로 그 구간은 근거 부재로 표시.
+  - **겹침 경계:** 조회 창은 반열림 `[from, to)`이며 AP 06 §6.3과 같다. Occurrence의 활성 구간은 `[start, end)`이지만, 닫는 Boundary가 `end == from`에 있는 Occurrence도 돌려준다 — 그 Boundary가 창 안의 관측이라 창의 첫 상태가 닫힘을 보일 수 있어야 하기 때문이다. `start >= to`는 제외하고, 시작 시각이 null인 행과 뒤집힌(Time Anomaly) 행은 유지한다. 페이지를 자르는 서버도 같은 규칙을 적용해야 한다(AP 쪽 확인 필요).
 - **동일 timestamp:** Record Sequence가 있으면 그 순서. 같은 Holding Site를 동시에 점유하는 충돌은 validation issue로 표시.
 - **이어지는 상태:** 관측된 상태는 다음 근거까지 원래 등급을 유지하되 `lastObservedAt`을 보존하고, Watermark상 근거가 끊긴 구간에서는 `unknown`으로 강등.
 - **Binding 경계:** 재생 구간이 Binding 유효기간 경계를 넘으면 segment로 나누고 경계 마커를 표시. 경계 이후 Material Location은 `unknown`으로 초기화하며 옛 이력을 새 레이아웃에 끼워 맞추지 않는다.
@@ -169,7 +170,7 @@ type Boundary = {
 };
 
 type Occurrence = {
-  id: string;                   // 원천 occurrence anchor 기반, 안정적
+  id: string;                   // 원천 occurrence anchor 기반, 안정적 (Focus 진입 키는 id가 아니라 start.seq의 문자열: analytics-platform ADR-0094, `entityType 'job'`; `'occurrence'` + id는 Studio·standalone 읽기)
   equipmentId: string;
   kind: 'VISIT' | 'TRANSFER' | 'PROCESS' | 'POST_PROCESS' | 'FUNCTION' | 'CARRIER_PRESENCE';
   start: Boundary;
