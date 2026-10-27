@@ -291,7 +291,7 @@ export function FocusView({ input, notices, entityType, anchor, resetKey, range:
             </TabsList>
             <TabsContent value="list">
               <OccurrenceList batch={input.batch} timeline={frame} bindings={input.bindings} appliedSeq={state.appliedSeq}
-                anchorOccurrenceId={anchor} selectedOccurrenceId={selectedId} onSelectOccurrence={(id) => select(id, true)} />
+                anchorOccurrenceId={entryId} selectedOccurrenceId={selectedId} onSelectOccurrence={(id) => select(id, true)} />
             </TabsContent>
             <TabsContent value="quality"><DataQualityList timeline={frame} appliedSeq={state.appliedSeq} onSelectOccurrence={(id) => select(id, true)} /></TabsContent>
             {!renderDetail && <TabsContent value="detail"><EvidenceDetail batch={input.batch} state={state} selectedOccurrenceId={selectedId} /></TabsContent>}
