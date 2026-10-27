@@ -1,10 +1,10 @@
 import { useId, useMemo, useRef, type CSSProperties, type KeyboardEvent, type PointerEvent } from 'react';
 import {
-  millisToWallClock, wallClockToMillis, type EquipmentLayoutDocument, type OccurrenceBatch, type ReplayTimeline, type SiteWallClock,
+  LEVEL_KO, millisToWallClock, wallClockToMillis, type EquipmentLayoutDocument, type OccurrenceBatch, type ReplayTimeline, type SiteWallClock,
 } from '@eqv/core';
 import { Legend, type LegendItem } from '@eqv/ui';
 import { buildLanes, type Bar } from './lanes.js';
-import { ACTIVITY_KO, EVIDENCE_KO, clock, wallClockText, type StateEvidence } from './words.js';
+import { ACTIVITY_KO, clock, wallClockText, type StateEvidence } from './words.js';
 
 export interface FocusGanttProps {
   timeline: ReplayTimeline;
@@ -120,7 +120,7 @@ export function FocusGantt({
     const what = bar.kind === 'activity' ? ACTIVITY_KO[bar.what as keyof typeof ACTIVITY_KO]
       : `${bar.what} ${bar.materialId ?? '익명'}`;
     const end = openAtRangeEnd(bar, batch, range.to) ? '열림' : clock(bar.to);
-    const evidence = bar.kind === 'activity' ? EVIDENCE_KO[bar.evidence] : `위치 ${EVIDENCE_KO[bar.evidence]}`;
+    const evidence = bar.kind === 'activity' ? LEVEL_KO[bar.evidence] : `위치 ${LEVEL_KO[bar.evidence]}`;
     return `${target} ${what} ${clock(bar.from)}–${end} · ${evidence}`;
   };
 
@@ -132,7 +132,7 @@ export function FocusGantt({
   );
   const legend: LegendItem[] = [
     ...EVIDENCES.map((evidence) => ({
-      swatch: swatch(BASE.material!.fill, BASE.material!.stroke, `${prefix}-${evidence}`), label: `${EVIDENCE_KO[evidence]} — ${PATTERN_TEXT[evidence]}`,
+      swatch: swatch(BASE.material!.fill, BASE.material!.stroke, `${prefix}-${evidence}`), label: `${LEVEL_KO[evidence]} — ${PATTERN_TEXT[evidence]}`,
     })),
     ...(['processing', 'post-processing', 'function'] as const).map((activity) => ({
       swatch: swatch(BASE[activity]!.fill, BASE[activity]!.stroke), label: `활동 ${ACTIVITY_KO[activity]}`,

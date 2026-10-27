@@ -935,6 +935,17 @@ describe('positioned Holding Sites', () => {
     expect(drawn.filter((n) => n.tag === 'text').map((n) => n.children.join(''))).toContain('+2');
   });
 
+  it.each([
+    { fallback: 3, labelled: true },
+    { fallback: 4, labelled: false },
+  ])('labels row and positioned tokens alike by the Component total ($fallback fallback + 1 positioned)', ({ fallback, labelled }) => {
+    const { scene } = rotary({ 'station-1': { x: 40, y: -15 } });
+    const rows: [string, string | undefined][] = Array.from({ length: fallback }, (_, i) => [`F${i + 1}`, undefined]);
+    const drawn = shapes(markOf(replayLayer(scene, at(['P1', 'station-1'], ...rows)), scene.components.get('stage')!));
+    const words = drawn.filter((n) => n.tag === 'text').map((n) => n.children.join(''));
+    expect(words).toEqual(labelled ? ['F1', 'F2', 'F3', 'P1'] : []);
+  });
+
   it('puts two materials on one positioned site at the same point and still rings the conflict', () => {
     const { scene } = rotary({ 'station-1': { x: 40, y: -15 } });
     const state = { ...at(['W1', 'station-1'], ['W2', 'station-1']), markers: [{ kind: 'occupancy-conflict' as const, componentId: 'stage', holdingSiteId: 'station-1', materialKeys: ['m:wafer:W1', 'm:wafer:W2'] }] };

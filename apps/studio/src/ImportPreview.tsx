@@ -1,6 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import {
-  aliasMetadataFileSchema, validateSampleWindow, validateTypeDictionary,
+  LEVEL_KO, aliasMetadataFileSchema, validateSampleWindow, validateTypeDictionary,
   type AliasMetadataFile, type EquipmentRecord,
   type SampleWindowSummary, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -192,7 +192,7 @@ function WindowDetails({ summary }: { summary: Inspection['summary'] }) {
   const levels = ['observed', 'derived', 'illustrative', 'unknown'] as const;
   const evidence = (counts: typeof summary.boundaryEvidence) => (
     <span className="flex flex-wrap items-center gap-2">
-      {levels.map((level, index) => <EvidenceBadge key={level} level={level}>{['관측', '파생', '예시', '미확인'][index]} {counts[level]}</EvidenceBadge>)}
+      {levels.map((level) => <EvidenceBadge key={level} level={level}>{LEVEL_KO[level]} {counts[level]}</EvidenceBadge>)}
     </span>
   );
   const items: DetailField[] = [

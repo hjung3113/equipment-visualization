@@ -15,6 +15,7 @@ export type { Matrix2D } from './layout/ports.js';
 
 export { occurrenceBatchSchema } from './occurrence/schema.js';
 export type { EvidenceLevel, Boundary, Occurrence, DataQualityIssue, OccurrenceBatch } from './occurrence/schema.js';
+export { LEVEL_KO } from './occurrence/words.js';
 export { validateSampleWindow, sampleWindowName, parseSampleWindowName } from './occurrence/window.js';
 export type { SampleWindowRef, SampleWindowSummary, SampleWindowResult, ImportIssue, ImportRejectCode, ImportWarningCode } from './occurrence/window.js';
 
