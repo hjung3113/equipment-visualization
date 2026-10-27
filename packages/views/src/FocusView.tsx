@@ -2,7 +2,7 @@ import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { ArrowRight, ChartGantt, MapPinOff, ServerCrash } from 'lucide-react';
 import {
-  bindingLayout, replayTimeline, replayTimelineFrame, seekSceneState, siteWallClockSchema, stepSceneState, wallClockToMillis,
+  bindingLayout, replayTimeline, replayTimelineFrame, parseWallClockRange, seekSceneState, stepSceneState,
   type ReplayInput, type ReplayTimeline, type ReplayTimelineFrame, type SceneState, type SiteWallClock,
 } from '@eqv/core';
 import { TopViewer } from '@eqv/renderer';
@@ -46,15 +46,9 @@ const TABS: { id: FocusTab; label: string }[] = [
 const count = (value: number) => value.toLocaleString('en-US');
 
 function parseRange(from: string, to: string): { range: Range } | { error: string } {
-  const a = siteWallClockSchema.safeParse(from);
-  const b = siteWallClockSchema.safeParse(to);
-  if (!a.success || !b.success) return { error: 'Site Wall-clock 형식(YYYY-MM-DDTHH:mm:ss.fff)이 아닙니다' };
-  try {
-    if (!(wallClockToMillis(a.data) < wallClockToMillis(b.data))) return { error: '시작은 끝보다 앞서야 합니다' };
-  } catch (error) {
-    return { error: errorMessage(error) };
-  }
-  return { range: { from: a.data, to: b.data } };
+  const parsed = parseWallClockRange(from, to);
+  if (parsed.ok) return { range: { from: parsed.from, to: parsed.to } };
+  return { error: parsed.problem === 'format' ? 'Site Wall-clock 형식(YYYY-MM-DDTHH:mm:ss.fff)이 아닙니다' : '시작은 끝보다 앞서야 합니다' };
 }
 
 type FocusViewBaseProps = {
