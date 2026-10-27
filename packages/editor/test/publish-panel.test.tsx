@@ -96,6 +96,24 @@ it('publishes the computed plan and shows the receipt and the host failure', asy
   expect(publishStatus().textContent).toBe('게시됨 · abababababab · 2026-01-01T10:30:00.000');
 });
 
+it('moves focus to the status on a publish failure and on a remounted panel with a receipt, and only then', async () => {
+  const receipt = { mappingHash: 'sha256:' + 'ab'.repeat(32), effectiveFrom: '2026-01-01T10:30:00.000' };
+  const onPublish = async () => ({ ok: false as const, error: 'bindings 저장 실패: 400' });
+  const first = render(<PublishPanel {...props({ onPublish })} />);
+  await waitFor(() => expect(publishButton().getAttribute('aria-disabled')).toBe('false'));
+  expect(document.activeElement).toBe(document.body);
+  fireEvent.click(publishButton());
+  await waitFor(() => expect(document.activeElement).toBe(publishStatus()));
+  first.unmount();
+  // The Studio remounts the panel after the reload that follows a publish.
+  const second = render(<PublishPanel {...props({ receipt })} />);
+  await ready();
+  expect(document.activeElement).toBe(publishStatus());
+  publishButton().focus();
+  second.rerender(<PublishPanel {...props({ receipt, boardDirty: true })} />);
+  expect(document.activeElement).toBe(publishButton());
+});
+
 it('ignores a dry-run result that arrives after the inputs changed', async () => {
   let release!: () => void;
   hold.next = new Promise<void>((resolve) => { release = resolve; });
@@ -144,6 +162,7 @@ it('lists same-Model rows with host links and row errors', async () => {
   fireEvent.click(screen.getByRole('button', { name: '같은 Model 일괄 dry-run 실행' }));
   const table = await screen.findByRole('table', { name: /synth-maker\/synth-model 설비 2대/ });
   expect(screen.getByRole('heading', { name: /읽지 못한 설비 1대/ })).toBeTruthy();
+  expect(within(table).getByRole('columnheader', { name: '설비' })).toBeTruthy();
   expect(within(within(table).getByRole('link', { name: 'eq-b' }).closest('tr')!).getAllByRole('cell')[0]!.textContent).toBe('—');
   expect(within(table).getByRole('link', { name: 'eq-a' }).getAttribute('href')).toBe('/onboarding/eq-a');
   expect(within(within(table).getByRole('link', { name: 'eq-b' }).closest('tr')!).getByText('레이아웃 초안 없음')).toBeTruthy();
