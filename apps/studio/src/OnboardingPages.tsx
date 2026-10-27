@@ -1,3 +1,4 @@
+import { baselinePath, equipmentRulesPath, mappingPath, modelRulesPath } from './paths.js';
 import { useEffect, useId, useMemo, useRef, useState, type ComponentProps, type ReactNode, type SyntheticEvent } from 'react';
 import { buildGenericLayout, instantiateLayout, latestBinding, type EquipmentLayoutDocument, type TemplateDocument } from '@eqv/core';
 import {
@@ -290,17 +291,16 @@ type Publication = { publishing: boolean; receipt: PublishPanelProps['receipt'];
 async function writePublication(plan: PublishPlan, layout: EquipmentLayoutDocument): Promise<PublishOutcome> {
   const { mapping, bindings } = plan;
   if (!mapping || !bindings) return { ok: false, error: '게시할 수 없는 상태입니다' };
-  const hex = mapping.hash.slice('sha256:'.length);
   const { equipmentId } = mapping;
   const steps: [string, () => Promise<void>][] = [
     ['① Layout Revision', async () => {
       const { revision } = await publishRevision(layout);
       if (revision !== plan.layoutRevision) throw new Error('저장된 revision이 계획과 다릅니다');
     }],
-    ['② Mapping Version', () => putImmutable(`onboarding/mappings/${equipmentId}/${hex}.mapping.json`, mapping)],
+    ['② Mapping Version', () => putImmutable(mappingPath(equipmentId, { mappingHash: mapping.hash }), mapping)],
     ['③ Baseline Inventory', async () => {
       try {
-        await putImmutable(`onboarding/baselines/${equipmentId}/${hex}.inventory.json`, plan.baseline);
+        await putImmutable(baselinePath(equipmentId, { mappingHash: mapping.hash }), plan.baseline);
       } catch (error) {
         // A baseline for this Mapping Version already exists: the first one stays the Drift reference.
         if (!(error instanceof ApiError && error.status === 409)) throw error;
@@ -328,8 +328,8 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
   const [highlight, setHighlight] = useState<MappingBoardProps['highlight']>(null);
   const onSave: MappingBoardProps['onSave'] = async (files) => {
     // The paths come from what was loaded when the save starts, not from whatever the route is by the time a write returns.
-    const paths = { model: `onboarding/scopes/model/${equipment.maker}/${equipment.model}/alias-rules.json`,
-      equipment: `onboarding/scopes/equipment/${equipment.equipmentId}/alias-rules.json` };
+    const paths = { model: modelRulesPath(equipment.maker, equipment.model),
+      equipment: equipmentRulesPath(equipment.equipmentId) };
     const savedScopes: ('model' | 'equipment')[] = [];
     for (const scope of ['equipment', 'model'] as const) {
       const file = files.find((candidate) => candidate.scope === scope);

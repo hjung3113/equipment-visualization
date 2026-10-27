@@ -1,18 +1,19 @@
 import {
-  latestBinding, checkBindingLayout, checkBindingMapping,
+  hashHex, latestBinding, checkBindingLayout, checkBindingMapping,
   aliasMetadataFileSchema, buildInventory, equipmentRecordSchema, idSchema, observedInventorySchema, parseSampleWindowName,
   validateAliasRules, validateBindings, validateSampleWindow, validateTypeDictionary,
-  type AliasMetadataFile, type AliasRulesFile, type Binding, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
+  type AliasMetadataFile, type AliasRulesFile, type BindingsFile, type EquipmentLayoutDocument, type EquipmentRecord, type MappingIssue, type MappingScope,
   type MappingVersion, type ObservedInventory, type OccurrenceBatch, type SiteWallClock, type TemplateDocument, type TypeDictionaryFile,
 } from '@eqv/core';
 import type { FleetData, RuleFiles } from '@eqv/editor';
 import { ApiError, dirOrEmpty, listDir, listTemplates, readFile, type DirEntry } from './api.js';
 import { errorMessage } from './error-message.js';
+import { aliasMetadataPath, baselinePath, bindingsPath, equipmentPath, equipmentRulesPath, layoutPath, mappingPath, modelDictionaryPath, modelRulesPath, windowsDir } from './paths.js';
 
 /** One Sample Window file, known from its name alone (ADR-0010): `hash` is `sha256:<hex>`, `path` is relative to the data root. */
 export type SampleWindowEntry = { name: string; path: string; from: SiteWallClock; to: SiteWallClock; hash: string };
-export const windowHex = (entry: Pick<SampleWindowEntry, 'hash'>): string => entry.hash.slice('sha256:'.length);
-export const shortWindowHash = (hash: string): string => hash.slice('sha256:'.length, 'sha256:'.length + 12);
+export const windowHex = (entry: Pick<SampleWindowEntry, 'hash'>): string => hashHex(entry.hash);
+export const shortWindowHash = (hash: string): string => hashHex(hash).slice(0, 12);
 
 /** Read-only inputs of one equipment, validated at the read boundary (GET only parses JSON). */
 export interface LoadedEquipment extends FleetData {
@@ -47,13 +48,6 @@ export const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 export const problems = (issues: readonly { path: readonly PropertyKey[]; message: string }[]) =>
   issues.map(({ path, message }) => `${path.map(String).join('.') || '(root)'}: ${message}`).join('; ');
 
-export const mappingPath = (equipmentId: string, binding: Pick<Binding, 'mappingHash'>) =>
-  `onboarding/mappings/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.mapping.json`;
-export const baselinePath = (equipmentId: string, binding: Pick<Binding, 'mappingHash'>) =>
-  `onboarding/baselines/${equipmentId}/${binding.mappingHash.slice('sha256:'.length)}.inventory.json`;
-export const layoutPath = (layoutId: string, revision: string | undefined) => revision === undefined ? `layouts/${layoutId}/draft.layout.json`
-  : `layouts/${layoutId}/${revision.slice('sha256:'.length)}.layout.json`;
-
 /** Only a 404 is absence; every other failure propagates. */
 export async function readOptional(path: string): Promise<unknown | undefined> {
   try {
@@ -83,7 +77,7 @@ export function checkScope(path: string, actual: MappingScope, expected: Mapping
 }
 
 export async function readAliasMetadata(equipmentId: string): Promise<AliasMetadataFile | undefined> {
-  const path = `observations/${equipmentId}/alias-metadata.json`;
+  const path = aliasMetadataPath(equipmentId);
   let raw: unknown | undefined;
   try {
     raw = await readOptional(path);
@@ -104,7 +98,7 @@ const WINDOW_HEX = /^[0-9a-f]{64}$/;
 
 /** Names only (ADR-0010): a 404 is zero windows; a stray entry or two overlapping ranges is a data error, never skipped. */
 export async function listSampleWindows(equipmentId: string): Promise<SampleWindowEntry[]> {
-  const dir = `observations/${equipmentId}/windows`;
+  const dir = windowsDir(equipmentId);
   let entries: DirEntry[];
   try {
     entries = await listDir(dir);
@@ -155,7 +149,7 @@ export function selectSampleWindow(windows: SampleWindowEntry[], window?: string
 
 async function loadData(equipmentId: string, options: { window?: string }): Promise<EquipmentLoad> {
   if (!NAME.test(equipmentId)) return { kind: 'not-found' };
-  const recordPath = `equipment/${equipmentId}.json`;
+  const recordPath = equipmentPath(equipmentId);
   const rawRecord = await readOptional(recordPath);
   if (rawRecord === undefined) return { kind: 'not-found' };
   const parsedRecord = equipmentRecordSchema.safeParse(rawRecord);
@@ -177,7 +171,7 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     const dictionaryScopes: [string, MappingScope][] = [
       ['onboarding/scopes/global/type-dictionary.json', { level: 'global' }],
       [`onboarding/scopes/maker/${maker}/type-dictionary.json`, { level: 'maker', maker }],
-      [`onboarding/scopes/model/${maker}/${model}/type-dictionary.json`, { level: 'model', maker, model }],
+      [modelDictionaryPath(maker, model), { level: 'model', maker, model }],
     ];
     for (const [path, scope] of dictionaryScopes) {
       const raw = await readOptional(path);
@@ -189,8 +183,8 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     const ruleFiles: RuleFiles = {};
     const ruleScopes: [string, MappingScope, keyof RuleFiles][] = [
       [`onboarding/scopes/maker/${maker}/alias-rules.json`, { level: 'maker', maker }, 'maker'],
-      [`onboarding/scopes/model/${maker}/${model}/alias-rules.json`, { level: 'model', maker, model }, 'model'],
-      [`onboarding/scopes/equipment/${equipmentId}/alias-rules.json`, { level: 'equipment', equipmentId }, 'equipment'],
+      [modelRulesPath(maker, model), { level: 'model', maker, model }, 'model'],
+      [equipmentRulesPath(equipmentId), { level: 'equipment', equipmentId }, 'equipment'],
     ];
     for (const [path, scope, key] of ruleScopes) {
       const raw = await readOptional(path);
@@ -201,11 +195,11 @@ async function loadData(equipmentId: string, options: { window?: string }): Prom
     }
     const hasAliasRules = Object.keys(ruleFiles).length > 0;
 
-    const bindingsPath = `onboarding/bindings/${equipmentId}.bindings.json`;
-    const rawBindings = await readOptional(bindingsPath);
-    const bindings = rawBindings === undefined ? null : check(bindingsPath, validateBindings(rawBindings));
+    const bindingsFilePath = bindingsPath(equipmentId);
+    const rawBindings = await readOptional(bindingsFilePath);
+    const bindings = rawBindings === undefined ? null : check(bindingsFilePath, validateBindings(rawBindings));
     if (bindings && bindings.equipmentId !== equipmentId) {
-      throw new DataError(`${bindingsPath}: equipmentId(${bindings.equipmentId})가 ${equipmentId}와 다릅니다`);
+      throw new DataError(`${bindingsFilePath}: equipmentId(${bindings.equipmentId})가 ${equipmentId}와 다릅니다`);
     }
 
     const mappings: Record<string, MappingVersion> = {};
@@ -284,7 +278,7 @@ function draftLayoutId(equipmentId: string, bindings: BindingsFile | null): stri
 async function lookupDraft(equipmentId: string, bindings: BindingsFile | null): Promise<DraftLookup> {
   const layoutId = draftLayoutId(equipmentId, bindings);
   if (layoutId === null) return { kind: 'no-id' };
-  const path = `layouts/${layoutId}/draft.layout.json`;
+  const path = layoutPath(layoutId, undefined);
   try {
     const raw = await readOptional(path);
     if (raw === undefined) return { kind: 'absent', layoutId };

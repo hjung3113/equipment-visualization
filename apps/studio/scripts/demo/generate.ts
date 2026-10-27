@@ -1,3 +1,4 @@
+import { aliasMetadataPath, baselinePath, bindingsPath, equipmentPath, equipmentRulesPath, layoutPath, mappingPath, modelDictionaryPath, modelRulesPath, windowsDir } from '../../src/paths.ts';
 import {
   aliasMetadataFileSchema, aliasRulesFileSchema, buildInventory, instantiateLayout, layoutRevision, sampleWindowName,
   typeDictionaryFileSchema, validateLayout,
@@ -86,17 +87,16 @@ export async function generateDemo(): Promise<Map<string, string>> {
   if (plan.problems.length > 0 || !mapping || !bindings) throw new Error(`demo publish plan has problems: ${plan.problems.join('; ')}`);
 
   const files = new Map<string, string>();
-  files.set(`equipment/${EQUIPMENT_ID}.json`, text(record));
-  files.set(`onboarding/scopes/model/${MAKER}/${MODEL}/type-dictionary.json`, text(dictionary));
-  files.set(`onboarding/scopes/model/${MAKER}/${MODEL}/alias-rules.json`, text(modelRules));
-  files.set(`onboarding/scopes/equipment/${EQUIPMENT_ID}/alias-rules.json`, text(equipmentRules));
-  files.set(`observations/${EQUIPMENT_ID}/alias-metadata.json`, text(aliasMetadata));
-  for (const batch of windows) files.set(`observations/${EQUIPMENT_ID}/windows/${await sampleWindowName(batch)}.batch.json`, text(batch));
-  files.set(`layouts/${LAYOUT_ID}/draft.layout.json`, text(layout));
-  files.set(`layouts/${LAYOUT_ID}/${(await layoutRevision(layout)).slice('sha256:'.length)}.layout.json`, text(layout));
-  const hex = mapping.hash.slice('sha256:'.length);
-  files.set(`onboarding/mappings/${EQUIPMENT_ID}/${hex}.mapping.json`, text(mapping));
-  files.set(`onboarding/baselines/${EQUIPMENT_ID}/${hex}.inventory.json`, text(plan.baseline));
-  files.set(`onboarding/bindings/${EQUIPMENT_ID}.bindings.json`, text(bindings));
+  files.set(equipmentPath(EQUIPMENT_ID), text(record));
+  files.set(modelDictionaryPath(MAKER, MODEL), text(dictionary));
+  files.set(modelRulesPath(MAKER, MODEL), text(modelRules));
+  files.set(equipmentRulesPath(EQUIPMENT_ID), text(equipmentRules));
+  files.set(aliasMetadataPath(EQUIPMENT_ID), text(aliasMetadata));
+  for (const batch of windows) files.set(`${windowsDir(EQUIPMENT_ID)}/${await sampleWindowName(batch)}.batch.json`, text(batch));
+  files.set(layoutPath(LAYOUT_ID, undefined), text(layout));
+  files.set(layoutPath(LAYOUT_ID, await layoutRevision(layout)), text(layout));
+  files.set(mappingPath(EQUIPMENT_ID, { mappingHash: mapping.hash }), text(mapping));
+  files.set(baselinePath(EQUIPMENT_ID, { mappingHash: mapping.hash }), text(plan.baseline));
+  files.set(bindingsPath(EQUIPMENT_ID), text(bindings));
   return files;
 }

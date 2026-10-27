@@ -1,10 +1,10 @@
-import { layoutRevision, validateBindings, validateLayout, type LayoutDocument } from '@eqv/core';
+import { hashHex, layoutRevision, validateBindings, validateLayout, type LayoutDocument } from '@eqv/core';
 import { dirOrEmpty, readFile } from './api.js';
 import { layoutChanges, type LayoutChanges } from './layout-changes.js';
 
 export const REVISION_FILE = /^([0-9a-f]{64})\.layout\.json$/;
 const BINDINGS_FILE = /\.bindings\.json$/;
-const HASH_PREFIX = 'sha256:';
+import { layoutDir, layoutPath } from './paths.js';
 
 export type PublishBaseline =
   | { kind: 'identical'; hex: string }
@@ -14,7 +14,7 @@ export type PublishBaseline =
 
 /** The revision hexes (full 64 digits) published for `layoutId`, sorted. */
 async function revisionHexes(layoutId: string): Promise<string[]> {
-  return (await dirOrEmpty(`layouts/${layoutId}`)).flatMap((entry) => {
+  return (await dirOrEmpty(layoutDir(layoutId))).flatMap((entry) => {
     const match = entry.kind === 'file' ? REVISION_FILE.exec(entry.name) : null;
     return match ? [match[1]!] : [];
   }).sort();
@@ -32,7 +32,7 @@ async function pinnedRevision(layoutId: string, revisions: string[]): Promise<{ 
       if (!result.ok) { skipped.push(path); continue; }
       for (const binding of result.file.bindings) {
         if (binding.layoutId === layoutId && binding.layoutRevision !== undefined
-          && revisions.includes(binding.layoutRevision.slice(HASH_PREFIX.length))) {
+          && revisions.includes(hashHex(binding.layoutRevision))) {
           pins.push({ effectiveFrom: binding.effectiveFrom, layoutRevision: binding.layoutRevision });
         }
       }
@@ -42,12 +42,12 @@ async function pinnedRevision(layoutId: string, revisions: string[]): Promise<{ 
   }
   pins.sort((a, b) => a.effectiveFrom < b.effectiveFrom ? 1 : a.effectiveFrom > b.effectiveFrom ? -1
     : a.layoutRevision < b.layoutRevision ? 1 : a.layoutRevision > b.layoutRevision ? -1 : 0);
-  return { hex: pins[0]?.layoutRevision.slice(HASH_PREFIX.length) ?? null, skipped };
+  return { hex: pins[0] ? hashHex(pins[0].layoutRevision) : null, skipped };
 }
 
 /** What a publish of `layout` would add, against the baseline rule of #92. Throws when the baseline cannot be read or validated. */
 export async function publishBaseline(layout: LayoutDocument): Promise<PublishBaseline> {
-  const self = (await layoutRevision(layout)).slice(HASH_PREFIX.length);
+  const self = hashHex(await layoutRevision(layout));
   const revisions = await revisionHexes(layout.id);
   if (revisions.includes(self)) return { kind: 'identical', hex: self };
   const { hex: pinned, skipped } = await pinnedRevision(layout.id, revisions);
@@ -55,7 +55,7 @@ export async function publishBaseline(layout: LayoutDocument): Promise<PublishBa
   if (baseline === null) {
     return revisions.length === 0 ? { kind: 'first', skipped } : { kind: 'unpinned', count: revisions.length, skipped };
   }
-  const path = `layouts/${layout.id}/${baseline}.layout.json`;
+  const path = layoutPath(layout.id, `sha256:${baseline}`);
   const parsed = validateLayout(await readFile(path));
   if (!parsed.ok) throw new Error(`${path}: ${parsed.issues.map((issue) => `${issue.path.join('.') || '(root)'}: ${issue.message}`).join('; ')}`);
   return { kind: 'compared', hex: baseline, pinned: pinned !== null, changes: layoutChanges(parsed.layout, layout), skipped };

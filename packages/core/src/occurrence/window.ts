@@ -1,3 +1,4 @@
+import { hashHex } from '../hash.js';
 import { observationHash } from '../replay/replay-key.js';
 import { diagnoseWallClock, type SiteWallClock } from '../site-wall-clock.js';
 import { occurrenceBatchSchema, type EvidenceLevel, type OccurrenceBatch } from './schema.js';
@@ -181,7 +182,7 @@ export async function validateSampleWindow(raw: unknown, ctx: { equipmentId: str
 }
 
 function nameOf(from: SiteWallClock, to: SiteWallClock, hash: string): string {
-  return `${compact(from)}_${compact(to)}_${hash.slice('sha256:'.length)}`;
+  return `${compact(from)}_${compact(to)}_${hashHex(hash)}`;
 }
 
 export async function sampleWindowName(batch: OccurrenceBatch): Promise<string> {
