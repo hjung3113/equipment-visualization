@@ -262,21 +262,21 @@ describe('Top View', () => {
     await screen.findAllByText('2026-01-01 10:30:00');
     expect(document.querySelector('[data-layer="replay"]')).not.toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Focus 열기' }));
-    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'occurrence', anchor: 'occ-open' } }]);
+    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'job', anchor: '58' } }]);
   });
 
   it.each([
-    [null, 'occ-carrier'],
-    ['pm-b', 'occ-pm2-slot-one'],
-    ['pm-a', 'occ-pm1-process'],
-  ] as const)('Focus 열기 at 10:08:30 with %s selected opens Focus on that Component\'s open Occurrence, else the first one open at the cursor', async (id, anchor) => {
+    [null, '1'],
+    ['pm-b', '19'],
+    ['pm-a', '18'],
+  ] as const)('Focus 열기 at 10:08:30 with %s selected opens Focus on that Component\'s open Occurrence (its RecordSequence), else the first one open at the cursor', async (id, anchor) => {
     const fake = hostFor({ context: { from: HOST_TIME.from, to: '2026-01-01T10:08:30' } });
     const Screen = eqvScreens.topview;
     render(<Screen host={fake.host} params={{}} />);
     await screen.findByText('Component를 선택하세요');
     if (id !== null) fireEvent.click(document.querySelector(`[data-component-id="${id}"]`)!);
     fireEvent.click(screen.getByRole('button', { name: 'Focus 열기' }));
-    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'occurrence', anchor } }]);
+    expect(fake.log.navigations).toEqual([{ screen: 'focus', page: { equipment: EQUIPMENT, entityType: 'job', anchor } }]);
   });
 
   it('with detailSlot, selecting a Component shows its detail in the host slot', async () => {

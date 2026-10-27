@@ -140,3 +140,8 @@ it('selects the anchored Occurrence on entry and on an entry change, and nothing
   render(entry('occ-pm1-process', (d) => { details.push(d); }));
   expect(details.at(-1)?.label).toBe('근거 상세 · occ-pm1-process');
 });
+
+it('selects the Occurrence whose RecordSequence is a job anchor (AP ADR-0094)', () => {
+  render(<FocusView input={input} notices={[]} entityType="job" anchor="18" resetKey="a" />);
+  expect(document.querySelector('tr[aria-selected="true"]')?.getAttribute('data-occurrence-id')).toBe('occ-pm1-process');
+});
