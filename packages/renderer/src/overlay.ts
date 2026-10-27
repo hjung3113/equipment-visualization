@@ -1,4 +1,4 @@
-import type { SceneState } from '@eqv/core';
+import { LEVEL_KO, type SceneState } from '@eqv/core';
 import { capabilitySegment } from './capability.js';
 import { isArm, robotR, shapeLocal, type Mat } from './geom.js';
 import { outsideLabelBottomPx, type Scene, type SceneComponent } from './scene.js';
@@ -59,7 +59,6 @@ type StateActivity = Exclude<SceneState['components'][number]['activity'], 'no r
 
 const DASH_UNKNOWN = '2 3';
 export const EVIDENCE_DASH: Record<StateEvidence, string | undefined> = { observed: undefined, derived: DASH, unknown: DASH_UNKNOWN };
-export const EVIDENCE_KO: Record<StateEvidence, string> = { observed: '관측', derived: '파생', unknown: '미확인' };
 const ACTIVITY_KO: Record<StateActivity, string> = { processing: '처리 중', 'post-processing': '후처리', function: '기능' };
 /** Ghost diameter and label size; materials use `DISC_PX`. */
 const TOKEN_PX = 8;
@@ -238,7 +237,7 @@ function materialToken(material: StateMaterial, cx: number, cy: number, k: numbe
   const dash = EVIDENCE_DASH[material.locationEvidence];
   if (dash) attrs['stroke-dasharray'] = dash;
   const title = el('title', {}, [
-    `${material.id ?? '익명'} · ${material.location?.holdingSiteId ?? '위치 Component 단위'} · 위치 ${EVIDENCE_KO[material.locationEvidence]} · 식별 ${EVIDENCE_KO[material.identityEvidence]}`,
+    `${material.id ?? '익명'} · ${material.location?.holdingSiteId ?? '위치 Component 단위'} · 위치 ${LEVEL_KO[material.locationEvidence]} · 식별 ${LEVEL_KO[material.identityEvidence]}`,
   ]);
   const half = DISC_PX / 2 * k;
   const token = material.kind === 'wafer' || material.kind === 'reticle'
@@ -321,6 +320,7 @@ function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly 
   const row = positioned.length === 0 ? materials : materials.filter((material) => !pointOf(material));
   const ordered = siteOrdered(comp, row);
   const overflow = ordered.length > MAX_LABELLED;
+  const labelled = materials.length <= MAX_LABELLED;
   const shown = overflow ? ordered.slice(0, SHOWN_WITH_CHIP) : ordered;
   const hidden = overflow ? ordered.slice(SHOWN_WITH_CHIP) : [];
   const plus = overflow ? `+${hidden.length}` : null;
@@ -328,7 +328,7 @@ function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly 
   const items = shown.map(({ material, group }) => ({
     material,
     group,
-    width: overflow || material.id == null
+    width: !labelled || material.id == null
       ? DISC_PX
       : Math.max(DISC_PX, estimateTextWidth(ellipsis(material.id), LABEL_PX, false)),
   }));
@@ -343,7 +343,7 @@ function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly 
   const cx = comp.center[0];
   items.forEach((item, i) => {
     if (i > 0) xPx += item.group === items[i - 1]!.group ? DISC_GAP_PX : GROUP_GAP_PX;
-    nodes.push(...materialToken(item.material, cx + (xPx + item.width / 2) * k, cy, k, !overflow));
+    nodes.push(...materialToken(item.material, cx + (xPx + item.width / 2) * k, cy, k, labelled));
     xPx += item.width;
   });
   if (plus) {
@@ -377,7 +377,7 @@ function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly 
   // on the same Site (a double occupancy stays visible). Labels follow the whole Component's count.
   for (const material of positioned) {
     const [px, py] = pointOf(material)!;
-    nodes.push(...materialToken(material, px, py, k, materials.length <= MAX_LABELLED));
+    nodes.push(...materialToken(material, px, py, k, labelled));
   }
   return nodes;
 }
@@ -443,7 +443,7 @@ export function buildReplayLayer(scene: Scene, replay: ReplayOverlay, k: number)
       }
       parts.push(titled(
         ring(comp, 6, PAINT.evidence, 2, k, EVIDENCE_DASH[state.activityEvidence]),
-        `${ACTIVITY_KO[state.activity]} · ${EVIDENCE_KO[state.activityEvidence]}`,
+        `${ACTIVITY_KO[state.activity]} · ${LEVEL_KO[state.activityEvidence]}`,
       ));
     }
     if (parts.length > 0) nodes.push(mark(comp, parts));

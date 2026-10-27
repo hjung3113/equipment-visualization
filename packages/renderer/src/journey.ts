@@ -1,4 +1,5 @@
-import { EVIDENCE_DASH, EVIDENCE_KO, isSmallComponent, PAINT, visible, type StateEvidence } from './overlay.js';
+import { LEVEL_KO } from '@eqv/core';
+import { EVIDENCE_DASH, isSmallComponent, PAINT, visible, type StateEvidence } from './overlay.js';
 import type { Scene } from './scene.js';
 import { estimateTextWidth } from './text.js';
 import { el, formatNum, type SvgNode } from './svg.js';
@@ -41,7 +42,7 @@ function badge(hop: JourneyHopMark, cx: number, cy: number, k: number, selected:
     'data-component-id': hop.componentId,
     ...(selected ? { 'data-selected': 'true' } : {}),
   }, [
-    el('title', {}, [`hop ${hop.number} · ${hop.componentId} · ${EVIDENCE_KO[hop.evidence]}`]),
+    el('title', {}, [`hop ${hop.number} · ${hop.componentId} · ${LEVEL_KO[hop.evidence]}`]),
     el('circle', attrs),
     el('text', {
       x: formatNum(cx),

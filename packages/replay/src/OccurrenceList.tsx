@@ -1,9 +1,9 @@
 import { useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
-import { activeBinding, type BindingsFile, type Occurrence, type OccurrenceBatch, type ReplayTimeline } from '@eqv/core';
+import { LEVEL_KO, activeBinding, type BindingsFile, type Occurrence, type OccurrenceBatch, type ReplayTimeline } from '@eqv/core';
 import { Inbox } from 'lucide-react';
 import { DataTable } from '@eqv/ui';
 import { EmptyState, StatusBadge } from '@ap/ui';
-import { LEVEL_KO, NO_TIME, wallClockText } from './words.js';
+import { NO_TIME, wallClockText } from './words.js';
 
 export interface OccurrenceListProps {
   batch: OccurrenceBatch;
