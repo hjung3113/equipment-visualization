@@ -1,0 +1,497 @@
+{
+  "schemaVersion": "0.4",
+  "kind": "equipment-layout",
+  "id": "eq-synth-rotary-layout",
+  "templateId": "cluster-rotary-stations",
+  "name": "Synthetic rotary-station cluster",
+  "unit": "abstract",
+  "viewBox": {
+    "x": 0,
+    "y": 0,
+    "width": 960,
+    "height": 600
+  },
+  "sources": [
+    {
+      "id": "src-synthetic-rotary",
+      "title": "Synthetic rotary-station concept; assumed generic geometry, no OEM geometry or kinematics",
+      "license": "synthetic"
+    }
+  ],
+  "levels": [
+    {
+      "id": "level-main",
+      "label": "Main level",
+      "order": 0
+    }
+  ],
+  "components": [
+    {
+      "id": "tm-1",
+      "role": "tm",
+      "assetRef": "primitive:tm",
+      "label": "TM-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 480,
+        "y": 300,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 160,
+        "height": 160
+      },
+      "ports": [
+        {
+          "id": "p-pm-a",
+          "position": {
+            "x": -80,
+            "y": 0
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "p-pm-b",
+          "position": {
+            "x": 80,
+            "y": 0
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        }
+      }
+    },
+    {
+      "id": "robot-1",
+      "role": "robot",
+      "assetRef": "primitive:robot-single",
+      "label": "Robot-1",
+      "parentId": "tm-1",
+      "levelId": "level-main",
+      "transform": {
+        "x": 0,
+        "y": 0,
+        "rotation": 0,
+        "scale": 1
+      },
+      "size": {
+        "width": 80,
+        "height": 80
+      },
+      "ports": [],
+      "holdingSites": [
+        {
+          "id": "blade-a",
+          "materialKinds": [
+            "wafer"
+          ],
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        }
+      }
+    },
+    {
+      "id": "pm-a",
+      "role": "pm",
+      "assetRef": "primitive:pm",
+      "label": "PM-A",
+      "levelId": "level-main",
+      "transform": {
+        "x": 300,
+        "y": 300,
+        "rotation": 90,
+        "scale": 1
+      },
+      "size": {
+        "width": 120,
+        "height": 120
+      },
+      "ports": [
+        {
+          "id": "p-tm",
+          "position": {
+            "x": 0,
+            "y": -60
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": -30,
+            "y": -30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "station-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": 30,
+            "y": -30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "station-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": 30,
+            "y": 30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "station-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": -30,
+            "y": 30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        }
+      }
+    },
+    {
+      "id": "pm-b",
+      "role": "pm",
+      "assetRef": "primitive:pm",
+      "label": "PM-B",
+      "levelId": "level-main",
+      "transform": {
+        "x": 660,
+        "y": 300,
+        "rotation": -90,
+        "scale": 1
+      },
+      "size": {
+        "width": 120,
+        "height": 120
+      },
+      "ports": [
+        {
+          "id": "p-tm",
+          "position": {
+            "x": 0,
+            "y": -60
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        }
+      ],
+      "holdingSites": [
+        {
+          "id": "station-1",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": -30,
+            "y": -30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "station-2",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": 30,
+            "y": -30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "station-3",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": 30,
+            "y": 30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        },
+        {
+          "id": "station-4",
+          "materialKinds": [
+            "wafer"
+          ],
+          "position": {
+            "x": -30,
+            "y": 30
+          },
+          "provenance": {
+            "certainty": "assumed",
+            "sourceEvidence": [
+              "src-synthetic-rotary"
+            ]
+          }
+        }
+      ],
+      "provenance": {
+        "role": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "assetRef": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "label": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "levelId": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "transform": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        },
+        "size": {
+          "certainty": "assumed",
+          "sourceEvidence": [
+            "src-synthetic-rotary"
+          ]
+        }
+      }
+    }
+  ],
+  "physicalInterfaces": [
+    {
+      "id": "tm-pm-a",
+      "kind": "gate",
+      "a": {
+        "componentId": "tm-1",
+        "portId": "p-pm-a"
+      },
+      "b": {
+        "componentId": "pm-a",
+        "portId": "p-tm"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-synthetic-rotary"
+        ]
+      }
+    },
+    {
+      "id": "tm-pm-b",
+      "kind": "gate",
+      "a": {
+        "componentId": "tm-1",
+        "portId": "p-pm-b"
+      },
+      "b": {
+        "componentId": "pm-b",
+        "portId": "p-tm"
+      },
+      "provenance": {
+        "certainty": "assumed",
+        "sourceEvidence": [
+          "src-synthetic-rotary"
+        ]
+      }
+    }
+  ],
+  "transferCapabilities": [],
+  "processRoutes": []
+}

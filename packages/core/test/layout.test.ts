@@ -142,3 +142,35 @@ it.each([
     { code, path: ['components', 0, ...path], message: expect.any(String) },
   ]);
 });
+
+function withSitePosition(position: unknown, size: { width: number; height: number } | undefined) {
+  const input = clusterTemplate();
+  const component = input.components[0]!;
+  const site = { ...component.holdingSites[0]!, position } as typeof component.holdingSites[number];
+  return {
+    ...input,
+    components: [{ ...component, ...(size ? { size } : {}), holdingSites: [site, ...component.holdingSites.slice(1)] }, ...input.components.slice(1)],
+  };
+}
+
+it.each([
+  { name: 'inside the footprint', position: { x: 1, y: -1 }, size: { width: 4, height: 2 } },
+  { name: 'on the inclusive boundary', position: { x: -2, y: 1 }, size: { width: 4, height: 2 } },
+  { name: 'with no footprint to check against', position: { x: 9999, y: -9999 }, size: undefined },
+])('accepts a Holding Site position $name and keeps it verbatim', ({ position, size }) => {
+  const layout = withSitePosition(position, size);
+  const result = validateLayout(layout);
+  expect(result).toEqual({ ok: true, layout, issues: [] });
+  if (result.ok) expect(result.layout.components[0]!.holdingSites[0]!.position).toEqual(position);
+});
+
+const SITE = ['components', 0, 'holdingSites', 0];
+it.each([
+  { name: 'outside the footprint', position: { x: 2.01, y: 0 }, code: 'site-position-outside-footprint', path: [...SITE, 'position'] },
+  { name: 'non-finite', position: { x: Infinity, y: 0 }, code: 'schema', path: [...SITE, 'position', 'x'] },
+  { name: 'with an extra key', position: { x: 0, y: 0, z: 1 }, code: 'schema', path: [...SITE, 'position'] },
+  { name: 'missing a coordinate', position: { x: 0 }, code: 'schema', path: [...SITE, 'position', 'y'] },
+])('rejects a Holding Site position $name', ({ position, code, path }) => {
+  const result = validateLayout(withSitePosition(position, { width: 4, height: 2 }));
+  expect(result.issues).toEqual([{ code, path, message: expect.any(String) }]);
+});

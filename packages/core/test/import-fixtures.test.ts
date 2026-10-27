@@ -107,7 +107,7 @@ it('proposes wet-linear from w1 and marks only w2 cell count out of range', () =
   const w1 = batch('w1');
   const w2 = batch('w2');
   const candidates = templates();
-  expect(candidates).toHaveLength(6);
+  expect(candidates).toHaveLength(7);
 
   const w1Inventory = buildInventory(w1, metadata());
   expect(proposeTemplates({ inventory: w1Inventory, dictionaries: [dictionaryFile], templates: candidates })[0])

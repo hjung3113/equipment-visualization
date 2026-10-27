@@ -28,6 +28,7 @@ exports[`preserves the reviewed template and primitive asset bytes 1`] = `
   "assets/primitives/stocker.svg": "cd9cbc5646e2e44e9b13bdb11b55ee7cdd5029ca5720024ef0285270c92df9d4",
   "assets/primitives/tm.svg": "cd2c2be62f885eedb8856330b40225e7dc3a89c4a048572cf0d7056eeb2934f6",
   "assets/templates/cluster-dual-hub.template.json": "b251341d8411d044361ed9083e98f95c622bf1bd575c46a9255b394c7be4510b",
+  "assets/templates/cluster-rotary-stations.template.json": "026201c9717e37e1dd627a5cb97a9c789d5333577fc0f97c5862886715e4d8f9",
   "assets/templates/cluster-single.template.json": "9142566cb16d68dd2880054f1b1aa8d10d62012c1af384c838e865ef6fc2dc76",
   "assets/templates/lithography-dual-stage.template.json": "83ea1d2ff46e8eb044ba89d5376ab1e4f345ed21efb995dbab1137831cc3d3c5",
   "assets/templates/track-stacked.template.json": "2af99266916a60cdb185a4f4fe615c3f7048954346c078cd465481c05146d141",

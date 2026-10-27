@@ -271,6 +271,23 @@
                         ]
                       }
                     },
+                    "position": {
+                      "description": "Component-local drawing coordinate, same frame as Port positions: origin at the Component centre, before its rotation and scale. Omission means unknown geometry, never inferred. Not observed transfer or kinematics.",
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
+                    },
                     "provenance": {
                       "type": "object",
                       "properties": {
@@ -1050,6 +1067,23 @@
                           "reticle"
                         ]
                       }
+                    },
+                    "position": {
+                      "description": "Component-local drawing coordinate, same frame as Port positions: origin at the Component centre, before its rotation and scale. Omission means unknown geometry, never inferred. Not observed transfer or kinematics.",
+                      "type": "object",
+                      "properties": {
+                        "x": {
+                          "type": "number"
+                        },
+                        "y": {
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "x",
+                        "y"
+                      ],
+                      "additionalProperties": false
                     },
                     "provenance": {
                       "type": "object",

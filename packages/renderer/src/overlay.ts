@@ -312,10 +312,14 @@ function materialRowCy(scene: Scene, comp: SceneComponent, k: number): number {
  * Disc clusters in screen-upright scene space (never the component's rotated frame): one row centred on the
  * component's scene centre, on the inner bottom edge of its axis-aligned bbox (just below it when the
  * component is shorter than `SMALL_COMPONENT_PX` on screen), one group per Holding Site;
- * screen-pixel sizes through `k`.
+ * screen-pixel sizes through `k`. A material on a Holding Site that declares a `position` is instead drawn
+ * centred on that point (still upright, still in this group), outside the row and its `+N` cap.
  */
 function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly StateMaterial[], k: number): SvgNode[] {
-  const ordered = siteOrdered(comp, materials);
+  const pointOf = (material: StateMaterial) => comp.holdingSiteWorld.get(material.location?.holdingSiteId ?? '');
+  const positioned = materials.filter((material) => pointOf(material));
+  const row = positioned.length === 0 ? materials : materials.filter((material) => !pointOf(material));
+  const ordered = siteOrdered(comp, row);
   const overflow = ordered.length > MAX_LABELLED;
   const shown = overflow ? ordered.slice(0, SHOWN_WITH_CHIP) : ordered;
   const hidden = overflow ? ordered.slice(SHOWN_WITH_CHIP) : [];
@@ -368,6 +372,12 @@ function materialTokens(scene: Scene, comp: SceneComponent, materials: readonly 
         fill: PAINT.ink,
       }, [plus]),
     ]));
+  }
+  // A declared Site position is the only geometry used: the token sits exactly on it, never offset from a neighbour
+  // on the same Site (a double occupancy stays visible). Labels follow the whole Component's count.
+  for (const material of positioned) {
+    const [px, py] = pointOf(material)!;
+    nodes.push(...materialToken(material, px, py, k, materials.length <= MAX_LABELLED));
   }
   return nodes;
 }

@@ -22,6 +22,10 @@ Background references only:
 
 - <https://www.appliedmaterials.com/us/en/product-library/endura-pvd.html>
 
+## assets/templates/cluster-rotary-stations.template.json
+
+Origin: authored in this repository for #224 (ADR-0016). Synthetic, assumed generic geometry (hub, one robot, two PMs with four `station-1`…`station-4` Holding Site positions each); not derived from the v0.3 pack and not an OEM drawing. `fixtures/cluster-rotary/` holds its Equipment Layout and Scene States.
+
 ## assets/templates/cluster-single.template.json
 
 Origin: v0.3 pack `templates/cluster-single.layout.json` (archive SHA-256 above). Synthetic/illustrative; not an OEM drawing.
