@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { cn, FieldList, FieldRow } from '@ap/ui';
+import { FieldList, FieldRow } from '@ap/ui';
 
 export interface DetailField {
   key: string;
@@ -12,14 +12,12 @@ export interface DetailFieldsProps {
   items: readonly DetailField[];
 }
 
-/** Label/value list on `@ap/ui` `FieldList` + `FieldRow` (`dl`/`dt`/`dd`); long labels and values wrap inside their column. */
+/** Label/value list on `@ap/ui` `FieldList` + `FieldRow layout="detail"` (`dl`/`dt`/`dd`): the platform's detail-panel property list. */
 export function DetailFields({ items }: DetailFieldsProps) {
   return (
     <FieldList>
       {items.map((item) => (
-        <FieldRow key={item.key} label={item.label} layout="property" className="[&>dt]:min-w-0 [&>dt]:break-words">
-          <div className={cn('min-w-0 [overflow-wrap:anywhere]', item.mono ? 'font-mono text-xs' : 'tabular-nums')}>{item.value}</div>
-        </FieldRow>
+        <FieldRow key={item.key} label={item.label} layout="detail" mono={item.mono}>{item.value}</FieldRow>
       ))}
     </FieldList>
   );

@@ -57,7 +57,7 @@ describe('releaseManifest', () => {
     sideEffects: ['**/*.css'],
     exports: { '.': './src/index.ts', './styles.css': './src/styles.css' },
     scripts: { build: 'tsc' },
-    peerDependencies: { '@ap/ui': '0.15.0', react: '^19.0.0' },
+    peerDependencies: { '@ap/ui': '0.19.0', react: '^19.0.0' },
     dependencies: { '@eqv/core': 'workspace:*', 'lucide-react': '0.469.0' },
     devDependencies: { vitest: '3.2.7' },
   };
@@ -71,7 +71,7 @@ describe('releaseManifest', () => {
       exports: { '.': { types: './dist/index.d.ts', import: './dist/index.js' }, './styles.css': './dist/styles.css' },
       files: ['dist'],
       dependencies: { 'lucide-react': '0.469.0' },
-      peerDependencies: { '@ap/ui': '0.15.0', react: '^19.0.0', '@eqv/core': '1.2.3' },
+      peerDependencies: { '@ap/ui': '0.19.0', react: '^19.0.0', '@eqv/core': '1.2.3' },
     });
   });
 
