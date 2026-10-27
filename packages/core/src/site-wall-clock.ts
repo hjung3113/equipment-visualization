@@ -55,3 +55,18 @@ export function millisToWallClock(ms: number): SiteWallClock {
   const pad = (value: number, width: number) => String(value).padStart(width, '0');
   return `${pad(year, 4)}-${pad(month, 2)}-${pad(days + 1, 2)}T${pad(Math.floor(rest / 3_600_000), 2)}:${pad(Math.floor(rest / 60_000) % 60, 2)}:${pad(Math.floor(rest / 1000) % 60, 2)}.${pad(rest % 1000, 3)}`;
 }
+
+export type WallClockRange =
+  | { ok: true; from: SiteWallClock; to: SiteWallClock }
+  | { ok: false; problem: 'format' | 'order' };
+/** A `[from, to)` pair from two strings: `format` when either is not a real Site Wall-clock (shape or calendar), `order` unless from < to. Callers word their own message. */
+export function parseWallClockRange(from: string, to: string): WallClockRange {
+  const a = siteWallClockSchema.safeParse(from);
+  const b = siteWallClockSchema.safeParse(to);
+  if (!a.success || !b.success) return { ok: false, problem: 'format' };
+  try {
+    return wallClockToMillis(a.data) < wallClockToMillis(b.data) ? { ok: true, from: a.data, to: b.data } : { ok: false, problem: 'order' };
+  } catch {
+    return { ok: false, problem: 'format' };
+  }
+}

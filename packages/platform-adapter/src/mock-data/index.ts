@@ -1,4 +1,4 @@
-import type { OccurrenceBatch, ReplayInput } from '@eqv/core';
+import { occurrenceOverlapsWindow, type OccurrenceBatch, type ReplayInput } from '@eqv/core';
 import { batch, bindings, layouts, mappings } from './cluster-single.generated.js';
 
 /** Synthetic endpoint responses for a host's mock server (`eqv.topview-context`, `eqv.topview-events`). Never import from production code. */
@@ -17,12 +17,6 @@ export function eqvMockContext(equipmentId: string): Omit<ReplayInput, 'batch'> 
   return { layouts: [], mappings: [], bindings: { schemaVersion: '0.4', equipmentId, bindings: [] } };
 }
 
-/** Half-open `[from, to)`; a row whose times cannot be judged (null time, open, Time Anomaly) is kept. */
-const overlaps = ({ start, end }: OccurrenceBatch['occurrences'][number], from: string, to: string) => {
-  if (start.at === null || end === null || end.at === null || start.at > end.at) return true;
-  return !(end.at < from || start.at >= to);
-};
-
 /** The fixture occurrences overlapping the requested window, in Record Sequence order, paged like a server would. */
 export function eqvMockEvents(params: { equipmentId: string; from: string; to: string; continuationToken?: string }): OccurrenceBatch {
   const { equipmentId, continuationToken } = params;
@@ -31,7 +25,7 @@ export function eqvMockEvents(params: { equipmentId: string; from: string; to: s
   const { occurrences, issues, watermark, ...rest } = batch;
   const window = { ...rest, equipmentId, from, to };
   if (equipmentId !== EQV_MOCK_EQUIPMENT) return { ...window, watermark, occurrences: [], issues: [] };
-  const kept = occurrences.filter((occurrence) => overlaps(occurrence, from, to));
+  const kept = occurrences.filter((occurrence) => occurrenceOverlapsWindow(occurrence, from, to));
   if (kept.length <= PAGE_SIZE) return { ...window, watermark, occurrences: kept, issues };
   if (continuationToken === undefined) {
     return { ...window, watermark: FIRST_PAGE_WATERMARK, occurrences: kept.slice(0, PAGE_SIZE), issues: [], continuationToken: NEXT_PAGE };

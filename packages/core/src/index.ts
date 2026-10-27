@@ -1,5 +1,5 @@
 export const PACKAGE_NAME = '@eqv/core';
-export { siteWallClockSchema, wallClockToMillis, millisToWallClock, diagnoseWallClock, type SiteWallClock, type WallClockDiagnosis } from './site-wall-clock.js';
+export { siteWallClockSchema, wallClockToMillis, millisToWallClock, diagnoseWallClock, parseWallClockRange, type SiteWallClock, type WallClockDiagnosis, type WallClockRange } from './site-wall-clock.js';
 
 export { MATERIAL_KINDS, PHYSICAL_INTERFACE_KINDS, LAYOUT_SCHEMA_VERSION, layoutDocumentSchema, idSchema } from './layout/schema.js';
 export type {
@@ -16,6 +16,7 @@ export type { Matrix2D } from './layout/ports.js';
 export { occurrenceBatchSchema } from './occurrence/schema.js';
 export type { EvidenceLevel, Boundary, Occurrence, DataQualityIssue, OccurrenceBatch } from './occurrence/schema.js';
 export { LEVEL_KO } from './occurrence/words.js';
+export { occurrenceOverlapsWindow } from './occurrence/overlap.js';
 export { validateSampleWindow, sampleWindowName, parseSampleWindowName } from './occurrence/window.js';
 export type { SampleWindowRef, SampleWindowSummary, SampleWindowResult, ImportIssue, ImportRejectCode, ImportWarningCode } from './occurrence/window.js';
 

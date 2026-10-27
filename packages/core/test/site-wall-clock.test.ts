@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest';
-import { diagnoseWallClock, millisToWallClock, siteWallClockSchema, wallClockToMillis, type SiteWallClock } from '../src/index.js';
+import { diagnoseWallClock, millisToWallClock, parseWallClockRange, siteWallClockSchema, wallClockToMillis, type SiteWallClock } from '../src/index.js';
 
 it.each([
   { at: '0001-01-01T00:00:00.000', next: '0001-01-01T00:00:00.001' },
@@ -43,4 +43,14 @@ it.each([
   const diagnosis = diagnoseWallClock(value);
   expect(diagnosis).toEqual(reason ? { ok: false, reason } : { ok: true });
   expect(diagnosis.ok).toBe(siteWallClockSchema.safeParse(value).success);
+});
+
+it.each([
+  { from: '2026-01-01T10:00:00.000', to: '2026-01-01T10:30:00.000', result: { ok: true, from: '2026-01-01T10:00:00.000', to: '2026-01-01T10:30:00.000' } },
+  { from: '2026-01-01T10:00:00', to: '2026-01-01T10:30:00.000', result: { ok: false, problem: 'format' } },
+  { from: '2026-02-30T10:00:00.000', to: '2026-03-01T10:00:00.000', result: { ok: false, problem: 'format' } },
+  { from: '2026-01-01T10:30:00.000', to: '2026-01-01T10:30:00.000', result: { ok: false, problem: 'order' } },
+  { from: '2026-01-01T11:00:00.000', to: '2026-01-01T10:30:00.000', result: { ok: false, problem: 'order' } },
+])('parses the range $from – $to', ({ from, to, result }) => {
+  expect(parseWallClockRange(from, to)).toEqual(result);
 });

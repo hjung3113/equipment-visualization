@@ -1,5 +1,5 @@
 import type { ModuleHost } from '@ap/contracts';
-import { siteWallClockSchema, wallClockToMillis, type SiteWallClock } from '@eqv/core';
+import { parseWallClockRange, siteWallClockSchema, type SiteWallClock, type WallClockRange } from '@eqv/core';
 
 const NAIVE_SECONDS = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
 
@@ -27,24 +27,19 @@ export type HostProps = {
   time: HostTime;
 };
 
+/** The host pads naive seconds (`hostWallClock`), then the pair is parsed as any other range; a null side is a format problem. */
+function hostRange(from: string, to: string): WallClockRange {
+  const a = hostWallClock(from);
+  const b = hostWallClock(to);
+  return a === null || b === null ? { ok: false, problem: 'format' } : parseWallClockRange(a, b);
+}
+
 function readRange(host: ModuleHost): HostProps['range'] {
   const from = host.page('rangeFrom');
   const to = host.page('rangeTo');
-  const a = from === null ? null : hostWallClock(from);
-  const b = to === null ? null : hostWallClock(to);
-  if (a === null || b === null) return null;
-  const ma = millis(a);
-  const mb = millis(b);
-  return ma !== null && mb !== null && ma < mb ? { from: a, to: b } : null;
-}
-
-/** The schema checks the shape only; an impossible calendar date (02-30) throws in `wallClockToMillis` and is null here. */
-function millis(value: SiteWallClock): number | null {
-  try {
-    return wallClockToMillis(value);
-  } catch {
-    return null;
-  }
+  if (from === null || to === null) return null;
+  const range = hostRange(from, to);
+  return range.ok ? { from: range.from, to: range.to } : null;
 }
 
 /** Equipment, entry keys, applied Focus range and applied time of a screen, read from the host. No default is ever filled in. */
@@ -53,11 +48,9 @@ export function readHostProps(host: ModuleHost): HostProps {
   const base = { equipment: host.page('equipment'), entityType: host.page('entityType'), anchor: host.page('anchor'), range: readRange(host) };
   if (unsupported.includes('time')) return { ...base, time: { kind: 'unsupported' } };
   if (!values.from || !values.to) return { ...base, time: { kind: 'missing' } };
-  const from = hostWallClock(values.from);
-  const to = hostWallClock(values.to);
-  const fromMs = from === null ? null : millis(from);
-  const toMs = to === null ? null : millis(to);
-  if (from === null || to === null || fromMs === null || toMs === null) return { ...base, time: { kind: 'invalid', problem: `Site Wall-clock 형식이 아닙니다 (${values.from} – ${values.to})` } };
-  if (!(fromMs < toMs)) return { ...base, time: { kind: 'invalid', problem: '시작은 끝보다 앞서야 합니다' } };
-  return { ...base, time: { kind: 'applied', from, to } };
+  const range = hostRange(values.from, values.to);
+  if (!range.ok) {
+    return { ...base, time: { kind: 'invalid', problem: range.problem === 'format' ? `Site Wall-clock 형식이 아닙니다 (${values.from} – ${values.to})` : '시작은 끝보다 앞서야 합니다' } };
+  }
+  return { ...base, time: { kind: 'applied', from: range.from, to: range.to } };
 }
