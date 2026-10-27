@@ -1,9 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { expect, it } from 'vitest';
+import { z } from 'zod';
 import {
   aliasMetadataFileSchema, buildInventory, layoutDocumentSchema, occurrenceBatchSchema,
-  proposeTemplates, typeDictionaryFileSchema, validateLayout, type TemplateDocument,
+  proposeTemplates, sceneStateSchema, typeDictionaryFileSchema, validateLayout, type TemplateDocument,
 } from '../src/index.js';
 
 const root = new URL('../../../', import.meta.url);
@@ -260,9 +261,38 @@ it('lets the wet-linear wafer robot move wafers between load ports', () => {
   }));
 });
 
-it('contains exactly six templates and 25 primitives', () => {
+// ADR-0016: assumed, synthetic station coordinates; the six converted templates declare none.
+it('declares four distinct in-footprint station positions on each rotary PM and none on the six archetypes', () => {
+  const layout = template('cluster-rotary-stations');
+  expect(validateLayout(layout)).toMatchObject({ ok: true });
+  expect(layout.transferCapabilities).toEqual([]);
+  for (const pm of layout.components.filter((component) => component.role === 'pm')) {
+    expect(pm.holdingSites.map((site) => site.id)).toEqual(['station-1', 'station-2', 'station-3', 'station-4']);
+    const points = pm.holdingSites.map((site) => site.position!);
+    expect(new Set(points.map(({ x, y }) => `${x},${y}`)).size).toBe(4);
+    for (const { x, y } of points) {
+      expect(Math.abs(x)).toBeLessThanOrEqual(pm.size!.width / 2);
+      expect(Math.abs(y)).toBeLessThanOrEqual(pm.size!.height / 2);
+    }
+  }
+  for (const [id] of cases) {
+    expect(template(id).components.flatMap((component) => component.holdingSites).filter((site) => site.position), id).toEqual([]);
+  }
+});
+
+it('ships a synthetic rotary fixture whose Scene States sit on positioned Holding Sites', () => {
+  const layout = validateLayout(read('fixtures/cluster-rotary/layout.json'));
+  if (!layout.ok) throw new Error('rotary fixture layout invalid');
+  const { states } = z.strictObject({ equipmentId: z.string(), states: z.array(sceneStateSchema) }).parse(read('fixtures/cluster-rotary/scene-states.json'));
+  const sites = new Map(layout.layout.components.flatMap((component) => component.holdingSites.map((site): [string, typeof site] => [`${component.id}/${site.id}`, site])));
+  const placed = states.flatMap((state) => state.materials.map((material) => `${material.location?.componentId}/${material.location?.holdingSiteId}`));
+  expect(placed).toEqual(['pm-a/station-1', 'pm-a/station-2']);
+  for (const key of placed) expect(sites.get(key)?.position).toBeDefined();
+});
+
+it('contains exactly seven templates (six converted archetypes plus the synthetic rotary one) and 25 primitives', () => {
   expect(readdirSync(new URL('assets/templates/', root)).filter((name) => name.endsWith('.json')).sort())
-    .toEqual(cases.map(([id]) => `${id}.template.json`).sort());
+    .toEqual([...cases.map(([id]) => id), 'cluster-rotary-stations'].map((id) => `${id}.template.json`).sort());
   expect(readdirSync(new URL('assets/primitives/', root)).filter((name) => name.endsWith('.svg'))).toHaveLength(25);
 });
 

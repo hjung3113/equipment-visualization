@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
-  instantiateLayout, layoutDocumentSchema, promoteLayout, validateLayout, type EquipmentLayoutDocument, type TemplateDocument,
+  instantiateLayout, layoutDocumentSchema, layoutRevision, promoteLayout, validateLayout, type EquipmentLayoutDocument, type TemplateDocument,
 } from '../src/index.js';
 
 const read = (path: string) => JSON.parse(readFileSync(new URL(`../../../${path}`, import.meta.url), 'utf8'));
@@ -28,6 +28,19 @@ describe('promoteLayout', () => {
     const result = instantiateLayout(promoteLayout(layout(), input), 'eq-2-layout');
     expect('promotedFrom' in result).toBe(false);
     expect(validateLayout(result).ok).toBe(true);
+  });
+
+  it('keeps Holding Site positions through promotion and instantiation and changes the Layout Revision', async () => {
+    const source = layoutDocumentSchema.parse(read('fixtures/cluster-rotary/layout.json')) as EquipmentLayoutDocument;
+    const positions = (doc: { components: EquipmentLayoutDocument['components'] }) =>
+      doc.components.flatMap((component) => component.holdingSites.map((site) => site.position));
+    expect(positions(source).filter(Boolean)).toHaveLength(8);
+    const again = instantiateLayout(promoteLayout(source, input), 'eq-2-layout');
+    expect(positions(again)).toEqual(positions(source));
+    const stripped = { ...source, components: source.components.map((component) => ({
+      ...component, holdingSites: component.holdingSites.map((site) => Object.fromEntries(Object.entries(site).filter(([key]) => key !== 'position')) as typeof site),
+    })) };
+    expect(await layoutRevision(source)).not.toBe(await layoutRevision(stripped));
   });
 
   it.each([

@@ -29,6 +29,7 @@ const holdingSiteSchema = z.strictObject({
   id: idSchema,
   label: z.string().optional(),
   materialKinds: z.array(materialKindSchema).min(1),
+  position: positionSchema.optional().describe('Component-local drawing coordinate, same frame as Port positions: origin at the Component centre, before its rotation and scale. Omission means unknown geometry, never inferred. Not observed transfer or kinematics.'),
   provenance: provenanceSchema,
 }).describe('One explicit entry per discrete material place, with an ID unique within its Component. A 25-slot LoadPort has 25 sites; no count or range shorthand. Robot blades are Holding Sites, independent of arm counts and kinematics.');
 const componentSchema = z.strictObject({
