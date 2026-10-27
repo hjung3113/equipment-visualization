@@ -43,6 +43,8 @@ export interface SceneComponent {
   bodyStroke: string;
   /** The layout's ordered Holding Site ids. Order only: Holding Sites have no geometry. */
   holdingSiteIds: readonly string[];
+  /** Scene-space point of each Holding Site that declares a local `position` (the composed Component matrix applied to it). Sites without one are absent: unknown geometry, never inferred. */
+  holdingSiteWorld: ReadonlyMap<string, Point>;
   /** Font px of the Component's own label when it is drawn below the bbox (label plan `outside`), else null. */
   outsideLabelPx: number | null;
 }
@@ -814,6 +816,9 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
       hidden: row.hidden,
       bodyStroke: row.prim.body.attrs.stroke ?? 'none',
       holdingSiteIds: row.component.holdingSites.map((site) => site.id),
+      holdingSiteWorld: new Map(row.component.holdingSites.flatMap((site): [string, Point][] => (
+        site.position ? [[site.id, apply(row.matrix, site.position.x, site.position.y)]] : []
+      ))),
       outsideLabelPx: plans.get(row.id)?.mode === 'outside' ? plans.get(row.id)!.px : null,
     });
   }

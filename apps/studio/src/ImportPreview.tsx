@@ -1,6 +1,7 @@
+import { modelDictionaryPath } from './paths.js';
 import { useEffect, useId, useRef, useState } from 'react';
 import {
-  aliasMetadataFileSchema, validateSampleWindow, validateTypeDictionary,
+  LEVEL_KO, aliasMetadataFileSchema, validateSampleWindow, validateTypeDictionary,
   type AliasMetadataFile, type EquipmentRecord,
   type SampleWindowSummary, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -163,7 +164,7 @@ async function inspect(props: ImportPreviewProps): Promise<Inspection> {
   const fileData = result.ok ? result.file : undefined;
   if (fileData) {
     try {
-      checkScope(`onboarding/scopes/model/${record.maker}/${record.model}/type-dictionary.json`, fileData.scope,
+      checkScope(modelDictionaryPath(record.maker, record.model), fileData.scope,
         { level: 'model', maker: record.maker, model: record.model });
     } catch (error) {
       rejects.push({ code: 'scope-mismatch', path: ['scope'], message: errorMessage(error) });
@@ -192,7 +193,7 @@ function WindowDetails({ summary }: { summary: Inspection['summary'] }) {
   const levels = ['observed', 'derived', 'illustrative', 'unknown'] as const;
   const evidence = (counts: typeof summary.boundaryEvidence) => (
     <span className="flex flex-wrap items-center gap-2">
-      {levels.map((level, index) => <EvidenceBadge key={level} level={level}>{['관측', '파생', '예시', '미확인'][index]} {counts[level]}</EvidenceBadge>)}
+      {levels.map((level) => <EvidenceBadge key={level} level={level}>{LEVEL_KO[level]} {counts[level]}</EvidenceBadge>)}
     </span>
   );
   const items: DetailField[] = [

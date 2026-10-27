@@ -29,6 +29,13 @@ it('lists Occurrences overlapping the range in Record Sequence order, including 
   expect(document.querySelector('tr[data-occurrence-id="occ-carrier"]')).not.toBeNull();
 });
 
+it('keeps an Occurrence ending exactly at the range start and drops one starting exactly at its end', () => {
+  const edge = replayTimeline(input, { from: time('10:06:00'), to: time('10:10:00') });
+  render(<OccurrenceList batch={batch} timeline={edge} bindings={null} appliedSeq={null} selectedOccurrenceId={null} onSelectOccurrence={vi.fn()} />);
+  expect(document.querySelector('tr[data-occurrence-id="occ-lla-slot-two"]')).not.toBeNull();
+  expect(document.querySelector('tr[data-occurrence-id="occ-tm-return"]')).toBeNull();
+});
+
 it('shows facet evidence, the Binding Mapping Version, the Data Quality ids and the record-ref slot', () => {
   list('10:06:00', { renderRecordRef: (o) => <a href={`#${o.id}`}>열기 {o.id}</a> });
   expect(row('occ-time-anomaly').getByText('dqi-end-before-start')).toBeTruthy();

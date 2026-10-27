@@ -9,7 +9,7 @@
 _Avoid_: Station(별도 타입으로 쓰지 않음 — station은 하위 Component다), Module(로그 용어; Mapping으로만 연결)
 
 **Holding Site**:
-물질(wafer/carrier/batch)이 놓일 수 있는 이산 자리. 로봇 blade, PM station 자리, LL slot, boat slot 모두 Holding Site다.
+물질(wafer/carrier/batch)이 놓일 수 있는 이산 자리. 로봇 blade, PM station 자리, LL slot, boat slot 모두 Holding Site다. 선택 필드 `position`은 Component-local 그리기 좌표(원점 = Component 중심, 회전·스케일 전)이며 생략은 형상 unknown이다. 이송이나 kinematics의 근거가 아니다([ADR-0016](docs/adr/0016-holding-site-position.md)).
 _Avoid_: Slot(로그 용어), Stage(별도 Component)
 
 **Location**:

@@ -59,7 +59,7 @@ export function FocusPage({ equipmentId, sampleWindow, entityType, anchor, sched
           <Link href={hrefFor({ name: 'fleet' })}><ArrowRight className="size-3.5" aria-hidden />Fleet으로 이동</Link>
         </Button>
       ) : undefined}>
-      <WindowPicker equipmentId={equipmentId} hint={PICKER_HINT}
+      <WindowPicker className="mb-4" equipmentId={equipmentId} hint={PICKER_HINT}
         value={sampleWindow ?? (ok ? windowHex(ok.selectedWindow) : null)}
         details={ok ? { dataGeneration: ok.batch.dataGeneration, timeDomain: ok.batch.timeDomain, hash: ok.selectedWindow.hash } : null}
         onChange={(hex) => navigate(hrefFor({ name: 'focus', equipmentId, entityType, anchor, window: hex }))} />

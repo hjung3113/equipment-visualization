@@ -2,7 +2,8 @@ import { layoutDocumentSchema, type Component, type LayoutDocument, type Provena
 
 export type LayoutIssueCode =
   | 'schema' | 'duplicate-id' | 'unknown-reference' | 'unknown-level' | 'hierarchy-cycle'
-  | 'handler-not-robot' | 'self-loop' | 'verified-without-evidence' | 'role-cardinality';
+  | 'handler-not-robot' | 'self-loop' | 'verified-without-evidence' | 'role-cardinality'
+  | 'site-position-outside-footprint';
 export interface LayoutIssue { code: LayoutIssueCode; path: (string | number)[]; message: string }
 export type LayoutValidationResult =
   | { ok: true; layout: LayoutDocument; issues: [] }
@@ -104,6 +105,10 @@ export function validateLayout(input: unknown): LayoutValidationResult {
       const sitePath = [...path, 'holdingSites', siteIndex];
       duplicate(siteIds, site.id, [...sitePath, 'id']);
       provenance(site.provenance, [...sitePath, 'provenance']);
+      if (site.position && component.size
+        && (Math.abs(site.position.x) > component.size.width / 2 || Math.abs(site.position.y) > component.size.height / 2)) {
+        add('site-position-outside-footprint', [...sitePath, 'position'], `Holding Site ${site.id} position lies outside the ${component.id} footprint`);
+      }
     });
     const properties = ['role', 'assetRef', 'label', 'parentId', 'levelId', 'transform', 'size'] as const;
     for (const property of properties) {

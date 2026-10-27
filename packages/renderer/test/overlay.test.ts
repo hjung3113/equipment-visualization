@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
-import { layoutDocumentSchema, type Component, type LayoutDocument, type SceneState } from '@eqv/core';
+import { componentWorldMatrix, layoutDocumentSchema, type Component, type LayoutDocument, type SceneState } from '@eqv/core';
 import { buildScene, TopView, type Scene, type SceneComponent, type SvgNode } from '../src/index.js';
 import { buildOverlay, buildReplayLayer, type IllustrativeGhost, type OverlayState } from '../src/overlay.js';
 import { robotR, shapeLocal } from '../src/geom.js';
@@ -866,4 +866,92 @@ it.each([
     expect(Number(idLabel.attrs.y) - 0.78 * Number(idLabel.attrs['font-size'])).toBeGreaterThanOrEqual(clear);
     expect(cy + r).toBeLessThanOrEqual(scene.viewBox.y1);
   }
+});
+
+describe('positioned Holding Sites', () => {
+  const K = 0.5;
+  const withSites = (sites: Record<string, { x: number; y: number } | undefined>, base = {}): Component => {
+    const stage = component({ id: 'stage', assetRef: 'primitive:pm', label: 'Stage', parentId: 'frame', x: 30, y: -20, w: 120, h: 100, ...base });
+    return {
+      ...stage,
+      transform: { ...stage.transform, rotation: 45 },
+      holdingSites: Object.entries(sites).map(([id, position]) => ({
+        id, materialKinds: ['wafer' as const], ...(position ? { position } : {}), provenance: { certainty: 'assumed' as const, sourceEvidence: [] },
+      })),
+    };
+  };
+  const frame = (): Component => ({
+    ...component({ id: 'frame', assetRef: 'primitive:housing', label: 'Frame', role: 'housing', x: 400, y: 300, scale: 2, w: 600, h: 400 }),
+    transform: { x: 400, y: 300, rotation: 30, scale: 2 },
+  });
+  const rotary = (sites: Record<string, { x: number; y: number } | undefined>) => fixture([frame(), withSites(sites)]);
+  const at = (...rows: [string, string | undefined][]): SceneState => replayState({
+    materials: rows.map(([id, site]) => stateMaterial({
+      key: `m:wafer:${id}`, kind: 'wafer', id,
+      location: { componentId: 'stage', ...(site ? { holdingSiteId: site } : {}) },
+      locationEvidence: 'observed', identityEvidence: 'observed',
+    })),
+    components: [{ componentId: 'stage', activity: 'no recorded activity', activityEvidence: 'unknown', occurrenceIds: [] }],
+  });
+  const tokens = (scene: Scene, state: SceneState) => shapes(markOf(replayLayer(scene, state), scene.components.get('stage')!))
+    .filter((node) => node.tag === 'circle')
+    .map((node) => ({ id: titles(node)[0]!.split(' · ')[0]!, cx: Number(node.attrs.cx), cy: Number(node.attrs.cy), r: Number(node.attrs.r), attrs: node.attrs }));
+
+  it('centres a token on componentWorldMatrix × the local site position, before and after a site change', () => {
+    const { layout, scene } = rotary({ 'station-1': { x: 40, y: -15 }, 'station-2': { x: -25, y: 30 } });
+    const m = componentWorldMatrix(layout, 'stage')!;
+    const world = (p: { x: number; y: number }) => ({ cx: m.a * p.x + m.c * p.y + m.x, cy: m.b * p.x + m.d * p.y + m.y });
+    for (const [site, local] of [['station-1', { x: 40, y: -15 }], ['station-2', { x: -25, y: 30 }]] as const) {
+      const [token] = tokens(scene, at(['W1', site]));
+      expect(token!.cx).toBeCloseTo(world(local).cx, 3);
+      expect(token!.cy).toBeCloseTo(world(local).cy, 3);
+      expect(token!.r).toBeCloseTo(6 * K, 5);
+      expect(token!.attrs.transform).toBeUndefined();
+    }
+  });
+
+  it('keeps unpositioned, unlisted and component-level materials in the legacy row, inventing no point', () => {
+    const rows: [string, string | undefined][] = [['W2', 'station-3'], ['W3', 'station-z'], ['W4', undefined]];
+    const legacy = tokens(rotary({ 'station-1': undefined, 'station-2': undefined, 'station-3': undefined }).scene, at(...rows));
+    const { scene } = rotary({ 'station-1': { x: 40, y: -15 }, 'station-2': undefined, 'station-3': undefined });
+    const mixed = tokens(scene, at(['W1', 'station-1'], ...rows));
+    expect(mixed.filter((t) => t.id !== 'W1').map(({ id, cx, cy, r }) => ({ id, cx, cy, r }))).toEqual(legacy.map(({ id, cx, cy, r }) => ({ id, cx, cy, r })));
+    expect(mixed.map((t) => t.id).sort()).toEqual(['W1', 'W2', 'W3', 'W4']);
+  });
+
+  it('is byte-identical to the unpositioned scene when no located material sits on a positioned site', () => {
+    const state = at(['W1', 'station-2'], ['W2', undefined]);
+    const plain = replayLayer(rotary({ 'station-1': undefined, 'station-2': undefined }).scene, state);
+    const known = replayLayer(rotary({ 'station-1': { x: 40, y: -15 }, 'station-2': undefined }).scene, state);
+    expect(known).toEqual(plain);
+  });
+
+  it('never hides positioned materials behind +N; the cap covers the fallback row only', () => {
+    const rows: [string, string | undefined][] = ['F1', 'F2', 'F3', 'F4', 'F5'].map((id) => [id, undefined]);
+    const { scene } = rotary({ 'station-1': { x: 40, y: -15 } });
+    const state = at(['P1', 'station-1'], ...rows);
+    const drawn = shapes(markOf(replayLayer(scene, state), scene.components.get('stage')!));
+    expect(tokens(scene, state).map((t) => t.id)).toContain('P1');
+    expect(drawn.filter((n) => n.tag === 'text').map((n) => n.children.join(''))).toContain('+2');
+  });
+
+  it.each([
+    { fallback: 3, labelled: true },
+    { fallback: 4, labelled: false },
+  ])('labels row and positioned tokens alike by the Component total ($fallback fallback + 1 positioned)', ({ fallback, labelled }) => {
+    const { scene } = rotary({ 'station-1': { x: 40, y: -15 } });
+    const rows: [string, string | undefined][] = Array.from({ length: fallback }, (_, i) => [`F${i + 1}`, undefined]);
+    const drawn = shapes(markOf(replayLayer(scene, at(['P1', 'station-1'], ...rows)), scene.components.get('stage')!));
+    const words = drawn.filter((n) => n.tag === 'text').map((n) => n.children.join(''));
+    expect(words).toEqual(labelled ? ['F1', 'F2', 'F3', 'P1'] : []);
+  });
+
+  it('puts two materials on one positioned site at the same point and still rings the conflict', () => {
+    const { scene } = rotary({ 'station-1': { x: 40, y: -15 } });
+    const state = { ...at(['W1', 'station-1'], ['W2', 'station-1']), markers: [{ kind: 'occupancy-conflict' as const, componentId: 'stage', holdingSiteId: 'station-1', materialKeys: ['m:wafer:W1', 'm:wafer:W2'] }] };
+    const found = tokens(scene, state);
+    expect(found).toHaveLength(2);
+    expect([found[0]!.cx, found[0]!.cy]).toEqual([found[1]!.cx, found[1]!.cy]);
+    expect(titles(replayLayer(scene, state))).toContain('점유 충돌: station-1 — m:wafer:W1, m:wafer:W2');
+  });
 });

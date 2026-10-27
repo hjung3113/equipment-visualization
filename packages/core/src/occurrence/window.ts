@@ -1,5 +1,7 @@
+import { hashHex } from '../hash.js';
 import { observationHash } from '../replay/replay-key.js';
 import { diagnoseWallClock, type SiteWallClock } from '../site-wall-clock.js';
+import { occurrenceOverlapsWindow } from './overlap.js';
 import { occurrenceBatchSchema, type EvidenceLevel, type OccurrenceBatch } from './schema.js';
 import { batchRecordProblems } from './validate.js';
 
@@ -154,11 +156,11 @@ export async function validateSampleWindow(raw: unknown, ctx: { equipmentId: str
     }
   }
   if (!emptyRange) {
-    // Only provable cases: open, null-time and inverted (Time Anomaly) Occurrences are never judged.
-    for (const [i, { id, start, end }] of batch.occurrences.entries()) {
-      if (start.at === null || end?.at == null || start.at > end.at) continue;
-      if (end.at < batch.from || start.at >= batch.to) {
-        reject('outside-window', ['occurrences', i], `occurrences[${i}] (${id}) [${start.at}, ${end.at}] lies outside [${batch.from}, ${batch.to})`);
+    // Only provable cases: open, null-time and inverted (Time Anomaly) Occurrences are never judged here.
+    for (const [i, occurrence] of batch.occurrences.entries()) {
+      const { id, start, end } = occurrence;
+      if (start.at !== null && end?.at != null && start.at <= end.at && !occurrenceOverlapsWindow(occurrence, batch.from, batch.to)) {
+        reject('outside-window', ['occurrences', i], `occurrences[${i}] (${id}) [${start.at}, ${end?.at}] lies outside [${batch.from}, ${batch.to})`);
       }
     }
   }
@@ -181,7 +183,7 @@ export async function validateSampleWindow(raw: unknown, ctx: { equipmentId: str
 }
 
 function nameOf(from: SiteWallClock, to: SiteWallClock, hash: string): string {
-  return `${compact(from)}_${compact(to)}_${hash.slice('sha256:'.length)}`;
+  return `${compact(from)}_${compact(to)}_${hashHex(hash)}`;
 }
 
 export async function sampleWindowName(batch: OccurrenceBatch): Promise<string> {

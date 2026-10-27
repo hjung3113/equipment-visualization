@@ -1,3 +1,4 @@
+import { hashHex } from '@eqv/core';
 // Generates src/mock-data/cluster-single.generated.ts from fixtures/cluster-single (synthetic data).
 // `node scripts/gen-mock-data.mjs` writes the file; `--stdout` prints it (the drift test compares the two).
 import { readFileSync, writeFileSync } from 'node:fs';
@@ -12,7 +13,7 @@ const json = (path) => JSON.parse(readFileSync(resolve(fixtures, path), 'utf8'))
 
 const bindings = json('onboarding/bindings/eq-synth-01.bindings.json');
 const mappings = bindings.bindings.map(({ mappingHash }) =>
-  json(`onboarding/mappings/eq-synth-01/${mappingHash.slice('sha256:'.length)}.mapping.json`));
+  json(`onboarding/mappings/eq-synth-01/${hashHex(mappingHash)}.mapping.json`));
 const constant = (name, type, value) => `export const ${name}: ${type} = ${JSON.stringify(value, null, 2)};\n`;
 
 export const render = () => [

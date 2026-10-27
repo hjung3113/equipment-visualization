@@ -1,3 +1,4 @@
+import { layoutPath } from '../src/paths.js';
 import { readdir, readFile, realpath, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { idSchema, layoutDocumentSchema, layoutRevision, promoteLayout, validateLayout, type TemplateDocument } from '@eqv/core';
@@ -83,7 +84,7 @@ export function createPromoteApi(deps: PromoteDeps) {
   }
 
   async function readRevision(scope: WriteScope, layoutId: string, revision: string): Promise<unknown> {
-    const path = `layouts/${layoutId}/${revision}.layout.json`;
+    const path = layoutPath(layoutId, `sha256:${revision}`);
     let real: string;
     try {
       real = await realpath(join(scope.base, path));

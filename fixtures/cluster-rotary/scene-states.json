@@ -1,0 +1,115 @@
+{
+  "equipmentId": "eq-synth-rotary",
+  "states": [
+    {
+      "equipmentId": "eq-synth-rotary",
+      "at": "2026-01-01T10:00:00.000",
+      "appliedSeq": 1,
+      "binding": {
+        "layoutId": "eq-synth-rotary-layout",
+        "mappingHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "materials": [
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "alias": {
+            "moduleAlias": "PM1",
+            "slotAlias": "1"
+          },
+          "location": {
+            "componentId": "pm-a",
+            "holdingSiteId": "station-1"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-w01-station-1",
+          "lastObservedAt": "2026-01-01T09:59:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "robot-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    },
+    {
+      "equipmentId": "eq-synth-rotary",
+      "at": "2026-01-01T10:05:00.000",
+      "appliedSeq": 2,
+      "binding": {
+        "layoutId": "eq-synth-rotary-layout",
+        "mappingHash": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+      },
+      "materials": [
+        {
+          "key": "m:wafer:W01",
+          "kind": "wafer",
+          "id": "W01",
+          "identityEvidence": "observed",
+          "alias": {
+            "moduleAlias": "PM1",
+            "slotAlias": "2"
+          },
+          "location": {
+            "componentId": "pm-a",
+            "holdingSiteId": "station-2"
+          },
+          "locationEvidence": "observed",
+          "occurrenceId": "occ-w01-station-2",
+          "lastObservedAt": "2026-01-01T10:04:00.000"
+        }
+      ],
+      "components": [
+        {
+          "componentId": "pm-a",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "pm-b",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "robot-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        },
+        {
+          "componentId": "tm-1",
+          "activity": "no recorded activity",
+          "activityEvidence": "unknown",
+          "occurrenceIds": []
+        }
+      ],
+      "markers": []
+    }
+  ]
+}

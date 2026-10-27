@@ -48,6 +48,7 @@ it('stays published, not drift-free, when the baseline or the layout is missing'
 it('is published with an empty drift when the window matches the baseline and every transfer has a capability', () => {
   const [row] = summarizeFleet([published({ baseline: inventory(), layout })]);
   expect(row).toMatchObject({ status: 'published', drift: { newAliases: [], newSlots: [], transfersWithoutCapability: [] } });
+  expect(row!.driftUnknown).toBeNull();
 });
 
 it.each([
@@ -72,11 +73,6 @@ it.each([
   const [row] = summarizeFleet([published(change)]);
   expect(row).toMatchObject({ status: 'published', drift: null, error: null });
   expect(row!.driftUnknown).toContain(reason);
-});
-
-it('has no unknown reason when Drift was checked', () => {
-  const [row] = summarizeFleet([published({ baseline: inventory(), layout })]);
-  expect(row!.driftUnknown).toBeNull();
 });
 
 it('turns a registered equipment without Sample Windows into a status row, not an error', () => {

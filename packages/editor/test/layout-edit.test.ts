@@ -456,6 +456,17 @@ describe('explicit Holding Site and Transfer Capability editing', () => {
     expect(addHoldingSite(initial, 'child', []).state).toBe(initial);
   });
 
+  it('keeps a Site position through moves, rotations and edits of other Sites (ADR-0016)', () => {
+    const position = { x: 1.5, y: -2 };
+    const positioned = { ...child, holdingSites: [{ ...child.holdingSites[0]!, position }] };
+    let state = createLayoutEdit(fixture([parent, positioned, robot]));
+    state = moveBy(state, 'child', 3, 0, null);
+    state = rotateBy(state, 'child', 5, null);
+    state = addHoldingSite(state, 'child', ['wafer']).state;
+    state = removeHoldingSite(state, 'child', 'slot-1');
+    expect(byId(state.present, 'child').holdingSites).toEqual([{ id: 's1', materialKinds: ['wafer'], position, provenance: assumed }]);
+  });
+
   it('removes a Holding Site and its capabilities in one undo step', () => {
     const initial = fresh();
     const state = removeHoldingSite(initial, 'child', 's1');

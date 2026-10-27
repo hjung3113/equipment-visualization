@@ -1,5 +1,5 @@
 import {
-  compareNatural, computeCoverage, findMappingConflicts, latestBinding as coreLatestBinding, layoutRevision, publishMapping, siteWallClockSchema, validateBindings,
+  hashHex, compareNatural, computeCoverage, findMappingConflicts, latestBinding as coreLatestBinding, layoutRevision, publishMapping, siteWallClockSchema, validateBindings,
   type BindingsFile, type Coverage, type EquipmentLayoutDocument, type MappingConflict, type MappingEntry, type MappingIssue,
   type MappingVersion, type ObservedInventory, type TypeDictionaryFile,
 } from '@eqv/core';
@@ -50,7 +50,7 @@ export type PlanInput = DryRunInput & {
 
 const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
 /** First 12 hex characters of a `sha256:<hex>` value. */
-export const shortHash = (hash: string) => hash.replace(/^sha256:/, '').slice(0, 12);
+export const shortHash = (hash: string) => hashHex(hash).slice(0, 12);
 
 export async function dryRun(input: DryRunInput): Promise<DryRun> {
   const { equipment, inventory, layout, ruleFiles } = input;
