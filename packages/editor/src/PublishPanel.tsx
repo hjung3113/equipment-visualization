@@ -1,7 +1,7 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
 import { layoutRevision, type BindingsFile, type MappingConflict, type MappingVersion } from '@eqv/core';
 import { DataTable, DetailFields, LoadingBlock, Panel, StateMessage } from '@eqv/ui';
-import { Button, Callout, EmptyState, Input, Label, PanelSectionTitle } from '@ap/ui';
+import { Button, Callout, EmptyState, Input, Label, PanelSectionTitle, StatusBadge } from '@ap/ui';
 import { Play, Send, TriangleAlert } from 'lucide-react';
 import type { TopViewerProps } from '@eqv/renderer';
 import { describeConflict } from './conflict-text.js';
@@ -30,6 +30,7 @@ export interface PublishPanelProps {
   renderLink(equipmentId: string): ReactNode;
 }
 
+const PUBLISH_TONE = { '게시됨': 'success', '미게시': 'neutral', '—': 'neutral' } as const;
 const percent = (ratio: number | null) => ratio === null ? '—' : `${Math.round(ratio * 100)}%`;
 const count = (n: number | null) => n === null ? '—' : String(n);
 const messageOf = (error: unknown) => error instanceof Error ? error.message : String(error);
@@ -61,6 +62,7 @@ export function PublishPanel(props: PublishPanelProps) {
   const [failure, setFailure] = useState<string | null>(null);
   const [model, setModel] = useState<{ equipmentId: string; rows: ModelDryRunRow[] | null; unreadable: number; error: string | null; loading: boolean } | null>(null);
   const alive = useRef(true);
+  const statusRef = useRef<HTMLParagraphElement>(null);
   const busy = useRef(false);
   const modelRequest = useRef(0);
   const activeRef = useRef<string | null>(null);
@@ -86,6 +88,12 @@ export function PublishPanel(props: PublishPanelProps) {
       if (activeRef.current !== null) highlightRef.current(null);
     };
   }, []);
+
+  // The Studio remounts the panel after a successful publish (it reloads the equipment), so a mount with a receipt lands here
+  // too. Only a new receipt or failure moves focus; other renders leave it alone.
+  useEffect(() => {
+    if (receipt !== null || failure !== null) statusRef.current?.focus();
+  }, [receipt, failure]);
 
   const computed = useComputed(inputs, async () => {
     const [run, revision] = await Promise.all([dryRun(input), layoutRevision(layout)]);
@@ -257,7 +265,7 @@ export function PublishPanel(props: PublishPanelProps) {
             </Button>
             {reason && <span id={reasonId} className="text-text-secondary">{reason}</span>}
           </div>
-          <p role="status" className="m-0 min-h-6 font-semibold">{status}</p>
+          <p ref={statusRef} role="status" tabIndex={-1} className="m-0 min-h-6 font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus-ring">{status}</p>
         </div>
       </Panel>
 
@@ -274,13 +282,13 @@ export function PublishPanel(props: PublishPanelProps) {
             label={modelCaption}
             title={modelCaption}
             headingLevel={3}
-            columns={['equipmentId', '상태', { id: 'reference', header: '참조 coverage', align: 'end' }, { id: 'alias', header: 'alias coverage', align: 'end' },
+            columns={['설비', '상태', { id: 'reference', header: '참조 coverage', align: 'end' }, { id: 'alias', header: 'alias coverage', align: 'end' },
               { id: 'conflicts', header: '충돌', align: 'end' }, { id: 'unmapped', header: '미매핑 참조', align: 'end' }, { id: 'blocking', header: '막는 문제', align: 'end' }, '오류']}
           >
             {modelState.rows.map((row) => (
               <DataTable.Row key={row.equipmentId}>
                 <DataTable.Cell rowHeader>{renderLink(row.equipmentId)}</DataTable.Cell>
-                <DataTable.Cell>{row.status}</DataTable.Cell>
+                <DataTable.Cell><StatusBadge tone={PUBLISH_TONE[row.status]} dot>{row.status}</StatusBadge></DataTable.Cell>
                 <DataTable.Cell numeric>{percent(row.referenceRatio)}</DataTable.Cell>
                 <DataTable.Cell numeric>{percent(row.aliasRatio)}</DataTable.Cell>
                 <DataTable.Cell numeric>{count(row.conflicts)}</DataTable.Cell>

@@ -171,7 +171,7 @@ function DriftReview({ equipmentId, sampleWindow, data }: { equipmentId: string;
     body = <StateMessage compact icon={Info} title="기준 대비 Drift 없음" />;
   } else {
     body = (
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {drift.newAliases.length > 0 && (
           <div>
             <PanelSectionTitle className="mb-2">새 alias ({drift.newAliases.length})</PanelSectionTitle>
@@ -253,7 +253,7 @@ export function OnboardingPage({ equipmentId, sampleWindow }: { equipmentId: str
           </Button>
         </>
       ) : undefined}>
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
       <WindowPicker equipmentId={equipmentId} hint={PICKER_HINT}
         value={sampleWindow ?? (result?.kind === 'ok' ? windowHex(result.data.selectedWindow) : null)}
         details={result?.kind === 'ok' ? { dataGeneration: result.data.batch.dataGeneration, timeDomain: result.data.batch.timeDomain, hash: result.data.selectedWindow.hash } : null}
@@ -383,7 +383,7 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
   // While publishing the Board is inert; the capture guard keeps a synthetic or scripted event from reaching it as well.
   const guard = publication.publishing ? (event: SyntheticEvent) => { event.stopPropagation(); event.preventDefault(); } : undefined;
   return (
-    <>
+    <div className="grid grid-cols-1 gap-4">
       <PublishPanel input={input} bindings={bindings} previous={previous} boardDirty={dirty}
         publishing={publication.publishing} receipt={publication.receipt}
         onPublish={(plan) => publication.run(plan, () => writePublication(plan, layout))}
@@ -394,7 +394,7 @@ function LoadedBoard({ equipmentId, sampleWindow, result, layout, onDirtyChange,
           ruleFiles={ruleFiles} templates={result.templates} onSave={onSave} highlight={highlight}
           onDirtyChange={(next) => { setDirty(next); onDirtyChange(next); }} />
       </div>
-    </>
+    </div>
   );
 }
 

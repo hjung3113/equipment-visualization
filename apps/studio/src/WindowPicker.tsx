@@ -11,6 +11,8 @@ export interface WindowPickerProps {
   /** The selected window's validated facts, only when the page loaded it. */
   details: { dataGeneration: string; timeDomain: string; hash: string } | null;
   onChange: (hex: string) => void;
+  /** Spacing from the content below, for pages that are not a grid. */
+  className?: string;
 }
 
 /**
@@ -18,7 +20,7 @@ export interface WindowPickerProps {
  * page load shows that error) and for zero windows, so it stays mounted across window changes and offers a way out of an
  * unknown `?window=`.
  */
-export function WindowPicker({ equipmentId, value, hint, details, onChange }: WindowPickerProps) {
+export function WindowPicker({ equipmentId, value, hint, details, onChange, className }: WindowPickerProps) {
   const [listed, setListed] = useState<{ equipmentId: string; windows: SampleWindowEntry[] } | null>(null);
   useEffect(() => {
     let cancelled = false;
@@ -33,7 +35,7 @@ export function WindowPicker({ equipmentId, value, hint, details, onChange }: Wi
   const { windows } = listed;
   const selected = value !== null && windows.some((entry) => windowHex(entry) === value) ? value : '';
   return (
-    <Panel title="Sample Window">
+    <Panel title="Sample Window" {...(className === undefined ? {} : { className })}>
       <div className="grid gap-3">
         <FormField label="사용할 window" hint={hint}>
           {(control) => (
