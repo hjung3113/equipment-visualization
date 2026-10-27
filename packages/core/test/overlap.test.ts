@@ -13,6 +13,9 @@ it.each([
   { name: 'starts exactly at to', start: '10:30:00', end: '10:40:00', kept: false },
   { name: 'starts just before to', start: '10:29:59', end: '10:40:00', kept: true },
   { name: 'open', start: '09:00:00', end: null, kept: true },
+  { name: 'open and starting exactly at to', start: '10:30:00', end: null, kept: false },
+  { name: 'open and starting before to', start: '10:29:59', end: null, kept: true },
+  { name: 'inverted starting after to', start: '11:00:00', end: '10:45:00', kept: true },
   { name: 'null start time', start: null, end: '09:00:00', kept: true },
   { name: 'inverted (Time Anomaly)', start: '11:00:00', end: '09:00:00', kept: true },
 ])('the window [from, to) keeps $name: $kept', ({ start, end, kept }) => {

@@ -42,8 +42,7 @@ function target(o: Occurrence): string {
 export function OccurrenceList({ batch, timeline, bindings, appliedSeq, selectedOccurrenceId, anchorOccurrenceId = null, onSelectOccurrence, renderRecordRef }: OccurrenceListProps) {
   const { range } = timeline;
   const rows = useMemo(() => batch.occurrences
-    // The shared rule keeps an open Occurrence unjudged; one that starts at or after the range end is still provably outside it.
-    .filter((o) => occurrenceOverlapsWindow(o, range.from, range.to) && (o.start.at === null || o.start.at < range.to))
+    .filter((o) => occurrenceOverlapsWindow(o, range.from, range.to))
     .sort((a, b) => a.start.seq - b.start.seq), [batch, range]);
   // The keyboard caret is a row of its own, apart from the selection; a new selection hands the caret back to it.
   const [nav, setNav] = useState<{ id: string; selected: string | null; press: number } | null>(null);

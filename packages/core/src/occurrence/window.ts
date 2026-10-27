@@ -156,10 +156,10 @@ export async function validateSampleWindow(raw: unknown, ctx: { equipmentId: str
     }
   }
   if (!emptyRange) {
-    // Only provable cases: open, null-time and inverted (Time Anomaly) Occurrences are never judged.
+    // Only provable cases: open, null-time and inverted (Time Anomaly) Occurrences are never judged here.
     for (const [i, occurrence] of batch.occurrences.entries()) {
-      if (!occurrenceOverlapsWindow(occurrence, batch.from, batch.to)) {
-        const { id, start, end } = occurrence;
+      const { id, start, end } = occurrence;
+      if (start.at !== null && end?.at != null && start.at <= end.at && !occurrenceOverlapsWindow(occurrence, batch.from, batch.to)) {
         reject('outside-window', ['occurrences', i], `occurrences[${i}] (${id}) [${start.at}, ${end?.at}] lies outside [${batch.from}, ${batch.to})`);
       }
     }
