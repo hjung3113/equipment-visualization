@@ -1,5 +1,7 @@
 import { millisToWallClock, wallClockToMillis, type Occurrence, type OccurrenceBatch, type SiteWallClock } from '@eqv/core';
 
+import { entryOccurrence } from './entry-occurrence.js';
+
 export type FocusEntry = { entityType: string | null; anchor: string | null };
 export type FocusRange = {
   range: { from: SiteWallClock; to: SiteWallClock };
@@ -11,14 +13,15 @@ export type FocusRange = {
 const MIN_MARGIN_MS = 60_000;
 
 /**
- * Default Focus range for an entry key (Studio reading: `anchor` is an Occurrence id, `entityType` is not interpreted).
+ * Default Focus range for an entry key (`entityType` `job`: `anchor` is the RecordSequence string, AP ADR-0094; otherwise `anchor` is an Occurrence id, the Studio reading).
  * The entry's span widened by max(25 %, 60 s) each side and clamped to the batch; the batch window when no entry applies.
  */
-export function focusRange(batch: OccurrenceBatch, { anchor }: FocusEntry): FocusRange {
+export function focusRange(batch: OccurrenceBatch, key: FocusEntry): FocusRange {
+  const { anchor } = key;
   const whole = { from: batch.from, to: batch.to };
   const fallback = (notice: string, entry: Occurrence | null = null): FocusRange => ({ range: whole, cursor: batch.from, entry, notice });
   if (anchor === null) return fallback('진입 키가 없어 전체 구간을 표시합니다');
-  const entry = batch.occurrences.find((o) => o.id === anchor);
+  const entry = entryOccurrence(batch, key);
   if (!entry) return fallback(`진입 Occurrence를 찾지 못해 전체 구간을 표시합니다 (${anchor})`);
   const startAt = entry.start.at;
   if (startAt === null) return fallback('진입 Occurrence의 시작 시각이 없어 전체 구간을 표시합니다', entry);

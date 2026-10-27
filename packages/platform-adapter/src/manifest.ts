@@ -18,7 +18,7 @@ const noFeatures = { export: false, savedView: false, annotate: false, compare: 
  * the endpoints re-check access on the server.
  */
 export const eqvManifest: ModuleManifest = {
-  module: { id: 'eqv', label: { ko: '설비 Top View', en: 'Equipment Top View' }, contract: 1, languages: ['ko', 'en'] },
+  module: { id: 'eqv', label: { ko: '설비 Top View', en: 'Equipment Top View' }, contract: 1, languages: ['ko'] },
   requires: ['query'],
   optional: ['detailSlot'],
   groups: [{ id: GROUP, label: { ko: '설비', en: 'Equipment' } }],

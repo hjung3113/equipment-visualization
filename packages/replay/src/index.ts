@@ -1,4 +1,5 @@
 export { focusRange, type FocusEntry, type FocusRange } from './focus-range.js';
+export { entryOccurrence } from './entry-occurrence.js';
 export { buildLanes, type Bar, type Lane } from './lanes.js';
 export { FocusGantt, type FocusGanttProps } from './FocusGantt.js';
 export { OccurrenceList, type OccurrenceListProps } from './OccurrenceList.js';
