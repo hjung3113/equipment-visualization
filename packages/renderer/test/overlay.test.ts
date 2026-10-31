@@ -955,3 +955,23 @@ describe('positioned Holding Sites', () => {
     expect(titles(replayLayer(scene, state))).toContain('점유 충돌: station-1 — m:wafer:W1, m:wafer:W2');
   });
 });
+
+it.each([
+  { h: 40, w: 96 }, { h: 56, w: 96 }, { h: 72, w: 96 }, { h: 100, w: 96 }, { h: 140, w: 60 }, { h: 56, w: 30 },
+])('keeps the material row off the Component name: $w×$h', ({ h, w }) => {
+  const { scene } = fixture([component({ id: 'a', assetRef: 'primitive:pm', label: 'PM-B', x: 400, y: 300, w, h })]);
+  const comp = scene.components.get('a')!;
+  const k = 1 / scene.pxPerUnit;
+  const state = replayState({
+    components: [{ componentId: 'a', activity: 'processing', activityEvidence: 'observed', occurrenceIds: [] }],
+    materials: [stateMaterial({ key: 'm:wafer:W11', kind: 'wafer', id: 'W11', location: { componentId: 'a' }, locationEvidence: 'observed', identityEvidence: 'unknown' })],
+  });
+  const drawn = shapes(markOf(buildReplayLayer(scene, { state }, k), comp));
+  const token = drawn.find((n) => n.tag === 'circle' && n.attrs.fill === 'var(--eqv-material-fill, #f7e4cd)')!;
+  const idLabel = drawn.find((n) => n.tag === 'text' && n.children.includes('W11'))!;
+  const cy = Number(token.attrs.cy);
+  const r = Number(token.attrs.r);
+  const top = Number(idLabel.attrs.y) - 0.78 * Number(idLabel.attrs['font-size']);
+  const name = comp.insideLabelBox;
+  if (name) expect(cy + r <= name.y0 || top >= name.y1).toBe(true);
+});
