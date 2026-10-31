@@ -47,6 +47,8 @@ export interface SceneComponent {
   holdingSiteWorld: ReadonlyMap<string, Point>;
   /** Font px of the Component's own label when it is drawn below the bbox (label plan `outside`), else null. */
   outsideLabelPx: number | null;
+  /** Scene-space text box of the Component's own label when it is drawn inside the body (label plan `band` or `center`), else null. */
+  insideLabelBox: Box | null;
 }
 
 /** One explicit transfer capability. Endpoints stay paired; a flat handler/target set is not enough. */
@@ -820,6 +822,7 @@ export function buildScene(layout: LayoutDocument, options: SceneOptions): Scene
         site.position ? [[site.id, apply(row.matrix, site.position.x, site.position.y)]] : []
       ))),
       outsideLabelPx: plans.get(row.id)?.mode === 'outside' ? plans.get(row.id)!.px : null,
+      insideLabelBox: labelBoxes.find((label) => label.owner === row.id && label.inside) ?? null,
     });
   }
   const capabilities = layout.transferCapabilities.map((edge) => ({
