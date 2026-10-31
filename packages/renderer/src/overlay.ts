@@ -293,14 +293,27 @@ function siteOrdered(comp: SceneComponent, materials: readonly StateMaterial[]):
   return rows;
 }
 
+/** Gap kept between the material row and the Component's own inside label, screen px. */
+const LABEL_CLEAR_PX = 2;
+
 /**
- * Row centre y. A small Component's row sits outside, below the bbox and below the Component's own `outside` label
- * box, with room for the id labels above the disc; if its stroked extent would cross the scene viewBox it stays on
- * the inner bottom edge.
+ * Row centre y. On the inner bottom edge of the bbox unless that spot is taken: a small Component's row sits outside,
+ * below the bbox and below the Component's own `outside` label box, with room for the id labels above the disc; a
+ * Component whose own name is drawn inside the bbox (band or centre) where the row would land has its row moved just
+ * above that name when it fits in the bbox, else outside like a small one. An outside row whose stroked extent would
+ * cross the scene viewBox stays on the inner bottom edge.
  */
 function materialRowCy(scene: Scene, comp: SceneComponent, k: number): number {
   const inner = comp.bbox.y1 - (CLUSTER_INSET_PX + DISC_PX / 2) * k;
-  if (!isSmallComponent(comp, k)) return inner;
+  const name = comp.insideLabelBox;
+  const rowTop = (cy: number) => cy - (DISC_PX / 2 + 2 + LABEL_PX) * k;
+  const rowBottom = (cy: number) => cy + DISC_PX / 2 * k;
+  const nameTaken = name != null && rowBottom(inner) > name.y0 - LABEL_CLEAR_PX * k && rowTop(inner) < name.y1 + LABEL_CLEAR_PX * k;
+  if (!isSmallComponent(comp, k) && !nameTaken) return inner;
+  if (nameTaken && !isSmallComponent(comp, k)) {
+    const above = name.y0 - (LABEL_CLEAR_PX + DISC_PX / 2) * k;
+    if (rowTop(above) >= comp.bbox.y0) return above;
+  }
   const labelPx = comp.outsideLabelPx == null ? 0 : outsideLabelBottomPx(comp.outsideLabelPx);
   const offsetPx = labelPx + CLUSTER_INSET_PX + LABEL_PX + 2 + DISC_PX / 2;
   const outer = comp.bbox.y1 + offsetPx * k;
